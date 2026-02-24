@@ -25,10 +25,8 @@ ALTER TABLE frenchyconciergerie.reservation
   ADD COLUMN IF NOT EXISTS `custom5_sent` tinyint(1) DEFAULT 0,
   ADD COLUMN IF NOT EXISTS `mid_sent` tinyint(4) DEFAULT 0;
 
--- sms_templates : ajouter description, rendre campaign nullable
-ALTER TABLE frenchyconciergerie.sms_templates
-  ADD COLUMN IF NOT EXISTS `description` text DEFAULT NULL AFTER `template`,
-  MODIFY COLUMN `campaign` varchar(50) DEFAULT 'default';
+-- sms_templates : créer depuis sms_db si absente, sinon compléter
+CREATE TABLE IF NOT EXISTS frenchyconciergerie.`sms_templates` LIKE sms_db_import.`sms_templates`;
 
 -- =============================================================================
 -- ÉTAPE 2 : Créer les tables UNIQUES à sms_db dans frenchyconciergerie
