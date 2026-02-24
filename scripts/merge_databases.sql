@@ -180,9 +180,10 @@ INSERT IGNORE INTO frenchyconciergerie.satisfaction_conversations SELECT * FROM 
 INSERT INTO frenchyconciergerie.ai_prompts SELECT * FROM sms_db_import.ai_prompts
 ON DUPLICATE KEY UPDATE content = VALUES(content);
 
-INSERT INTO frenchyconciergerie.configuration (id, key_name, value)
-SELECT id, key_name, value FROM sms_db_import.configuration
-ON DUPLICATE KEY UPDATE value = VALUES(value);
+-- configuration : tables incompatibles (IONOS=site settings, sms_db=key/value)
+-- Les données sms_db.configuration sont importées dans app_config à la place
+CREATE TABLE IF NOT EXISTS frenchyconciergerie.`app_config` LIKE sms_db_import.`configuration`;
+INSERT IGNORE INTO frenchyconciergerie.app_config SELECT * FROM sms_db_import.configuration;
 
 -- Campagnes
 INSERT INTO frenchyconciergerie.campagne_immo SELECT * FROM sms_db_import.campagne_immo
