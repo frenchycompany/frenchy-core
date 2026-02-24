@@ -134,16 +134,11 @@ INSERT INTO frenchyconciergerie.client SELECT * FROM sms_db_import.client
 ON DUPLICATE KEY UPDATE nom = VALUES(nom), email = VALUES(email);
 
 -- SMS entrants/sortants
-INSERT IGNORE INTO frenchyconciergerie.sms_in
-  SELECT id, NULL as created_at, sender, message, received_at, modem, auto_replied, ai_handled,
-         logement_id, fallback, conversation_id, is_read, archived, starred, tags, notes
-  FROM sms_db_import.sms_in;
+INSERT IGNORE INTO frenchyconciergerie.sms_in SELECT * FROM sms_db_import.sms_in;
 
 INSERT IGNORE INTO frenchyconciergerie.sms_out SELECT * FROM sms_db_import.sms_out;
 INSERT IGNORE INTO frenchyconciergerie.sms_outbox SELECT * FROM sms_db_import.sms_outbox;
-INSERT IGNORE INTO frenchyconciergerie.sms_messages
-  SELECT id, NULL as created_at, numero, message, date_reception, modem, date_enregistrement
-  FROM sms_db_import.sms_messages;
+INSERT IGNORE INTO frenchyconciergerie.sms_messages SELECT * FROM sms_db_import.sms_messages;
 
 -- Templates SMS
 INSERT INTO frenchyconciergerie.sms_templates (campaign, name, template, description, created_at, updated_at)
