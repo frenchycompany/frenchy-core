@@ -96,14 +96,17 @@ function getInterventions($conn, $intervenant_id, $offset, $limit, $search_query
             LEFT JOIN liste_logements l ON c.source_id = l.id
             WHERE c.intervenant_id = :intervenant_id";
     if ($search_query !== '') {
-        $sql .= " AND (l.nom_du_logement LIKE :search OR c.source_type LIKE :search OR c.description LIKE :search)";
+        $sql .= " AND (l.nom_du_logement LIKE :search1 OR c.source_type LIKE :search2 OR c.description LIKE :search3)";
     }
     $sql .= " ORDER BY c.date_comptabilisation DESC LIMIT :limit OFFSET :offset";
-    
+
     $stmt = $conn->prepare($sql);
     $stmt->bindValue(':intervenant_id', $intervenant_id, PDO::PARAM_INT);
     if ($search_query !== '') {
-        $stmt->bindValue(':search', '%' . $search_query . '%', PDO::PARAM_STR);
+        $searchTerm = '%' . $search_query . '%';
+        $stmt->bindValue(':search1', $searchTerm, PDO::PARAM_STR);
+        $stmt->bindValue(':search2', $searchTerm, PDO::PARAM_STR);
+        $stmt->bindValue(':search3', $searchTerm, PDO::PARAM_STR);
     }
     $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
     $stmt->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
@@ -117,12 +120,14 @@ function getInterventions($conn, $intervenant_id, $offset, $limit, $search_query
 function getTotalInterventions($conn, $intervenant_id, $search_query = '') {
     $sql = "SELECT COUNT(*) AS total FROM comptabilite WHERE intervenant_id = :intervenant_id";
     if ($search_query !== '') {
-        $sql .= " AND (source_type LIKE :search OR description LIKE :search)";
+        $sql .= " AND (source_type LIKE :search1 OR description LIKE :search2)";
     }
     $stmt = $conn->prepare($sql);
     $stmt->bindValue(':intervenant_id', $intervenant_id, PDO::PARAM_INT);
     if ($search_query !== '') {
-        $stmt->bindValue(':search', '%' . $search_query . '%', PDO::PARAM_STR);
+        $searchTerm = '%' . $search_query . '%';
+        $stmt->bindValue(':search1', $searchTerm, PDO::PARAM_STR);
+        $stmt->bindValue(':search2', $searchTerm, PDO::PARAM_STR);
     }
     $stmt->execute();
     $result = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -137,14 +142,17 @@ function getTodoList($conn, $nom_utilisateur) {
         SELECT p.id AS intervention_id, l.nom_du_logement, p.statut, p.date AS date_intervention
         FROM planning p
         LEFT JOIN liste_logements l ON p.logement_id = l.id
-        WHERE (p.conducteur = :nom_utilisateur 
-               OR p.femme_de_menage_1 = :nom_utilisateur 
-               OR p.femme_de_menage_2 = :nom_utilisateur 
-               OR p.laverie = :nom_utilisateur)
+        WHERE (p.conducteur = :nom1
+               OR p.femme_de_menage_1 = :nom2
+               OR p.femme_de_menage_2 = :nom3
+               OR p.laverie = :nom4)
           AND p.statut = 'À Faire'
         ORDER BY p.date ASC
     ");
-    $stmt->bindValue(':nom_utilisateur', $nom_utilisateur, PDO::PARAM_STR);
+    $stmt->bindValue(':nom1', $nom_utilisateur, PDO::PARAM_STR);
+    $stmt->bindValue(':nom2', $nom_utilisateur, PDO::PARAM_STR);
+    $stmt->bindValue(':nom3', $nom_utilisateur, PDO::PARAM_STR);
+    $stmt->bindValue(':nom4', $nom_utilisateur, PDO::PARAM_STR);
     $stmt->execute();
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
