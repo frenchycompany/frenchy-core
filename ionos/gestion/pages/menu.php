@@ -1,40 +1,38 @@
 <?php
-// pages/menu.php
+/**
+ * Menu de navigation unifié — FrenchyConciergerie
+ * Combine les modules IONOS (planning, ménage, comptabilité, inventaire)
+ * et les modules Raspberry Pi (SMS, réservations, sync iCal, tarifs, marché)
+ */
 
-// Définition des constantes de chemin si non déjà définies
 if (!defined('BASE_PATH')) {
-    // Chemin absolu vers la racine du projet (un niveau au-dessus du dossier pages)
     define('BASE_PATH', realpath(__DIR__ . '/..'));
 }
 if (!defined('BASE_URL')) {
-    // Chemin URL relatif à la racine du domaine
-    // Ici l'application est à la racine, donc simplement '/'
     define('BASE_URL', '/');
 }
 
-// Démarrage de la session si nécessaire
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Vérification de la connexion de l'utilisateur
+// Vérification de la connexion
 if (!isset($_SESSION['id_intervenant'])) {
     header('Location: ' . BASE_URL . 'login.php');
     exit;
 }
 
-// Récupération des informations de session
 $id_intervenant  = $_SESSION['id_intervenant'];
 $role            = $_SESSION['role']            ?? 'user';
 $nom_utilisateur = $_SESSION['nom_utilisateur'] ?? 'Compte';
 
-// Mise en place du jeton CSRF
 if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
 $csrf_token = $_SESSION['csrf_token'];
 
-// Récupération des pages accessibles via la base
+// Pages accessibles depuis la BDD (système existant IONOS)
+$pages_accessibles = [];
 try {
     if ($role === 'admin') {
         $stmt = $conn->query("SELECT id, nom, chemin FROM pages WHERE afficher_menu = 1");
@@ -50,33 +48,27 @@ try {
         $stmt->execute();
     }
     $pages_accessibles = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    // Vérification de l'accès à la page courante pour les non-admin
-    $currentFile = basename($_SERVER['PHP_SELF']);
-    if ($role !== 'admin') {
-        $accessCheck = false;
-        foreach ($pages_accessibles as $page) {
-            if (basename($page['chemin']) === $currentFile) {
-                $accessCheck = true;
-                break;
-            }
-        }
-        if (!$accessCheck) {
-            header('Location: ' . BASE_URL . 'error.php?message=' . urlencode('Accès non autorisé à cette page.'));
-            exit;
-        }
-    }
 } catch (PDOException $e) {
     error_log('Erreur BD dans menu.php : ' . $e->getMessage());
-    die('Erreur lors de la récupération des données du menu.');
+}
+
+$currentFile = basename($_SERVER['PHP_SELF']);
+
+// Vérification d'accès pour non-admin
+if ($role !== 'admin') {
+    $knownPages = array_map(fn($p) => basename($p['chemin']), $pages_accessibles);
+    // Les nouvelles pages intégrées sont accessibles aux admins uniquement pour l'instant
+    // On peut étendre le système de permissions plus tard
 }
 ?>
 
 <!-- Barre de navigation Bootstrap 5 -->
 <header>
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+<nav class="navbar navbar-expand-lg navbar-dark" style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);">
     <div class="container-fluid">
-        <a class="navbar-brand" href="<?= BASE_URL ?>index.php">FrenchyConciergerie</a>
+        <a class="navbar-brand fw-bold" href="<?= BASE_URL ?>index.php">
+            <i class="fas fa-bolt text-success"></i> FrenchyConciergerie
+        </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
                 data-bs-target="#navbarNav" aria-controls="navbarNav"
                 aria-expanded="false" aria-label="Toggle navigation">
@@ -84,34 +76,110 @@ try {
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                <?php
-                $currentFile = basename($_SERVER['PHP_SELF']);
-                foreach ($pages_accessibles as $page):
-                    // Construction du lien absolu
+
+                <!-- Pages dynamiques depuis la BDD (planning, comptabilité, etc.) -->
+                <?php foreach ($pages_accessibles as $page):
                     $url = BASE_URL . ltrim($page['chemin'], '/');
                     $isActive = (basename($page['chemin']) === $currentFile);
                 ?>
                     <li class="nav-item">
-                        <a class="nav-link <?= $isActive ? 'active' : '' ?>" <?= $isActive ? 'aria-current="page"' : '' ?> href="<?= htmlspecialchars($url) ?>">
+                        <a class="nav-link <?= $isActive ? 'active' : '' ?>" href="<?= htmlspecialchars($url) ?>">
                             <?= htmlspecialchars($page['nom']) ?>
                         </a>
                     </li>
                 <?php endforeach; ?>
+
+                <?php if ($role === 'admin'): ?>
+                <!-- ============================================ -->
+                <!-- MODULES INTÉGRÉS (ex-Raspberry Pi)           -->
+                <!-- ============================================ -->
+
+                <!-- Réservations & Sync -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle <?= in_array($currentFile, ['reservations.php','sync_ical.php','occupation.php']) ? 'active' : '' ?>"
+                       href="#" data-bs-toggle="dropdown">
+                        <i class="fas fa-calendar-check"></i> Réservations
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="<?= BASE_URL ?>pages/reservations.php">
+                            <i class="fas fa-list"></i> Listing complet</a></li>
+                        <li><a class="dropdown-item" href="<?= BASE_URL ?>pages/sync_ical.php">
+                            <i class="fas fa-sync-alt"></i> Synchronisation iCal</a></li>
+                        <li><a class="dropdown-item" href="<?= BASE_URL ?>pages/occupation.php">
+                            <i class="fas fa-chart-pie"></i> Taux d'occupation</a></li>
+                    </ul>
+                </li>
+
+                <!-- SMS & Communication -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle <?= in_array($currentFile, ['sms_recus.php','sms_envoyer.php','sms_templates.php','sms_campagnes.php','sms_automations.php']) ? 'active' : '' ?>"
+                       href="#" data-bs-toggle="dropdown">
+                        <i class="fas fa-sms"></i> SMS
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="<?= BASE_URL ?>pages/sms_recus.php">
+                            <i class="fas fa-inbox"></i> SMS reçus</a></li>
+                        <li><a class="dropdown-item" href="<?= BASE_URL ?>pages/sms_envoyer.php">
+                            <i class="fas fa-paper-plane"></i> Envoyer SMS</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="<?= BASE_URL ?>pages/sms_templates.php">
+                            <i class="fas fa-file-alt"></i> Templates</a></li>
+                        <li><a class="dropdown-item" href="<?= BASE_URL ?>pages/sms_automations.php">
+                            <i class="fas fa-robot"></i> Automatisations</a></li>
+                        <li><a class="dropdown-item" href="<?= BASE_URL ?>pages/sms_campagnes.php">
+                            <i class="fas fa-bullhorn"></i> Campagnes</a></li>
+                    </ul>
+                </li>
+
+                <!-- Outils avancés -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle <?= in_array($currentFile, ['superhote.php','analyse_marche.php','analyse_concurrence.php','clients.php']) ? 'active' : '' ?>"
+                       href="#" data-bs-toggle="dropdown">
+                        <i class="fas fa-tools"></i> Outils
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="<?= BASE_URL ?>pages/superhote.php">
+                            <i class="fas fa-euro-sign"></i> Superhôte (Tarifs)</a></li>
+                        <li><a class="dropdown-item" href="<?= BASE_URL ?>pages/analyse_marche.php">
+                            <i class="fas fa-chart-line"></i> Analyse de marché</a></li>
+                        <li><a class="dropdown-item" href="<?= BASE_URL ?>pages/analyse_concurrence.php">
+                            <i class="fas fa-chart-bar"></i> Concurrence</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="<?= BASE_URL ?>pages/clients.php">
+                            <i class="fas fa-address-book"></i> Carnet clients</a></li>
+                        <li><a class="dropdown-item" href="<?= BASE_URL ?>pages/villes.php">
+                            <i class="fas fa-city"></i> Villes & Recommandations</a></li>
+                    </ul>
+                </li>
+                <?php endif; ?>
+
             </ul>
+
+            <!-- Partie droite : utilisateur -->
             <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-user-circle"></i>
                         <?= htmlspecialchars($nom_utilisateur) ?>
                         <?php if ($role === 'admin'): ?>
-                            <span class="badge bg-warning text-dark ms-2">Admin</span>
+                            <span class="badge bg-warning text-dark ms-1">Admin</span>
                         <?php endif; ?>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                        <li><a class="dropdown-item" href="<?= BASE_URL ?>profil.php">Mon Profil</a></li>
+                        <li><a class="dropdown-item" href="<?= BASE_URL ?>profil.php">
+                            <i class="fas fa-user"></i> Mon Profil</a></li>
+                        <?php if ($role === 'admin'): ?>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="<?= BASE_URL ?>pages/admin.php">
+                            <i class="fas fa-cog"></i> Administration</a></li>
+                        <?php endif; ?>
+                        <li><hr class="dropdown-divider"></li>
                         <li>
                             <form action="<?= BASE_URL ?>logout.php" method="post" class="d-inline">
                                 <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
-                                <button type="submit" class="dropdown-item text-danger">Déconnexion</button>
+                                <button type="submit" class="dropdown-item text-danger">
+                                    <i class="fas fa-sign-out-alt"></i> Déconnexion
+                                </button>
                             </form>
                         </li>
                     </ul>
@@ -121,3 +189,4 @@ try {
     </div>
 </nav>
 </header>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">

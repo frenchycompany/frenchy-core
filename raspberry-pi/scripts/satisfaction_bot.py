@@ -18,16 +18,22 @@ from collections import defaultdict
 #                         message=r".*PY_SSIZE_T_CLEAN will be required for '#' formats.*",
 #                         category=DeprecationWarning)
 
+# Répertoire de base du projet (résolu dynamiquement)
+import os
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+LOG_DIR = os.path.join(BASE_DIR, "logs")
+os.makedirs(LOG_DIR, exist_ok=True)
+
 # --- Logging ---
 logging.basicConfig(
-    filename="/home/raphael/sms_project/logs/satisfaction_bot.log",
+    filename=os.path.join(LOG_DIR, "satisfaction_bot.log"),
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
 # --- Config ---
 cfg = configparser.ConfigParser()
-cfg.read("/home/raphael/sms_project/config/config.ini")
+cfg.read(os.path.join(BASE_DIR, "config", "config.ini"))
 
 # Base de données
 DB_HOST = cfg["DATABASE"]["host"]

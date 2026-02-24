@@ -1,0 +1,44 @@
+# Variables d'environnement (contiennent les credentials)
+.env
+*.env
+!.env.example
+
+# Configuration sensible
+config/config.ini
+raspberry-pi/config/config.ini
+
+# Logs
+logs/
+*.log
+
+# Uploads utilisateurs
+uploads/
+ionos/gestion/uploads/
+
+# Cache
+.cache/
+*.cache
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Composer
+vendor/
+
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
+
+# Selenium
+raspberry-pi/scripts/selenium/chromedriver
+raspberry-pi/scripts/selenium/screenshots/
