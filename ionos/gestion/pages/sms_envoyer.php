@@ -6,6 +6,7 @@
 include '../config.php';
 include '../pages/menu.php';
 require_once __DIR__ . '/../includes/rpi_bridge.php';
+require_once __DIR__ . '/../includes/rpi_db.php';
 
 $feedback = '';
 
@@ -19,7 +20,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     if ($receiver !== '' && $message !== '') {
         try {
-            $stmt = $pdo->prepare("
+            $pdoRpi = getRpiPdo();
+            $stmt = $pdoRpi->prepare("
                 INSERT INTO sms_outbox (receiver, message, modem, status)
                 VALUES (:receiver, :message, :modem, 'pending')
             ");

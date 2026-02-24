@@ -17,18 +17,9 @@ session_start();
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 0) Connexion à la base SMS distante (réservations & sms_outbox)
-$hostSms   = '109.219.194.30';
-$portSms   = 3306;
-$dbSms     = 'sms_db';
-$userSms   = 'remote';
-$passSms   = 'remoteionos25';
+require_once __DIR__ . '/../includes/rpi_db.php';
 try {
-    $pdoSms = new PDO(
-        "mysql:host={$hostSms};port={$portSms};dbname={$dbSms};charset=utf8mb4",
-        $userSms,
-        $passSms,
-        [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
-    );
+    $pdoSms = getRpiPdo();
 } catch (PDOException $e) {
     http_response_code(500);
     die("Erreur connexion SMS-DB : " . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8'));
