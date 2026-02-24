@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion des SMS - Interface Moderne</title>
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- Barre de navigation moderne -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container">
+        <a class="navbar-brand" href="index_demo.html">
+            <i class="fas fa-comments"></i> Gestion SMS
+        </a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="#dashboard">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#reservations">
+                        <i class="fas fa-calendar-check"></i> Réservations
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#scenarios">
+                        <i class="fas fa-project-diagram"></i> Scénarios
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#sms">
+                        <i class="fas fa-inbox"></i> SMS reçus
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#envoyer">
+                        <i class="fas fa-paper-plane"></i> Envoyer
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container">
+    <!-- En-tête de bienvenue -->
+    <div class="text-center mt-5 mb-5">
+        <h1 class="display-4 font-weight-bold">
+            <i class="fas fa-comments text-gradient-primary"></i>
+            Interface de gestion SMS
+        </h1>
+        <p class="lead text-muted mt-3">
+            Gérez vos communications SMS, réservations et scénarios automatiques en toute simplicité
+        </p>
+        <hr class="my-4" style="max-width: 200px; border-top: 3px solid; border-image: linear-gradient(135deg, #667eea 0%, #764ba2 100%) 1;">
+    </div>
+
+    <!-- Cartes de navigation principales -->
+    <div class="row mt-5 justify-content-center">
+        <!-- SMS reçus -->
+        <div class="col-lg-6 col-md-6 mb-4">
+            <div class="card card-gradient-primary h-100">
+                <div class="card-body text-center p-4">
+                    <div class="mb-3">
+                        <i class="fas fa-inbox fa-4x icon-hover"></i>
+                    </div>
+                    <h4 class="card-title font-weight-bold">SMS reçus</h4>
+                    <p class="card-text">
+                        Consultez et gérez tous les messages entrants de vos clients par logement, date ou contact.
+                    </p>
+                    <a href="#" class="btn btn-light btn-lg mt-3">
+                        <i class="fas fa-arrow-right"></i> Accéder
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Envoyer un SMS -->
+        <div class="col-lg-6 col-md-6 mb-4">
+            <div class="card card-gradient-success h-100">
+                <div class="card-body text-center p-4">
+                    <div class="mb-3">
+                        <i class="fas fa-paper-plane fa-4x icon-hover"></i>
+                    </div>
+                    <h4 class="card-title font-weight-bold">Envoyer un SMS</h4>
+                    <p class="card-text">
+                        Rédigez et envoyez rapidement un SMS à un numéro ou un client spécifique.
+                    </p>
+                    <a href="#" class="btn btn-light btn-lg mt-3">
+                        <i class="fas fa-arrow-right"></i> Accéder
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Réservations -->
+        <div class="col-lg-6 col-md-6 mb-4">
+            <div class="card card-gradient-info h-100">
+                <div class="card-body text-center p-4">
+                    <div class="mb-3">
+                        <i class="fas fa-calendar-check fa-4x icon-hover"></i>
+                    </div>
+                    <h4 class="card-title font-weight-bold">Réservations</h4>
+                    <p class="card-text">
+                        Accédez à la liste complète des réservations avec détails clients et historique.
+                    </p>
+                    <a href="#" class="btn btn-light btn-lg mt-3">
+                        <i class="fas fa-arrow-right"></i> Accéder
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scénarios automatiques -->
+        <div class="col-lg-6 col-md-6 mb-4">
+            <div class="card card-gradient-warning h-100">
+                <div class="card-body text-center p-4">
+                    <div class="mb-3">
+                        <i class="fas fa-project-diagram fa-4x icon-hover"></i>
+                    </div>
+                    <h4 class="card-title font-weight-bold">Scénarios automatiques</h4>
+                    <p class="card-text">
+                        Configurez et gérez vos séquences automatisées H+2, H+8 et scénarios personnalisés.
+                    </p>
+                    <a href="#" class="btn btn-light btn-lg mt-3">
+                        <i class="fas fa-arrow-right"></i> Accéder
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section supplémentaire : Accès rapide -->
+    <div class="row mt-5 mb-5">
+        <div class="col-12">
+            <div class="card shadow-custom">
+                <div class="card-body p-4">
+                    <h3 class="text-center mb-4">
+                        <i class="fas fa-bolt text-warning"></i> Accès rapides
+                    </h3>
+                    <div class="row text-center">
+                        <div class="col-md-3 col-sm-6 mb-3">
+                            <a href="#" class="btn btn-outline-primary btn-block">
+                                <i class="fas fa-tachometer-alt"></i> Dashboard
+                            </a>
+                        </div>
+                        <div class="col-md-3 col-sm-6 mb-3">
+                            <a href="#" class="btn btn-outline-info btn-block">
+                                <i class="fas fa-comment-dots"></i> Conversations
+                            </a>
+                        </div>
+                        <div class="col-md-3 col-sm-6 mb-3">
+                            <a href="#" class="btn btn-outline-success btn-block">
+                                <i class="fas fa-building"></i> Comptes
+                            </a>
+                        </div>
+                        <div class="col-md-3 col-sm-6 mb-3">
+                            <a href="#" class="btn btn-outline-warning btn-block">
+                                <i class="fas fa-sync"></i> Sync iCal
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alerte d'information -->
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle"></i> <strong>Version de démonstration</strong> - Cette page montre le nouveau design de l'interface. Pour utiliser les fonctionnalités complètes, assurez-vous que MySQL est démarré.
+    </div>
+</div>
+
+<!-- Pied de page -->
+<footer class="bg-dark text-white text-center py-3 mt-4">
+    <p>&copy; 2025 Gestion des SMS - Tous droits réservés.</p>
+</footer>
+
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+<script src="js/script.js"></script>
+
+</body>
+</html>

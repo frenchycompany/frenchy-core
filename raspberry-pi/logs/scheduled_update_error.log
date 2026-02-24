@@ -1,0 +1,738 @@
+2026-02-01 16:03:19,347 - INFO - ============================================================
+2026-02-01 16:03:19,347 - INFO - MISE A JOUR QUOTIDIENNE SUPERHOTE
+2026-02-01 16:03:19,347 - INFO - Demarrage: 2026-02-01 16:03:19
+2026-02-01 16:03:19,347 - INFO - ============================================================
+2026-02-01 16:03:19,348 - INFO - Etape 1: Nettoyage des taches bloquees...
+2026-02-01 16:03:19,399 - INFO -   194 taches bloquees liberees
+2026-02-01 16:03:19,400 - INFO - Etape 2: Generation des prix...
+2026-02-01 16:03:19,417 - INFO -   17 logements actifs
+2026-02-01 16:03:19,444 - INFO -   256 anciennes taches supprimees
+2026-02-01 16:03:20,590 - WARNING -   GROUPE1: prix non configures, ignore
+2026-02-01 16:03:20,591 - WARNING -   GROUPE2: prix non configures, ignore
+2026-02-01 16:03:20,591 - WARNING -   GROUPE3: prix non configures, ignore
+2026-02-01 16:03:20,591 - INFO -   434 mises a jour generees pour 17 logements
+2026-02-01 16:03:20,592 - INFO - Etape 3: Lancement des workers...
+2026-02-01 16:03:20,596 - INFO -   434 taches en attente
+2026-02-01 16:03:20,597 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 2 --groups
+2026-02-01 16:17:23,345 - INFO -   Workers termines en 842.7s
+2026-02-01 16:17:23,378 - INFO - ============================================================
+2026-02-01 16:17:23,379 - INFO - RESUME
+2026-02-01 16:17:23,379 - INFO -   Duree: 844.0s
+2026-02-01 16:17:23,380 - INFO -   Logements: 17
+2026-02-01 16:17:23,380 - INFO -   Mises a jour: 434
+2026-02-01 16:17:23,380 - INFO -   Stats finales: {'pending': 186, 'completed': 412, 'failed': 14}
+2026-02-01 16:17:23,381 - INFO - ============================================================
+2026-02-02 07:02:17,942 - INFO - ============================================================
+2026-02-02 07:02:17,944 - INFO - MISE A JOUR QUOTIDIENNE SUPERHOTE
+2026-02-02 07:02:17,944 - INFO - Demarrage: 2026-02-02 07:02:17
+2026-02-02 07:02:17,944 - INFO - ============================================================
+2026-02-02 07:02:17,944 - INFO - Etape 1: Nettoyage des taches bloquees...
+2026-02-02 07:02:17,968 - INFO -   16 taches bloquees liberees
+2026-02-02 07:02:17,969 - INFO - Etape 2: Generation des prix...
+2026-02-02 07:02:17,982 - INFO -   17 logements actifs
+2026-02-02 07:02:17,988 - INFO -   16 anciennes taches supprimees
+2026-02-02 07:02:19,262 - WARNING -   GROUPE1: prix non configures, ignore
+2026-02-02 07:02:19,263 - WARNING -   GROUPE2: prix non configures, ignore
+2026-02-02 07:02:19,263 - WARNING -   GROUPE3: prix non configures, ignore
+2026-02-02 07:02:19,263 - INFO -   434 mises a jour generees pour 17 logements
+2026-02-02 07:02:19,264 - INFO - Etape 3: Lancement des workers...
+2026-02-02 07:02:19,268 - INFO -   434 taches en attente
+2026-02-02 07:02:19,285 - INFO -   Iteration 1: 434 pending dans 4 groupes:
+2026-02-02 07:02:19,285 - INFO -     - GROUPE1: 186 taches
+2026-02-02 07:02:19,285 - INFO -     - GROUPE3: 155 taches
+2026-02-02 07:02:19,285 - INFO -     - GROUPE2: 62 taches
+2026-02-02 07:02:19,285 - INFO -     - ORPHELINS: 31 taches
+2026-02-02 07:02:19,286 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-02 07:03:32,808 - WARNING -   Iteration 1: Aucune progression (434 pending) - tentative 1/3
+2026-02-02 07:03:38,574 - INFO -   Iteration 2: 434 pending dans 4 groupes:
+2026-02-02 07:03:38,575 - INFO -     - GROUPE1: 186 taches
+2026-02-02 07:03:38,575 - INFO -     - GROUPE3: 155 taches
+2026-02-02 07:03:38,575 - INFO -     - GROUPE2: 62 taches
+2026-02-02 07:03:38,575 - INFO -     - ORPHELINS: 31 taches
+2026-02-02 07:03:38,575 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-02 07:05:37,639 - WARNING -   Iteration 2: Aucune progression (434 pending) - tentative 2/3
+2026-02-02 07:05:43,369 - INFO -   Iteration 3: 434 pending dans 4 groupes:
+2026-02-02 07:05:43,369 - INFO -     - GROUPE1: 186 taches
+2026-02-02 07:05:43,370 - INFO -     - GROUPE3: 155 taches
+2026-02-02 07:05:43,370 - INFO -     - GROUPE2: 62 taches
+2026-02-02 07:05:43,370 - INFO -     - ORPHELINS: 31 taches
+2026-02-02 07:05:43,370 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-02 07:07:56,485 - WARNING -   Iteration 3: Aucune progression (434 pending) - tentative 3/3
+2026-02-02 07:07:56,519 - ERROR -   3 iterations sans progression, arret.
+2026-02-02 07:07:56,559 - INFO -   Workers termines en 337.3s apres 3 iterations
+2026-02-02 07:07:56,560 - INFO -   Resultat: 0 traitees, 434 restantes
+2026-02-02 07:07:56,599 - INFO - ============================================================
+2026-02-02 07:07:56,600 - INFO - RESUME
+2026-02-02 07:07:56,600 - INFO -   Duree: 338.7s
+2026-02-02 07:07:56,600 - INFO -   Logements: 17
+2026-02-02 07:07:56,601 - INFO -   Mises a jour: 434
+2026-02-02 07:07:56,607 - INFO -   Stats finales: {'pending': 434, 'completed': 418}
+2026-02-02 07:07:56,607 - INFO - ============================================================
+2026-02-03 07:00:16,947 - INFO - ============================================================
+2026-02-03 07:00:16,948 - INFO - MISE A JOUR QUOTIDIENNE SUPERHOTE
+2026-02-03 07:00:16,948 - INFO - Demarrage: 2026-02-03 07:00:16
+2026-02-03 07:00:16,948 - INFO - ============================================================
+2026-02-03 07:00:16,948 - INFO - Etape 1: Nettoyage des taches bloquees...
+2026-02-03 07:00:16,966 - INFO -   Aucune tache bloquee
+2026-02-03 07:00:16,966 - INFO - Etape 2: Generation des prix...
+2026-02-03 07:00:16,980 - INFO -   21 logements actifs
+2026-02-03 07:00:17,024 - INFO -   434 anciennes taches supprimees
+2026-02-03 07:00:18,297 - WARNING -   GROUPE1: prix non configures, ignore
+2026-02-03 07:00:18,298 - WARNING -   GROUPE2: prix non configures, ignore
+2026-02-03 07:00:18,298 - WARNING -   GROUPE3: prix non configures, ignore
+2026-02-03 07:00:18,663 - INFO -   558 mises a jour generees pour 21 logements
+2026-02-03 07:00:18,663 - INFO - Etape 3: Lancement des workers...
+2026-02-03 07:00:18,668 - INFO -   558 taches en attente
+2026-02-03 07:00:18,684 - INFO -   Iteration 1: 558 pending dans 5 groupes:
+2026-02-03 07:00:18,685 - INFO -     - GROUPE1: 186 taches
+2026-02-03 07:00:18,685 - INFO -     - GROUPE3: 155 taches
+2026-02-03 07:00:18,685 - INFO -     - GROUPE4: 93 taches
+2026-02-03 07:00:18,685 - INFO -     - GROUPE2: 93 taches
+2026-02-03 07:00:18,685 - INFO -     - ORPHELINS: 31 taches
+2026-02-03 07:00:18,685 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-03 07:02:16,103 - WARNING -   Iteration 1: Aucune progression (558 pending) - tentative 1/3
+2026-02-03 07:02:22,245 - INFO -   Iteration 2: 558 pending dans 5 groupes:
+2026-02-03 07:02:22,246 - INFO -     - GROUPE1: 186 taches
+2026-02-03 07:02:22,246 - INFO -     - GROUPE3: 155 taches
+2026-02-03 07:02:22,246 - INFO -     - GROUPE4: 93 taches
+2026-02-03 07:02:22,246 - INFO -     - GROUPE2: 93 taches
+2026-02-03 07:02:22,246 - INFO -     - ORPHELINS: 31 taches
+2026-02-03 07:02:22,246 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-03 07:04:29,588 - WARNING -   Iteration 2: Aucune progression (558 pending) - tentative 2/3
+2026-02-03 07:04:40,764 - INFO -   Iteration 3: 558 pending dans 5 groupes:
+2026-02-03 07:04:40,842 - INFO -     - GROUPE1: 186 taches
+2026-02-03 07:04:40,843 - INFO -     - GROUPE3: 155 taches
+2026-02-03 07:04:40,843 - INFO -     - GROUPE2: 93 taches
+2026-02-03 07:04:40,843 - INFO -     - GROUPE4: 93 taches
+2026-02-03 07:04:40,843 - INFO -     - ORPHELINS: 31 taches
+2026-02-03 07:04:40,843 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-03 07:07:39,821 - WARNING -   Iteration 3: Aucune progression (558 pending) - tentative 3/3
+2026-02-03 07:07:40,066 - ERROR -   3 iterations sans progression, arret.
+2026-02-03 07:07:41,669 - INFO -   Workers termines en 441.4s apres 3 iterations
+2026-02-03 07:07:41,670 - INFO -   Resultat: 0 traitees, 558 restantes
+2026-02-03 07:07:41,775 - INFO - ============================================================
+2026-02-03 07:07:41,776 - INFO - RESUME
+2026-02-03 07:07:41,776 - INFO -   Duree: 444.9s
+2026-02-03 07:07:41,776 - INFO -   Logements: 21
+2026-02-03 07:07:41,777 - INFO -   Mises a jour: 558
+2026-02-03 07:07:41,777 - INFO -   Stats finales: {'pending': 558}
+2026-02-03 07:07:41,777 - INFO - ============================================================
+2026-02-03 13:36:25,428 - INFO - ============================================================
+2026-02-03 13:36:25,465 - INFO - MISE A JOUR QUOTIDIENNE SUPERHOTE
+2026-02-03 13:36:25,465 - INFO - Demarrage: 2026-02-03 13:36:25
+2026-02-03 13:36:25,465 - INFO - ============================================================
+2026-02-03 13:36:25,466 - INFO - Etape 1: Nettoyage des taches bloquees...
+2026-02-03 13:36:25,851 - INFO -   Aucune tache bloquee
+2026-02-03 13:36:25,851 - INFO - Etape 2: Generation des prix...
+2026-02-03 13:36:26,003 - INFO -   21 logements actifs
+2026-02-03 13:36:26,126 - INFO -   558 anciennes taches supprimees
+2026-02-03 13:36:30,339 - WARNING -   GROUPE1: prix non configures, ignore
+2026-02-03 13:36:30,339 - WARNING -   GROUPE2: prix non configures, ignore
+2026-02-03 13:36:30,339 - WARNING -   GROUPE3: prix non configures, ignore
+2026-02-03 13:36:31,121 - INFO -   558 mises a jour generees pour 21 logements
+2026-02-03 13:36:31,122 - INFO - Etape 3: Lancement des workers...
+2026-02-03 13:36:31,134 - INFO -   558 taches en attente
+2026-02-03 13:36:31,156 - INFO -   Iteration 1: 558 pending dans 5 groupes:
+2026-02-03 13:36:31,157 - INFO -     - GROUPE1: 186 taches
+2026-02-03 13:36:31,158 - INFO -     - GROUPE3: 155 taches
+2026-02-03 13:36:31,159 - INFO -     - GROUPE4: 93 taches
+2026-02-03 13:36:31,159 - INFO -     - GROUPE2: 93 taches
+2026-02-03 13:36:31,160 - INFO -     - ORPHELINS: 31 taches
+2026-02-03 13:36:31,160 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-03 13:56:40,484 - INFO -   Iteration 1: 186 taches traitees, reste 372
+2026-02-03 13:56:45,504 - INFO -   Iteration 2: 372 pending dans 4 groupes:
+2026-02-03 13:56:45,505 - INFO -     - GROUPE3: 155 taches
+2026-02-03 13:56:45,505 - INFO -     - GROUPE2: 93 taches
+2026-02-03 13:56:45,505 - INFO -     - GROUPE4: 93 taches
+2026-02-03 13:56:45,505 - INFO -     - ORPHELINS: 31 taches
+2026-02-03 13:56:45,505 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-03 14:11:03,924 - INFO -   Iteration 2: 93 taches traitees, reste 279
+2026-02-03 14:11:08,943 - INFO -   Iteration 3: 279 pending dans 3 groupes:
+2026-02-03 14:11:08,943 - INFO -     - GROUPE3: 155 taches
+2026-02-03 14:11:08,943 - INFO -     - GROUPE4: 93 taches
+2026-02-03 14:11:08,943 - INFO -     - ORPHELINS: 31 taches
+2026-02-03 14:11:08,944 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-03 14:26:19,278 - INFO -   Iteration 3: 155 taches traitees, reste 124
+2026-02-03 14:26:24,302 - INFO -   Iteration 4: 124 pending dans 2 groupes:
+2026-02-03 14:26:24,302 - INFO -     - GROUPE4: 93 taches
+2026-02-03 14:26:24,303 - INFO -     - ORPHELINS: 31 taches
+2026-02-03 14:26:24,303 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-03 14:27:39,635 - WARNING -   Iteration 4: Aucune progression (124 pending) - tentative 1/3
+2026-02-03 14:27:44,665 - INFO -   Iteration 5: 124 pending dans 2 groupes:
+2026-02-03 14:27:44,665 - INFO -     - GROUPE4: 93 taches
+2026-02-03 14:27:44,666 - INFO -     - ORPHELINS: 31 taches
+2026-02-03 14:27:44,666 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-03 14:29:00,720 - WARNING -   Iteration 5: Aucune progression (124 pending) - tentative 2/3
+2026-02-03 14:29:05,749 - INFO -   Iteration 6: 124 pending dans 2 groupes:
+2026-02-03 14:29:05,750 - INFO -     - GROUPE4: 93 taches
+2026-02-03 14:29:05,751 - INFO -     - ORPHELINS: 31 taches
+2026-02-03 14:29:05,751 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-03 14:30:25,690 - WARNING -   Iteration 6: Aucune progression (124 pending) - tentative 3/3
+2026-02-03 14:30:25,691 - ERROR -   3 iterations sans progression, arret.
+2026-02-03 14:30:25,697 - INFO -   Workers termines en 3234.6s apres 6 iterations
+2026-02-03 14:30:25,697 - INFO -   Resultat: 434 traitees, 124 restantes
+2026-02-03 14:30:25,707 - INFO - ============================================================
+2026-02-03 14:30:25,707 - INFO - RESUME
+2026-02-03 14:30:25,707 - INFO -   Duree: 3240.3s
+2026-02-03 14:30:25,707 - INFO -   Logements: 21
+2026-02-03 14:30:25,708 - INFO -   Mises a jour: 558
+2026-02-03 14:30:25,708 - INFO -   Stats finales: {'pending': 124, 'completed': 434}
+2026-02-03 14:30:25,708 - INFO - ============================================================
+2026-02-04 07:04:09,176 - INFO - ============================================================
+2026-02-04 07:04:09,179 - INFO - MISE A JOUR QUOTIDIENNE SUPERHOTE
+2026-02-04 07:04:09,179 - INFO - Demarrage: 2026-02-04 07:04:09
+2026-02-04 07:04:09,179 - INFO - ============================================================
+2026-02-04 07:04:09,179 - INFO - Etape 1: Nettoyage des taches bloquees...
+2026-02-04 07:04:09,203 - INFO -   14 taches bloquees liberees
+2026-02-04 07:04:09,203 - INFO - Etape 2: Generation des prix...
+2026-02-04 07:04:09,217 - INFO -   21 logements actifs
+2026-02-04 07:04:09,221 - INFO -   14 anciennes taches supprimees
+2026-02-04 07:04:10,335 - WARNING -   GROUPE1: prix non configures, ignore
+2026-02-04 07:04:10,336 - WARNING -   GROUPE2: prix non configures, ignore
+2026-02-04 07:04:10,336 - WARNING -   GROUPE3: prix non configures, ignore
+2026-02-04 07:04:10,640 - INFO -   558 mises a jour generees pour 21 logements
+2026-02-04 07:04:10,641 - INFO - Etape 3: Lancement des workers...
+2026-02-04 07:04:10,646 - INFO -   558 taches en attente
+2026-02-04 07:04:10,661 - INFO -   Iteration 1: 558 pending dans 5 groupes:
+2026-02-04 07:04:10,661 - INFO -     - GROUPE1: 186 taches
+2026-02-04 07:04:10,661 - INFO -     - GROUPE3: 155 taches
+2026-02-04 07:04:10,661 - INFO -     - GROUPE2: 93 taches
+2026-02-04 07:04:10,662 - INFO -     - GROUPE4: 93 taches
+2026-02-04 07:04:10,662 - INFO -     - ORPHELINS: 31 taches
+2026-02-04 07:04:10,662 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-04 07:13:02,350 - INFO -   Iteration 1: 186 taches traitees, reste 372
+2026-02-04 07:13:07,405 - INFO -   Iteration 2: 372 pending dans 4 groupes:
+2026-02-04 07:13:07,406 - INFO -     - GROUPE3: 155 taches
+2026-02-04 07:13:07,406 - INFO -     - GROUPE4: 93 taches
+2026-02-04 07:13:07,407 - INFO -     - GROUPE2: 93 taches
+2026-02-04 07:13:07,407 - INFO -     - ORPHELINS: 31 taches
+2026-02-04 07:13:07,408 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-04 07:22:10,024 - INFO -   Iteration 2: 93 taches traitees, reste 279
+2026-02-04 07:22:15,062 - INFO -   Iteration 3: 279 pending dans 3 groupes:
+2026-02-04 07:22:15,062 - INFO -     - GROUPE3: 155 taches
+2026-02-04 07:22:15,063 - INFO -     - GROUPE4: 93 taches
+2026-02-04 07:22:15,063 - INFO -     - ORPHELINS: 31 taches
+2026-02-04 07:22:15,064 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-04 07:31:17,251 - INFO -   Iteration 3: 155 taches traitees, reste 124
+2026-02-04 07:31:22,297 - INFO -   Iteration 4: 124 pending dans 2 groupes:
+2026-02-04 07:31:22,297 - INFO -     - GROUPE4: 93 taches
+2026-02-04 07:31:22,298 - INFO -     - ORPHELINS: 31 taches
+2026-02-04 07:31:22,298 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-04 07:40:33,457 - INFO -   Iteration 4: 93 taches traitees, reste 31
+2026-02-04 07:40:38,485 - INFO -   Iteration 5: 31 pending dans 1 groupes:
+2026-02-04 07:40:38,485 - INFO -     - ORPHELINS: 31 taches
+2026-02-04 07:40:38,486 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-04 07:41:50,650 - WARNING -   Iteration 5: Aucune progression (31 pending) - tentative 1/3
+2026-02-04 07:41:55,814 - INFO -   Iteration 6: 31 pending dans 1 groupes:
+2026-02-04 07:41:55,814 - INFO -     - ORPHELINS: 31 taches
+2026-02-04 07:41:55,814 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-04 07:43:46,637 - WARNING -   Iteration 6: Aucune progression (31 pending) - tentative 2/3
+2026-02-04 07:43:51,753 - INFO -   Iteration 7: 31 pending dans 1 groupes:
+2026-02-04 07:43:51,754 - INFO -     - ORPHELINS: 31 taches
+2026-02-04 07:43:51,754 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-04 07:46:10,590 - WARNING -   Iteration 7: Aucune progression (31 pending) - tentative 3/3
+2026-02-04 07:46:10,755 - ERROR -   3 iterations sans progression, arret.
+2026-02-04 07:46:10,965 - INFO -   Workers termines en 2520.1s apres 7 iterations
+2026-02-04 07:46:10,965 - INFO -   Resultat: 527 traitees, 31 restantes
+2026-02-04 07:46:11,012 - INFO - ============================================================
+2026-02-04 07:46:11,013 - INFO - RESUME
+2026-02-04 07:46:11,013 - INFO -   Duree: 2521.8s
+2026-02-04 07:46:11,013 - INFO -   Logements: 21
+2026-02-04 07:46:11,013 - INFO -   Mises a jour: 558
+2026-02-04 07:46:11,013 - INFO -   Stats finales: {'pending': 31, 'completed': 978, 'failed': 527}
+2026-02-04 07:46:11,014 - INFO - ============================================================
+2026-02-05 07:03:59,115 - INFO - ============================================================
+2026-02-05 07:03:59,118 - INFO - MISE A JOUR QUOTIDIENNE SUPERHOTE
+2026-02-05 07:03:59,118 - INFO - Demarrage: 2026-02-05 07:03:59
+2026-02-05 07:03:59,118 - INFO - ============================================================
+2026-02-05 07:03:59,118 - INFO - Etape 1: Nettoyage des taches bloquees...
+2026-02-05 07:03:59,131 - INFO -   14 taches bloquees liberees
+2026-02-05 07:03:59,132 - INFO - Etape 2: Generation des prix...
+2026-02-05 07:03:59,141 - INFO -   20 logements actifs
+2026-02-05 07:03:59,145 - INFO -   14 anciennes taches supprimees
+2026-02-05 07:04:00,722 - WARNING -   GROUPE1: prix non configures, ignore
+2026-02-05 07:04:00,722 - WARNING -   GROUPE2: prix non configures, ignore
+2026-02-05 07:04:00,722 - WARNING -   GROUPE3: prix non configures, ignore
+2026-02-05 07:04:00,958 - INFO -   527 mises a jour generees pour 20 logements
+2026-02-05 07:04:00,958 - INFO - Etape 3: Lancement des workers...
+2026-02-05 07:04:00,963 - INFO -   527 taches en attente
+2026-02-05 07:04:00,979 - INFO -   Iteration 1: 527 pending dans 5 groupes:
+2026-02-05 07:04:00,979 - INFO -     - GROUPE1: 186 taches
+2026-02-05 07:04:00,980 - INFO -     - GROUPE3: 155 taches
+2026-02-05 07:04:00,980 - INFO -     - GROUPE2: 93 taches
+2026-02-05 07:04:00,980 - INFO -     - GROUPE4: 62 taches
+2026-02-05 07:04:00,980 - INFO -     - ORPHELINS: 31 taches
+2026-02-05 07:04:00,980 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-05 07:18:08,314 - INFO -   Iteration 1: 186 taches traitees, reste 341
+2026-02-05 07:18:13,359 - INFO -   Iteration 2: 341 pending dans 4 groupes:
+2026-02-05 07:18:13,360 - INFO -     - GROUPE3: 155 taches
+2026-02-05 07:18:13,361 - INFO -     - GROUPE2: 93 taches
+2026-02-05 07:18:13,362 - INFO -     - GROUPE4: 62 taches
+2026-02-05 07:18:13,362 - INFO -     - ORPHELINS: 31 taches
+2026-02-05 07:18:13,362 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-05 07:31:28,863 - INFO -   Iteration 2: 93 taches traitees, reste 248
+2026-02-05 07:31:33,901 - INFO -   Iteration 3: 248 pending dans 3 groupes:
+2026-02-05 07:31:33,902 - INFO -     - GROUPE3: 155 taches
+2026-02-05 07:31:33,902 - INFO -     - GROUPE4: 62 taches
+2026-02-05 07:31:33,902 - INFO -     - ORPHELINS: 31 taches
+2026-02-05 07:31:33,903 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-05 07:45:42,932 - INFO -   Iteration 3: 155 taches traitees, reste 93
+2026-02-05 07:45:47,965 - INFO -   Iteration 4: 93 pending dans 2 groupes:
+2026-02-05 07:45:47,965 - INFO -     - GROUPE4: 62 taches
+2026-02-05 07:45:47,966 - INFO -     - ORPHELINS: 31 taches
+2026-02-05 07:45:47,966 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-05 07:58:36,284 - INFO -   Iteration 4: 62 taches traitees, reste 31
+2026-02-05 07:58:41,315 - INFO -   Iteration 5: 31 pending dans 1 groupes:
+2026-02-05 07:58:41,316 - INFO -     - ORPHELINS: 31 taches
+2026-02-05 07:58:41,317 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-05 08:06:36,840 - INFO -   Iteration 5: 31 taches traitees, reste 0
+2026-02-05 08:06:41,854 - INFO -   Iteration 6: Plus de taches pending, fin.
+2026-02-05 08:06:41,863 - INFO -   Workers termines en 3760.9s apres 6 iterations
+2026-02-05 08:06:41,864 - INFO -   Resultat: 527 traitees, 0 restantes
+2026-02-05 08:06:41,912 - INFO - ============================================================
+2026-02-05 08:06:41,913 - INFO - RESUME
+2026-02-05 08:06:41,913 - INFO -   Duree: 3762.8s
+2026-02-05 08:06:41,913 - INFO -   Logements: 20
+2026-02-05 08:06:41,914 - INFO -   Mises a jour: 527
+2026-02-05 08:06:41,914 - INFO -   Stats finales: {'processing': 15, 'completed': 1025, 'failed': 527}
+2026-02-05 08:06:41,914 - INFO - ============================================================
+2026-02-06 07:04:08,495 - INFO - ============================================================
+2026-02-06 07:04:08,495 - INFO - MISE A JOUR QUOTIDIENNE SUPERHOTE
+2026-02-06 07:04:08,495 - INFO - Demarrage: 2026-02-06 07:04:08
+2026-02-06 07:04:08,495 - INFO - ============================================================
+2026-02-06 07:04:08,496 - INFO - Etape 1: Nettoyage des taches bloquees...
+2026-02-06 07:04:08,515 - INFO -   15 taches bloquees liberees
+2026-02-06 07:04:08,516 - INFO - Etape 2: Generation des prix...
+2026-02-06 07:04:08,526 - INFO -   20 logements actifs
+2026-02-06 07:04:08,530 - INFO -   15 anciennes taches supprimees
+2026-02-06 07:04:09,772 - WARNING -   GROUPE1: prix non configures, ignore
+2026-02-06 07:04:09,773 - WARNING -   GROUPE2: prix non configures, ignore
+2026-02-06 07:04:09,773 - WARNING -   GROUPE3: prix non configures, ignore
+2026-02-06 07:04:10,094 - INFO -   527 mises a jour generees pour 20 logements
+2026-02-06 07:04:10,095 - INFO - Etape 3: Lancement des workers...
+2026-02-06 07:04:10,099 - INFO -   527 taches en attente
+2026-02-06 07:04:10,116 - INFO -   Iteration 1: 527 pending dans 5 groupes:
+2026-02-06 07:04:10,116 - INFO -     - GROUPE1: 186 taches
+2026-02-06 07:04:10,116 - INFO -     - GROUPE3: 155 taches
+2026-02-06 07:04:10,117 - INFO -     - GROUPE2: 93 taches
+2026-02-06 07:04:10,117 - INFO -     - GROUPE4: 62 taches
+2026-02-06 07:04:10,117 - INFO -     - ORPHELINS: 31 taches
+2026-02-06 07:04:10,117 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-06 07:18:19,609 - INFO -   Iteration 1: 186 taches traitees, reste 341
+2026-02-06 07:18:24,656 - INFO -   Iteration 2: 341 pending dans 4 groupes:
+2026-02-06 07:18:24,657 - INFO -     - GROUPE3: 155 taches
+2026-02-06 07:18:24,657 - INFO -     - GROUPE2: 93 taches
+2026-02-06 07:18:24,657 - INFO -     - GROUPE4: 62 taches
+2026-02-06 07:18:24,658 - INFO -     - ORPHELINS: 31 taches
+2026-02-06 07:18:24,658 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-06 07:31:41,734 - INFO -   Iteration 2: 93 taches traitees, reste 248
+2026-02-06 07:31:46,774 - INFO -   Iteration 3: 248 pending dans 3 groupes:
+2026-02-06 07:31:46,775 - INFO -     - GROUPE3: 155 taches
+2026-02-06 07:31:46,775 - INFO -     - GROUPE4: 62 taches
+2026-02-06 07:31:46,776 - INFO -     - ORPHELINS: 31 taches
+2026-02-06 07:31:46,776 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-06 07:45:53,614 - INFO -   Iteration 3: 155 taches traitees, reste 93
+2026-02-06 07:45:58,648 - INFO -   Iteration 4: 93 pending dans 2 groupes:
+2026-02-06 07:45:58,649 - INFO -     - GROUPE4: 62 taches
+2026-02-06 07:45:58,650 - INFO -     - ORPHELINS: 31 taches
+2026-02-06 07:45:58,650 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-06 07:58:51,756 - INFO -   Iteration 4: 62 taches traitees, reste 31
+2026-02-06 07:58:56,785 - INFO -   Iteration 5: 31 pending dans 1 groupes:
+2026-02-06 07:58:56,786 - INFO -     - ORPHELINS: 31 taches
+2026-02-06 07:58:56,786 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-06 08:06:39,693 - INFO -   Iteration 5: 31 taches traitees, reste 0
+2026-02-06 08:06:44,704 - INFO -   Iteration 6: Plus de taches pending, fin.
+2026-02-06 08:06:44,714 - INFO -   Workers termines en 3754.6s apres 6 iterations
+2026-02-06 08:06:44,715 - INFO -   Resultat: 527 traitees, 0 restantes
+2026-02-06 08:06:44,784 - INFO - ============================================================
+2026-02-06 08:06:44,784 - INFO - RESUME
+2026-02-06 08:06:44,785 - INFO -   Duree: 3756.3s
+2026-02-06 08:06:44,785 - INFO -   Logements: 20
+2026-02-06 08:06:44,786 - INFO -   Mises a jour: 527
+2026-02-06 08:06:44,786 - INFO -   Stats finales: {'processing': 15, 'completed': 512}
+2026-02-06 08:06:44,787 - INFO - ============================================================
+2026-02-07 07:00:57,841 - INFO - ============================================================
+2026-02-07 07:00:57,841 - INFO - MISE A JOUR QUOTIDIENNE SUPERHOTE
+2026-02-07 07:00:57,841 - INFO - Demarrage: 2026-02-07 07:00:57
+2026-02-07 07:00:57,841 - INFO - ============================================================
+2026-02-07 07:00:57,842 - INFO - Etape 1: Nettoyage des taches bloquees...
+2026-02-07 07:00:57,853 - INFO -   15 taches bloquees liberees
+2026-02-07 07:00:57,854 - INFO - Etape 2: Generation des prix...
+2026-02-07 07:00:57,863 - INFO -   20 logements actifs
+2026-02-07 07:00:57,870 - INFO -   46 anciennes taches supprimees
+2026-02-07 07:00:58,946 - WARNING -   GROUPE1: prix non configures, ignore
+2026-02-07 07:00:58,947 - WARNING -   GROUPE2: prix non configures, ignore
+2026-02-07 07:00:58,947 - WARNING -   GROUPE3: prix non configures, ignore
+2026-02-07 07:00:59,182 - INFO -   527 mises a jour generees pour 20 logements
+2026-02-07 07:00:59,183 - INFO - Etape 3: Lancement des workers...
+2026-02-07 07:00:59,188 - INFO -   527 taches en attente
+2026-02-07 07:00:59,205 - INFO -   Iteration 1: 527 pending dans 5 groupes:
+2026-02-07 07:00:59,205 - INFO -     - GROUPE1: 186 taches
+2026-02-07 07:00:59,206 - INFO -     - GROUPE3: 155 taches
+2026-02-07 07:00:59,206 - INFO -     - GROUPE2: 93 taches
+2026-02-07 07:00:59,206 - INFO -     - GROUPE4: 62 taches
+2026-02-07 07:00:59,206 - INFO -     - ORPHELINS: 31 taches
+2026-02-07 07:00:59,206 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-07 07:10:20,330 - INFO -   Iteration 1: 186 taches traitees, reste 341
+2026-02-07 07:10:25,379 - INFO -   Iteration 2: 341 pending dans 4 groupes:
+2026-02-07 07:10:25,380 - INFO -     - GROUPE3: 155 taches
+2026-02-07 07:10:25,381 - INFO -     - GROUPE2: 93 taches
+2026-02-07 07:10:25,381 - INFO -     - GROUPE4: 62 taches
+2026-02-07 07:10:25,382 - INFO -     - ORPHELINS: 31 taches
+2026-02-07 07:10:25,382 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-07 07:19:43,145 - INFO -   Iteration 2: 93 taches traitees, reste 248
+2026-02-07 07:19:48,186 - INFO -   Iteration 3: 248 pending dans 3 groupes:
+2026-02-07 07:19:48,186 - INFO -     - GROUPE3: 155 taches
+2026-02-07 07:19:48,187 - INFO -     - GROUPE4: 62 taches
+2026-02-07 07:19:48,187 - INFO -     - ORPHELINS: 31 taches
+2026-02-07 07:19:48,188 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-07 07:29:07,538 - INFO -   Iteration 3: 155 taches traitees, reste 93
+2026-02-07 07:29:12,574 - INFO -   Iteration 4: 93 pending dans 2 groupes:
+2026-02-07 07:29:12,575 - INFO -     - GROUPE4: 62 taches
+2026-02-07 07:29:12,575 - INFO -     - ORPHELINS: 31 taches
+2026-02-07 07:29:12,576 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-07 07:38:31,036 - INFO -   Iteration 4: 62 taches traitees, reste 31
+2026-02-07 07:38:36,061 - INFO -   Iteration 5: 31 pending dans 1 groupes:
+2026-02-07 07:38:36,062 - INFO -     - ORPHELINS: 31 taches
+2026-02-07 07:38:36,062 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-07 07:45:08,145 - INFO -   Iteration 5: 31 taches traitees, reste 0
+2026-02-07 07:45:13,159 - INFO -   Iteration 6: Plus de taches pending, fin.
+2026-02-07 07:45:13,185 - INFO -   Workers termines en 2654.0s apres 6 iterations
+2026-02-07 07:45:13,186 - INFO -   Resultat: 527 traitees, 0 restantes
+2026-02-07 07:45:13,258 - INFO - ============================================================
+2026-02-07 07:45:13,259 - INFO - RESUME
+2026-02-07 07:45:13,259 - INFO -   Duree: 2655.4s
+2026-02-07 07:45:13,259 - INFO -   Logements: 20
+2026-02-07 07:45:13,259 - INFO -   Mises a jour: 527
+2026-02-07 07:45:13,259 - INFO -   Stats finales: {'processing': 13, 'failed': 514}
+2026-02-07 07:45:13,260 - INFO - ============================================================
+2026-02-08 07:03:17,342 - INFO - ============================================================
+2026-02-08 07:03:17,344 - INFO - MISE A JOUR QUOTIDIENNE SUPERHOTE
+2026-02-08 07:03:17,344 - INFO - Demarrage: 2026-02-08 07:03:17
+2026-02-08 07:03:17,344 - INFO - ============================================================
+2026-02-08 07:03:17,345 - INFO - Etape 1: Nettoyage des taches bloquees...
+2026-02-08 07:03:17,364 - INFO -   42 taches bloquees liberees
+2026-02-08 07:03:17,365 - INFO - Etape 2: Generation des prix...
+2026-02-08 07:03:17,375 - INFO -   21 logements actifs
+2026-02-08 07:03:17,382 - INFO -   42 anciennes taches supprimees
+2026-02-08 07:03:18,783 - WARNING -   GROUPE1: prix non configures, ignore
+2026-02-08 07:03:18,783 - WARNING -   GROUPE2: prix non configures, ignore
+2026-02-08 07:03:18,783 - WARNING -   GROUPE3: prix non configures, ignore
+2026-02-08 07:03:19,259 - INFO -   558 mises a jour generees pour 21 logements
+2026-02-08 07:03:19,260 - INFO - Etape 3: Lancement des workers...
+2026-02-08 07:03:19,265 - INFO -   558 taches en attente
+2026-02-08 07:03:19,284 - INFO -   Iteration 1: 558 pending dans 5 groupes:
+2026-02-08 07:03:19,285 - INFO -     - GROUPE1: 186 taches
+2026-02-08 07:03:19,285 - INFO -     - GROUPE3: 155 taches
+2026-02-08 07:03:19,285 - INFO -     - GROUPE2: 93 taches
+2026-02-08 07:03:19,285 - INFO -     - GROUPE4: 93 taches
+2026-02-08 07:03:19,285 - INFO -     - ORPHELINS: 31 taches
+2026-02-08 07:03:19,286 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-08 07:16:44,587 - INFO -   Iteration 1: 186 taches traitees, reste 372
+2026-02-08 07:16:49,637 - INFO -   Iteration 2: 372 pending dans 4 groupes:
+2026-02-08 07:16:49,637 - INFO -     - GROUPE3: 155 taches
+2026-02-08 07:16:49,638 - INFO -     - GROUPE2: 93 taches
+2026-02-08 07:16:49,638 - INFO -     - GROUPE4: 93 taches
+2026-02-08 07:16:49,639 - INFO -     - ORPHELINS: 31 taches
+2026-02-08 07:16:49,639 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-08 07:29:24,158 - INFO -   Iteration 2: 93 taches traitees, reste 279
+2026-02-08 07:29:29,207 - INFO -   Iteration 3: 279 pending dans 3 groupes:
+2026-02-08 07:29:29,208 - INFO -     - GROUPE3: 155 taches
+2026-02-08 07:29:29,209 - INFO -     - GROUPE4: 93 taches
+2026-02-08 07:29:29,210 - INFO -     - ORPHELINS: 31 taches
+2026-02-08 07:29:29,210 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-08 07:43:01,350 - INFO -   Iteration 3: 155 taches traitees, reste 124
+2026-02-08 07:43:06,394 - INFO -   Iteration 4: 124 pending dans 2 groupes:
+2026-02-08 07:43:06,395 - INFO -     - GROUPE4: 93 taches
+2026-02-08 07:43:06,395 - INFO -     - ORPHELINS: 31 taches
+2026-02-08 07:43:06,396 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-08 07:55:28,456 - INFO -   Iteration 4: 93 taches traitees, reste 31
+2026-02-08 07:55:33,479 - INFO -   Iteration 5: 31 pending dans 1 groupes:
+2026-02-08 07:55:33,480 - INFO -     - ORPHELINS: 31 taches
+2026-02-08 07:55:33,480 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-08 08:02:42,422 - INFO -   Iteration 5: 31 taches traitees, reste 0
+2026-02-08 08:02:47,435 - INFO -   Iteration 6: Plus de taches pending, fin.
+2026-02-08 08:02:47,445 - INFO -   Workers termines en 3568.2s apres 6 iterations
+2026-02-08 08:02:47,446 - INFO -   Resultat: 558 traitees, 0 restantes
+2026-02-08 08:02:47,541 - INFO - ============================================================
+2026-02-08 08:02:47,541 - INFO - RESUME
+2026-02-08 08:02:47,541 - INFO -   Duree: 3570.2s
+2026-02-08 08:02:47,541 - INFO -   Logements: 21
+2026-02-08 08:02:47,541 - INFO -   Mises a jour: 558
+2026-02-08 08:02:47,542 - INFO -   Stats finales: {'processing': 16, 'completed': 2128, 'failed': 15}
+2026-02-08 08:02:47,542 - INFO - ============================================================
+2026-02-09 07:00:56,893 - INFO - ============================================================
+2026-02-09 07:00:56,894 - INFO - MISE A JOUR QUOTIDIENNE SUPERHOTE
+2026-02-09 07:00:56,894 - INFO - Demarrage: 2026-02-09 07:00:56
+2026-02-09 07:00:56,894 - INFO - ============================================================
+2026-02-09 07:00:56,895 - INFO - Etape 1: Nettoyage des taches bloquees...
+2026-02-09 07:00:56,912 - INFO -   33 taches bloquees liberees
+2026-02-09 07:00:56,912 - INFO - Etape 2: Generation des prix...
+2026-02-09 07:00:56,922 - INFO -   21 logements actifs
+2026-02-09 07:00:56,928 - INFO -   33 anciennes taches supprimees
+2026-02-09 07:00:58,097 - WARNING -   GROUPE1: prix non configures, ignore
+2026-02-09 07:00:58,098 - WARNING -   GROUPE2: prix non configures, ignore
+2026-02-09 07:00:58,098 - WARNING -   GROUPE3: prix non configures, ignore
+2026-02-09 07:00:58,435 - INFO -   558 mises a jour generees pour 21 logements
+2026-02-09 07:00:58,435 - INFO - Etape 3: Lancement des workers...
+2026-02-09 07:00:58,440 - INFO -   558 taches en attente
+2026-02-09 07:00:58,461 - INFO -   Iteration 1: 558 pending dans 5 groupes:
+2026-02-09 07:00:58,461 - INFO -     - GROUPE1: 186 taches
+2026-02-09 07:00:58,462 - INFO -     - GROUPE3: 155 taches
+2026-02-09 07:00:58,462 - INFO -     - GROUPE2: 93 taches
+2026-02-09 07:00:58,462 - INFO -     - GROUPE4: 93 taches
+2026-02-09 07:00:58,462 - INFO -     - ORPHELINS: 31 taches
+2026-02-09 07:00:58,462 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-09 07:13:37,540 - INFO -   Iteration 1: 186 taches traitees, reste 372
+2026-02-09 07:13:42,591 - INFO -   Iteration 2: 372 pending dans 4 groupes:
+2026-02-09 07:13:42,592 - INFO -     - GROUPE3: 155 taches
+2026-02-09 07:13:42,592 - INFO -     - GROUPE2: 93 taches
+2026-02-09 07:13:42,592 - INFO -     - GROUPE4: 93 taches
+2026-02-09 07:13:42,593 - INFO -     - ORPHELINS: 31 taches
+2026-02-09 07:13:42,593 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-09 07:25:36,612 - INFO -   Iteration 2: 93 taches traitees, reste 279
+2026-02-09 07:25:41,635 - INFO -   Iteration 3: 279 pending dans 3 groupes:
+2026-02-09 07:25:41,636 - INFO -     - GROUPE3: 155 taches
+2026-02-09 07:25:41,636 - INFO -     - GROUPE4: 93 taches
+2026-02-09 07:25:41,636 - INFO -     - ORPHELINS: 31 taches
+2026-02-09 07:25:41,636 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-09 07:38:26,046 - INFO -   Iteration 3: 155 taches traitees, reste 124
+2026-02-09 07:38:31,090 - INFO -   Iteration 4: 124 pending dans 2 groupes:
+2026-02-09 07:38:31,091 - INFO -     - GROUPE4: 93 taches
+2026-02-09 07:38:31,092 - INFO -     - ORPHELINS: 31 taches
+2026-02-09 07:38:31,092 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-09 07:50:16,115 - INFO -   Iteration 4: 93 taches traitees, reste 31
+2026-02-09 07:50:21,142 - INFO -   Iteration 5: 31 pending dans 1 groupes:
+2026-02-09 07:50:21,143 - INFO -     - ORPHELINS: 31 taches
+2026-02-09 07:50:21,143 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-09 07:56:59,142 - INFO -   Iteration 5: 31 taches traitees, reste 0
+2026-02-09 07:57:04,156 - INFO -   Iteration 6: Plus de taches pending, fin.
+2026-02-09 07:57:04,169 - INFO -   Workers termines en 3365.7s apres 6 iterations
+2026-02-09 07:57:04,180 - INFO -   Resultat: 558 traitees, 0 restantes
+2026-02-09 07:57:04,275 - INFO - ============================================================
+2026-02-09 07:57:04,275 - INFO - RESUME
+2026-02-09 07:57:04,275 - INFO -   Duree: 3367.4s
+2026-02-09 07:57:04,276 - INFO -   Logements: 21
+2026-02-09 07:57:04,276 - INFO -   Mises a jour: 558
+2026-02-09 07:57:04,276 - INFO -   Stats finales: {'processing': 17, 'completed': 1064, 'failed': 18}
+2026-02-09 07:57:04,276 - INFO - ============================================================
+2026-02-10 07:04:23,631 - INFO - ============================================================
+2026-02-10 07:04:23,632 - INFO - MISE A JOUR QUOTIDIENNE SUPERHOTE
+2026-02-10 07:04:23,633 - INFO - Demarrage: 2026-02-10 07:04:23
+2026-02-10 07:04:23,633 - INFO - ============================================================
+2026-02-10 07:04:23,633 - INFO - Etape 1: Nettoyage des taches bloquees...
+2026-02-10 07:04:23,650 - INFO -   31 taches bloquees liberees
+2026-02-10 07:04:23,650 - INFO - Etape 2: Generation des prix...
+2026-02-10 07:04:23,660 - INFO -   21 logements actifs
+2026-02-10 07:04:23,665 - INFO -   31 anciennes taches supprimees
+2026-02-10 07:04:24,744 - WARNING -   GROUPE1: prix non configures, ignore
+2026-02-10 07:04:24,744 - WARNING -   GROUPE2: prix non configures, ignore
+2026-02-10 07:04:24,745 - WARNING -   GROUPE3: prix non configures, ignore
+2026-02-10 07:04:25,056 - INFO -   558 mises a jour generees pour 21 logements
+2026-02-10 07:04:25,056 - INFO - Etape 3: Lancement des workers...
+2026-02-10 07:04:25,061 - INFO -   558 taches en attente
+2026-02-10 07:04:25,082 - INFO -   Iteration 1: 558 pending dans 5 groupes:
+2026-02-10 07:04:25,083 - INFO -     - GROUPE1: 186 taches
+2026-02-10 07:04:25,083 - INFO -     - GROUPE3: 155 taches
+2026-02-10 07:04:25,083 - INFO -     - GROUPE2: 93 taches
+2026-02-10 07:04:25,083 - INFO -     - GROUPE4: 93 taches
+2026-02-10 07:04:25,083 - INFO -     - ORPHELINS: 31 taches
+2026-02-10 07:04:25,083 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-10 07:19:30,652 - INFO -   Iteration 1: 186 taches traitees, reste 372
+2026-02-10 07:19:35,704 - INFO -   Iteration 2: 372 pending dans 4 groupes:
+2026-02-10 07:19:35,704 - INFO -     - GROUPE3: 155 taches
+2026-02-10 07:19:35,705 - INFO -     - GROUPE2: 93 taches
+2026-02-10 07:19:35,705 - INFO -     - GROUPE4: 93 taches
+2026-02-10 07:19:35,706 - INFO -     - ORPHELINS: 31 taches
+2026-02-10 07:19:35,706 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-10 07:33:43,215 - INFO -   Iteration 2: 93 taches traitees, reste 279
+2026-02-10 07:33:48,268 - INFO -   Iteration 3: 279 pending dans 3 groupes:
+2026-02-10 07:33:48,294 - INFO -     - GROUPE3: 155 taches
+2026-02-10 07:33:48,294 - INFO -     - GROUPE4: 93 taches
+2026-02-10 07:33:48,295 - INFO -     - ORPHELINS: 31 taches
+2026-02-10 07:33:48,296 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-10 07:48:58,107 - INFO -   Iteration 3: 155 taches traitees, reste 124
+2026-02-10 07:49:03,152 - INFO -   Iteration 4: 124 pending dans 2 groupes:
+2026-02-10 07:49:03,153 - INFO -     - GROUPE4: 93 taches
+2026-02-10 07:49:03,154 - INFO -     - ORPHELINS: 31 taches
+2026-02-10 07:49:03,154 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-10 08:02:55,369 - INFO -   Iteration 4: 93 taches traitees, reste 31
+2026-02-10 08:03:00,394 - INFO -   Iteration 5: 31 pending dans 1 groupes:
+2026-02-10 08:03:00,395 - INFO -     - ORPHELINS: 31 taches
+2026-02-10 08:03:00,396 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-10 08:10:58,596 - INFO -   Iteration 5: 31 taches traitees, reste 0
+2026-02-10 08:11:03,606 - INFO -   Iteration 6: Plus de taches pending, fin.
+2026-02-10 08:11:03,617 - INFO -   Workers termines en 3998.5s apres 6 iterations
+2026-02-10 08:11:03,618 - INFO -   Resultat: 558 traitees, 0 restantes
+2026-02-10 08:11:03,722 - INFO - ============================================================
+2026-02-10 08:11:03,722 - INFO - RESUME
+2026-02-10 08:11:03,723 - INFO -   Duree: 4000.1s
+2026-02-10 08:11:03,723 - INFO -   Logements: 21
+2026-02-10 08:11:03,723 - INFO -   Mises a jour: 558
+2026-02-10 08:11:03,723 - INFO -   Stats finales: {'processing': 14, 'completed': 1070, 'failed': 18}
+2026-02-10 08:11:03,724 - INFO - ============================================================
+2026-02-11 07:04:06,618 - INFO - ============================================================
+2026-02-11 07:04:06,620 - INFO - MISE A JOUR QUOTIDIENNE SUPERHOTE
+2026-02-11 07:04:06,620 - INFO - Demarrage: 2026-02-11 07:04:06
+2026-02-11 07:04:06,620 - INFO - ============================================================
+2026-02-11 07:04:06,620 - INFO - Etape 1: Nettoyage des taches bloquees...
+2026-02-11 07:04:06,636 - INFO -   28 taches bloquees liberees
+2026-02-11 07:04:06,636 - INFO - Etape 2: Generation des prix...
+2026-02-11 07:04:06,646 - INFO -   21 logements actifs
+2026-02-11 07:04:06,651 - INFO -   28 anciennes taches supprimees
+2026-02-11 07:04:07,733 - WARNING -   GROUPE1: prix non configures, ignore
+2026-02-11 07:04:07,734 - WARNING -   GROUPE2: prix non configures, ignore
+2026-02-11 07:04:07,734 - WARNING -   GROUPE3: prix non configures, ignore
+2026-02-11 07:04:08,051 - INFO -   558 mises a jour generees pour 21 logements
+2026-02-11 07:04:08,052 - INFO - Etape 3: Lancement des workers...
+2026-02-11 07:04:08,056 - INFO -   558 taches en attente
+2026-02-11 07:04:08,079 - INFO -   Iteration 1: 558 pending dans 5 groupes:
+2026-02-11 07:04:08,080 - INFO -     - GROUPE1: 186 taches
+2026-02-11 07:04:08,080 - INFO -     - GROUPE3: 155 taches
+2026-02-11 07:04:08,080 - INFO -     - GROUPE2: 93 taches
+2026-02-11 07:04:08,080 - INFO -     - GROUPE4: 93 taches
+2026-02-11 07:04:08,080 - INFO -     - ORPHELINS: 31 taches
+2026-02-11 07:04:08,080 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-11 07:19:12,104 - INFO -   Iteration 1: 186 taches traitees, reste 372
+2026-02-11 07:19:17,158 - INFO -   Iteration 2: 372 pending dans 4 groupes:
+2026-02-11 07:19:17,159 - INFO -     - GROUPE3: 155 taches
+2026-02-11 07:19:17,160 - INFO -     - GROUPE2: 93 taches
+2026-02-11 07:19:17,160 - INFO -     - GROUPE4: 93 taches
+2026-02-11 07:19:17,161 - INFO -     - ORPHELINS: 31 taches
+2026-02-11 07:19:17,161 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-11 07:33:25,296 - INFO -   Iteration 2: 93 taches traitees, reste 279
+2026-02-11 07:33:30,322 - INFO -   Iteration 3: 279 pending dans 3 groupes:
+2026-02-11 07:33:30,344 - INFO -     - GROUPE3: 155 taches
+2026-02-11 07:33:30,344 - INFO -     - GROUPE4: 93 taches
+2026-02-11 07:33:30,344 - INFO -     - ORPHELINS: 31 taches
+2026-02-11 07:33:30,344 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-11 07:48:37,374 - INFO -   Iteration 3: 155 taches traitees, reste 124
+2026-02-11 07:48:42,425 - INFO -   Iteration 4: 124 pending dans 2 groupes:
+2026-02-11 07:48:42,426 - INFO -     - GROUPE4: 93 taches
+2026-02-11 07:48:42,427 - INFO -     - ORPHELINS: 31 taches
+2026-02-11 07:48:42,428 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-11 08:02:38,828 - INFO -   Iteration 4: 93 taches traitees, reste 31
+2026-02-11 08:02:43,853 - INFO -   Iteration 5: 31 pending dans 1 groupes:
+2026-02-11 08:02:43,853 - INFO -     - ORPHELINS: 31 taches
+2026-02-11 08:02:43,854 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-11 08:10:32,194 - INFO -   Iteration 5: 31 taches traitees, reste 0
+2026-02-11 08:10:37,204 - INFO -   Iteration 6: Plus de taches pending, fin.
+2026-02-11 08:10:37,223 - INFO -   Workers termines en 3989.2s apres 6 iterations
+2026-02-11 08:10:37,224 - INFO -   Resultat: 558 traitees, 0 restantes
+2026-02-11 08:10:37,280 - INFO - ============================================================
+2026-02-11 08:10:37,281 - INFO - RESUME
+2026-02-11 08:10:37,281 - INFO -   Duree: 3990.7s
+2026-02-11 08:10:37,281 - INFO -   Logements: 21
+2026-02-11 08:10:37,281 - INFO -   Mises a jour: 558
+2026-02-11 08:10:37,281 - INFO -   Stats finales: {'processing': 14, 'completed': 1070, 'failed': 18}
+2026-02-11 08:10:37,282 - INFO - ============================================================
+2026-02-11 19:17:17,963 - INFO - ============================================================
+2026-02-11 19:17:17,979 - INFO - MISE A JOUR QUOTIDIENNE SUPERHOTE
+2026-02-11 19:17:17,979 - INFO - Demarrage: 2026-02-11 19:17:17
+2026-02-11 19:17:17,980 - INFO - ============================================================
+2026-02-11 19:17:17,980 - INFO - Etape 1: Nettoyage des taches bloquees...
+2026-02-11 19:17:18,115 - INFO -   14 taches bloquees liberees
+2026-02-11 19:17:18,116 - INFO - Etape 2: Generation des prix...
+2026-02-11 19:17:18,202 - INFO -   21 logements actifs
+2026-02-11 19:17:18,215 - INFO -   14 anciennes taches supprimees
+2026-02-11 19:17:23,122 - WARNING -   GROUPE1: prix non configures, ignore
+2026-02-11 19:17:23,139 - WARNING -   GROUPE2: prix non configures, ignore
+2026-02-11 19:17:23,140 - WARNING -   GROUPE3: prix non configures, ignore
+2026-02-11 19:17:24,079 - INFO -   558 mises a jour generees pour 21 logements
+2026-02-11 19:17:24,080 - INFO - Etape 3: Lancement des workers...
+2026-02-11 19:17:24,097 - INFO -   558 taches en attente
+2026-02-11 19:17:24,139 - INFO -   Iteration 1: 558 pending dans 5 groupes:
+2026-02-11 19:17:24,140 - INFO -     - GROUPE1: 186 taches
+2026-02-11 19:17:24,140 - INFO -     - GROUPE3: 155 taches
+2026-02-11 19:17:24,141 - INFO -     - GROUPE2: 93 taches
+2026-02-11 19:17:24,141 - INFO -     - GROUPE4: 93 taches
+2026-02-11 19:17:24,141 - INFO -     - ORPHELINS: 31 taches
+2026-02-11 19:17:24,142 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-11 19:45:48,338 - INFO -   Iteration 1: 186 taches traitees, reste 372
+2026-02-11 19:45:53,391 - INFO -   Iteration 2: 372 pending dans 4 groupes:
+2026-02-11 19:45:53,392 - INFO -     - GROUPE3: 155 taches
+2026-02-11 19:45:53,392 - INFO -     - GROUPE2: 93 taches
+2026-02-11 19:45:53,392 - INFO -     - GROUPE4: 93 taches
+2026-02-11 19:45:53,393 - INFO -     - ORPHELINS: 31 taches
+2026-02-11 19:45:53,393 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-11 19:59:49,434 - INFO -   Iteration 2: 93 taches traitees, reste 279
+2026-02-11 19:59:54,492 - INFO -   Iteration 3: 279 pending dans 3 groupes:
+2026-02-11 19:59:54,493 - INFO -     - GROUPE3: 155 taches
+2026-02-11 19:59:54,494 - INFO -     - GROUPE4: 93 taches
+2026-02-11 19:59:54,494 - INFO -     - ORPHELINS: 31 taches
+2026-02-11 19:59:54,495 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-11 20:12:34,245 - INFO -   Iteration 3: 155 taches traitees, reste 124
+2026-02-11 20:12:39,267 - INFO -   Iteration 4: 124 pending dans 2 groupes:
+2026-02-11 20:12:39,268 - INFO -     - GROUPE4: 93 taches
+2026-02-11 20:12:39,269 - INFO -     - ORPHELINS: 31 taches
+2026-02-11 20:12:39,269 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-11 20:26:22,359 - INFO -   Iteration 4: 93 taches traitees, reste 31
+2026-02-11 20:26:27,384 - INFO -   Iteration 5: 31 pending dans 1 groupes:
+2026-02-11 20:26:27,384 - INFO -     - ORPHELINS: 31 taches
+2026-02-11 20:26:27,385 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-11 20:34:14,088 - INFO -   Iteration 5: 31 taches traitees, reste 0
+2026-02-11 20:34:19,102 - INFO -   Iteration 6: Plus de taches pending, fin.
+2026-02-11 20:34:19,113 - INFO -   Workers termines en 4615.0s apres 6 iterations
+2026-02-11 20:34:19,114 - INFO -   Resultat: 558 traitees, 0 restantes
+2026-02-11 20:34:19,235 - INFO - ============================================================
+2026-02-11 20:34:19,235 - INFO - RESUME
+2026-02-11 20:34:19,235 - INFO -   Duree: 4621.3s
+2026-02-11 20:34:19,236 - INFO -   Logements: 21
+2026-02-11 20:34:19,236 - INFO -   Mises a jour: 558
+2026-02-11 20:34:19,236 - INFO -   Stats finales: {'processing': 14, 'completed': 1594, 'failed': 38}
+2026-02-11 20:34:19,237 - INFO - ============================================================
+2026-02-12 07:04:14,219 - INFO - ============================================================
+2026-02-12 07:04:14,221 - INFO - MISE A JOUR QUOTIDIENNE SUPERHOTE
+2026-02-12 07:04:14,221 - INFO - Demarrage: 2026-02-12 07:04:14
+2026-02-12 07:04:14,221 - INFO - ============================================================
+2026-02-12 07:04:14,222 - INFO - Etape 1: Nettoyage des taches bloquees...
+2026-02-12 07:04:14,256 - INFO -   28 taches bloquees liberees
+2026-02-12 07:04:14,257 - INFO - Etape 2: Generation des prix...
+2026-02-12 07:04:14,278 - INFO -   21 logements actifs
+2026-02-12 07:04:14,303 - INFO -   214 anciennes taches supprimees
+2026-02-12 07:04:15,391 - WARNING -   GROUPE1: prix non configures, ignore
+2026-02-12 07:04:15,391 - WARNING -   GROUPE2: prix non configures, ignore
+2026-02-12 07:04:15,391 - WARNING -   GROUPE3: prix non configures, ignore
+2026-02-12 07:04:15,688 - INFO -   558 mises a jour generees pour 21 logements
+2026-02-12 07:04:15,688 - INFO - Etape 3: Lancement des workers...
+2026-02-12 07:04:15,692 - INFO -   558 taches en attente
+2026-02-12 07:04:15,718 - INFO -   Iteration 1: 558 pending dans 5 groupes:
+2026-02-12 07:04:15,719 - INFO -     - GROUPE1: 186 taches
+2026-02-12 07:04:15,719 - INFO -     - GROUPE3: 155 taches
+2026-02-12 07:04:15,719 - INFO -     - GROUPE2: 93 taches
+2026-02-12 07:04:15,719 - INFO -     - GROUPE4: 93 taches
+2026-02-12 07:04:15,719 - INFO -     - ORPHELINS: 31 taches
+2026-02-12 07:04:15,719 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-12 07:18:18,263 - INFO -   Iteration 1: 186 taches traitees, reste 372
+2026-02-12 07:18:23,322 - INFO -   Iteration 2: 372 pending dans 4 groupes:
+2026-02-12 07:18:23,323 - INFO -     - GROUPE3: 155 taches
+2026-02-12 07:18:23,323 - INFO -     - GROUPE4: 93 taches
+2026-02-12 07:18:23,324 - INFO -     - GROUPE2: 93 taches
+2026-02-12 07:18:23,324 - INFO -     - ORPHELINS: 31 taches
+2026-02-12 07:18:23,325 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-12 07:31:40,101 - INFO -   Iteration 2: 93 taches traitees, reste 279
+2026-02-12 07:31:45,152 - INFO -   Iteration 3: 279 pending dans 3 groupes:
+2026-02-12 07:31:45,153 - INFO -     - GROUPE3: 155 taches
+2026-02-12 07:31:45,153 - INFO -     - GROUPE4: 93 taches
+2026-02-12 07:31:45,154 - INFO -     - ORPHELINS: 31 taches
+2026-02-12 07:31:45,154 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-12 07:43:43,681 - INFO -   Iteration 3: 155 taches traitees, reste 124
+2026-02-12 07:43:48,706 - INFO -   Iteration 4: 124 pending dans 2 groupes:
+2026-02-12 07:43:48,707 - INFO -     - GROUPE4: 93 taches
+2026-02-12 07:43:48,708 - INFO -     - ORPHELINS: 31 taches
+2026-02-12 07:43:48,708 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-12 07:56:56,018 - INFO -   Iteration 4: 93 taches traitees, reste 31
+2026-02-12 07:57:01,044 - INFO -   Iteration 5: 31 pending dans 1 groupes:
+2026-02-12 07:57:01,044 - INFO -     - ORPHELINS: 31 taches
+2026-02-12 07:57:01,045 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-12 08:04:30,674 - INFO -   Iteration 5: 31 taches traitees, reste 0
+2026-02-12 08:04:35,687 - INFO -   Iteration 6: Plus de taches pending, fin.
+2026-02-12 08:04:35,697 - INFO -   Workers termines en 3620.0s apres 6 iterations
+2026-02-12 08:04:35,710 - INFO -   Resultat: 558 traitees, 0 restantes
+2026-02-12 08:04:35,840 - INFO - ============================================================
+2026-02-12 08:04:35,840 - INFO - RESUME
+2026-02-12 08:04:35,840 - INFO -   Duree: 3621.6s
+2026-02-12 08:04:35,840 - INFO -   Logements: 21
+2026-02-12 08:04:35,841 - INFO -   Mises a jour: 558
+2026-02-12 08:04:35,841 - INFO -   Stats finales: {'processing': 15, 'completed': 1258, 'failed': 187}
+2026-02-12 08:04:35,841 - INFO - ============================================================

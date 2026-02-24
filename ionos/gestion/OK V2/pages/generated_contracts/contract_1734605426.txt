@@ -1,0 +1,124 @@
+CONTRAT DE CONCIERGERIE POUR LOCATION DE COURTE DURÉE
+
+Entre les soussignés :
+
+SAS FRENCHY CONCIERGERIE  
+SAS au capital de 1000 € (en cours de création)  
+Représentée par Raphaël Jacquet  
+Adresse : 94 rue Jean Jaurès, 60610 Lacroix-Saint-Ouen  
+Ci-après dénommé "le Prestataire"  
+
+Et :  
+
+Nom du client : Birepinte Edouard  
+Adresse : {{client_address}}  
+Ci-après dénommé "le Client"  
+
+---
+
+Article 1 : Objet du contrat  
+Le présent contrat a pour objet de confier au Prestataire la conciergerie de la mise en location de courte durée du “Edouard 1” situé au :  
+Adresse : 97 rue de verdun Apt 1 60610 lacroix saint ouen  
+
+Description du bien :  
+Un appartement en rez de chaussée, comprenant un séjour, une salle d&#039;eau, une cuisine avec plaque et four.
+
+---
+
+Article 2 : Droits d'usage  
+Le Client atteste qu'il détient tous les droits nécessaires à l'usage et à la mise en location du bien immobilier mentionné dans le présent contrat.  
+Le Client garantit également être en conformité avec les réglementations légales, fiscales et assurantielles applicables à la location de courte durée.  
+
+---
+
+Article 3 : Durée et résiliation du contrat  
+Le présent contrat est conclu pour une durée indéterminée. Il pourra être résilié par l'une ou l'autre des parties, moyennant un préavis de trente (30) jours notifié par écrit.  
+En cas de manquement grave à une obligation essentielle, la résiliation pourra être effective immédiatement après l'envoi d'une mise en demeure restée sans effet pendant 15 jours.  
+
+---
+
+Article 4 : Missions et Obligations du Prestataire  
+Le Prestataire s'engage à :  
+
+- Promouvoir la propriété sur les supports appropriés.  
+- Créer et optimiser les annonces pour maximiser leur attractivité.  
+- Ajuster les prix pour optimiser la rentabilité.  
+- Répondre aux demandes de réservation et gérer les annulations.  
+- Organiser les arrivées et départs des voyageurs (check-in et check-out).  
+- Effectuer des inspections régulières du bien (minimum 1 fois par mois).  
+- Fournir un rapport d'activité au Client (minimum 1 fois par mois).  
+- Assurer, si requis, la gestion des consommables (produits d’accueil, articles de toilette) avec facturation des achats effectués sur présentation des justificatifs.  
+
+Option : Si des prestations additionnelles sont requises (ex. réparations), celles-ci feront l'objet d'un devis soumis au Client.  
+
+---
+
+Article 5 : Obligations du Client  
+Le Client s'engage à :  
+
+- Fournir toutes les informations nécessaires à la bonne exécution des prestations (titre de propriété, autorisations, etc.).  
+- Remettre au Prestataire au moins 2 jeux de clés (1 pour la gestion et 1 pour les voyageurs).  
+- Mettre à disposition un kit de produits ménagers et de linge suffisant (2 jeux de draps par couchage, 2 serviettes par voyageur, etc.).  
+- Informer le Prestataire de tout changement relatif au bien (travaux, modifications d'accès).  
+- Assurer le bien contre les risques locatifs et fournir une copie de cette assurance au Prestataire.  
+- Prendre en charge les réparations majeures du bien en cas de besoin.  
+
+---
+
+Article 6 : Honoraires et conditions financières  
+Les honoraires du Prestataire sont fixés à 20% des revenus générés par la location.  
+Le tarif de la prestation de ménage est de 25 EUR maximum par intervention, à reverser intégralement au Prestataire.  
+
+Exemple de calcul des honoraires :  
+Si les revenus mensuels générés sont de 2 000 €, les honoraires à reverser au Prestataire seraient de 20% x 2 000 € = {{calculated_fee}} €.  
+
+- Modalités de paiement : Les factures sont émises à la fin de chaque mois et payables sous 10 jours.  
+- Pénalités de retard : En cas de retard de paiement, des pénalités pourront être appliquées au taux légal en vigueur, avec un minimum forfaitaire de 50 €.  
+
+---
+
+Article 7 : Responsabilité  
+Le Prestataire est tenu à une obligation de moyens et ne saurait être responsable :  
+
+- Des dégradations causées par les locataires ou des pertes financières en cas de non-location.  
+- Des objets ou valeurs laissés dans le bien.  
+
+Le Client reste seul responsable des décisions concernant les réservations (tarifs, durée, voyageurs acceptés).  
+
+---
+
+Article 8 : État des lieux, inventaire et annexes  
+Un état des lieux et un inventaire des équipements seront réalisés conjointement lors de l’entrée en vigueur du contrat. Ces documents serviront de base pour toute réclamation ou vérification en cas de dégradations.  
+
+Les documents suivants sont annexés au présent contrat :  
+- Annexe 1 : Dossier photo réalisé au moment de la mise à disposition du bien.  
+- Annexe 2 : Inventaire du matériel et des équipements présents dans le bien.  
+
+---
+
+Article 9 : Confidentialité  
+Les parties s'engagent à maintenir confidentielles toutes les informations échangées dans le cadre de l'exécution du contrat. Cette obligation restera en vigueur pendant cinq (5) ans après la fin du contrat.  
+
+---
+
+Article 10 : Litiges et conciliation  
+En cas de litige, les parties s’engagent à tenter une résolution amiable. À défaut, le tribunal compétent sera celui de Compiègne.  
+
+---
+
+Article 11 : Modifications du contrat  
+Toute modification devra faire l’objet d’un avenant signé par les deux parties.  
+
+---
+
+Fait à : Lacroix saint ouen  
+Le : {{date}}  
+
+Pour la Société  
+Raphaël Jacquet  
+Représentant de la SAS FRENCHY CONCIERGERIE  
+Signature : _______________________  
+
+Le Client  
+Nom : Birepinte Edouard  
+Signature : _______________________  

@@ -1,0 +1,29 @@
+{
+  "status": "completed",
+  "started_at": "2026-02-12T07:04:14.208571",
+  "steps": {
+    "cleanup": {
+      "released": 28
+    },
+    "generate": {
+      "logements": 21,
+      "updates": 558
+    },
+    "workers": {
+      "status": "completed",
+      "duration": 3619.9959552288055,
+      "iterations": 6,
+      "initial_pending": 558,
+      "final_pending": 0,
+      "processed": 558
+    },
+    "final_stats": {
+      "processing": 15,
+      "completed": 1258,
+      "failed": 187
+    }
+  },
+  "updated_at": "2026-02-12T08:04:35.841485",
+  "ended_at": "2026-02-12T08:04:35.840166",
+  "duration_seconds": 3621.631595
+}

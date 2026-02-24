@@ -1,0 +1,482 @@
+[2026-02-08 10:00:01] [INFO] ========================================
+[2026-02-08 10:00:01] [INFO] Démarrage du script d'automatisation SMS (type: custom)
+[2026-02-08 10:00:01] [INFO] ========================================
+[2026-02-08 10:00:01] [INFO] === Traitement des automatisations personnalisées ===
+[2026-02-08 10:00:01] [INFO] Trouvé 4 automatisation(s) personnalisée(s) active(s)
+[2026-02-08 10:00:01] [INFO] --- Traitement automatisation: Remerciement post-séjour (ID=1) (tous logements) ---
+[2026-02-08 10:00:01] [INFO] Date cible: 2026-02-07 (date_depart), 2 réservation(s) trouvée(s)
+[2026-02-08 10:00:01] [ERROR] Réservation #3433 : Template 'remerciement' non trouvé
+[2026-02-08 10:00:01] [ERROR] Réservation #3382 : Template 'remerciement' non trouvé
+[2026-02-08 10:00:01] [SUCCESS] ✅ Automatisation 'Remerciement post-séjour' : 0 SMS créé(s)
+[2026-02-08 10:00:01] [INFO] --- Traitement automatisation: Rappel 7j avant arrivée (ID=2) (tous logements) ---
+[2026-02-08 10:00:01] [INFO] Date cible: 2026-02-15 (date_arrivee), 2 réservation(s) trouvée(s)
+[2026-02-08 10:00:01] [ERROR] Réservation #3425 : Template 'rappel_7j' non trouvé
+[2026-02-08 10:00:01] [ERROR] Réservation #2933 : Template 'rappel_7j' non trouvé
+[2026-02-08 10:00:01] [SUCCESS] ✅ Automatisation 'Rappel 7j avant arrivée' : 0 SMS créé(s)
+[2026-02-08 10:00:01] [INFO] --- Traitement automatisation: Satisfaction mi-séjour (ID=3) (tous logements) ---
+[2026-02-08 10:00:01] [INFO] Date cible: 2026-02-05 (date_arrivee), 0 réservation(s) trouvée(s)
+[2026-02-08 10:00:01] [SUCCESS] ✅ Automatisation 'Satisfaction mi-séjour' : 0 SMS créé(s)
+[2026-02-08 10:00:01] [INFO] --- Traitement automatisation: Code accès Logement 1 (ID=4) (logement ID=1) ---
+[2026-02-08 10:00:01] [INFO] Date cible: 2026-02-08 (date_arrivee), 0 réservation(s) trouvée(s)
+[2026-02-08 10:00:01] [SUCCESS] ✅ Automatisation 'Code accès Logement 1' : 0 SMS créé(s)
+[2026-02-08 10:00:01] [INFO] ========================================
+[2026-02-08 10:00:01] [SUCCESS] Script terminé avec succès (type: custom)
+[2026-02-08 10:00:01] [INFO] ========================================
+[2026-02-09 10:00:01] [INFO] ========================================
+[2026-02-09 10:00:01] [INFO] Démarrage du script d'automatisation SMS (type: custom)
+[2026-02-09 10:00:01] [INFO] ========================================
+[2026-02-09 10:00:01] [INFO] === Traitement des automatisations personnalisées ===
+[2026-02-09 10:00:01] [INFO] Trouvé 4 automatisation(s) personnalisée(s) active(s)
+[2026-02-09 10:00:01] [INFO] --- Traitement automatisation: Remerciement post-séjour (ID=1) (tous logements) ---
+[2026-02-09 10:00:01] [INFO] Date cible: 2026-02-08 (date_depart), 6 réservation(s) trouvée(s)
+[2026-02-09 10:00:01] [ERROR] Réservation #3442 : Template 'remerciement' non trouvé
+[2026-02-09 10:00:01] [ERROR] Réservation #3437 : Template 'remerciement' non trouvé
+[2026-02-09 10:00:01] [ERROR] Réservation #3435 : Template 'remerciement' non trouvé
+[2026-02-09 10:00:01] [ERROR] Réservation #3420 : Template 'remerciement' non trouvé
+[2026-02-09 10:00:01] [ERROR] Réservation #3416 : Template 'remerciement' non trouvé
+[2026-02-09 10:00:01] [ERROR] Réservation #3356 : Template 'remerciement' non trouvé
+[2026-02-09 10:00:01] [SUCCESS] ✅ Automatisation 'Remerciement post-séjour' : 0 SMS créé(s)
+[2026-02-09 10:00:01] [INFO] --- Traitement automatisation: Rappel 7j avant arrivée (ID=2) (tous logements) ---
+[2026-02-09 10:00:01] [INFO] Date cible: 2026-02-16 (date_arrivee), 3 réservation(s) trouvée(s)
+[2026-02-09 10:00:01] [ERROR] Réservation #3452 : Template 'rappel_7j' non trouvé
+[2026-02-09 10:00:01] [ERROR] Réservation #3436 : Template 'rappel_7j' non trouvé
+[2026-02-09 10:00:01] [ERROR] Réservation #3276 : Template 'rappel_7j' non trouvé
+[2026-02-09 10:00:01] [SUCCESS] ✅ Automatisation 'Rappel 7j avant arrivée' : 0 SMS créé(s)
+[2026-02-09 10:00:01] [INFO] --- Traitement automatisation: Satisfaction mi-séjour (ID=3) (tous logements) ---
+[2026-02-09 10:00:01] [INFO] Date cible: 2026-02-06 (date_arrivee), 4 réservation(s) trouvée(s)
+[2026-02-09 10:00:01] [ERROR] Réservation #3435 : Template 'satisfaction' non trouvé
+[2026-02-09 10:00:01] [ERROR] Réservation #3433 : Template 'satisfaction' non trouvé
+[2026-02-09 10:00:01] [ERROR] Réservation #3426 : Template 'satisfaction' non trouvé
+[2026-02-09 10:00:01] [ERROR] Réservation #3416 : Template 'satisfaction' non trouvé
+[2026-02-09 10:00:01] [SUCCESS] ✅ Automatisation 'Satisfaction mi-séjour' : 0 SMS créé(s)
+[2026-02-09 10:00:01] [INFO] --- Traitement automatisation: Code accès Logement 1 (ID=4) (logement ID=1) ---
+[2026-02-09 10:00:01] [INFO] Date cible: 2026-02-09 (date_arrivee), 0 réservation(s) trouvée(s)
+[2026-02-09 10:00:01] [SUCCESS] ✅ Automatisation 'Code accès Logement 1' : 0 SMS créé(s)
+[2026-02-09 10:00:01] [INFO] ========================================
+[2026-02-09 10:00:01] [SUCCESS] Script terminé avec succès (type: custom)
+[2026-02-09 10:00:01] [INFO] ========================================
+[2026-02-10 10:00:01] [INFO] ========================================
+[2026-02-10 10:00:01] [INFO] Démarrage du script d'automatisation SMS (type: custom)
+[2026-02-10 10:00:01] [INFO] ========================================
+[2026-02-10 10:00:01] [INFO] === Traitement des automatisations personnalisées ===
+[2026-02-10 10:00:01] [INFO] Trouvé 4 automatisation(s) personnalisée(s) active(s)
+[2026-02-10 10:00:01] [INFO] --- Traitement automatisation: Remerciement post-séjour (ID=1) (tous logements) ---
+[2026-02-10 10:00:01] [INFO] Date cible: 2026-02-09 (date_depart), 3 réservation(s) trouvée(s)
+[2026-02-10 10:00:01] [ERROR] Réservation #3432 : Template 'remerciement' non trouvé
+[2026-02-10 10:00:01] [ERROR] Réservation #3429 : Template 'remerciement' non trouvé
+[2026-02-10 10:00:01] [ERROR] Réservation #3426 : Template 'remerciement' non trouvé
+[2026-02-10 10:00:01] [SUCCESS] ✅ Automatisation 'Remerciement post-séjour' : 0 SMS créé(s)
+[2026-02-10 10:00:01] [INFO] --- Traitement automatisation: Rappel 7j avant arrivée (ID=2) (tous logements) ---
+[2026-02-10 10:00:01] [INFO] Date cible: 2026-02-17 (date_arrivee), 0 réservation(s) trouvée(s)
+[2026-02-10 10:00:01] [SUCCESS] ✅ Automatisation 'Rappel 7j avant arrivée' : 0 SMS créé(s)
+[2026-02-10 10:00:01] [INFO] --- Traitement automatisation: Satisfaction mi-séjour (ID=3) (tous logements) ---
+[2026-02-10 10:00:01] [INFO] Date cible: 2026-02-07 (date_arrivee), 7 réservation(s) trouvée(s)
+[2026-02-10 10:00:01] [ERROR] Réservation #3443 : Template 'satisfaction' non trouvé
+[2026-02-10 10:00:01] [ERROR] Réservation #3442 : Template 'satisfaction' non trouvé
+[2026-02-10 10:00:01] [ERROR] Réservation #3438 : Template 'satisfaction' non trouvé
+[2026-02-10 10:00:01] [ERROR] Réservation #3437 : Template 'satisfaction' non trouvé
+[2026-02-10 10:00:01] [ERROR] Réservation #3432 : Template 'satisfaction' non trouvé
+[2026-02-10 10:00:01] [ERROR] Réservation #3420 : Template 'satisfaction' non trouvé
+[2026-02-10 10:00:01] [ERROR] Réservation #3356 : Template 'satisfaction' non trouvé
+[2026-02-10 10:00:01] [SUCCESS] ✅ Automatisation 'Satisfaction mi-séjour' : 0 SMS créé(s)
+[2026-02-10 10:00:01] [INFO] --- Traitement automatisation: Code accès Logement 1 (ID=4) (logement ID=1) ---
+[2026-02-10 10:00:01] [INFO] Date cible: 2026-02-10 (date_arrivee), 0 réservation(s) trouvée(s)
+[2026-02-10 10:00:01] [SUCCESS] ✅ Automatisation 'Code accès Logement 1' : 0 SMS créé(s)
+[2026-02-10 10:00:01] [INFO] ========================================
+[2026-02-10 10:00:01] [SUCCESS] Script terminé avec succès (type: custom)
+[2026-02-10 10:00:01] [INFO] ========================================
+[2026-02-11 10:00:01] [INFO] ========================================
+[2026-02-11 10:00:01] [INFO] Démarrage du script d'automatisation SMS (type: custom)
+[2026-02-11 10:00:01] [INFO] ========================================
+[2026-02-11 10:00:01] [INFO] === Traitement des automatisations personnalisées ===
+[2026-02-11 10:00:01] [INFO] Trouvé 4 automatisation(s) personnalisée(s) active(s)
+[2026-02-11 10:00:01] [INFO] --- Traitement automatisation: Remerciement post-séjour (ID=1) (tous logements) ---
+[2026-02-11 10:00:01] [INFO] Date cible: 2026-02-10 (date_depart), 0 réservation(s) trouvée(s)
+[2026-02-11 10:00:01] [SUCCESS] ✅ Automatisation 'Remerciement post-séjour' : 0 SMS créé(s)
+[2026-02-11 10:00:01] [INFO] --- Traitement automatisation: Rappel 7j avant arrivée (ID=2) (tous logements) ---
+[2026-02-11 10:00:01] [INFO] Date cible: 2026-02-18 (date_arrivee), 3 réservation(s) trouvée(s)
+[2026-02-11 10:00:01] [ERROR] Réservation #3456 : Template 'rappel_7j' non trouvé
+[2026-02-11 10:00:01] [ERROR] Réservation #3366 : Template 'rappel_7j' non trouvé
+[2026-02-11 10:00:01] [ERROR] Réservation #3314 : Template 'rappel_7j' non trouvé
+[2026-02-11 10:00:01] [SUCCESS] ✅ Automatisation 'Rappel 7j avant arrivée' : 0 SMS créé(s)
+[2026-02-11 10:00:01] [INFO] --- Traitement automatisation: Satisfaction mi-séjour (ID=3) (tous logements) ---
+[2026-02-11 10:00:01] [INFO] Date cible: 2026-02-08 (date_arrivee), 5 réservation(s) trouvée(s)
+[2026-02-11 10:00:01] [ERROR] Réservation #3448 : Template 'satisfaction' non trouvé
+[2026-02-11 10:00:01] [ERROR] Réservation #3447 : Template 'satisfaction' non trouvé
+[2026-02-11 10:00:01] [ERROR] Réservation #3429 : Template 'satisfaction' non trouvé
+[2026-02-11 10:00:01] [ERROR] Réservation #3326 : Template 'satisfaction' non trouvé
+[2026-02-11 10:00:01] [ERROR] Réservation #3308 : Template 'satisfaction' non trouvé
+[2026-02-11 10:00:01] [SUCCESS] ✅ Automatisation 'Satisfaction mi-séjour' : 0 SMS créé(s)
+[2026-02-11 10:00:01] [INFO] --- Traitement automatisation: Code accès Logement 1 (ID=4) (logement ID=1) ---
+[2026-02-11 10:00:01] [INFO] Date cible: 2026-02-11 (date_arrivee), 0 réservation(s) trouvée(s)
+[2026-02-11 10:00:01] [SUCCESS] ✅ Automatisation 'Code accès Logement 1' : 0 SMS créé(s)
+[2026-02-11 10:00:01] [INFO] ========================================
+[2026-02-11 10:00:01] [SUCCESS] Script terminé avec succès (type: custom)
+[2026-02-11 10:00:01] [INFO] ========================================
+[2026-02-12 10:00:01] [INFO] ========================================
+[2026-02-12 10:00:01] [INFO] Démarrage du script d'automatisation SMS (type: custom)
+[2026-02-12 10:00:01] [INFO] ========================================
+[2026-02-12 10:00:01] [INFO] === Traitement des automatisations personnalisées ===
+[2026-02-12 10:00:01] [INFO] Trouvé 4 automatisation(s) personnalisée(s) active(s)
+[2026-02-12 10:00:01] [INFO] --- Traitement automatisation: Remerciement post-séjour (ID=1) (tous logements) ---
+[2026-02-12 10:00:01] [INFO] Date cible: 2026-02-11 (date_depart), 1 réservation(s) trouvée(s)
+[2026-02-12 10:00:01] [ERROR] Réservation #3449 : Template 'remerciement' non trouvé
+[2026-02-12 10:00:01] [SUCCESS] ✅ Automatisation 'Remerciement post-séjour' : 0 SMS créé(s)
+[2026-02-12 10:00:01] [INFO] --- Traitement automatisation: Rappel 7j avant arrivée (ID=2) (tous logements) ---
+[2026-02-12 10:00:01] [INFO] Date cible: 2026-02-19 (date_arrivee), 0 réservation(s) trouvée(s)
+[2026-02-12 10:00:01] [SUCCESS] ✅ Automatisation 'Rappel 7j avant arrivée' : 0 SMS créé(s)
+[2026-02-12 10:00:01] [INFO] --- Traitement automatisation: Satisfaction mi-séjour (ID=3) (tous logements) ---
+[2026-02-12 10:00:01] [INFO] Date cible: 2026-02-09 (date_arrivee), 6 réservation(s) trouvée(s)
+[2026-02-12 10:00:01] [ERROR] Réservation #3453 : Template 'satisfaction' non trouvé
+[2026-02-12 10:00:01] [ERROR] Réservation #3449 : Template 'satisfaction' non trouvé
+[2026-02-12 10:00:01] [ERROR] Réservation #3446 : Template 'satisfaction' non trouvé
+[2026-02-12 10:00:01] [ERROR] Réservation #3444 : Template 'satisfaction' non trouvé
+[2026-02-12 10:00:01] [ERROR] Réservation #3441 : Template 'satisfaction' non trouvé
+[2026-02-12 10:00:01] [ERROR] Réservation #3417 : Template 'satisfaction' non trouvé
+[2026-02-12 10:00:01] [SUCCESS] ✅ Automatisation 'Satisfaction mi-séjour' : 0 SMS créé(s)
+[2026-02-12 10:00:01] [INFO] --- Traitement automatisation: Code accès Logement 1 (ID=4) (logement ID=1) ---
+[2026-02-12 10:00:01] [INFO] Date cible: 2026-02-12 (date_arrivee), 0 réservation(s) trouvée(s)
+[2026-02-12 10:00:01] [SUCCESS] ✅ Automatisation 'Code accès Logement 1' : 0 SMS créé(s)
+[2026-02-12 10:00:01] [INFO] ========================================
+[2026-02-12 10:00:01] [SUCCESS] Script terminé avec succès (type: custom)
+[2026-02-12 10:00:01] [INFO] ========================================
+[2026-02-13 10:00:01] [INFO] ========================================
+[2026-02-13 10:00:01] [INFO] Démarrage du script d'automatisation SMS (type: custom)
+[2026-02-13 10:00:01] [INFO] ========================================
+[2026-02-13 10:00:01] [INFO] === Traitement des automatisations personnalisées ===
+[2026-02-13 10:00:01] [INFO] Trouvé 4 automatisation(s) personnalisée(s) active(s)
+[2026-02-13 10:00:01] [INFO] --- Traitement automatisation: Remerciement post-séjour (ID=1) (tous logements) ---
+[2026-02-13 10:00:01] [INFO] Date cible: 2026-02-12 (date_depart), 7 réservation(s) trouvée(s)
+[2026-02-13 10:00:01] [ERROR] Réservation #3453 : Template 'remerciement' non trouvé
+[2026-02-13 10:00:01] [ERROR] Réservation #3448 : Template 'remerciement' non trouvé
+[2026-02-13 10:00:01] [ERROR] Réservation #3446 : Template 'remerciement' non trouvé
+[2026-02-13 10:00:01] [ERROR] Réservation #3444 : Template 'remerciement' non trouvé
+[2026-02-13 10:00:01] [ERROR] Réservation #3443 : Template 'remerciement' non trouvé
+[2026-02-13 10:00:01] [ERROR] Réservation #3441 : Template 'remerciement' non trouvé
+[2026-02-13 10:00:01] [ERROR] Réservation #3417 : Template 'remerciement' non trouvé
+[2026-02-13 10:00:01] [SUCCESS] ✅ Automatisation 'Remerciement post-séjour' : 0 SMS créé(s)
+[2026-02-13 10:00:01] [INFO] --- Traitement automatisation: Rappel 7j avant arrivée (ID=2) (tous logements) ---
+[2026-02-13 10:00:01] [INFO] Date cible: 2026-02-20 (date_arrivee), 2 réservation(s) trouvée(s)
+[2026-02-13 10:00:01] [ERROR] Réservation #3450 : Template 'rappel_7j' non trouvé
+[2026-02-13 10:00:01] [ERROR] Réservation #3427 : Template 'rappel_7j' non trouvé
+[2026-02-13 10:00:01] [SUCCESS] ✅ Automatisation 'Rappel 7j avant arrivée' : 0 SMS créé(s)
+[2026-02-13 10:00:01] [INFO] --- Traitement automatisation: Satisfaction mi-séjour (ID=3) (tous logements) ---
+[2026-02-13 10:00:01] [INFO] Date cible: 2026-02-10 (date_arrivee), 1 réservation(s) trouvée(s)
+[2026-02-13 10:00:01] [ERROR] Réservation #3460 : Template 'satisfaction' non trouvé
+[2026-02-13 10:00:01] [SUCCESS] ✅ Automatisation 'Satisfaction mi-séjour' : 0 SMS créé(s)
+[2026-02-13 10:00:01] [INFO] --- Traitement automatisation: Code accès Logement 1 (ID=4) (logement ID=1) ---
+[2026-02-13 10:00:01] [INFO] Date cible: 2026-02-13 (date_arrivee), 0 réservation(s) trouvée(s)
+[2026-02-13 10:00:01] [SUCCESS] ✅ Automatisation 'Code accès Logement 1' : 0 SMS créé(s)
+[2026-02-13 10:00:01] [INFO] ========================================
+[2026-02-13 10:00:01] [SUCCESS] Script terminé avec succès (type: custom)
+[2026-02-13 10:00:01] [INFO] ========================================
+[2026-02-14 10:00:01] [INFO] ========================================
+[2026-02-14 10:00:01] [INFO] Démarrage du script d'automatisation SMS (type: custom)
+[2026-02-14 10:00:01] [INFO] ========================================
+[2026-02-14 10:00:01] [INFO] === Traitement des automatisations personnalisées ===
+[2026-02-14 10:00:01] [INFO] Trouvé 4 automatisation(s) personnalisée(s) active(s)
+[2026-02-14 10:00:01] [INFO] --- Traitement automatisation: Remerciement post-séjour (ID=1) (tous logements) ---
+[2026-02-14 10:00:01] [INFO] Date cible: 2026-02-13 (date_depart), 8 réservation(s) trouvée(s)
+[2026-02-14 10:00:01] [ERROR] Réservation #3473 : Template 'remerciement' non trouvé
+[2026-02-14 10:00:01] [ERROR] Réservation #3469 : Template 'remerciement' non trouvé
+[2026-02-14 10:00:01] [ERROR] Réservation #3462 : Template 'remerciement' non trouvé
+[2026-02-14 10:00:01] [ERROR] Réservation #3459 : Template 'remerciement' non trouvé
+[2026-02-14 10:00:01] [ERROR] Réservation #3458 : Template 'remerciement' non trouvé
+[2026-02-14 10:00:01] [ERROR] Réservation #3454 : Template 'remerciement' non trouvé
+[2026-02-14 10:00:01] [ERROR] Réservation #3447 : Template 'remerciement' non trouvé
+[2026-02-14 10:00:01] [ERROR] Réservation #3362 : Template 'remerciement' non trouvé
+[2026-02-14 10:00:01] [SUCCESS] ✅ Automatisation 'Remerciement post-séjour' : 0 SMS créé(s)
+[2026-02-14 10:00:01] [INFO] --- Traitement automatisation: Rappel 7j avant arrivée (ID=2) (tous logements) ---
+[2026-02-14 10:00:01] [INFO] Date cible: 2026-02-21 (date_arrivee), 2 réservation(s) trouvée(s)
+[2026-02-14 10:00:01] [ERROR] Réservation #3440 : Template 'rappel_7j' non trouvé
+[2026-02-14 10:00:01] [ERROR] Réservation #3350 : Template 'rappel_7j' non trouvé
+[2026-02-14 10:00:01] [SUCCESS] ✅ Automatisation 'Rappel 7j avant arrivée' : 0 SMS créé(s)
+[2026-02-14 10:00:01] [INFO] --- Traitement automatisation: Satisfaction mi-séjour (ID=3) (tous logements) ---
+[2026-02-14 10:00:01] [INFO] Date cible: 2026-02-11 (date_arrivee), 1 réservation(s) trouvée(s)
+[2026-02-14 10:00:01] [ERROR] Réservation #3459 : Template 'satisfaction' non trouvé
+[2026-02-14 10:00:01] [SUCCESS] ✅ Automatisation 'Satisfaction mi-séjour' : 0 SMS créé(s)
+[2026-02-14 10:00:01] [INFO] --- Traitement automatisation: Code accès Logement 1 (ID=4) (logement ID=1) ---
+[2026-02-14 10:00:01] [INFO] Date cible: 2026-02-14 (date_arrivee), 0 réservation(s) trouvée(s)
+[2026-02-14 10:00:01] [SUCCESS] ✅ Automatisation 'Code accès Logement 1' : 0 SMS créé(s)
+[2026-02-14 10:00:01] [INFO] ========================================
+[2026-02-14 10:00:01] [SUCCESS] Script terminé avec succès (type: custom)
+[2026-02-14 10:00:01] [INFO] ========================================
+[2026-02-15 10:00:01] [INFO] ========================================
+[2026-02-15 10:00:01] [INFO] Démarrage du script d'automatisation SMS (type: custom)
+[2026-02-15 10:00:01] [INFO] ========================================
+[2026-02-15 10:00:01] [INFO] === Traitement des automatisations personnalisées ===
+[2026-02-15 10:00:01] [INFO] Trouvé 4 automatisation(s) personnalisée(s) active(s)
+[2026-02-15 10:00:01] [INFO] --- Traitement automatisation: Remerciement post-séjour (ID=1) (tous logements) ---
+[2026-02-15 10:00:01] [INFO] Date cible: 2026-02-14 (date_depart), 2 réservation(s) trouvée(s)
+[2026-02-15 10:00:01] [ERROR] Réservation #3438 : Template 'remerciement' non trouvé
+[2026-02-15 10:00:01] [ERROR] Réservation #3439 : Template 'remerciement' non trouvé
+[2026-02-15 10:00:01] [SUCCESS] ✅ Automatisation 'Remerciement post-séjour' : 0 SMS créé(s)
+[2026-02-15 10:00:01] [INFO] --- Traitement automatisation: Rappel 7j avant arrivée (ID=2) (tous logements) ---
+[2026-02-15 10:00:01] [INFO] Date cible: 2026-02-22 (date_arrivee), 1 réservation(s) trouvée(s)
+[2026-02-15 10:00:01] [ERROR] Réservation #3237 : Template 'rappel_7j' non trouvé
+[2026-02-15 10:00:01] [SUCCESS] ✅ Automatisation 'Rappel 7j avant arrivée' : 0 SMS créé(s)
+[2026-02-15 10:00:01] [INFO] --- Traitement automatisation: Satisfaction mi-séjour (ID=3) (tous logements) ---
+[2026-02-15 10:00:01] [INFO] Date cible: 2026-02-12 (date_arrivee), 6 réservation(s) trouvée(s)
+[2026-02-15 10:00:01] [ERROR] Réservation #3473 : Template 'satisfaction' non trouvé
+[2026-02-15 10:00:01] [ERROR] Réservation #3469 : Template 'satisfaction' non trouvé
+[2026-02-15 10:00:01] [ERROR] Réservation #3468 : Template 'satisfaction' non trouvé
+[2026-02-15 10:00:01] [ERROR] Réservation #3462 : Template 'satisfaction' non trouvé
+[2026-02-15 10:00:01] [ERROR] Réservation #3458 : Template 'satisfaction' non trouvé
+[2026-02-15 10:00:01] [ERROR] Réservation #3454 : Template 'satisfaction' non trouvé
+[2026-02-15 10:00:01] [SUCCESS] ✅ Automatisation 'Satisfaction mi-séjour' : 0 SMS créé(s)
+[2026-02-15 10:00:01] [INFO] --- Traitement automatisation: Code accès Logement 1 (ID=4) (logement ID=1) ---
+[2026-02-15 10:00:01] [INFO] Date cible: 2026-02-15 (date_arrivee), 0 réservation(s) trouvée(s)
+[2026-02-15 10:00:01] [SUCCESS] ✅ Automatisation 'Code accès Logement 1' : 0 SMS créé(s)
+[2026-02-15 10:00:01] [INFO] ========================================
+[2026-02-15 10:00:01] [SUCCESS] Script terminé avec succès (type: custom)
+[2026-02-15 10:00:01] [INFO] ========================================
+[2026-02-16 10:00:01] [INFO] ========================================
+[2026-02-16 10:00:01] [INFO] Démarrage du script d'automatisation SMS (type: custom)
+[2026-02-16 10:00:01] [INFO] ========================================
+[2026-02-16 10:00:01] [INFO] === Traitement des automatisations personnalisées ===
+[2026-02-16 10:00:01] [INFO] Trouvé 4 automatisation(s) personnalisée(s) active(s)
+[2026-02-16 10:00:01] [INFO] --- Traitement automatisation: Remerciement post-séjour (ID=1) (tous logements) ---
+[2026-02-16 10:00:01] [INFO] Date cible: 2026-02-15 (date_depart), 7 réservation(s) trouvée(s)
+[2026-02-16 10:00:01] [ERROR] Réservation #3474 : Template 'remerciement' non trouvé
+[2026-02-16 10:00:01] [ERROR] Réservation #3470 : Template 'remerciement' non trouvé
+[2026-02-16 10:00:01] [ERROR] Réservation #3461 : Template 'remerciement' non trouvé
+[2026-02-16 10:00:01] [ERROR] Réservation #3451 : Template 'remerciement' non trouvé
+[2026-02-16 10:00:01] [ERROR] Réservation #3431 : Template 'remerciement' non trouvé
+[2026-02-16 10:00:01] [ERROR] Réservation #3368 : Template 'remerciement' non trouvé
+[2026-02-16 10:00:01] [ERROR] Réservation #3326 : Template 'remerciement' non trouvé
+[2026-02-16 10:00:01] [SUCCESS] ✅ Automatisation 'Remerciement post-séjour' : 0 SMS créé(s)
+[2026-02-16 10:00:01] [INFO] --- Traitement automatisation: Rappel 7j avant arrivée (ID=2) (tous logements) ---
+[2026-02-16 10:00:01] [INFO] Date cible: 2026-02-23 (date_arrivee), 2 réservation(s) trouvée(s)
+[2026-02-16 10:00:01] [ERROR] Réservation #3418 : Template 'rappel_7j' non trouvé
+[2026-02-16 10:00:01] [ERROR] Réservation #3309 : Template 'rappel_7j' non trouvé
+[2026-02-16 10:00:01] [SUCCESS] ✅ Automatisation 'Rappel 7j avant arrivée' : 0 SMS créé(s)
+[2026-02-16 10:00:01] [INFO] --- Traitement automatisation: Satisfaction mi-séjour (ID=3) (tous logements) ---
+[2026-02-16 10:00:01] [INFO] Date cible: 2026-02-13 (date_arrivee), 3 réservation(s) trouvée(s)
+[2026-02-16 10:00:01] [ERROR] Réservation #3451 : Template 'satisfaction' non trouvé
+[2026-02-16 10:00:01] [ERROR] Réservation #3431 : Template 'satisfaction' non trouvé
+[2026-02-16 10:00:01] [ERROR] Réservation #3404 : Template 'satisfaction' non trouvé
+[2026-02-16 10:00:01] [SUCCESS] ✅ Automatisation 'Satisfaction mi-séjour' : 0 SMS créé(s)
+[2026-02-16 10:00:01] [INFO] --- Traitement automatisation: Code accès Logement 1 (ID=4) (logement ID=1) ---
+[2026-02-16 10:00:01] [INFO] Date cible: 2026-02-16 (date_arrivee), 0 réservation(s) trouvée(s)
+[2026-02-16 10:00:01] [SUCCESS] ✅ Automatisation 'Code accès Logement 1' : 0 SMS créé(s)
+[2026-02-16 10:00:01] [INFO] ========================================
+[2026-02-16 10:00:01] [SUCCESS] Script terminé avec succès (type: custom)
+[2026-02-16 10:00:01] [INFO] ========================================
+[2026-02-17 10:00:01] [INFO] ========================================
+[2026-02-17 10:00:01] [INFO] Démarrage du script d'automatisation SMS (type: custom)
+[2026-02-17 10:00:01] [INFO] ========================================
+[2026-02-17 10:00:01] [INFO] === Traitement des automatisations personnalisées ===
+[2026-02-17 10:00:01] [INFO] Trouvé 4 automatisation(s) personnalisée(s) active(s)
+[2026-02-17 10:00:01] [INFO] --- Traitement automatisation: Remerciement post-séjour (ID=1) (tous logements) ---
+[2026-02-17 10:00:01] [INFO] Date cible: 2026-02-16 (date_depart), 3 réservation(s) trouvée(s)
+[2026-02-17 10:00:01] [ERROR] Réservation #3468 : Template 'remerciement' non trouvé
+[2026-02-17 10:00:01] [ERROR] Réservation #3404 : Template 'remerciement' non trouvé
+[2026-02-17 10:00:01] [ERROR] Réservation #3308 : Template 'remerciement' non trouvé
+[2026-02-17 10:00:01] [SUCCESS] ✅ Automatisation 'Remerciement post-séjour' : 0 SMS créé(s)
+[2026-02-17 10:00:01] [INFO] --- Traitement automatisation: Rappel 7j avant arrivée (ID=2) (tous logements) ---
+[2026-02-17 10:00:01] [INFO] Date cible: 2026-02-24 (date_arrivee), 0 réservation(s) trouvée(s)
+[2026-02-17 10:00:01] [SUCCESS] ✅ Automatisation 'Rappel 7j avant arrivée' : 0 SMS créé(s)
+[2026-02-17 10:00:01] [INFO] --- Traitement automatisation: Satisfaction mi-séjour (ID=3) (tous logements) ---
+[2026-02-17 10:00:01] [INFO] Date cible: 2026-02-14 (date_arrivee), 4 réservation(s) trouvée(s)
+[2026-02-17 10:00:01] [ERROR] Réservation #3474 : Template 'satisfaction' non trouvé
+[2026-02-17 10:00:01] [ERROR] Réservation #3470 : Template 'satisfaction' non trouvé
+[2026-02-17 10:00:01] [ERROR] Réservation #3461 : Template 'satisfaction' non trouvé
+[2026-02-17 10:00:01] [ERROR] Réservation #3455 : Template 'satisfaction' non trouvé
+[2026-02-17 10:00:01] [SUCCESS] ✅ Automatisation 'Satisfaction mi-séjour' : 0 SMS créé(s)
+[2026-02-17 10:00:01] [INFO] --- Traitement automatisation: Code accès Logement 1 (ID=4) (logement ID=1) ---
+[2026-02-17 10:00:01] [INFO] Date cible: 2026-02-17 (date_arrivee), 0 réservation(s) trouvée(s)
+[2026-02-17 10:00:01] [SUCCESS] ✅ Automatisation 'Code accès Logement 1' : 0 SMS créé(s)
+[2026-02-17 10:00:01] [INFO] ========================================
+[2026-02-17 10:00:01] [SUCCESS] Script terminé avec succès (type: custom)
+[2026-02-17 10:00:01] [INFO] ========================================
+[2026-02-18 10:00:01] [INFO] ========================================
+[2026-02-18 10:00:01] [INFO] Démarrage du script d'automatisation SMS (type: custom)
+[2026-02-18 10:00:01] [INFO] ========================================
+[2026-02-18 10:00:01] [INFO] === Traitement des automatisations personnalisées ===
+[2026-02-18 10:00:01] [INFO] Trouvé 4 automatisation(s) personnalisée(s) active(s)
+[2026-02-18 10:00:01] [INFO] --- Traitement automatisation: Remerciement post-séjour (ID=1) (tous logements) ---
+[2026-02-18 10:00:01] [INFO] Date cible: 2026-02-17 (date_depart), 2 réservation(s) trouvée(s)
+[2026-02-18 10:00:01] [ERROR] Réservation #3480 : Template 'remerciement' non trouvé
+[2026-02-18 10:00:01] [ERROR] Réservation #3476 : Template 'remerciement' non trouvé
+[2026-02-18 10:00:01] [SUCCESS] ✅ Automatisation 'Remerciement post-séjour' : 0 SMS créé(s)
+[2026-02-18 10:00:01] [INFO] --- Traitement automatisation: Rappel 7j avant arrivée (ID=2) (tous logements) ---
+[2026-02-18 10:00:01] [INFO] Date cible: 2026-02-25 (date_arrivee), 0 réservation(s) trouvée(s)
+[2026-02-18 10:00:01] [SUCCESS] ✅ Automatisation 'Rappel 7j avant arrivée' : 0 SMS créé(s)
+[2026-02-18 10:00:01] [INFO] --- Traitement automatisation: Satisfaction mi-séjour (ID=3) (tous logements) ---
+[2026-02-18 10:00:01] [INFO] Date cible: 2026-02-15 (date_arrivee), 3 réservation(s) trouvée(s)
+[2026-02-18 10:00:01] [ERROR] Réservation #3480 : Template 'satisfaction' non trouvé
+[2026-02-18 10:00:01] [ERROR] Réservation #3425 : Template 'satisfaction' non trouvé
+[2026-02-18 10:00:01] [ERROR] Réservation #2933 : Template 'satisfaction' non trouvé
+[2026-02-18 10:00:01] [SUCCESS] ✅ Automatisation 'Satisfaction mi-séjour' : 0 SMS créé(s)
+[2026-02-18 10:00:01] [INFO] --- Traitement automatisation: Code accès Logement 1 (ID=4) (logement ID=1) ---
+[2026-02-18 10:00:01] [INFO] Date cible: 2026-02-18 (date_arrivee), 0 réservation(s) trouvée(s)
+[2026-02-18 10:00:01] [SUCCESS] ✅ Automatisation 'Code accès Logement 1' : 0 SMS créé(s)
+[2026-02-18 10:00:01] [INFO] ========================================
+[2026-02-18 10:00:01] [SUCCESS] Script terminé avec succès (type: custom)
+[2026-02-18 10:00:01] [INFO] ========================================
+[2026-02-19 10:00:01] [INFO] ========================================
+[2026-02-19 10:00:01] [INFO] Démarrage du script d'automatisation SMS (type: custom)
+[2026-02-19 10:00:01] [INFO] ========================================
+[2026-02-19 10:00:01] [INFO] === Traitement des automatisations personnalisées ===
+[2026-02-19 10:00:01] [INFO] Trouvé 4 automatisation(s) personnalisée(s) active(s)
+[2026-02-19 10:00:01] [INFO] --- Traitement automatisation: Remerciement post-séjour (ID=1) (tous logements) ---
+[2026-02-19 10:00:01] [INFO] Date cible: 2026-02-18 (date_depart), 4 réservation(s) trouvée(s)
+[2026-02-19 10:00:01] [ERROR] Réservation #3482 : Template 'remerciement' non trouvé
+[2026-02-19 10:00:01] [ERROR] Réservation #3460 : Template 'remerciement' non trouvé
+[2026-02-19 10:00:01] [ERROR] Réservation #3455 : Template 'remerciement' non trouvé
+[2026-02-19 10:00:01] [ERROR] Réservation #3436 : Template 'remerciement' non trouvé
+[2026-02-19 10:00:01] [SUCCESS] ✅ Automatisation 'Remerciement post-séjour' : 0 SMS créé(s)
+[2026-02-19 10:00:01] [INFO] --- Traitement automatisation: Rappel 7j avant arrivée (ID=2) (tous logements) ---
+[2026-02-19 10:00:01] [INFO] Date cible: 2026-02-26 (date_arrivee), 0 réservation(s) trouvée(s)
+[2026-02-19 10:00:01] [SUCCESS] ✅ Automatisation 'Rappel 7j avant arrivée' : 0 SMS créé(s)
+[2026-02-19 10:00:01] [INFO] --- Traitement automatisation: Satisfaction mi-séjour (ID=3) (tous logements) ---
+[2026-02-19 10:00:01] [INFO] Date cible: 2026-02-16 (date_arrivee), 8 réservation(s) trouvée(s)
+[2026-02-19 10:00:01] [ERROR] Réservation #3479 : Template 'satisfaction' non trouvé
+[2026-02-19 10:00:01] [ERROR] Réservation #3476 : Template 'satisfaction' non trouvé
+[2026-02-19 10:00:01] [ERROR] Réservation #3471 : Template 'satisfaction' non trouvé
+[2026-02-19 10:00:01] [ERROR] Réservation #3463 : Template 'satisfaction' non trouvé
+[2026-02-19 10:00:01] [ERROR] Réservation #3457 : Template 'satisfaction' non trouvé
+[2026-02-19 10:00:01] [ERROR] Réservation #3452 : Template 'satisfaction' non trouvé
+[2026-02-19 10:00:01] [ERROR] Réservation #3436 : Template 'satisfaction' non trouvé
+[2026-02-19 10:00:01] [ERROR] Réservation #3276 : Template 'satisfaction' non trouvé
+[2026-02-19 10:00:01] [SUCCESS] ✅ Automatisation 'Satisfaction mi-séjour' : 0 SMS créé(s)
+[2026-02-19 10:00:01] [INFO] --- Traitement automatisation: Code accès Logement 1 (ID=4) (logement ID=1) ---
+[2026-02-19 10:00:01] [INFO] Date cible: 2026-02-19 (date_arrivee), 0 réservation(s) trouvée(s)
+[2026-02-19 10:00:01] [SUCCESS] ✅ Automatisation 'Code accès Logement 1' : 0 SMS créé(s)
+[2026-02-19 10:00:01] [INFO] ========================================
+[2026-02-19 10:00:01] [SUCCESS] Script terminé avec succès (type: custom)
+[2026-02-19 10:00:01] [INFO] ========================================
+[2026-02-20 10:00:02] [INFO] ========================================
+[2026-02-20 10:00:02] [INFO] Démarrage du script d'automatisation SMS (type: custom)
+[2026-02-20 10:00:02] [INFO] ========================================
+[2026-02-20 10:00:02] [INFO] === Traitement des automatisations personnalisées ===
+[2026-02-20 10:00:02] [INFO] Trouvé 4 automatisation(s) personnalisée(s) active(s)
+[2026-02-20 10:00:02] [INFO] --- Traitement automatisation: Remerciement post-séjour (ID=1) (tous logements) ---
+[2026-02-20 10:00:02] [INFO] Date cible: 2026-02-19 (date_depart), 2 réservation(s) trouvée(s)
+[2026-02-20 10:00:02] [ERROR] Réservation #3479 : Template 'remerciement' non trouvé
+[2026-02-20 10:00:02] [ERROR] Réservation #3477 : Template 'remerciement' non trouvé
+[2026-02-20 10:00:02] [SUCCESS] ✅ Automatisation 'Remerciement post-séjour' : 0 SMS créé(s)
+[2026-02-20 10:00:02] [INFO] --- Traitement automatisation: Rappel 7j avant arrivée (ID=2) (tous logements) ---
+[2026-02-20 10:00:02] [INFO] Date cible: 2026-02-27 (date_arrivee), 0 réservation(s) trouvée(s)
+[2026-02-20 10:00:02] [SUCCESS] ✅ Automatisation 'Rappel 7j avant arrivée' : 0 SMS créé(s)
+[2026-02-20 10:00:02] [INFO] --- Traitement automatisation: Satisfaction mi-séjour (ID=3) (tous logements) ---
+[2026-02-20 10:00:02] [INFO] Date cible: 2026-02-17 (date_arrivee), 2 réservation(s) trouvée(s)
+[2026-02-20 10:00:02] [ERROR] Réservation #3482 : Template 'satisfaction' non trouvé
+[2026-02-20 10:00:02] [ERROR] Réservation #3477 : Template 'satisfaction' non trouvé
+[2026-02-20 10:00:02] [SUCCESS] ✅ Automatisation 'Satisfaction mi-séjour' : 0 SMS créé(s)
+[2026-02-20 10:00:02] [INFO] --- Traitement automatisation: Code accès Logement 1 (ID=4) (logement ID=1) ---
+[2026-02-20 10:00:02] [INFO] Date cible: 2026-02-20 (date_arrivee), 0 réservation(s) trouvée(s)
+[2026-02-20 10:00:02] [SUCCESS] ✅ Automatisation 'Code accès Logement 1' : 0 SMS créé(s)
+[2026-02-20 10:00:02] [INFO] ========================================
+[2026-02-20 10:00:02] [SUCCESS] Script terminé avec succès (type: custom)
+[2026-02-20 10:00:02] [INFO] ========================================
+[2026-02-21 10:00:01] [INFO] ========================================
+[2026-02-21 10:00:01] [INFO] Démarrage du script d'automatisation SMS (type: custom)
+[2026-02-21 10:00:01] [INFO] ========================================
+[2026-02-21 10:00:01] [INFO] === Traitement des automatisations personnalisées ===
+[2026-02-21 10:00:01] [INFO] Trouvé 4 automatisation(s) personnalisée(s) active(s)
+[2026-02-21 10:00:01] [INFO] --- Traitement automatisation: Remerciement post-séjour (ID=1) (tous logements) ---
+[2026-02-21 10:00:01] [INFO] Date cible: 2026-02-20 (date_depart), 4 réservation(s) trouvée(s)
+[2026-02-21 10:00:01] [WARNING] Réservation #3492 : Pas de numéro de téléphone
+[2026-02-21 10:00:01] [ERROR] Réservation #3490 : Template 'remerciement' non trouvé
+[2026-02-21 10:00:01] [ERROR] Réservation #3485 : Template 'remerciement' non trouvé
+[2026-02-21 10:00:01] [ERROR] Réservation #3452 : Template 'remerciement' non trouvé
+[2026-02-21 10:00:01] [SUCCESS] ✅ Automatisation 'Remerciement post-séjour' : 0 SMS créé(s)
+[2026-02-21 10:00:01] [INFO] --- Traitement automatisation: Rappel 7j avant arrivée (ID=2) (tous logements) ---
+[2026-02-21 10:00:01] [INFO] Date cible: 2026-02-28 (date_arrivee), 1 réservation(s) trouvée(s)
+[2026-02-21 10:00:01] [ERROR] Réservation #3379 : Template 'rappel_7j' non trouvé
+[2026-02-21 10:00:01] [SUCCESS] ✅ Automatisation 'Rappel 7j avant arrivée' : 0 SMS créé(s)
+[2026-02-21 10:00:01] [INFO] --- Traitement automatisation: Satisfaction mi-séjour (ID=3) (tous logements) ---
+[2026-02-21 10:00:01] [INFO] Date cible: 2026-02-18 (date_arrivee), 5 réservation(s) trouvée(s)
+[2026-02-21 10:00:01] [ERROR] Réservation #3485 : Template 'satisfaction' non trouvé
+[2026-02-21 10:00:01] [ERROR] Réservation #3464 : Template 'satisfaction' non trouvé
+[2026-02-21 10:00:01] [ERROR] Réservation #3456 : Template 'satisfaction' non trouvé
+[2026-02-21 10:00:01] [ERROR] Réservation #3366 : Template 'satisfaction' non trouvé
+[2026-02-21 10:00:01] [ERROR] Réservation #3314 : Template 'satisfaction' non trouvé
+[2026-02-21 10:00:01] [SUCCESS] ✅ Automatisation 'Satisfaction mi-séjour' : 0 SMS créé(s)
+[2026-02-21 10:00:01] [INFO] --- Traitement automatisation: Code accès Logement 1 (ID=4) (logement ID=1) ---
+[2026-02-21 10:00:01] [INFO] Date cible: 2026-02-21 (date_arrivee), 0 réservation(s) trouvée(s)
+[2026-02-21 10:00:01] [SUCCESS] ✅ Automatisation 'Code accès Logement 1' : 0 SMS créé(s)
+[2026-02-21 10:00:01] [INFO] ========================================
+[2026-02-21 10:00:01] [SUCCESS] Script terminé avec succès (type: custom)
+[2026-02-21 10:00:01] [INFO] ========================================
+[2026-02-22 10:00:01] [INFO] ========================================
+[2026-02-22 10:00:01] [INFO] Démarrage du script d'automatisation SMS (type: custom)
+[2026-02-22 10:00:01] [INFO] ========================================
+[2026-02-22 10:00:01] [INFO] === Traitement des automatisations personnalisées ===
+[2026-02-22 10:00:01] [INFO] Trouvé 4 automatisation(s) personnalisée(s) active(s)
+[2026-02-22 10:00:01] [INFO] --- Traitement automatisation: Remerciement post-séjour (ID=1) (tous logements) ---
+[2026-02-22 10:00:01] [INFO] Date cible: 2026-02-21 (date_depart), 2 réservation(s) trouvée(s)
+[2026-02-22 10:00:01] [ERROR] Réservation #3471 : Template 'remerciement' non trouvé
+[2026-02-22 10:00:01] [ERROR] Réservation #3425 : Template 'remerciement' non trouvé
+[2026-02-22 10:00:01] [SUCCESS] ✅ Automatisation 'Remerciement post-séjour' : 0 SMS créé(s)
+[2026-02-22 10:00:01] [INFO] --- Traitement automatisation: Rappel 7j avant arrivée (ID=2) (tous logements) ---
+[2026-02-22 10:00:01] [INFO] Date cible: 2026-03-01 (date_arrivee), 2 réservation(s) trouvée(s)
+[2026-02-22 10:00:01] [ERROR] Réservation #3465 : Template 'rappel_7j' non trouvé
+[2026-02-22 10:00:01] [ERROR] Réservation #3182 : Template 'rappel_7j' non trouvé
+[2026-02-22 10:00:01] [SUCCESS] ✅ Automatisation 'Rappel 7j avant arrivée' : 0 SMS créé(s)
+[2026-02-22 10:00:01] [INFO] --- Traitement automatisation: Satisfaction mi-séjour (ID=3) (tous logements) ---
+[2026-02-22 10:00:01] [INFO] Date cible: 2026-02-19 (date_arrivee), 2 réservation(s) trouvée(s)
+[2026-02-22 10:00:01] [WARNING] Réservation #3492 : Pas de numéro de téléphone
+[2026-02-22 10:00:01] [ERROR] Réservation #3490 : Template 'satisfaction' non trouvé
+[2026-02-22 10:00:01] [SUCCESS] ✅ Automatisation 'Satisfaction mi-séjour' : 0 SMS créé(s)
+[2026-02-22 10:00:01] [INFO] --- Traitement automatisation: Code accès Logement 1 (ID=4) (logement ID=1) ---
+[2026-02-22 10:00:01] [INFO] Date cible: 2026-02-22 (date_arrivee), 0 réservation(s) trouvée(s)
+[2026-02-22 10:00:01] [SUCCESS] ✅ Automatisation 'Code accès Logement 1' : 0 SMS créé(s)
+[2026-02-22 10:00:01] [INFO] ========================================
+[2026-02-22 10:00:01] [SUCCESS] Script terminé avec succès (type: custom)
+[2026-02-22 10:00:01] [INFO] ========================================
+[2026-02-23 10:00:01] [INFO] ========================================
+[2026-02-23 10:00:01] [INFO] Démarrage du script d'automatisation SMS (type: custom)
+[2026-02-23 10:00:01] [INFO] ========================================
+[2026-02-23 10:00:01] [INFO] === Traitement des automatisations personnalisées ===
+[2026-02-23 10:00:01] [INFO] Trouvé 4 automatisation(s) personnalisée(s) active(s)
+[2026-02-23 10:00:01] [INFO] --- Traitement automatisation: Remerciement post-séjour (ID=1) (tous logements) ---
+[2026-02-23 10:00:01] [INFO] Date cible: 2026-02-22 (date_depart), 6 réservation(s) trouvée(s)
+[2026-02-23 10:00:01] [ERROR] Réservation #3464 : Template 'remerciement' non trouvé
+[2026-02-23 10:00:01] [ERROR] Réservation #3450 : Template 'remerciement' non trouvé
+[2026-02-23 10:00:01] [ERROR] Réservation #3440 : Template 'remerciement' non trouvé
+[2026-02-23 10:00:01] [ERROR] Réservation #3427 : Template 'remerciement' non trouvé
+[2026-02-23 10:00:01] [ERROR] Réservation #3276 : Template 'remerciement' non trouvé
+[2026-02-23 10:00:01] [ERROR] Réservation #2933 : Template 'remerciement' non trouvé
+[2026-02-23 10:00:01] [SUCCESS] ✅ Automatisation 'Remerciement post-séjour' : 0 SMS créé(s)
+[2026-02-23 10:00:01] [INFO] --- Traitement automatisation: Rappel 7j avant arrivée (ID=2) (tous logements) ---
+[2026-02-23 10:00:01] [INFO] Date cible: 2026-03-02 (date_arrivee), 0 réservation(s) trouvée(s)
+[2026-02-23 10:00:01] [SUCCESS] ✅ Automatisation 'Rappel 7j avant arrivée' : 0 SMS créé(s)
+[2026-02-23 10:00:01] [INFO] --- Traitement automatisation: Satisfaction mi-séjour (ID=3) (tous logements) ---
+[2026-02-23 10:00:01] [INFO] Date cible: 2026-02-20 (date_arrivee), 2 réservation(s) trouvée(s)
+[2026-02-23 10:00:01] [ERROR] Réservation #3450 : Template 'satisfaction' non trouvé
+[2026-02-23 10:00:01] [ERROR] Réservation #3427 : Template 'satisfaction' non trouvé
+[2026-02-23 10:00:01] [SUCCESS] ✅ Automatisation 'Satisfaction mi-séjour' : 0 SMS créé(s)
+[2026-02-23 10:00:01] [INFO] --- Traitement automatisation: Code accès Logement 1 (ID=4) (logement ID=1) ---
+[2026-02-23 10:00:01] [INFO] Date cible: 2026-02-23 (date_arrivee), 0 réservation(s) trouvée(s)
+[2026-02-23 10:00:01] [SUCCESS] ✅ Automatisation 'Code accès Logement 1' : 0 SMS créé(s)
+[2026-02-23 10:00:01] [INFO] ========================================
+[2026-02-23 10:00:01] [SUCCESS] Script terminé avec succès (type: custom)
+[2026-02-23 10:00:01] [INFO] ========================================
+[2026-02-24 10:00:01] [INFO] ========================================
+[2026-02-24 10:00:01] [INFO] Démarrage du script d'automatisation SMS (type: custom)
+[2026-02-24 10:00:01] [INFO] ========================================
+[2026-02-24 10:00:01] [INFO] === Traitement des automatisations personnalisées ===
+[2026-02-24 10:00:01] [INFO] Trouvé 4 automatisation(s) personnalisée(s) active(s)
+[2026-02-24 10:00:01] [INFO] --- Traitement automatisation: Remerciement post-séjour (ID=1) (tous logements) ---
+[2026-02-24 10:00:01] [INFO] Date cible: 2026-02-23 (date_depart), 2 réservation(s) trouvée(s)
+[2026-02-24 10:00:01] [ERROR] Réservation #3487 : Template 'remerciement' non trouvé
+[2026-02-24 10:00:01] [ERROR] Réservation #3463 : Template 'remerciement' non trouvé
+[2026-02-24 10:00:01] [SUCCESS] ✅ Automatisation 'Remerciement post-séjour' : 0 SMS créé(s)
+[2026-02-24 10:00:01] [INFO] --- Traitement automatisation: Rappel 7j avant arrivée (ID=2) (tous logements) ---
+[2026-02-24 10:00:01] [INFO] Date cible: 2026-03-03 (date_arrivee), 0 réservation(s) trouvée(s)
+[2026-02-24 10:00:01] [SUCCESS] ✅ Automatisation 'Rappel 7j avant arrivée' : 0 SMS créé(s)
+[2026-02-24 10:00:01] [INFO] --- Traitement automatisation: Satisfaction mi-séjour (ID=3) (tous logements) ---
+[2026-02-24 10:00:01] [INFO] Date cible: 2026-02-21 (date_arrivee), 4 réservation(s) trouvée(s)
+[2026-02-24 10:00:01] [ERROR] Réservation #3489 : Template 'satisfaction' non trouvé
+[2026-02-24 10:00:01] [ERROR] Réservation #3487 : Template 'satisfaction' non trouvé
+[2026-02-24 10:00:01] [ERROR] Réservation #3440 : Template 'satisfaction' non trouvé
+[2026-02-24 10:00:01] [ERROR] Réservation #3350 : Template 'satisfaction' non trouvé
+[2026-02-24 10:00:01] [SUCCESS] ✅ Automatisation 'Satisfaction mi-séjour' : 0 SMS créé(s)
+[2026-02-24 10:00:01] [INFO] --- Traitement automatisation: Code accès Logement 1 (ID=4) (logement ID=1) ---
+[2026-02-24 10:00:01] [INFO] Date cible: 2026-02-24 (date_arrivee), 0 réservation(s) trouvée(s)
+[2026-02-24 10:00:01] [SUCCESS] ✅ Automatisation 'Code accès Logement 1' : 0 SMS créé(s)
+[2026-02-24 10:00:01] [INFO] ========================================
+[2026-02-24 10:00:01] [SUCCESS] Script terminé avec succès (type: custom)
+[2026-02-24 10:00:01] [INFO] ========================================

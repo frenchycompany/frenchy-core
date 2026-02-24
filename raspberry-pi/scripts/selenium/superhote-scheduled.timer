@@ -1,0 +1,16 @@
+[Unit]
+Description=Daily Superhote Price Update Timer
+Requires=superhote-scheduled.service
+
+[Timer]
+# Par defaut: 7h du matin, tous les jours
+OnCalendar=*-*-* 07:00:00
+
+# Rattraper les executions manquees (si le serveur etait eteint)
+Persistent=true
+
+# Delai aleatoire de 5 minutes pour eviter les pics de charge
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target

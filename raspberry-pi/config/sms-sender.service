@@ -1,0 +1,29 @@
+[Unit]
+Description=SMS Sender Daemon - Envoi des SMS via modem GSM
+After=network.target mysql.service
+Wants=mysql.service
+
+[Service]
+Type=simple
+User=raphael
+Group=dialout
+WorkingDirectory=/home/raphael/sms_project/scripts
+ExecStart=/usr/bin/python3 /home/raphael/sms_project/scripts/envoyer_sms.py
+Restart=on-failure
+RestartSec=10
+StandardOutput=append:/home/raphael/sms_project/logs/sms-sender.log
+StandardError=append:/home/raphael/sms_project/logs/sms-sender.log
+
+# Securite
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/home/raphael/sms_project/logs
+ReadWritePaths=/dev/ttyUSB0
+ReadWritePaths=/dev/ttyUSB1
+
+# Limites
+MemoryMax=256M
+CPUQuota=50%
+
+[Install]
+WantedBy=multi-user.target

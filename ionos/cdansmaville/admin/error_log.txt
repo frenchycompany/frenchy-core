@@ -1,0 +1,11 @@
+[17-Jan-2025 23:32:34 Europe/Berlin] 🔥 ERREUR : SQLSTATE[42S22]: Column not found: 1054 Unknown column 'matterport' in 'field list'
+[23-Jan-2025 15:31:30 Europe/Berlin] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'ordre' in 'order clause' in /homepages/39/d1012957152/htdocs/clickandbuilds/frenchybnb/cdansmaville/admin/manage_modules.php:29
+Stack trace:
+#0 /homepages/39/d1012957152/htdocs/clickandbuilds/frenchybnb/cdansmaville/admin/manage_modules.php(29): PDOStatement->execute()
+#1 {main}
+  thrown in /homepages/39/d1012957152/htdocs/clickandbuilds/frenchybnb/cdansmaville/admin/manage_modules.php on line 29
+[23-Jan-2025 15:40:34 Europe/Berlin] PHP Fatal error:  Uncaught PDOException: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'ordre' in 'order clause' in /homepages/39/d1012957152/htdocs/clickandbuilds/frenchybnb/cdansmaville/admin/manage_modules.php:29
+Stack trace:
+#0 /homepages/39/d1012957152/htdocs/clickandbuilds/frenchybnb/cdansmaville/admin/manage_modules.php(29): PDOStatement->execute()
+#1 {main}
+  thrown in /homepages/39/d1012957152/htdocs/clickandbuilds/frenchybnb/cdansmaville/admin/manage_modules.php on line 29

@@ -1,0 +1,30 @@
+2026-01-30 10:45:46,477 - INFO - ============================================================
+2026-01-30 10:45:46,478 - INFO - MISE A JOUR QUOTIDIENNE SUPERHOTE
+2026-01-30 10:45:46,478 - INFO - Demarrage: 2026-01-30 10:45:46
+2026-01-30 10:45:46,478 - INFO - ============================================================
+2026-01-30 10:45:46,479 - INFO - Etape 1: Nettoyage des taches bloquees...
+2026-01-30 10:45:46,486 - INFO -   Aucune tache bloquee
+2026-01-30 10:45:46,487 - INFO - Etape 2: Generation des prix...
+2026-01-30 10:45:46,501 - INFO -   17 logements actifs
+2026-01-30 10:45:46,548 - INFO -   434 anciennes taches supprimees
+2026-01-30 10:45:47,705 - WARNING -   GROUPE1: prix non configures, ignore
+2026-01-30 10:45:47,706 - WARNING -   GROUPE2: prix non configures, ignore
+2026-01-30 10:45:47,706 - WARNING -   GROUPE3: prix non configures, ignore
+2026-01-30 10:45:47,706 - INFO -   434 mises a jour generees pour 17 logements
+2026-01-30 10:45:47,707 - INFO - Etape 3: Lancement des workers...
+2026-01-30 10:45:47,711 - INFO -   434 taches en attente
+2026-01-30 10:45:47,712 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 2 --groups
+2026-01-30 11:00:48,084 - INFO -   Workers termines en 900.4s
+2026-01-30 11:00:48,119 - INFO - ============================================================
+2026-01-30 11:00:48,121 - INFO - RESUME
+2026-01-30 11:00:48,122 - INFO -   Duree: 901.6s
+2026-01-30 11:00:48,122 - INFO -   Logements: 17
+2026-01-30 11:00:48,122 - INFO -   Mises a jour: 434
+2026-01-30 11:00:48,122 - INFO -   Stats finales: {'pending': 186, 'completed': 248}
+2026-01-30 11:00:48,123 - INFO - ============================================================
+2026-01-30 11:40:44,691 - INFO - Etape 1: Nettoyage des taches bloquees...
+2026-01-30 11:40:44,698 - INFO -   Aucune tache bloquee
+2026-01-30 11:40:44,699 - INFO - Etape 3: Lancement des workers...
+2026-01-30 11:40:44,705 - INFO -   186 taches en attente
+2026-01-30 11:40:44,706 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 2 --groups
+2026-01-30 11:42:17,685 - INFO -   Workers termines en 93.0s

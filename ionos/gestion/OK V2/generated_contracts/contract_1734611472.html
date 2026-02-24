@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contrat de Conciergerie</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            line-height: 1.6;
+            color: #333;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        header img {
+            max-width: 150px;
+            height: auto;
+            margin-bottom: 10px;
+        }
+        header h1 {
+            font-size: 24px;
+            margin: 0;
+            color: #333;
+        }
+        section {
+            margin-bottom: 20px;
+        }
+        section h2 {
+            font-size: 18px;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 5px;
+        }
+        .content {
+            margin-left: 20px;
+        }
+        footer {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 14px;
+            color: #777;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <img src="/images/logo.png" alt="Logo Frenchy Conciergerie">
+        <h1>Contrat de Conciergerie pour Location de Courte Durée</h1>
+    </header>
+    
+    <section>
+        <h2>Entre les soussignés :</h2>
+        <div class="content">
+            <p><strong>SAS FRENCHY CONCIERGERIE</strong></p>
+            <p>SAS au capital de 1000 € (en cours de création)<br>
+            Représentée par Raphaël Jacquet<br>
+            Adresse : 94 rue Jean Jaurès, 60610 Lacroix-Saint-Ouen<br>
+            Ci-après dénommé "le Prestataire"</p>
+
+            <p><strong>Et :</strong></p>
+            <p><strong>Nom :</strong> {{client_name}}<br>
+            <strong>Adresse :</strong> {{owner_address}}</p>
+        </div>
+    </section>
+
+    <section>
+        <h2>Article 1 : Objet du contrat</h2>
+        <div class="content">
+            <p>Le présent contrat a pour objet de confier au Prestataire la conciergerie de la mise en location de courte durée du “{{property_name}}” situé au :</p>
+            <p><strong>Adresse :</strong> {{property_address}}</p>
+            <p><strong>Description :</strong> {{property_description}}</p>
+        </div>
+    </section>
+
+    <section>
+        <h2>Article 2 : Droits d'usage</h2>
+        <div class="content">
+            <p>Le Client atteste qu'il détient tous les droits nécessaires à l'usage et à la mise en location du bien immobilier mentionné dans le présent contrat.</p>
+            <p>Le Client garantit également être en conformité avec les réglementations légales, fiscales et assurantielles applicables à la location de courte durée.</p>
+        </div>
+    </section>
+
+    <section>
+        <h2>Article 3 : Durée et résiliation du contrat</h2>
+        <div class="content">
+            <p>Le présent contrat est conclu pour une durée indéterminée. Il pourra être résilié par l'une ou l'autre des parties, moyennant un préavis de trente (30) jours notifié par écrit.</p>
+            <p>En cas de manquement grave à une obligation essentielle, la résiliation pourra être effective immédiatement après l'envoi d'une mise en demeure restée sans effet pendant 15 jours.</p>
+        </div>
+    </section>
+
+    <section>
+        <h2>Article 4 : Missions et Obligations du Prestataire</h2>
+        <div class="content">
+            <ul>
+                <li>Promouvoir la propriété sur les supports appropriés.</li>
+                <li>Créer et optimiser les annonces pour maximiser leur attractivité.</li>
+                <li>Ajuster les prix pour optimiser la rentabilité.</li>
+                <li>Répondre aux demandes de réservation et gérer les annulations.</li>
+                <li>Organiser les arrivées et départs des voyageurs (check-in et check-out).</li>
+                <li>Effectuer des inspections régulières du bien (minimum 1 fois par mois).</li>
+                <li>Fournir un rapport d'activité au Client (minimum 1 fois par mois).</li>
+                <li>Assurer, si requis, la gestion des consommables (produits d’accueil, articles de toilette) avec facturation des achats effectués sur présentation des justificatifs.</li>
+            </ul>
+            <p><em>Option : Si des prestations additionnelles sont requises (ex. réparations), celles-ci feront l'objet d'un devis soumis au Client.</em></p>
+        </div>
+    </section>
+
+    <section>
+        <h2>Article 5 : Obligations du Client</h2>
+        <div class="content">
+            <ul>
+                <li>Fournir toutes les informations nécessaires à la bonne exécution des prestations (titre de propriété, autorisations, etc.).</li>
+                <li>Remettre au Prestataire au moins 2 jeux de clés (1 pour la gestion et 1 pour les voyageurs).</li>
+                <li>Mettre à disposition un kit de produits ménagers et de linge suffisant (2 jeux de draps par couchage, 2 serviettes par voyageur, etc.).</li>
+                <li>Informer le Prestataire de tout changement relatif au bien (travaux, modifications d'accès).</li>
+                <li>Assurer le bien contre les risques locatifs et fournir une copie de cette assurance au Prestataire.</li>
+                <li>Prendre en charge les réparations majeures du bien en cas de besoin.</li>
+            </ul>
+        </div>
+    </section>
+
+    <section>
+        <h2>Article 6 : Honoraires et conditions financières</h2>
+        <div class="content">
+            <p>Les honoraires du Prestataire sont fixés à {{percentage_fee}}% des revenus générés par la location.</p>
+            <p>Le tarif de la prestation de ménage est de {{cleaning_fee}} EUR maximum par intervention.</p>
+      
+            <ul>
+                <li><strong>Modalités de paiement :</strong> Les factures sont émises à la fin de chaque mois et payables sous 10 jours.</li>
+                <li><strong>Pénalités de retard :</strong> En cas de retard de paiement, des pénalités pourront être appliquées au taux légal en vigueur, avec un minimum forfaitaire de 50 €.</li>
+            </ul>
+        </div>
+    </section>
+
+    <section>
+        <h2>Article 7 : Responsabilité</h2>
+        <div class="content">
+            <ul>
+                <li>Des dégradations causées par les locataires ou des pertes financières en cas de non-location.</li>
+                <li>Des objets ou valeurs laissés dans le bien.</li>
+            </ul>
+            <p>Le Client reste seul responsable des décisions concernant les réservations (tarifs, durée, voyageurs acceptés).</p>
+        </div>
+    </section>
+
+    <section>
+        <h2>Article 8 : État des lieux, inventaire et annexes</h2>
+        <div class="content">
+            <p>Un état des lieux et un inventaire des équipements seront réalisés conjointement lors de l’entrée en vigueur du contrat. Ces documents serviront de base pour toute réclamation ou vérification en cas de dégradations.</p>
+            <ul>
+                <li>Annexe 1 : Dossier photo réalisé au moment de la mise à disposition du bien.</li>
+                <li>Annexe 2 : Inventaire du matériel et des équipements présents dans le bien.</li>
+            </ul>
+        </div>
+    </section>
+
+    <section>
+        <h2>Article 9 : Confidentialité</h2>
+        <div class="content">
+            <p>Les parties s'engagent à maintenir confidentielles toutes les informations échangées dans le cadre de l'exécution du contrat. Cette obligation restera en vigueur pendant cinq (5) ans après la fin du contrat.</p>
+        </div>
+    </section>
+
+    <section>
+        <h2>Article 10 : Litiges et conciliation</h2>
+        <div class="content">
+            <p>En cas de litige, les parties s’engagent à tenter une résolution amiable. À défaut, le tribunal compétent sera celui de Compiègne.</p>
+        </div>
+    </section>
+
+    <section>
+        <h2>Article 11 : Modifications du contrat</h2>
+        <div class="content">
+            <p>Toute modification devra faire l’objet d’un avenant signé par les deux parties.</p>
+        </div>
+    </section>
+
+    <footer>
+        <p>Fait à : {{location}}, le {{contract_date}}</p>
+        <p>Pour la Société<br>Raphaël Jacquet</p>
+        <p>Signature : _______________________</p>
+        <p>Le Client<br>Nom : {{client_name}}<br>Signature : _______________________</p>
+    </footer>
+</body>
+</html>

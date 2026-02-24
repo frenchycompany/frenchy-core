@@ -1,0 +1,54 @@
+# Superhote Worker Daemon - Service systemd
+#
+# Installation:
+#   sudo cp superhote-daemon.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable superhote-daemon
+#   sudo systemctl start superhote-daemon
+#
+# Commandes utiles:
+#   sudo systemctl status superhote-daemon
+#   sudo journalctl -u superhote-daemon -f
+#   sudo systemctl restart superhote-daemon
+
+[Unit]
+Description=Superhote Price Update Daemon
+Documentation=https://github.com/frenchycompany/smsproject
+After=network.target mysql.service
+Wants=mysql.service
+
+[Service]
+Type=simple
+User=root
+Group=root
+
+# Repertoire de travail
+WorkingDirectory=/home/user/smsproject/scripts/selenium
+
+# Commande de demarrage
+# Modifier les parametres selon vos besoins:
+#   -w : nombre de workers
+#   -i : intervalle de polling (secondes)
+#   --groups : mode groupe (optionnel)
+ExecStart=/usr/bin/python3 /home/user/smsproject/scripts/selenium/superhote_daemon_v2.py -w 2 -i 30
+
+# Redemarrage automatique en cas de crash
+Restart=always
+RestartSec=30
+
+# Timeout pour l'arret propre
+TimeoutStopSec=60
+
+# Variables d'environnement
+Environment=PYTHONUNBUFFERED=1
+Environment=DISPLAY=:99
+
+# Limites
+LimitNOFILE=65536
+
+# Logs
+StandardOutput=append:/home/user/smsproject/logs/superhote_daemon_v2.log
+StandardError=append:/home/user/smsproject/logs/superhote_daemon_v2.log
+
+[Install]
+WantedBy=multi-user.target

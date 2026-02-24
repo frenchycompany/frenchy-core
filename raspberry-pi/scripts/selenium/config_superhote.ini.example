@@ -1,0 +1,47 @@
+# Configuration Superhote pour l'automatisation Selenium
+# Ce fichier contient les credentials et les identifiants des logements
+
+[SUPERHOTE]
+# URL de connexion Superhote
+login_url = https://app.superhote.com/login
+dashboard_url = https://app.superhote.com/dashboard
+
+# Credentials Superhote (A REMPLIR)
+email = votre_email@example.com
+password = votre_mot_de_passe
+
+# Timeout en secondes pour les actions Selenium
+timeout = 30
+page_load_timeout = 60
+
+# Timeouts supplementaires pour Raspberry Pi (valeurs plus elevees recommandees)
+# Timeout pour les attentes d'elements (WebDriverWait)
+element_timeout = 15
+# Timeout pour les navigations de page
+navigation_timeout = 20
+# Delai minimum entre les actions (evite les rate limits)
+action_delay = 0.5
+
+[SELENIUM]
+# Mode headless (sans interface graphique) - True pour serveur, False pour debug
+headless = True
+# Chemin vers chromedriver (laisser vide pour utiliser le PATH)
+chromedriver_path =
+# Taille de la fenetre
+window_width = 1920
+window_height = 1080
+# Activer les screenshots de debug (False pour economiser l'espace disque)
+debug_screenshots = False
+# Nettoyer les processus Chromium orphelins au demarrage
+cleanup_orphan_processes = True
+
+[DATABASE]
+# Utilise la meme config que le fichier principal
+use_main_config = True
+
+[LOGEMENTS]
+# Format: id_logement_local = id_superhote
+# Exemple: 1 = abc123
+# Les IDs Superhote se trouvent dans l'URL quand vous editez un logement
+# https://app.superhote.com/properties/XXXX/calendar
+# Sera rempli dynamiquement via l'interface web

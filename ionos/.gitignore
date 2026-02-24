@@ -1,0 +1,29 @@
+# Configuration sensible
+.env
+*.env.local
+
+# Cache
+cache/*
+!cache/.gitkeep
+
+# Logs
+*.log
+logs/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Dépendances
+vendor/
+node_modules/
+
+# Uploads utilisateurs (à adapter selon besoin)
+uploads/temp/*

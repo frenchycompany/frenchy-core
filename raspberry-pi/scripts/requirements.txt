@@ -1,0 +1,14 @@
+# Python dependencies for SMS project scripts
+# Install with: pip install -r requirements.txt
+
+# Database
+pymysql>=1.0.0
+
+# Serial communication with GSM modem
+pyserial>=3.5
+
+# SMS via Gammu
+python-gammu>=3.2
+
+# OpenAI API (optional, for AI responses)
+openai>=1.0.0

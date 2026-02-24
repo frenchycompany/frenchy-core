@@ -1,0 +1,213 @@
+[2026-02-07 19:00:01] [INFO] ========================================
+[2026-02-07 19:00:01] [INFO] Démarrage du script d'automatisation SMS (type: checkin)
+[2026-02-07 19:00:01] [INFO] ========================================
+[2026-02-07 19:00:01] [INFO] === Traitement des check-in du 2026-02-07 ===
+[2026-02-07 19:00:01] [INFO] Trouvé 7 check-in(s) pour aujourd'hui
+[2026-02-07 19:00:01] [SUCCESS] ✅ Réservation #3443 (Mathis ) : SMS 'accueil' créé (ID=2072)
+[2026-02-07 19:00:01] [SUCCESS] ✅ Réservation #3442 (Orlane ) : SMS 'accueil' créé (ID=2073)
+[2026-02-07 19:00:01] [SUCCESS] ✅ Réservation #3438 (Camile ) : SMS 'accueil' créé (ID=2074)
+[2026-02-07 19:00:01] [SUCCESS] ✅ Réservation #3437 (Pauline ) : SMS 'accueil' créé (ID=2075)
+[2026-02-07 19:00:01] [SUCCESS] ✅ Réservation #3432 (Kevin ) : SMS 'accueil' créé (ID=2076)
+[2026-02-07 19:00:01] [SUCCESS] ✅ Réservation #3420 (christelle ) : SMS 'accueil' créé (ID=2077)
+[2026-02-07 19:00:01] [SUCCESS] ✅ Réservation #3356 (Quentin ) : SMS 'accueil' créé (ID=2078)
+[2026-02-07 19:00:01] [SUCCESS] ✅ 7 SMS de check-in créé(s)
+[2026-02-07 19:00:01] [INFO] ========================================
+[2026-02-07 19:00:01] [SUCCESS] Script terminé avec succès (type: checkin)
+[2026-02-07 19:00:01] [INFO] ========================================
+[2026-02-08 19:00:01] [INFO] ========================================
+[2026-02-08 19:00:01] [INFO] Démarrage du script d'automatisation SMS (type: checkin)
+[2026-02-08 19:00:01] [INFO] ========================================
+[2026-02-08 19:00:01] [INFO] === Traitement des check-in du 2026-02-08 ===
+[2026-02-08 19:00:01] [INFO] Trouvé 5 check-in(s) pour aujourd'hui
+[2026-02-08 19:00:01] [SUCCESS] ✅ Réservation #3448 (Roman ) : SMS 'accueil' créé (ID=2094)
+[2026-02-08 19:00:01] [SUCCESS] ✅ Réservation #3447 (Thomas ) : SMS 'accueil' créé (ID=2095)
+[2026-02-08 19:00:01] [SUCCESS] ✅ Réservation #3429 (Moussa ) : SMS 'accueil' créé (ID=2096)
+[2026-02-08 19:00:01] [SUCCESS] ✅ Réservation #3326 (Loris ) : SMS 'accueil' créé (ID=2097)
+[2026-02-08 19:00:01] [SUCCESS] ✅ Réservation #3308 (Marina ) : SMS 'accueil' créé (ID=2098)
+[2026-02-08 19:00:01] [SUCCESS] ✅ 5 SMS de check-in créé(s)
+[2026-02-08 19:00:01] [INFO] ========================================
+[2026-02-08 19:00:01] [SUCCESS] Script terminé avec succès (type: checkin)
+[2026-02-08 19:00:01] [INFO] ========================================
+[2026-02-09 19:00:01] [INFO] ========================================
+[2026-02-09 19:00:01] [INFO] Démarrage du script d'automatisation SMS (type: checkin)
+[2026-02-09 19:00:01] [INFO] ========================================
+[2026-02-09 19:00:01] [INFO] === Traitement des check-in du 2026-02-09 ===
+[2026-02-09 19:00:01] [INFO] Trouvé 6 check-in(s) pour aujourd'hui
+[2026-02-09 19:00:01] [SUCCESS] ✅ Réservation #3453 (Mohamed ) : SMS 'accueil' créé (ID=2108)
+[2026-02-09 19:00:01] [SUCCESS] ✅ Réservation #3449 (Ian ) : SMS 'accueil' créé (ID=2109)
+[2026-02-09 19:00:01] [SUCCESS] ✅ Réservation #3446 (Wilfried ) : SMS 'accueil' créé (ID=2110)
+[2026-02-09 19:00:01] [SUCCESS] ✅ Réservation #3444 (Saliou ) : SMS 'accueil' créé (ID=2111)
+[2026-02-09 19:00:01] [SUCCESS] ✅ Réservation #3441 (Sas ) : SMS 'accueil' créé (ID=2112)
+[2026-02-09 19:00:01] [SUCCESS] ✅ Réservation #3417 (Benjamin ) : SMS 'accueil' créé (ID=2113)
+[2026-02-09 19:00:01] [SUCCESS] ✅ 6 SMS de check-in créé(s)
+[2026-02-09 19:00:01] [INFO] ========================================
+[2026-02-09 19:00:01] [SUCCESS] Script terminé avec succès (type: checkin)
+[2026-02-09 19:00:01] [INFO] ========================================
+[2026-02-10 19:00:01] [INFO] ========================================
+[2026-02-10 19:00:01] [INFO] Démarrage du script d'automatisation SMS (type: checkin)
+[2026-02-10 19:00:01] [INFO] ========================================
+[2026-02-10 19:00:01] [INFO] === Traitement des check-in du 2026-02-10 ===
+[2026-02-10 19:00:01] [INFO] Trouvé 1 check-in(s) pour aujourd'hui
+[2026-02-10 19:00:01] [SUCCESS] ✅ Réservation #3460 (Erkan ) : SMS 'accueil' créé (ID=2123)
+[2026-02-10 19:00:01] [SUCCESS] ✅ 1 SMS de check-in créé(s)
+[2026-02-10 19:00:01] [INFO] ========================================
+[2026-02-10 19:00:01] [SUCCESS] Script terminé avec succès (type: checkin)
+[2026-02-10 19:00:01] [INFO] ========================================
+[2026-02-11 19:00:01] [INFO] ========================================
+[2026-02-11 19:00:01] [INFO] Démarrage du script d'automatisation SMS (type: checkin)
+[2026-02-11 19:00:01] [INFO] ========================================
+[2026-02-11 19:00:01] [INFO] === Traitement des check-in du 2026-02-11 ===
+[2026-02-11 19:00:01] [INFO] Trouvé 1 check-in(s) pour aujourd'hui
+[2026-02-11 19:00:01] [SUCCESS] ✅ Réservation #3459 (Ian ) : SMS 'accueil' créé (ID=2131)
+[2026-02-11 19:00:01] [SUCCESS] ✅ 1 SMS de check-in créé(s)
+[2026-02-11 19:00:01] [INFO] ========================================
+[2026-02-11 19:00:01] [SUCCESS] Script terminé avec succès (type: checkin)
+[2026-02-11 19:00:01] [INFO] ========================================
+[2026-02-12 19:00:01] [INFO] ========================================
+[2026-02-12 19:00:01] [INFO] Démarrage du script d'automatisation SMS (type: checkin)
+[2026-02-12 19:00:01] [INFO] ========================================
+[2026-02-12 19:00:01] [INFO] === Traitement des check-in du 2026-02-12 ===
+[2026-02-12 19:00:01] [INFO] Trouvé 5 check-in(s) pour aujourd'hui
+[2026-02-12 19:00:01] [SUCCESS] ✅ Réservation #3469 (Grégoire ) : SMS 'accueil' créé (ID=2152)
+[2026-02-12 19:00:01] [SUCCESS] ✅ Réservation #3468 (Clara ) : SMS 'accueil' créé (ID=2153)
+[2026-02-12 19:00:01] [SUCCESS] ✅ Réservation #3462 (Christine ) : SMS 'accueil' créé (ID=2154)
+[2026-02-12 19:00:01] [SUCCESS] ✅ Réservation #3458 (YVON ) : SMS 'accueil' créé (ID=2155)
+[2026-02-12 19:00:01] [SUCCESS] ✅ Réservation #3454 (Carine ) : SMS 'accueil' créé (ID=2156)
+[2026-02-12 19:00:01] [SUCCESS] ✅ 5 SMS de check-in créé(s)
+[2026-02-12 19:00:01] [INFO] ========================================
+[2026-02-12 19:00:01] [SUCCESS] Script terminé avec succès (type: checkin)
+[2026-02-12 19:00:01] [INFO] ========================================
+[2026-02-13 19:00:01] [INFO] ========================================
+[2026-02-13 19:00:01] [INFO] Démarrage du script d'automatisation SMS (type: checkin)
+[2026-02-13 19:00:01] [INFO] ========================================
+[2026-02-13 19:00:01] [INFO] === Traitement des check-in du 2026-02-13 ===
+[2026-02-13 19:00:01] [INFO] Trouvé 3 check-in(s) pour aujourd'hui
+[2026-02-13 19:00:01] [SUCCESS] ✅ Réservation #3451 (Antonin ) : SMS 'accueil' créé (ID=2165)
+[2026-02-13 19:00:01] [SUCCESS] ✅ Réservation #3431 (Thomas ) : SMS 'accueil' créé (ID=2166)
+[2026-02-13 19:00:01] [SUCCESS] ✅ Réservation #3404 (Fany ) : SMS 'accueil' créé (ID=2167)
+[2026-02-13 19:00:01] [SUCCESS] ✅ 3 SMS de check-in créé(s)
+[2026-02-13 19:00:01] [INFO] ========================================
+[2026-02-13 19:00:01] [SUCCESS] Script terminé avec succès (type: checkin)
+[2026-02-13 19:00:01] [INFO] ========================================
+[2026-02-14 19:00:01] [INFO] ========================================
+[2026-02-14 19:00:01] [INFO] Démarrage du script d'automatisation SMS (type: checkin)
+[2026-02-14 19:00:01] [INFO] ========================================
+[2026-02-14 19:00:01] [INFO] === Traitement des check-in du 2026-02-14 ===
+[2026-02-14 19:00:01] [INFO] Trouvé 4 check-in(s) pour aujourd'hui
+[2026-02-14 19:00:01] [SUCCESS] ✅ Réservation #3474 (Mel ) : SMS 'accueil' créé (ID=2177)
+[2026-02-14 19:00:01] [SUCCESS] ✅ Réservation #3470 (Raphaël ) : SMS 'accueil' créé (ID=2178)
+[2026-02-14 19:00:01] [SUCCESS] ✅ Réservation #3461 (Noémie ) : SMS 'accueil' créé (ID=2179)
+[2026-02-14 19:00:01] [SUCCESS] ✅ Réservation #3455 (Florence ) : SMS 'accueil' créé (ID=2180)
+[2026-02-14 19:00:01] [SUCCESS] ✅ 4 SMS de check-in créé(s)
+[2026-02-14 19:00:01] [INFO] ========================================
+[2026-02-14 19:00:01] [SUCCESS] Script terminé avec succès (type: checkin)
+[2026-02-14 19:00:01] [INFO] ========================================
+[2026-02-15 19:00:01] [INFO] ========================================
+[2026-02-15 19:00:01] [INFO] Démarrage du script d'automatisation SMS (type: checkin)
+[2026-02-15 19:00:01] [INFO] ========================================
+[2026-02-15 19:00:01] [INFO] === Traitement des check-in du 2026-02-15 ===
+[2026-02-15 19:00:01] [INFO] Trouvé 2 check-in(s) pour aujourd'hui
+[2026-02-15 19:00:01] [SUCCESS] ✅ Réservation #3425 (Hugo ) : SMS 'accueil' créé (ID=2192)
+[2026-02-15 19:00:01] [SUCCESS] ✅ Réservation #2933 (Michael ) : SMS 'accueil' créé (ID=2193)
+[2026-02-15 19:00:01] [SUCCESS] ✅ 2 SMS de check-in créé(s)
+[2026-02-15 19:00:01] [INFO] ========================================
+[2026-02-15 19:00:01] [SUCCESS] Script terminé avec succès (type: checkin)
+[2026-02-15 19:00:01] [INFO] ========================================
+[2026-02-16 19:00:01] [INFO] ========================================
+[2026-02-16 19:00:01] [INFO] Démarrage du script d'automatisation SMS (type: checkin)
+[2026-02-16 19:00:01] [INFO] ========================================
+[2026-02-16 19:00:01] [INFO] === Traitement des check-in du 2026-02-16 ===
+[2026-02-16 19:00:01] [INFO] Trouvé 8 check-in(s) pour aujourd'hui
+[2026-02-16 19:00:01] [SUCCESS] ✅ Réservation #3479 (Grégory ) : SMS 'accueil' créé (ID=2200)
+[2026-02-16 19:00:01] [SUCCESS] ✅ Réservation #3476 (Jessica ) : SMS 'accueil' créé (ID=2201)
+[2026-02-16 19:00:01] [SUCCESS] ✅ Réservation #3471 (Johnny ) : SMS 'accueil' créé (ID=2202)
+[2026-02-16 19:00:01] [SUCCESS] ✅ Réservation #3463 (Sandra Maria De Britis ) : SMS 'accueil' créé (ID=2203)
+[2026-02-16 19:00:01] [SUCCESS] ✅ Réservation #3457 (Mickaël ) : SMS 'accueil' créé (ID=2204)
+[2026-02-16 19:00:01] [SUCCESS] ✅ Réservation #3452 (Alice ) : SMS 'accueil' créé (ID=2205)
+[2026-02-16 19:00:01] [SUCCESS] ✅ Réservation #3436 (Ilie ) : SMS 'accueil' créé (ID=2206)
+[2026-02-16 19:00:01] [SUCCESS] ✅ Réservation #3276 (Veronica ) : SMS 'accueil' créé (ID=2207)
+[2026-02-16 19:00:01] [SUCCESS] ✅ 8 SMS de check-in créé(s)
+[2026-02-16 19:00:01] [INFO] ========================================
+[2026-02-16 19:00:01] [SUCCESS] Script terminé avec succès (type: checkin)
+[2026-02-16 19:00:01] [INFO] ========================================
+[2026-02-17 19:00:01] [INFO] ========================================
+[2026-02-17 19:00:01] [INFO] Démarrage du script d'automatisation SMS (type: checkin)
+[2026-02-17 19:00:01] [INFO] ========================================
+[2026-02-17 19:00:01] [INFO] === Traitement des check-in du 2026-02-17 ===
+[2026-02-17 19:00:01] [INFO] Trouvé 2 check-in(s) pour aujourd'hui
+[2026-02-17 19:00:01] [SUCCESS] ✅ Réservation #3482 (Bilal ) : SMS 'accueil' créé (ID=2221)
+[2026-02-17 19:00:01] [SUCCESS] ✅ Réservation #3477 (Hervé ) : SMS 'accueil' créé (ID=2222)
+[2026-02-17 19:00:01] [SUCCESS] ✅ 2 SMS de check-in créé(s)
+[2026-02-17 19:00:01] [INFO] ========================================
+[2026-02-17 19:00:01] [SUCCESS] Script terminé avec succès (type: checkin)
+[2026-02-17 19:00:01] [INFO] ========================================
+[2026-02-18 19:00:01] [INFO] ========================================
+[2026-02-18 19:00:01] [INFO] Démarrage du script d'automatisation SMS (type: checkin)
+[2026-02-18 19:00:01] [INFO] ========================================
+[2026-02-18 19:00:01] [INFO] === Traitement des check-in du 2026-02-18 ===
+[2026-02-18 19:00:01] [INFO] Trouvé 5 check-in(s) pour aujourd'hui
+[2026-02-18 19:00:01] [SUCCESS] ✅ Réservation #3485 (Thibault ) : SMS 'accueil' créé (ID=2234)
+[2026-02-18 19:00:01] [SUCCESS] ✅ Réservation #3464 (Elvedin ) : SMS 'accueil' créé (ID=2235)
+[2026-02-18 19:00:01] [SUCCESS] ✅ Réservation #3456 (Veronica ) : SMS 'accueil' créé (ID=2236)
+[2026-02-18 19:00:01] [SUCCESS] ✅ Réservation #3366 (Veronica ) : SMS 'accueil' créé (ID=2237)
+[2026-02-18 19:00:01] [SUCCESS] ✅ Réservation #3314 (Veronica ) : SMS 'accueil' créé (ID=2238)
+[2026-02-18 19:00:01] [SUCCESS] ✅ 5 SMS de check-in créé(s)
+[2026-02-18 19:00:01] [INFO] ========================================
+[2026-02-18 19:00:01] [SUCCESS] Script terminé avec succès (type: checkin)
+[2026-02-18 19:00:01] [INFO] ========================================
+[2026-02-19 19:00:01] [INFO] ========================================
+[2026-02-19 19:00:01] [INFO] Démarrage du script d'automatisation SMS (type: checkin)
+[2026-02-19 19:00:01] [INFO] ========================================
+[2026-02-19 19:00:01] [INFO] === Traitement des check-in du 2026-02-19 ===
+[2026-02-19 19:00:01] [INFO] Trouvé 2 check-in(s) pour aujourd'hui
+[2026-02-19 19:00:01] [WARNING] Réservation #3492 : Pas de numéro de téléphone
+[2026-02-19 19:00:01] [SUCCESS] ✅ Réservation #3490 (Julie ) : SMS 'accueil' créé (ID=2245)
+[2026-02-19 19:00:01] [SUCCESS] ✅ 1 SMS de check-in créé(s)
+[2026-02-19 19:00:01] [INFO] ========================================
+[2026-02-19 19:00:01] [SUCCESS] Script terminé avec succès (type: checkin)
+[2026-02-19 19:00:01] [INFO] ========================================
+[2026-02-20 19:00:01] [INFO] ========================================
+[2026-02-20 19:00:01] [INFO] Démarrage du script d'automatisation SMS (type: checkin)
+[2026-02-20 19:00:01] [INFO] ========================================
+[2026-02-20 19:00:01] [INFO] === Traitement des check-in du 2026-02-20 ===
+[2026-02-20 19:00:01] [INFO] Trouvé 2 check-in(s) pour aujourd'hui
+[2026-02-20 19:00:01] [SUCCESS] ✅ Réservation #3450 (Cécile ) : SMS 'accueil' créé (ID=2251)
+[2026-02-20 19:00:01] [SUCCESS] ✅ Réservation #3427 (Jocelyn ) : SMS 'accueil' créé (ID=2252)
+[2026-02-20 19:00:01] [SUCCESS] ✅ 2 SMS de check-in créé(s)
+[2026-02-20 19:00:01] [INFO] ========================================
+[2026-02-20 19:00:01] [SUCCESS] Script terminé avec succès (type: checkin)
+[2026-02-20 19:00:01] [INFO] ========================================
+[2026-02-21 19:00:01] [INFO] ========================================
+[2026-02-21 19:00:01] [INFO] Démarrage du script d'automatisation SMS (type: checkin)
+[2026-02-21 19:00:01] [INFO] ========================================
+[2026-02-21 19:00:01] [INFO] === Traitement des check-in du 2026-02-21 ===
+[2026-02-21 19:00:01] [INFO] Trouvé 4 check-in(s) pour aujourd'hui
+[2026-02-21 19:00:01] [SUCCESS] ✅ Réservation #3489 (Agnès ) : SMS 'accueil' créé (ID=2260)
+[2026-02-21 19:00:01] [SUCCESS] ✅ Réservation #3487 (Thevy ) : SMS 'accueil' créé (ID=2261)
+[2026-02-21 19:00:01] [SUCCESS] ✅ Réservation #3440 (julien ) : SMS 'accueil' créé (ID=2262)
+[2026-02-21 19:00:01] [SUCCESS] ✅ Réservation #3350 (Slim / Donia ) : SMS 'accueil' créé (ID=2263)
+[2026-02-21 19:00:01] [SUCCESS] ✅ 4 SMS de check-in créé(s)
+[2026-02-21 19:00:01] [INFO] ========================================
+[2026-02-21 19:00:01] [SUCCESS] Script terminé avec succès (type: checkin)
+[2026-02-21 19:00:01] [INFO] ========================================
+[2026-02-22 19:00:01] [INFO] ========================================
+[2026-02-22 19:00:01] [INFO] Démarrage du script d'automatisation SMS (type: checkin)
+[2026-02-22 19:00:01] [INFO] ========================================
+[2026-02-22 19:00:01] [INFO] === Traitement des check-in du 2026-02-22 ===
+[2026-02-22 19:00:01] [INFO] Trouvé 1 check-in(s) pour aujourd'hui
+[2026-02-22 19:00:01] [SUCCESS] ✅ Réservation #3237 (Donovan ) : SMS 'accueil' créé (ID=2272)
+[2026-02-22 19:00:01] [SUCCESS] ✅ 1 SMS de check-in créé(s)
+[2026-02-22 19:00:01] [INFO] ========================================
+[2026-02-22 19:00:01] [SUCCESS] Script terminé avec succès (type: checkin)
+[2026-02-22 19:00:01] [INFO] ========================================
+[2026-02-23 19:00:01] [INFO] ========================================
+[2026-02-23 19:00:01] [INFO] Démarrage du script d'automatisation SMS (type: checkin)
+[2026-02-23 19:00:01] [INFO] ========================================
+[2026-02-23 19:00:01] [INFO] === Traitement des check-in du 2026-02-23 ===
+[2026-02-23 19:00:01] [INFO] Trouvé 2 check-in(s) pour aujourd'hui
+[2026-02-23 19:00:01] [SUCCESS] ✅ Réservation #3418 (Amandine ) : SMS 'accueil' créé (ID=2276)
+[2026-02-23 19:00:01] [SUCCESS] ✅ Réservation #3309 (Rim ) : SMS 'accueil' créé (ID=2277)
+[2026-02-23 19:00:01] [SUCCESS] ✅ 2 SMS de check-in créé(s)
+[2026-02-23 19:00:01] [INFO] ========================================
+[2026-02-23 19:00:01] [SUCCESS] Script terminé avec succès (type: checkin)
+[2026-02-23 19:00:01] [INFO] ========================================

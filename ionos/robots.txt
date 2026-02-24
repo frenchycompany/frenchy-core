@@ -1,0 +1,28 @@
+# Robots.txt - Frenchy Conciergerie
+# https://frenchyconciergerie.fr
+
+User-agent: *
+Allow: /
+
+# Pages publiques
+Allow: /index.php
+Allow: /blog.php
+Allow: /article.php
+Allow: /simulateur.php
+Allow: /avis.php
+Allow: /contrats-retractation.php
+Allow: /politique-avis.php
+
+# Bloquer l'admin
+Disallow: /admin/
+Disallow: /db/
+Disallow: /includes/
+Disallow: /proprietaire/
+Disallow: /cache/
+
+# Bloquer les fichiers de config
+Disallow: /config.php
+Disallow: /*.sql$
+
+# Sitemap
+Sitemap: https://frenchyconciergerie.fr/sitemap.xml

@@ -1,0 +1,226 @@
+[2026-02-07 11:00:01] [INFO] ========================================
+[2026-02-07 11:00:01] [INFO] Démarrage du script d'automatisation SMS (type: midstay)
+[2026-02-07 11:00:01] [INFO] ========================================
+[2026-02-07 11:00:01] [INFO] === Traitement des SMS mi-parcours (séjours >= 3 nuits) ===
+[2026-02-07 11:00:01] [INFO] Trouvé 4 séjour(s) en cours de 3+ nuits
+[2026-02-07 11:00:01] [INFO] Réservation #3362 : Jour 5 sur 11 (mi-parcours)
+[2026-02-07 11:00:01] [SUCCESS] ✅ Réservation #3362 (Ijes Solar France ) : SMS 'mi_parcours' créé (ID=2068)
+[2026-02-07 11:00:01] [INFO] Réservation #3426 : Jour 1 sur 3 (mi-parcours)
+[2026-02-07 11:00:01] [SUCCESS] ✅ Réservation #3426 (Ian ) : SMS 'mi_parcours' créé (ID=2069)
+[2026-02-07 11:00:01] [SUCCESS] ✅ 2 SMS de mi-parcours créé(s)
+[2026-02-07 11:00:01] [INFO] ========================================
+[2026-02-07 11:00:01] [SUCCESS] Script terminé avec succès (type: midstay)
+[2026-02-07 11:00:01] [INFO] ========================================
+[2026-02-08 11:00:01] [INFO] ========================================
+[2026-02-08 11:00:01] [INFO] Démarrage du script d'automatisation SMS (type: midstay)
+[2026-02-08 11:00:01] [INFO] ========================================
+[2026-02-08 11:00:01] [INFO] === Traitement des SMS mi-parcours (séjours >= 3 nuits) ===
+[2026-02-08 11:00:01] [INFO] Trouvé 7 séjour(s) en cours de 3+ nuits
+[2026-02-08 11:00:01] [INFO] Réservation #3368 : Jour 6 sur 13 (mi-parcours)
+[2026-02-08 11:00:01] [SUCCESS] ✅ Réservation #3368 (Amy ) : SMS 'mi_parcours' créé (ID=2092)
+[2026-02-08 11:00:01] [SUCCESS] ✅ 1 SMS de mi-parcours créé(s)
+[2026-02-08 11:00:01] [INFO] ========================================
+[2026-02-08 11:00:01] [SUCCESS] Script terminé avec succès (type: midstay)
+[2026-02-08 11:00:01] [INFO] ========================================
+[2026-02-09 11:00:01] [INFO] ========================================
+[2026-02-09 11:00:01] [INFO] Démarrage du script d'automatisation SMS (type: midstay)
+[2026-02-09 11:00:01] [INFO] ========================================
+[2026-02-09 11:00:01] [INFO] === Traitement des SMS mi-parcours (séjours >= 3 nuits) ===
+[2026-02-09 11:00:01] [INFO] Trouvé 10 séjour(s) en cours de 3+ nuits
+[2026-02-09 11:00:01] [INFO] Réservation #3443 : Jour 2 sur 5 (mi-parcours)
+[2026-02-09 11:00:01] [SUCCESS] ✅ Réservation #3443 (Mathis ) : SMS 'mi_parcours' créé (ID=2107)
+[2026-02-09 11:00:01] [SUCCESS] ✅ 1 SMS de mi-parcours créé(s)
+[2026-02-09 11:00:01] [INFO] ========================================
+[2026-02-09 11:00:01] [SUCCESS] Script terminé avec succès (type: midstay)
+[2026-02-09 11:00:01] [INFO] ========================================
+[2026-02-10 11:00:02] [INFO] ========================================
+[2026-02-10 11:00:02] [INFO] Démarrage du script d'automatisation SMS (type: midstay)
+[2026-02-10 11:00:02] [INFO] ========================================
+[2026-02-10 11:00:02] [INFO] === Traitement des SMS mi-parcours (séjours >= 3 nuits) ===
+[2026-02-10 11:00:02] [INFO] Trouvé 15 séjour(s) en cours de 3+ nuits
+[2026-02-10 11:00:02] [INFO] Réservation #3438 : Jour 3 sur 7 (mi-parcours)
+[2026-02-10 11:00:02] [SUCCESS] ✅ Réservation #3438 (Camile ) : SMS 'mi_parcours' créé (ID=2115)
+[2026-02-10 11:00:02] [INFO] Réservation #3448 : Jour 2 sur 4 (mi-parcours)
+[2026-02-10 11:00:02] [SUCCESS] ✅ Réservation #3448 (Roman ) : SMS 'mi_parcours' créé (ID=2116)
+[2026-02-10 11:00:02] [INFO] Réservation #3447 : Jour 2 sur 5 (mi-parcours)
+[2026-02-10 11:00:02] [SUCCESS] ✅ Réservation #3447 (Thomas ) : SMS 'mi_parcours' créé (ID=2117)
+[2026-02-10 11:00:02] [INFO] Réservation #3441 : Jour 1 sur 3 (mi-parcours)
+[2026-02-10 11:00:02] [SUCCESS] ✅ Réservation #3441 (Sas ) : SMS 'mi_parcours' créé (ID=2118)
+[2026-02-10 11:00:02] [INFO] Réservation #3444 : Jour 1 sur 3 (mi-parcours)
+[2026-02-10 11:00:02] [SUCCESS] ✅ Réservation #3444 (Saliou ) : SMS 'mi_parcours' créé (ID=2119)
+[2026-02-10 11:00:02] [INFO] Réservation #3446 : Jour 1 sur 3 (mi-parcours)
+[2026-02-10 11:00:02] [SUCCESS] ✅ Réservation #3446 (Wilfried ) : SMS 'mi_parcours' créé (ID=2120)
+[2026-02-10 11:00:02] [INFO] Réservation #3417 : Jour 1 sur 3 (mi-parcours)
+[2026-02-10 11:00:02] [SUCCESS] ✅ Réservation #3417 (Benjamin ) : SMS 'mi_parcours' créé (ID=2121)
+[2026-02-10 11:00:02] [INFO] Réservation #3453 : Jour 1 sur 3 (mi-parcours)
+[2026-02-10 11:00:02] [SUCCESS] ✅ Réservation #3453 (Mohamed ) : SMS 'mi_parcours' créé (ID=2122)
+[2026-02-10 11:00:02] [SUCCESS] ✅ 8 SMS de mi-parcours créé(s)
+[2026-02-10 11:00:02] [INFO] ========================================
+[2026-02-10 11:00:02] [SUCCESS] Script terminé avec succès (type: midstay)
+[2026-02-10 11:00:02] [INFO] ========================================
+[2026-02-11 11:00:01] [INFO] ========================================
+[2026-02-11 11:00:01] [INFO] Démarrage du script d'automatisation SMS (type: midstay)
+[2026-02-11 11:00:01] [INFO] ========================================
+[2026-02-11 11:00:01] [INFO] === Traitement des SMS mi-parcours (séjours >= 3 nuits) ===
+[2026-02-11 11:00:01] [INFO] Trouvé 16 séjour(s) en cours de 3+ nuits
+[2026-02-11 11:00:01] [INFO] Réservation #3326 : Jour 3 sur 7 (mi-parcours)
+[2026-02-11 11:00:01] [SUCCESS] ✅ Réservation #3326 (Loris ) : SMS 'mi_parcours' créé (ID=2128)
+[2026-02-11 11:00:01] [INFO] Réservation #3460 : Jour 1 sur 3 (mi-parcours)
+[2026-02-11 11:00:01] [SUCCESS] ✅ Réservation #3460 (Erkan ) : SMS 'mi_parcours' créé (ID=2129)
+[2026-02-11 11:00:01] [SUCCESS] ✅ 2 SMS de mi-parcours créé(s)
+[2026-02-11 11:00:01] [INFO] ========================================
+[2026-02-11 11:00:01] [SUCCESS] Script terminé avec succès (type: midstay)
+[2026-02-11 11:00:01] [INFO] ========================================
+[2026-02-12 11:00:01] [INFO] ========================================
+[2026-02-12 11:00:01] [INFO] Démarrage du script d'automatisation SMS (type: midstay)
+[2026-02-12 11:00:01] [INFO] ========================================
+[2026-02-12 11:00:01] [INFO] === Traitement des SMS mi-parcours (séjours >= 3 nuits) ===
+[2026-02-12 11:00:01] [INFO] Trouvé 9 séjour(s) en cours de 3+ nuits
+[2026-02-12 11:00:01] [INFO] Réservation #3308 : Jour 4 sur 8 (mi-parcours)
+[2026-02-12 11:00:01] [SUCCESS] ✅ Réservation #3308 (Marina ) : SMS 'mi_parcours' créé (ID=2146)
+[2026-02-12 11:00:01] [SUCCESS] ✅ 1 SMS de mi-parcours créé(s)
+[2026-02-12 11:00:01] [INFO] ========================================
+[2026-02-12 11:00:01] [SUCCESS] Script terminé avec succès (type: midstay)
+[2026-02-12 11:00:01] [INFO] ========================================
+[2026-02-13 11:00:01] [INFO] ========================================
+[2026-02-13 11:00:01] [INFO] Démarrage du script d'automatisation SMS (type: midstay)
+[2026-02-13 11:00:01] [INFO] ========================================
+[2026-02-13 11:00:01] [INFO] === Traitement des SMS mi-parcours (séjours >= 3 nuits) ===
+[2026-02-13 11:00:01] [INFO] Trouvé 8 séjour(s) en cours de 3+ nuits
+[2026-02-13 11:00:01] [SUCCESS] ✅ 0 SMS de mi-parcours créé(s)
+[2026-02-13 11:00:01] [INFO] ========================================
+[2026-02-13 11:00:01] [SUCCESS] Script terminé avec succès (type: midstay)
+[2026-02-13 11:00:01] [INFO] ========================================
+[2026-02-14 11:00:01] [INFO] ========================================
+[2026-02-14 11:00:01] [INFO] Démarrage du script d'automatisation SMS (type: midstay)
+[2026-02-14 11:00:01] [INFO] ========================================
+[2026-02-14 11:00:01] [INFO] === Traitement des SMS mi-parcours (séjours >= 3 nuits) ===
+[2026-02-14 11:00:01] [INFO] Trouvé 6 séjour(s) en cours de 3+ nuits
+[2026-02-14 11:00:01] [INFO] Réservation #3386 : Jour 13 sur 27 (mi-parcours)
+[2026-02-14 11:00:01] [SUCCESS] ✅ Réservation #3386 (barbosa ) : SMS 'mi_parcours' créé (ID=2175)
+[2026-02-14 11:00:01] [INFO] Réservation #3468 : Jour 2 sur 4 (mi-parcours)
+[2026-02-14 11:00:01] [SUCCESS] ✅ Réservation #3468 (Clara ) : SMS 'mi_parcours' créé (ID=2176)
+[2026-02-14 11:00:01] [SUCCESS] ✅ 2 SMS de mi-parcours créé(s)
+[2026-02-14 11:00:01] [INFO] ========================================
+[2026-02-14 11:00:01] [SUCCESS] Script terminé avec succès (type: midstay)
+[2026-02-14 11:00:01] [INFO] ========================================
+[2026-02-15 11:00:01] [INFO] ========================================
+[2026-02-15 11:00:01] [INFO] Démarrage du script d'automatisation SMS (type: midstay)
+[2026-02-15 11:00:01] [INFO] ========================================
+[2026-02-15 11:00:01] [INFO] === Traitement des SMS mi-parcours (séjours >= 3 nuits) ===
+[2026-02-15 11:00:01] [INFO] Trouvé 5 séjour(s) en cours de 3+ nuits
+[2026-02-15 11:00:01] [SUCCESS] ✅ 0 SMS de mi-parcours créé(s)
+[2026-02-15 11:00:01] [INFO] ========================================
+[2026-02-15 11:00:01] [SUCCESS] Script terminé avec succès (type: midstay)
+[2026-02-15 11:00:01] [INFO] ========================================
+[2026-02-16 11:00:01] [INFO] ========================================
+[2026-02-16 11:00:01] [INFO] Démarrage du script d'automatisation SMS (type: midstay)
+[2026-02-16 11:00:01] [INFO] ========================================
+[2026-02-16 11:00:01] [INFO] === Traitement des SMS mi-parcours (séjours >= 3 nuits) ===
+[2026-02-16 11:00:01] [INFO] Trouvé 5 séjour(s) en cours de 3+ nuits
+[2026-02-16 11:00:01] [INFO] Réservation #3455 : Jour 2 sur 4 (mi-parcours)
+[2026-02-16 11:00:01] [SUCCESS] ✅ Réservation #3455 (Florence ) : SMS 'mi_parcours' créé (ID=2199)
+[2026-02-16 11:00:01] [SUCCESS] ✅ 1 SMS de mi-parcours créé(s)
+[2026-02-16 11:00:01] [INFO] ========================================
+[2026-02-16 11:00:01] [SUCCESS] Script terminé avec succès (type: midstay)
+[2026-02-16 11:00:01] [INFO] ========================================
+[2026-02-17 11:00:01] [INFO] ========================================
+[2026-02-17 11:00:01] [INFO] Démarrage du script d'automatisation SMS (type: midstay)
+[2026-02-17 11:00:01] [INFO] ========================================
+[2026-02-17 11:00:01] [INFO] === Traitement des SMS mi-parcours (séjours >= 3 nuits) ===
+[2026-02-17 11:00:01] [INFO] Trouvé 11 séjour(s) en cours de 3+ nuits
+[2026-02-17 11:00:01] [INFO] Réservation #3479 : Jour 1 sur 3 (mi-parcours)
+[2026-02-17 11:00:01] [SUCCESS] ✅ Réservation #3479 (Grégory ) : SMS 'mi_parcours' créé (ID=2220)
+[2026-02-17 11:00:01] [SUCCESS] ✅ 1 SMS de mi-parcours créé(s)
+[2026-02-17 11:00:01] [INFO] ========================================
+[2026-02-17 11:00:01] [SUCCESS] Script terminé avec succès (type: midstay)
+[2026-02-17 11:00:01] [INFO] ========================================
+[2026-02-18 11:00:01] [INFO] ========================================
+[2026-02-18 11:00:01] [INFO] Démarrage du script d'automatisation SMS (type: midstay)
+[2026-02-18 11:00:01] [INFO] ========================================
+[2026-02-18 11:00:01] [INFO] === Traitement des SMS mi-parcours (séjours >= 3 nuits) ===
+[2026-02-18 11:00:01] [INFO] Trouvé 9 séjour(s) en cours de 3+ nuits
+[2026-02-18 11:00:01] [INFO] Réservation #2933 : Jour 3 sur 7 (mi-parcours)
+[2026-02-18 11:00:01] [SUCCESS] ✅ Réservation #2933 (Michael ) : SMS 'mi_parcours' créé (ID=2229)
+[2026-02-18 11:00:01] [INFO] Réservation #3425 : Jour 3 sur 6 (mi-parcours)
+[2026-02-18 11:00:01] [SUCCESS] ✅ Réservation #3425 (Hugo ) : SMS 'mi_parcours' créé (ID=2230)
+[2026-02-18 11:00:01] [INFO] Réservation #3452 : Jour 2 sur 4 (mi-parcours)
+[2026-02-18 11:00:01] [SUCCESS] ✅ Réservation #3452 (Alice ) : SMS 'mi_parcours' créé (ID=2231)
+[2026-02-18 11:00:01] [INFO] Réservation #3463 : Jour 2 sur 5 (mi-parcours)
+[2026-02-18 11:00:01] [SUCCESS] ✅ Réservation #3463 (Sandra Maria De Britis ) : SMS 'mi_parcours' créé (ID=2232)
+[2026-02-18 11:00:01] [INFO] Réservation #3471 : Jour 2 sur 5 (mi-parcours)
+[2026-02-18 11:00:01] [SUCCESS] ✅ Réservation #3471 (Johnny ) : SMS 'mi_parcours' créé (ID=2233)
+[2026-02-18 11:00:01] [SUCCESS] ✅ 5 SMS de mi-parcours créé(s)
+[2026-02-18 11:00:01] [INFO] ========================================
+[2026-02-18 11:00:01] [SUCCESS] Script terminé avec succès (type: midstay)
+[2026-02-18 11:00:01] [INFO] ========================================
+[2026-02-19 11:00:01] [INFO] ========================================
+[2026-02-19 11:00:01] [INFO] Démarrage du script d'automatisation SMS (type: midstay)
+[2026-02-19 11:00:01] [INFO] ========================================
+[2026-02-19 11:00:01] [INFO] === Traitement des SMS mi-parcours (séjours >= 3 nuits) ===
+[2026-02-19 11:00:01] [INFO] Trouvé 12 séjour(s) en cours de 3+ nuits
+[2026-02-19 11:00:01] [INFO] Réservation #3276 : Jour 3 sur 6 (mi-parcours)
+[2026-02-19 11:00:01] [SUCCESS] ✅ Réservation #3276 (Veronica ) : SMS 'mi_parcours' créé (ID=2244)
+[2026-02-19 11:00:01] [SUCCESS] ✅ 1 SMS de mi-parcours créé(s)
+[2026-02-19 11:00:01] [INFO] ========================================
+[2026-02-19 11:00:01] [SUCCESS] Script terminé avec succès (type: midstay)
+[2026-02-19 11:00:01] [INFO] ========================================
+[2026-02-20 11:00:01] [INFO] ========================================
+[2026-02-20 11:00:01] [INFO] Démarrage du script d'automatisation SMS (type: midstay)
+[2026-02-20 11:00:01] [INFO] ========================================
+[2026-02-20 11:00:01] [INFO] === Traitement des SMS mi-parcours (séjours >= 3 nuits) ===
+[2026-02-20 11:00:01] [INFO] Trouvé 11 séjour(s) en cours de 3+ nuits
+[2026-02-20 11:00:01] [INFO] Réservation #3464 : Jour 2 sur 4 (mi-parcours)
+[2026-02-20 11:00:01] [SUCCESS] ✅ Réservation #3464 (Elvedin ) : SMS 'mi_parcours' créé (ID=2250)
+[2026-02-20 11:00:01] [SUCCESS] ✅ 1 SMS de mi-parcours créé(s)
+[2026-02-20 11:00:01] [INFO] ========================================
+[2026-02-20 11:00:01] [SUCCESS] Script terminé avec succès (type: midstay)
+[2026-02-20 11:00:01] [INFO] ========================================
+[2026-02-21 11:00:01] [INFO] ========================================
+[2026-02-21 11:00:01] [INFO] Démarrage du script d'automatisation SMS (type: midstay)
+[2026-02-21 11:00:01] [INFO] ========================================
+[2026-02-21 11:00:01] [INFO] === Traitement des SMS mi-parcours (séjours >= 3 nuits) ===
+[2026-02-21 11:00:01] [INFO] Trouvé 9 séjour(s) en cours de 3+ nuits
+[2026-02-21 11:00:01] [INFO] Réservation #3457 : Jour 5 sur 11 (mi-parcours)
+[2026-02-21 11:00:02] [SUCCESS] ✅ Réservation #3457 (Mickaël ) : SMS 'mi_parcours' créé (ID=2256)
+[2026-02-21 11:00:02] [INFO] Réservation #3314 : Jour 3 sur 7 (mi-parcours)
+[2026-02-21 11:00:02] [SUCCESS] ✅ Réservation #3314 (Veronica ) : SMS 'mi_parcours' créé (ID=2257)
+[2026-02-21 11:00:02] [INFO] Réservation #3366 : Jour 3 sur 6 (mi-parcours)
+[2026-02-21 11:00:02] [SUCCESS] ✅ Réservation #3366 (Veronica ) : SMS 'mi_parcours' créé (ID=2258)
+[2026-02-21 11:00:02] [INFO] Réservation #3456 : Jour 3 sur 7 (mi-parcours)
+[2026-02-21 11:00:02] [SUCCESS] ✅ Réservation #3456 (Veronica ) : SMS 'mi_parcours' créé (ID=2259)
+[2026-02-21 11:00:02] [SUCCESS] ✅ 4 SMS de mi-parcours créé(s)
+[2026-02-21 11:00:02] [INFO] ========================================
+[2026-02-21 11:00:02] [SUCCESS] Script terminé avec succès (type: midstay)
+[2026-02-21 11:00:02] [INFO] ========================================
+[2026-02-22 11:00:01] [INFO] ========================================
+[2026-02-22 11:00:01] [INFO] Démarrage du script d'automatisation SMS (type: midstay)
+[2026-02-22 11:00:01] [INFO] ========================================
+[2026-02-22 11:00:01] [INFO] === Traitement des SMS mi-parcours (séjours >= 3 nuits) ===
+[2026-02-22 11:00:01] [INFO] Trouvé 8 séjour(s) en cours de 3+ nuits
+[2026-02-22 11:00:01] [SUCCESS] ✅ 0 SMS de mi-parcours créé(s)
+[2026-02-22 11:00:01] [INFO] ========================================
+[2026-02-22 11:00:01] [SUCCESS] Script terminé avec succès (type: midstay)
+[2026-02-22 11:00:01] [INFO] ========================================
+[2026-02-23 11:00:02] [INFO] ========================================
+[2026-02-23 11:00:02] [INFO] Démarrage du script d'automatisation SMS (type: midstay)
+[2026-02-23 11:00:02] [INFO] ========================================
+[2026-02-23 11:00:02] [INFO] === Traitement des SMS mi-parcours (séjours >= 3 nuits) ===
+[2026-02-23 11:00:02] [INFO] Trouvé 8 séjour(s) en cours de 3+ nuits
+[2026-02-23 11:00:02] [SUCCESS] ✅ 0 SMS de mi-parcours créé(s)
+[2026-02-23 11:00:02] [INFO] ========================================
+[2026-02-23 11:00:02] [SUCCESS] Script terminé avec succès (type: midstay)
+[2026-02-23 11:00:02] [INFO] ========================================
+[2026-02-24 11:00:01] [INFO] ========================================
+[2026-02-24 11:00:01] [INFO] Démarrage du script d'automatisation SMS (type: midstay)
+[2026-02-24 11:00:01] [INFO] ========================================
+[2026-02-24 11:00:01] [INFO] === Traitement des SMS mi-parcours (séjours >= 3 nuits) ===
+[2026-02-24 11:00:01] [INFO] Trouvé 8 séjour(s) en cours de 3+ nuits
+[2026-02-24 11:00:01] [INFO] Réservation #3489 : Jour 3 sur 7 (mi-parcours)
+[2026-02-24 11:00:01] [SUCCESS] ✅ Réservation #3489 (Agnès ) : SMS 'mi_parcours' créé (ID=2282)
+[2026-02-24 11:00:01] [INFO] Réservation #3237 : Jour 2 sur 5 (mi-parcours)
+[2026-02-24 11:00:01] [SUCCESS] ✅ Réservation #3237 (Donovan ) : SMS 'mi_parcours' créé (ID=2283)
+[2026-02-24 11:00:01] [SUCCESS] ✅ 2 SMS de mi-parcours créé(s)
+[2026-02-24 11:00:01] [INFO] ========================================
+[2026-02-24 11:00:01] [SUCCESS] Script terminé avec succès (type: midstay)
+[2026-02-24 11:00:01] [INFO] ========================================

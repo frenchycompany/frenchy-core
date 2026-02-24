@@ -1,0 +1,11 @@
+# Dependances Python pour l'automatisation Superhote
+# Installation: pip install -r requirements.txt
+
+# Selenium pour l'automatisation web
+selenium>=4.15.0
+
+# Connecteur MySQL
+pymysql>=1.1.0
+
+# Optionnel: pour le chiffrement des credentials
+cryptography>=41.0.0

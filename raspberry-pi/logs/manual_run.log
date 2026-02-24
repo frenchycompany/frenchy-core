@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "/home/raphael/sms_project/scripts/selenium/run_scheduled_update.py", line 76, in <module>
+    logger = setup_logging()
+  File "/home/raphael/sms_project/scripts/selenium/run_scheduled_update.py", line 60, in setup_logging
+    file_handler = logging.FileHandler(LOG_DIR / f"scheduled_update_{today}.log")
+  File "/usr/lib/python3.9/logging/__init__.py", line 1142, in __init__
+    StreamHandler.__init__(self, self._open())
+  File "/usr/lib/python3.9/logging/__init__.py", line 1171, in _open
+    return open(self.baseFilename, self.mode, encoding=self.encoding,
+PermissionError: [Errno 13] Permission denied: '/home/raphael/sms_project/logs/scheduled_update_2026-02-07.log'

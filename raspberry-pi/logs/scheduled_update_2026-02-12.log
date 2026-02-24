@@ -1,0 +1,55 @@
+2026-02-12 07:04:14,219 - INFO - ============================================================
+2026-02-12 07:04:14,221 - INFO - MISE A JOUR QUOTIDIENNE SUPERHOTE
+2026-02-12 07:04:14,221 - INFO - Demarrage: 2026-02-12 07:04:14
+2026-02-12 07:04:14,221 - INFO - ============================================================
+2026-02-12 07:04:14,222 - INFO - Etape 1: Nettoyage des taches bloquees...
+2026-02-12 07:04:14,256 - INFO -   28 taches bloquees liberees
+2026-02-12 07:04:14,257 - INFO - Etape 2: Generation des prix...
+2026-02-12 07:04:14,278 - INFO -   21 logements actifs
+2026-02-12 07:04:14,303 - INFO -   214 anciennes taches supprimees
+2026-02-12 07:04:15,391 - WARNING -   GROUPE1: prix non configures, ignore
+2026-02-12 07:04:15,391 - WARNING -   GROUPE2: prix non configures, ignore
+2026-02-12 07:04:15,391 - WARNING -   GROUPE3: prix non configures, ignore
+2026-02-12 07:04:15,688 - INFO -   558 mises a jour generees pour 21 logements
+2026-02-12 07:04:15,688 - INFO - Etape 3: Lancement des workers...
+2026-02-12 07:04:15,692 - INFO -   558 taches en attente
+2026-02-12 07:04:15,718 - INFO -   Iteration 1: 558 pending dans 5 groupes:
+2026-02-12 07:04:15,719 - INFO -     - GROUPE1: 186 taches
+2026-02-12 07:04:15,719 - INFO -     - GROUPE3: 155 taches
+2026-02-12 07:04:15,719 - INFO -     - GROUPE2: 93 taches
+2026-02-12 07:04:15,719 - INFO -     - GROUPE4: 93 taches
+2026-02-12 07:04:15,719 - INFO -     - ORPHELINS: 31 taches
+2026-02-12 07:04:15,719 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-12 07:18:18,263 - INFO -   Iteration 1: 186 taches traitees, reste 372
+2026-02-12 07:18:23,322 - INFO -   Iteration 2: 372 pending dans 4 groupes:
+2026-02-12 07:18:23,323 - INFO -     - GROUPE3: 155 taches
+2026-02-12 07:18:23,323 - INFO -     - GROUPE4: 93 taches
+2026-02-12 07:18:23,324 - INFO -     - GROUPE2: 93 taches
+2026-02-12 07:18:23,324 - INFO -     - ORPHELINS: 31 taches
+2026-02-12 07:18:23,325 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-12 07:31:40,101 - INFO -   Iteration 2: 93 taches traitees, reste 279
+2026-02-12 07:31:45,152 - INFO -   Iteration 3: 279 pending dans 3 groupes:
+2026-02-12 07:31:45,153 - INFO -     - GROUPE3: 155 taches
+2026-02-12 07:31:45,153 - INFO -     - GROUPE4: 93 taches
+2026-02-12 07:31:45,154 - INFO -     - ORPHELINS: 31 taches
+2026-02-12 07:31:45,154 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-12 07:43:43,681 - INFO -   Iteration 3: 155 taches traitees, reste 124
+2026-02-12 07:43:48,706 - INFO -   Iteration 4: 124 pending dans 2 groupes:
+2026-02-12 07:43:48,707 - INFO -     - GROUPE4: 93 taches
+2026-02-12 07:43:48,708 - INFO -     - ORPHELINS: 31 taches
+2026-02-12 07:43:48,708 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-12 07:56:56,018 - INFO -   Iteration 4: 93 taches traitees, reste 31
+2026-02-12 07:57:01,044 - INFO -   Iteration 5: 31 pending dans 1 groupes:
+2026-02-12 07:57:01,044 - INFO -     - ORPHELINS: 31 taches
+2026-02-12 07:57:01,045 - INFO -   Commande: /usr/bin/python3 /home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py -m 1 --groups
+2026-02-12 08:04:30,674 - INFO -   Iteration 5: 31 taches traitees, reste 0
+2026-02-12 08:04:35,687 - INFO -   Iteration 6: Plus de taches pending, fin.
+2026-02-12 08:04:35,697 - INFO -   Workers termines en 3620.0s apres 6 iterations
+2026-02-12 08:04:35,710 - INFO -   Resultat: 558 traitees, 0 restantes
+2026-02-12 08:04:35,840 - INFO - ============================================================
+2026-02-12 08:04:35,840 - INFO - RESUME
+2026-02-12 08:04:35,840 - INFO -   Duree: 3621.6s
+2026-02-12 08:04:35,840 - INFO -   Logements: 21
+2026-02-12 08:04:35,841 - INFO -   Mises a jour: 558
+2026-02-12 08:04:35,841 - INFO -   Stats finales: {'processing': 15, 'completed': 1258, 'failed': 187}
+2026-02-12 08:04:35,841 - INFO - ============================================================

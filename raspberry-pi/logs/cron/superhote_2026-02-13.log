@@ -1,0 +1,527 @@
+[2026-02-13 06:00:01] ==========================================
+[2026-02-13 06:00:01] Debut de la mise a jour des prix Superhote
+[2026-02-13 06:00:01] ==========================================
+[2026-02-13 06:00:01] Etape 1: Generation des prix...
+[2026-02-13 05:00:01] Generation des prix Superhote
+  Regles chargees: 8 saisons, 12 jours feries, 5 regles occupation
+  - Logement 13: 31 mises a jour
+  - Logement 14: 31 mises a jour
+  - Logement 16: 31 mises a jour
+  - Logement 15: 31 mises a jour
+  - Logement 17: 31 mises a jour
+  - Logement 2: 31 mises a jour
+  - Logement 19: 31 mises a jour
+  - Logement 10: 31 mises a jour
+  - Logement 11: 31 mises a jour
+  - Logement 8: 31 mises a jour
+  - Logement 37: 31 mises a jour
+  - Logement 33: 31 mises a jour
+  - Logement 12: 31 mises a jour
+  - Logement 23: 31 mises a jour
+  - Logement 42: 31 mises a jour
+  - Logement 21: 31 mises a jour
+  - Logement 7: 31 mises a jour
+  - Logement 43: 31 mises a jour
+[2026-02-13 05:00:03] Total: 558 mises a jour generees
+[2026-02-13 05:00:03] Termine en 1.8s
+[2026-02-13 06:00:03]   Generation terminee
+[2026-02-13 06:00:03] Etape 2: Application des prix via worker pool...
+2026-02-13 06:00:03,638 - INFO - [31940] ==================================================
+2026-02-13 06:00:03,638 - INFO - [31940] DEMARRAGE POOL WORKERS SUPERHOTE
+2026-02-13 06:00:03,638 - INFO - [31940]   Mode: GROUPE
+2026-02-13 06:00:03,639 - INFO - [31940]   Max workers: illimite
+2026-02-13 06:00:03,639 - INFO - [31940] ==================================================
+2026-02-13 06:00:03,675 - INFO - [31940] Mode GROUPE active (hybride: groupes + orphelins)
+2026-02-13 06:00:03,704 - INFO - [31940] Groupes avec pending: ['GROUPE1', '__ORPHELINS__', 'GROUPE2', 'GROUPE3', 'GROUPE4']
+2026-02-13 06:00:03,710 - INFO - [31940] Worker 1 [GROUPE GROUPE1]: 6 logements, ref=GROUPE1
+2026-02-13 06:00:03,715 - INFO - [31940] Worker 2 [GROUPE GROUPE2]: 3 logements, ref=GROUPE2
+2026-02-13 06:00:03,720 - INFO - [31940] Worker 3 [GROUPE GROUPE3]: 5 logements, ref=GROUPE3
+2026-02-13 06:00:03,726 - INFO - [31940] Worker 4 [GROUPE GROUPE4]: 3 logements, ref=GROUPE4
+2026-02-13 06:00:03,731 - INFO - [31940] Logements sans groupe: 4
+2026-02-13 06:00:03,731 - INFO - [31940] Worker 5 [STANDARD]: 4 logements orphelins
+2026-02-13 06:00:03,731 - INFO - [31940] Workers configures: 5 (4 groupes, 1 standards)
+2026-02-13 06:00:03,731 - INFO - [31940]   Worker 1 [GROUPE GROUPE1]: ref=GROUPE1, membres=['Appartement Neuf Confort & Moderne - Proche Gare', 'Delphin - BLEU - 2', 'Delphin - FAB - 4', 'Delphin - NID - 3', 'Delphin - ZEN - 1', 'Edouard - 4']
+2026-02-13 06:00:03,732 - INFO - [31940]   Worker 2 [GROUPE GROUPE2]: ref=GROUPE2, membres=['Detti - 1 - RDC', 'DETTI - 2 - ET', 'Studio au pied du Château']
+2026-02-13 06:00:03,732 - INFO - [31940]   Worker 3 [GROUPE GROUPE3]: ref=GROUPE3, membres=['Alexia - BSM', 'Calme - Wifi - Confort - Vue', 'La compiegnoise', 'Le Repos de Canly', 'Multicolore Logement entier centre ville']
+2026-02-13 06:00:03,732 - INFO - [31940]   Worker 4 [GROUPE GROUPE4]: ref=GROUPE4, membres=['1306', 'Centre Ville - Wifi - Extérieur - Téléviseurs', 'GROUPE4']
+2026-02-13 06:00:03,732 - INFO - [31940]   Worker 5 [STANDARD]: ['Delphin - JUN - 5', 'GROUPE1', 'GROUPE2', 'GROUPE3']
+2026-02-13 06:00:03,732 - INFO - [31940] Lancement de 5 workers en parallele...
+2026-02-13 06:00:03,754 - INFO - [31946] Worker 1 [GROUPE GROUPE1] demarre - Ref: GROUPE1, Membres: ['Appartement Neuf Confort & Moderne - Proche Gare', 'Delphin - BLEU - 2', 'Delphin - FAB - 4', 'Delphin - NID - 3', 'Delphin - ZEN - 1', 'Edouard - 4']
+2026-02-13 06:00:03,764 - INFO - [31952] Worker 2 [GROUPE GROUPE2] demarre - Ref: GROUPE2, Membres: ['Detti - 1 - RDC', 'DETTI - 2 - ET', 'Studio au pied du Château']
+2026-02-13 06:00:03,774 - INFO - [31950] Worker 3 [GROUPE GROUPE3] demarre - Ref: GROUPE3, Membres: ['Alexia - BSM', 'Calme - Wifi - Confort - Vue', 'La compiegnoise', 'Le Repos de Canly', 'Multicolore Logement entier centre ville']
+2026-02-13 06:00:03,777 - INFO - [31954] Worker 4 [GROUPE GROUPE4] demarre - Ref: GROUPE4, Membres: ['1306', 'Centre Ville - Wifi - Extérieur - Téléviseurs', 'GROUPE4']
+2026-02-13 06:00:03,811 - INFO - [31960] Worker 5 demarre - Logements: ['Delphin - JUN - 5', 'GROUPE1', 'GROUPE2', 'GROUPE3']
+2026-02-13 06:02:09,192 - INFO - [31946] Worker 1: Connecte a Superhote
+2026-02-13 06:02:09,333 - INFO - [31946] Worker 1: 186 mises a jour a traiter
+2026-02-13 06:02:09,414 - INFO - [31946] Worker 1: 93 groupes de mises a jour (apres fusion)
+2026-02-13 06:02:09,429 - INFO - [31946] Worker 1: Traitement groupe 2026-02-13 - 2026-02-13, 48.0EUR, 2 logements
+2026-02-13 06:02:09,430 - INFO - [31946] Worker 1 [GROUPE]: Utilisation ref=GROUPE1 pour appliquer a 6 membres
+2026-02-13 06:02:21,384 - INFO - [31954] Worker 4: Connecte a Superhote
+2026-02-13 06:02:21,494 - INFO - [31954] Worker 4: 93 mises a jour a traiter
+2026-02-13 06:02:21,584 - INFO - [31954] Worker 4: 62 groupes de mises a jour (apres fusion)
+2026-02-13 06:02:21,588 - INFO - [31954] Worker 4: Traitement groupe 2026-02-13 - 2026-02-13, 62.0EUR, 2 logements
+2026-02-13 06:02:21,589 - INFO - [31954] Worker 4 [GROUPE]: Utilisation ref=GROUPE4 pour appliquer a 3 membres
+2026-02-13 06:02:22,115 - INFO - [31960] Worker 5: Connecte a Superhote
+2026-02-13 06:02:24,722 - INFO - [31950] Worker 3: Connecte a Superhote
+2026-02-13 06:02:26,184 - INFO - [31952] Worker 2: Connecte a Superhote
+2026-02-13 06:02:27,429 - INFO - [31960] Worker 5: 31 mises a jour a traiter
+2026-02-13 06:02:27,536 - INFO - [31960] Optimisation: 31 -> 17 operations (fusion dates consecutives)
+2026-02-13 06:02:27,536 - INFO - [31960] Worker 5: 17 groupes de mises a jour (apres fusion)
+2026-02-13 06:02:27,538 - INFO - [31960] Worker 5: Traitement groupe 2026-02-13 - 2026-02-13, 89.0EUR, 1 logements
+2026-02-13 06:02:27,735 - INFO - [31952] Worker 2: 93 mises a jour a traiter
+2026-02-13 06:02:27,759 - INFO - [31952] Worker 2: 62 groupes de mises a jour (apres fusion)
+2026-02-13 06:02:27,782 - INFO - [31952] Worker 2: Traitement groupe 2026-02-13 - 2026-02-13, 51.0EUR, 2 logements
+2026-02-13 06:02:27,783 - INFO - [31952] Worker 2 [GROUPE]: Utilisation ref=GROUPE2 pour appliquer a 3 membres
+2026-02-13 06:02:27,824 - INFO - [31950] Worker 3: 155 mises a jour a traiter
+2026-02-13 06:02:28,016 - INFO - [31950] Worker 3: 93 groupes de mises a jour (apres fusion)
+2026-02-13 06:02:28,066 - INFO - [31950] Worker 3: Traitement groupe 2026-02-13 - 2026-02-13, 67.0EUR, 2 logements
+2026-02-13 06:02:28,067 - INFO - [31950] Worker 3 [GROUPE]: Utilisation ref=GROUPE3 pour appliquer a 5 membres
+2026-02-13 06:03:16,626 - INFO - [31946] Worker 1: Traitement groupe 2026-02-13 - 2026-02-13, 57.0EUR, 2 logements
+2026-02-13 06:03:16,628 - INFO - [31946] Worker 1 [GROUPE]: Utilisation ref=GROUPE1 pour appliquer a 6 membres
+2026-02-13 06:03:26,921 - INFO - [31954] Worker 4: Traitement groupe 2026-02-13 - 2026-02-13, 73.0EUR, 1 logements
+2026-02-13 06:03:26,922 - INFO - [31954] Worker 4 [GROUPE]: Utilisation ref=GROUPE4 pour appliquer a 3 membres
+2026-02-13 06:03:30,903 - INFO - [31952] Worker 2: Traitement groupe 2026-02-13 - 2026-02-13, 54.0EUR, 1 logements
+2026-02-13 06:03:37,115 - INFO - [31952] Worker 2 [GROUPE]: Utilisation ref=GROUPE2 pour appliquer a 3 membres
+2026-02-13 06:03:40,241 - INFO - [31950] Worker 3: Traitement groupe 2026-02-13 - 2026-02-13, 71.0EUR, 2 logements
+2026-02-13 06:03:40,242 - INFO - [31950] Worker 3 [GROUPE]: Utilisation ref=GROUPE3 pour appliquer a 5 membres
+2026-02-13 06:03:44,659 - INFO - [31960] Worker 5: Traitement groupe 2026-02-14 - 2026-02-14, 94.0EUR, 1 logements
+2026-02-13 06:04:18,798 - INFO - [31960] Worker 5: Traitement groupe 2026-02-15 - 2026-02-15, 74.0EUR, 1 logements
+2026-02-13 06:04:31,707 - INFO - [31954] Worker 4: Traitement groupe 2026-02-14 - 2026-02-14, 66.0EUR, 2 logements
+2026-02-13 06:04:31,708 - INFO - [31954] Worker 4 [GROUPE]: Utilisation ref=GROUPE4 pour appliquer a 3 membres
+2026-02-13 06:04:32,529 - INFO - [31946] Worker 1: Traitement groupe 2026-02-13 - 2026-02-13, 60.0EUR, 2 logements
+2026-02-13 06:04:32,530 - INFO - [31946] Worker 1 [GROUPE]: Utilisation ref=GROUPE1 pour appliquer a 6 membres
+2026-02-13 06:04:34,438 - INFO - [31960] Worker 5: Traitement groupe 2026-02-16 - 2026-02-16, 85.0EUR, 1 logements
+2026-02-13 06:04:37,790 - INFO - [31952] Worker 2: Traitement groupe 2026-02-14 - 2026-02-14, 55.0EUR, 2 logements
+2026-02-13 06:04:37,791 - INFO - [31952] Worker 2 [GROUPE]: Utilisation ref=GROUPE2 pour appliquer a 3 membres
+2026-02-13 06:04:40,514 - INFO - [31950] Worker 3: Traitement groupe 2026-02-13 - 2026-02-13, 79.0EUR, 1 logements
+2026-02-13 06:04:40,514 - INFO - [31950] Worker 3 [GROUPE]: Utilisation ref=GROUPE3 pour appliquer a 5 membres
+2026-02-13 06:05:00,829 - INFO - [31960] Worker 5: Traitement groupe 2026-02-17 - 2026-02-19, 90.0EUR, 1 logements
+2026-02-13 06:05:19,916 - INFO - [31954] Worker 4: Traitement groupe 2026-02-14 - 2026-02-14, 78.0EUR, 1 logements
+2026-02-13 06:05:19,917 - INFO - [31954] Worker 4 [GROUPE]: Utilisation ref=GROUPE4 pour appliquer a 3 membres
+2026-02-13 06:05:27,300 - INFO - [31946] Worker 1: Traitement groupe 2026-02-14 - 2026-02-14, 54.0EUR, 2 logements
+2026-02-13 06:05:27,301 - INFO - [31946] Worker 1 [GROUPE]: Utilisation ref=GROUPE1 pour appliquer a 6 membres
+2026-02-13 06:05:29,689 - INFO - [31952] Worker 2: Traitement groupe 2026-02-14 - 2026-02-14, 57.0EUR, 1 logements
+2026-02-13 06:05:29,690 - INFO - [31952] Worker 2 [GROUPE]: Utilisation ref=GROUPE2 pour appliquer a 3 membres
+2026-02-13 06:05:30,926 - INFO - [31960] Worker 5: Traitement groupe 2026-02-20 - 2026-02-21, 106.0EUR, 1 logements
+2026-02-13 06:05:41,021 - INFO - [31950] Worker 3: Traitement groupe 2026-02-14 - 2026-02-14, 72.0EUR, 2 logements
+2026-02-13 06:05:41,023 - INFO - [31950] Worker 3 [GROUPE]: Utilisation ref=GROUPE3 pour appliquer a 5 membres
+2026-02-13 06:05:58,213 - INFO - [31960] Worker 5: Traitement groupe 2026-02-22 - 2026-02-22, 85.0EUR, 1 logements
+2026-02-13 06:06:05,422 - INFO - [31954] Worker 4: Traitement groupe 2026-02-15 - 2026-02-15, 48.0EUR, 2 logements
+2026-02-13 06:06:05,423 - INFO - [31954] Worker 4 [GROUPE]: Utilisation ref=GROUPE4 pour appliquer a 3 membres
+2026-02-13 06:06:20,042 - INFO - [31952] Worker 2: Traitement groupe 2026-02-15 - 2026-02-15, 34.0EUR, 2 logements
+2026-02-13 06:06:20,043 - INFO - [31952] Worker 2 [GROUPE]: Utilisation ref=GROUPE2 pour appliquer a 3 membres
+2026-02-13 06:06:24,966 - INFO - [31960] Worker 5: Traitement groupe 2026-02-23 - 2026-02-26, 97.0EUR, 1 logements
+2026-02-13 06:06:25,558 - INFO - [31946] Worker 1: Traitement groupe 2026-02-14 - 2026-02-14, 63.0EUR, 2 logements
+2026-02-13 06:06:25,559 - INFO - [31946] Worker 1 [GROUPE]: Utilisation ref=GROUPE1 pour appliquer a 6 membres
+2026-02-13 06:06:33,662 - INFO - [31950] Worker 3: Traitement groupe 2026-02-14 - 2026-02-14, 76.0EUR, 2 logements
+2026-02-13 06:06:33,663 - INFO - [31950] Worker 3 [GROUPE]: Utilisation ref=GROUPE3 pour appliquer a 5 membres
+2026-02-13 06:06:55,313 - INFO - [31954] Worker 4: Traitement groupe 2026-02-15 - 2026-02-15, 56.0EUR, 1 logements
+2026-02-13 06:06:55,314 - INFO - [31954] Worker 4 [GROUPE]: Utilisation ref=GROUPE4 pour appliquer a 3 membres
+2026-02-13 06:06:55,814 - INFO - [31960] Worker 5: Traitement groupe 2026-02-27 - 2026-02-28, 114.0EUR, 1 logements
+2026-02-13 06:07:11,261 - INFO - [31952] Worker 2: Traitement groupe 2026-02-15 - 2026-02-15, 36.0EUR, 1 logements
+2026-02-13 06:07:11,262 - INFO - [31952] Worker 2 [GROUPE]: Utilisation ref=GROUPE2 pour appliquer a 3 membres
+2026-02-13 06:07:21,654 - INFO - [31946] Worker 1: Traitement groupe 2026-02-14 - 2026-02-14, 66.0EUR, 2 logements
+2026-02-13 06:07:21,655 - INFO - [31946] Worker 1 [GROUPE]: Utilisation ref=GROUPE1 pour appliquer a 6 membres
+2026-02-13 06:07:22,862 - INFO - [31960] Worker 5: Traitement groupe 2026-03-01 - 2026-03-01, 92.0EUR, 1 logements
+2026-02-13 06:07:30,568 - INFO - [31950] Worker 3: Traitement groupe 2026-02-14 - 2026-02-14, 85.0EUR, 1 logements
+2026-02-13 06:07:30,569 - INFO - [31950] Worker 3 [GROUPE]: Utilisation ref=GROUPE3 pour appliquer a 5 membres
+2026-02-13 06:07:43,008 - INFO - [31954] Worker 4: Traitement groupe 2026-02-16 - 2026-02-16, 58.0EUR, 2 logements
+2026-02-13 06:07:43,009 - INFO - [31954] Worker 4 [GROUPE]: Utilisation ref=GROUPE4 pour appliquer a 3 membres
+2026-02-13 06:07:56,432 - INFO - [31960] Worker 5: Traitement groupe 2026-03-02 - 2026-03-05, 104.0EUR, 1 logements
+2026-02-13 06:08:05,282 - INFO - [31952] Worker 2: Traitement groupe 2026-02-16 - 2026-02-16, 46.0EUR, 2 logements
+2026-02-13 06:08:05,283 - INFO - [31952] Worker 2 [GROUPE]: Utilisation ref=GROUPE2 pour appliquer a 3 membres
+2026-02-13 06:08:19,115 - INFO - [31946] Worker 1: Traitement groupe 2026-02-15 - 2026-02-15, 44.0EUR, 2 logements
+2026-02-13 06:08:19,116 - INFO - [31946] Worker 1 [GROUPE]: Utilisation ref=GROUPE1 pour appliquer a 6 membres
+2026-02-13 06:08:22,429 - INFO - [31950] Worker 3: Traitement groupe 2026-02-15 - 2026-02-15, 53.0EUR, 2 logements
+2026-02-13 06:08:22,431 - INFO - [31950] Worker 3 [GROUPE]: Utilisation ref=GROUPE3 pour appliquer a 5 membres
+2026-02-13 06:08:24,195 - INFO - [31960] Worker 5: Traitement groupe 2026-03-06 - 2026-03-07, 114.0EUR, 1 logements
+2026-02-13 06:08:44,226 - INFO - [31954] Worker 4: Traitement groupe 2026-02-16 - 2026-02-16, 68.0EUR, 1 logements
+2026-02-13 06:08:44,227 - INFO - [31954] Worker 4 [GROUPE]: Utilisation ref=GROUPE4 pour appliquer a 3 membres
+2026-02-13 06:08:54,678 - INFO - [31960] Worker 5: Traitement groupe 2026-03-08 - 2026-03-08, 92.0EUR, 1 logements
+2026-02-13 06:08:58,630 - INFO - [31952] Worker 2: Traitement groupe 2026-02-16 - 2026-02-16, 48.0EUR, 1 logements
+2026-02-13 06:08:58,631 - INFO - [31952] Worker 2 [GROUPE]: Utilisation ref=GROUPE2 pour appliquer a 3 membres
+2026-02-13 06:09:18,266 - INFO - [31946] Worker 1: Traitement groupe 2026-02-15 - 2026-02-15, 52.0EUR, 2 logements
+2026-02-13 06:09:18,268 - INFO - [31946] Worker 1 [GROUPE]: Utilisation ref=GROUPE1 pour appliquer a 6 membres
+2026-02-13 06:09:20,242 - INFO - [31950] Worker 3: Traitement groupe 2026-02-15 - 2026-02-15, 56.0EUR, 2 logements
+2026-02-13 06:09:20,243 - INFO - [31950] Worker 3 [GROUPE]: Utilisation ref=GROUPE3 pour appliquer a 5 membres
+2026-02-13 06:09:31,666 - INFO - [31960] Worker 5: Traitement groupe 2026-03-09 - 2026-03-10, 104.0EUR, 1 logements
+2026-02-13 06:09:37,871 - INFO - [31954] Worker 4: Traitement groupe 2026-02-17 - 2026-02-17, 62.0EUR, 2 logements
+2026-02-13 06:09:37,872 - INFO - [31954] Worker 4 [GROUPE]: Utilisation ref=GROUPE4 pour appliquer a 3 membres
+2026-02-13 06:09:46,977 - INFO - [31960] Worker 5: Traitement groupe 2026-03-11 - 2026-03-12, 90.0EUR, 1 logements
+2026-02-13 06:09:47,690 - INFO - [31952] Worker 2: Traitement groupe 2026-02-17 - 2026-02-17, 49.0EUR, 2 logements
+2026-02-13 06:09:47,691 - INFO - [31952] Worker 2 [GROUPE]: Utilisation ref=GROUPE2 pour appliquer a 3 membres
+2026-02-13 06:10:19,724 - INFO - [31950] Worker 3: Traitement groupe 2026-02-15 - 2026-02-15, 62.0EUR, 1 logements
+2026-02-13 06:10:19,726 - INFO - [31950] Worker 3 [GROUPE]: Utilisation ref=GROUPE3 pour appliquer a 5 membres
+2026-02-13 06:10:21,415 - INFO - [31946] Worker 1: Traitement groupe 2026-02-15 - 2026-02-15, 54.0EUR, 2 logements
+2026-02-13 06:10:21,415 - INFO - [31946] Worker 1 [GROUPE]: Utilisation ref=GROUPE1 pour appliquer a 6 membres
+2026-02-13 06:10:21,885 - INFO - [31960] Worker 5: Traitement groupe 2026-03-13 - 2026-03-14, 99.0EUR, 1 logements
+2026-02-13 06:10:33,496 - INFO - [31954] Worker 4: Traitement groupe 2026-02-17 - 2026-02-17, 72.0EUR, 1 logements
+2026-02-13 06:10:33,497 - INFO - [31954] Worker 4 [GROUPE]: Utilisation ref=GROUPE4 pour appliquer a 3 membres
+2026-02-13 06:10:40,058 - INFO - [31952] Worker 2: Traitement groupe 2026-02-17 - 2026-02-17, 51.0EUR, 1 logements
+2026-02-13 06:10:40,059 - INFO - [31952] Worker 2 [GROUPE]: Utilisation ref=GROUPE2 pour appliquer a 3 membres
+2026-02-13 06:10:50,999 - INFO - [31960] Worker 5: Traitement groupe 2026-03-15 - 2026-03-15, 80.0EUR, 1 logements
+2026-02-13 06:11:20,237 - INFO - [31950] Worker 3: Traitement groupe 2026-02-16 - 2026-02-16, 63.0EUR, 2 logements
+2026-02-13 06:11:20,239 - INFO - [31950] Worker 3 [GROUPE]: Utilisation ref=GROUPE3 pour appliquer a 5 membres
+2026-02-13 06:11:21,309 - INFO - [31960] Worker 5: Termine - 16 OK, 1 echecs
+2026-02-13 06:11:23,787 - INFO - [31946] Worker 1: Traitement groupe 2026-02-16 - 2026-02-16, 49.0EUR, 2 logements
+2026-02-13 06:11:23,788 - INFO - [31946] Worker 1 [GROUPE]: Utilisation ref=GROUPE1 pour appliquer a 6 membres
+2026-02-13 06:11:25,350 - INFO - [31954] Worker 4: Traitement groupe 2026-02-18 - 2026-02-18, 62.0EUR, 2 logements
+2026-02-13 06:11:25,351 - INFO - [31954] Worker 4 [GROUPE]: Utilisation ref=GROUPE4 pour appliquer a 3 membres
+2026-02-13 06:11:34,194 - INFO - [31952] Worker 2: Traitement groupe 2026-02-18 - 2026-02-18, 49.0EUR, 2 logements
+2026-02-13 06:11:34,195 - INFO - [31952] Worker 2 [GROUPE]: Utilisation ref=GROUPE2 pour appliquer a 3 membres
+2026-02-13 06:12:10,826 - INFO - [31954] Worker 4: Traitement groupe 2026-02-18 - 2026-02-18, 72.0EUR, 1 logements
+2026-02-13 06:12:10,827 - INFO - [31954] Worker 4 [GROUPE]: Utilisation ref=GROUPE4 pour appliquer a 3 membres
+2026-02-13 06:12:12,381 - INFO - [31946] Worker 1: Traitement groupe 2026-02-16 - 2026-02-16, 58.0EUR, 2 logements
+2026-02-13 06:12:12,381 - INFO - [31946] Worker 1 [GROUPE]: Utilisation ref=GROUPE1 pour appliquer a 6 membres
+2026-02-13 06:12:13,030 - INFO - [31950] Worker 3: Traitement groupe 2026-02-16 - 2026-02-16, 66.0EUR, 2 logements
+2026-02-13 06:12:13,032 - INFO - [31950] Worker 3 [GROUPE]: Utilisation ref=GROUPE3 pour appliquer a 5 membres
+2026-02-13 06:12:22,034 - INFO - [31952] Worker 2: Traitement groupe 2026-02-18 - 2026-02-18, 51.0EUR, 1 logements
+2026-02-13 06:12:22,035 - INFO - [31952] Worker 2 [GROUPE]: Utilisation ref=GROUPE2 pour appliquer a 3 membres
+2026-02-13 06:13:05,245 - INFO - [31954] Worker 4: Traitement groupe 2026-02-19 - 2026-02-19, 62.0EUR, 2 logements
+2026-02-13 06:13:05,247 - INFO - [31954] Worker 4 [GROUPE]: Utilisation ref=GROUPE4 pour appliquer a 3 membres
+2026-02-13 06:13:05,318 - INFO - [31950] Worker 3: Traitement groupe 2026-02-16 - 2026-02-16, 74.0EUR, 1 logements
+2026-02-13 06:13:05,319 - INFO - [31950] Worker 3 [GROUPE]: Utilisation ref=GROUPE3 pour appliquer a 5 membres
+2026-02-13 06:13:07,862 - INFO - [31946] Worker 1: Traitement groupe 2026-02-16 - 2026-02-16, 60.0EUR, 2 logements
+2026-02-13 06:13:07,863 - INFO - [31946] Worker 1 [GROUPE]: Utilisation ref=GROUPE1 pour appliquer a 6 membres
+2026-02-13 06:13:07,879 - INFO - [31952] Worker 2: Traitement groupe 2026-02-19 - 2026-02-19, 49.0EUR, 2 logements
+2026-02-13 06:13:07,880 - INFO - [31952] Worker 2 [GROUPE]: Utilisation ref=GROUPE2 pour appliquer a 3 membres
+2026-02-13 06:13:49,978 - INFO - [31954] Worker 4: Traitement groupe 2026-02-19 - 2026-02-19, 72.0EUR, 1 logements
+2026-02-13 06:13:49,979 - INFO - [31954] Worker 4 [GROUPE]: Utilisation ref=GROUPE4 pour appliquer a 3 membres
+2026-02-13 06:13:57,025 - INFO - [31952] Worker 2: Traitement groupe 2026-02-19 - 2026-02-19, 51.0EUR, 1 logements
+2026-02-13 06:13:57,027 - INFO - [31952] Worker 2 [GROUPE]: Utilisation ref=GROUPE2 pour appliquer a 3 membres
+2026-02-13 06:13:58,070 - INFO - [31946] Worker 1: Traitement groupe 2026-02-17 - 2026-02-17, 54.0EUR, 2 logements
+2026-02-13 06:13:58,072 - INFO - [31946] Worker 1 [GROUPE]: Utilisation ref=GROUPE1 pour appliquer a 6 membres
+2026-02-13 06:13:59,487 - INFO - [31950] Worker 3: Traitement groupe 2026-02-17 - 2026-02-17, 66.0EUR, 2 logements
+2026-02-13 06:13:59,489 - INFO - [31950] Worker 3 [GROUPE]: Utilisation ref=GROUPE3 pour appliquer a 5 membres
+2026-02-13 06:14:36,048 - INFO - [31954] Worker 4: Traitement groupe 2026-02-20 - 2026-02-20, 78.0EUR, 2 logements
+2026-02-13 06:14:36,050 - INFO - [31954] Worker 4 [GROUPE]: Utilisation ref=GROUPE4 pour appliquer a 3 membres
+2026-02-13 06:14:51,126 - INFO - [31952] Worker 2: Traitement groupe 2026-02-20 - 2026-02-20, 64.0EUR, 2 logements
+2026-02-13 06:14:51,127 - INFO - [31952] Worker 2 [GROUPE]: Utilisation ref=GROUPE2 pour appliquer a 3 membres
+2026-02-13 06:14:53,161 - INFO - [31946] Worker 1: Traitement groupe 2026-02-17 - 2026-02-17, 63.0EUR, 2 logements
+2026-02-13 06:14:53,162 - INFO - [31946] Worker 1 [GROUPE]: Utilisation ref=GROUPE1 pour appliquer a 6 membres
+2026-02-13 06:14:57,416 - INFO - [31950] Worker 3: Traitement groupe 2026-02-17 - 2026-02-17, 70.0EUR, 2 logements
+2026-02-13 06:14:57,417 - INFO - [31950] Worker 3 [GROUPE]: Utilisation ref=GROUPE3 pour appliquer a 5 membres
+2026-02-13 06:15:21,027 - INFO - [31954] Worker 4: Traitement groupe 2026-02-20 - 2026-02-20, 91.0EUR, 1 logements
+2026-02-13 06:15:21,028 - INFO - [31954] Worker 4 [GROUPE]: Utilisation ref=GROUPE4 pour appliquer a 3 membres
+2026-02-13 06:15:38,879 - INFO - [31952] Worker 2: Traitement groupe 2026-02-20 - 2026-02-20, 67.0EUR, 1 logements
+2026-02-13 06:15:38,880 - INFO - [31952] Worker 2 [GROUPE]: Utilisation ref=GROUPE2 pour appliquer a 3 membres
+2026-02-13 06:15:46,426 - INFO - [31946] Worker 1: Traitement groupe 2026-02-17 - 2026-02-17, 66.0EUR, 2 logements
+2026-02-13 06:15:46,428 - INFO - [31946] Worker 1 [GROUPE]: Utilisation ref=GROUPE1 pour appliquer a 6 membres
+2026-02-13 06:15:46,955 - INFO - [31950] Worker 3: Traitement groupe 2026-02-17 - 2026-02-17, 78.0EUR, 1 logements
+2026-02-13 06:15:46,955 - INFO - [31950] Worker 3 [GROUPE]: Utilisation ref=GROUPE3 pour appliquer a 5 membres
+2026-02-13 06:16:07,522 - INFO - [31954] Worker 4: Traitement groupe 2026-02-21 - 2026-02-21, 78.0EUR, 2 logements
+2026-02-13 06:16:07,523 - INFO - [31954] Worker 4 [GROUPE]: Utilisation ref=GROUPE4 pour appliquer a 3 membres
+2026-02-13 06:16:26,141 - INFO - [31952] Worker 2: Traitement groupe 2026-02-21 - 2026-02-21, 64.0EUR, 2 logements
+2026-02-13 06:16:26,142 - INFO - [31952] Worker 2 [GROUPE]: Utilisation ref=GROUPE2 pour appliquer a 3 membres
+2026-02-13 06:16:38,642 - INFO - [31946] Worker 1: Traitement groupe 2026-02-18 - 2026-02-18, 54.0EUR, 2 logements
+2026-02-13 06:16:38,643 - INFO - [31946] Worker 1 [GROUPE]: Utilisation ref=GROUPE1 pour appliquer a 6 membres
+2026-02-13 06:16:43,615 - INFO - [31950] Worker 3: Traitement groupe 2026-02-18 - 2026-02-18, 66.0EUR, 2 logements
+2026-02-13 06:16:43,616 - INFO - [31950] Worker 3 [GROUPE]: Utilisation ref=GROUPE3 pour appliquer a 5 membres
+2026-02-13 06:16:57,058 - INFO - [31954] Worker 4: Traitement groupe 2026-02-21 - 2026-02-21, 91.0EUR, 1 logements
+2026-02-13 06:16:57,059 - INFO - [31954] Worker 4 [GROUPE]: Utilisation ref=GROUPE4 pour appliquer a 3 membres
+2026-02-13 06:17:14,862 - INFO - [31952] Worker 2: Traitement groupe 2026-02-21 - 2026-02-21, 67.0EUR, 1 logements
+2026-02-13 06:17:14,863 - INFO - [31952] Worker 2 [GROUPE]: Utilisation ref=GROUPE2 pour appliquer a 3 membres
+2026-02-13 06:17:31,874 - INFO - [31946] Worker 1: Traitement groupe 2026-02-18 - 2026-02-18, 63.0EUR, 2 logements
+2026-02-13 06:17:31,876 - INFO - [31946] Worker 1 [GROUPE]: Utilisation ref=GROUPE1 pour appliquer a 6 membres
+2026-02-13 06:17:34,512 - INFO - [31950] Worker 3: Traitement groupe 2026-02-18 - 2026-02-18, 70.0EUR, 2 logements
+2026-02-13 06:17:34,514 - INFO - [31950] Worker 3 [GROUPE]: Utilisation ref=GROUPE3 pour appliquer a 5 membres
+2026-02-13 06:17:43,217 - INFO - [31954] Worker 4: Traitement groupe 2026-02-22 - 2026-02-22, 58.0EUR, 2 logements
+2026-02-13 06:17:43,217 - INFO - [31954] Worker 4 [GROUPE]: Utilisation ref=GROUPE4 pour appliquer a 3 membres
+2026-02-13 06:18:03,414 - INFO - [31952] Worker 2: Traitement groupe 2026-02-22 - 2026-02-22, 42.0EUR, 2 logements
+2026-02-13 06:18:03,415 - INFO - [31952] Worker 2 [GROUPE]: Utilisation ref=GROUPE2 pour appliquer a 3 membres
+2026-02-13 06:18:25,178 - INFO - [31946] Worker 1: Traitement groupe 2026-02-18 - 2026-02-18, 66.0EUR, 2 logements
+2026-02-13 06:18:25,180 - INFO - [31946] Worker 1 [GROUPE]: Utilisation ref=GROUPE1 pour appliquer a 6 membres
+2026-02-13 06:18:30,030 - INFO - [31950] Worker 3: Traitement groupe 2026-02-18 - 2026-02-18, 78.0EUR, 1 logements
+2026-02-13 06:18:30,032 - INFO - [31950] Worker 3 [GROUPE]: Utilisation ref=GROUPE3 pour appliquer a 5 membres
+2026-02-13 06:18:31,255 - INFO - [31954] Worker 4: Traitement groupe 2026-02-22 - 2026-02-22, 68.0EUR, 1 logements
+2026-02-13 06:18:31,256 - INFO - [31954] Worker 4 [GROUPE]: Utilisation ref=GROUPE4 pour appliquer a 3 membres
+2026-02-13 06:19:00,207 - INFO - [31952] Worker 2: Traitement groupe 2026-02-22 - 2026-02-22, 44.0EUR, 1 logements
+2026-02-13 06:19:00,208 - INFO - [31952] Worker 2 [GROUPE]: Utilisation ref=GROUPE2 pour appliquer a 3 membres
+2026-02-13 06:19:28,529 - INFO - [31954] Worker 4: Traitement groupe 2026-02-23 - 2026-02-23, 67.0EUR, 2 logements
+2026-02-13 06:19:28,530 - INFO - [31954] Worker 4 [GROUPE]: Utilisation ref=GROUPE4 pour appliquer a 3 membres
+2026-02-13 06:19:40,950 - INFO - [31946] Worker 1: Traitement groupe 2026-02-19 - 2026-02-19, 54.0EUR, 2 logements
+2026-02-13 06:19:40,951 - INFO - [31946] Worker 1 [GROUPE]: Utilisation ref=GROUPE1 pour appliquer a 6 membres
+2026-02-13 06:19:40,966 - INFO - [31950] Worker 3: Traitement groupe 2026-02-19 - 2026-02-19, 66.0EUR, 2 logements
+2026-02-13 06:19:40,967 - INFO - [31950] Worker 3 [GROUPE]: Utilisation ref=GROUPE3 pour appliquer a 5 membres
+2026-02-13 06:19:57,886 - INFO - [31952] Worker 2: Traitement groupe 2026-02-23 - 2026-02-23, 53.0EUR, 2 logements
+2026-02-13 06:19:57,887 - INFO - [31952] Worker 2 [GROUPE]: Utilisation ref=GROUPE2 pour appliquer a 3 membres
+2026-02-13 06:20:19,838 - INFO - [31954] Worker 4: Traitement groupe 2026-02-23 - 2026-02-23, 79.0EUR, 1 logements
+2026-02-13 06:20:19,838 - INFO - [31954] Worker 4 [GROUPE]: Utilisation ref=GROUPE4 pour appliquer a 3 membres
+2026-02-13 06:20:36,773 - INFO - [31946] Worker 1: Traitement groupe 2026-02-19 - 2026-02-19, 63.0EUR, 2 logements
+2026-02-13 06:20:36,774 - INFO - [31946] Worker 1 [GROUPE]: Utilisation ref=GROUPE1 pour appliquer a 6 membres
+2026-02-13 06:20:37,134 - INFO - [31950] Worker 3: Traitement groupe 2026-02-19 - 2026-02-19, 70.0EUR, 2 logements
+2026-02-13 06:20:37,135 - INFO - [31950] Worker 3 [GROUPE]: Utilisation ref=GROUPE3 pour appliquer a 5 membres
+2026-02-13 06:20:48,477 - INFO - [31952] Worker 2: Traitement groupe 2026-02-23 - 2026-02-23, 56.0EUR, 1 logements
+2026-02-13 06:20:48,478 - INFO - [31952] Worker 2 [GROUPE]: Utilisation ref=GROUPE2 pour appliquer a 3 membres
+2026-02-13 06:21:15,161 - INFO - [31954] Worker 4: Traitement groupe 2026-02-24 - 2026-02-24, 67.0EUR, 2 logements
+2026-02-13 06:21:15,163 - INFO - [31954] Worker 4 [GROUPE]: Utilisation ref=GROUPE4 pour appliquer a 3 membres
+2026-02-13 06:21:30,821 - INFO - [31946] Worker 1: Traitement groupe 2026-02-19 - 2026-02-19, 66.0EUR, 2 logements
+2026-02-13 06:21:30,823 - INFO - [31946] Worker 1 [GROUPE]: Utilisation ref=GROUPE1 pour appliquer a 6 membres
+2026-02-13 06:21:31,899 - INFO - [31950] Worker 3: Traitement groupe 2026-02-19 - 2026-02-19, 78.0EUR, 1 logements
+2026-02-13 06:21:31,902 - INFO - [31950] Worker 3 [GROUPE]: Utilisation ref=GROUPE3 pour appliquer a 5 membres
+2026-02-13 06:21:43,695 - INFO - [31952] Worker 2: Traitement groupe 2026-02-24 - 2026-02-24, 53.0EUR, 2 logements
+2026-02-13 06:21:43,695 - INFO - [31952] Worker 2 [GROUPE]: Utilisation ref=GROUPE2 pour appliquer a 3 membres
+2026-02-13 06:22:08,498 - INFO - [31954] Worker 4: Traitement groupe 2026-02-24 - 2026-02-24, 79.0EUR, 1 logements
+2026-02-13 06:22:08,498 - INFO - [31954] Worker 4 [GROUPE]: Utilisation ref=GROUPE4 pour appliquer a 3 membres
+2026-02-13 06:22:30,398 - INFO - [31946] Worker 1: Traitement groupe 2026-02-20 - 2026-02-20, 67.0EUR, 2 logements
+2026-02-13 06:22:30,400 - INFO - [31946] Worker 1 [GROUPE]: Utilisation ref=GROUPE1 pour appliquer a 6 membres
+2026-02-13 06:22:30,415 - INFO - [31952] Worker 2: Traitement groupe 2026-02-24 - 2026-02-24, 56.0EUR, 1 logements
+2026-02-13 06:22:30,417 - INFO - [31952] Worker 2 [GROUPE]: Utilisation ref=GROUPE2 pour appliquer a 3 membres
+2026-02-13 06:22:36,969 - INFO - [31950] Worker 3: Traitement groupe 2026-02-20 - 2026-02-20, 83.0EUR, 2 logements
+2026-02-13 06:22:36,970 - INFO - [31950] Worker 3 [GROUPE]: Utilisation ref=GROUPE3 pour appliquer a 5 membres
+2026-02-13 06:22:55,890 - INFO - [31954] Worker 4: Traitement groupe 2026-02-25 - 2026-02-25, 67.0EUR, 2 logements
+2026-02-13 06:22:55,891 - INFO - [31954] Worker 4 [GROUPE]: Utilisation ref=GROUPE4 pour appliquer a 3 membres
+2026-02-13 06:23:26,355 - INFO - [31952] Worker 2: Traitement groupe 2026-02-25 - 2026-02-25, 53.0EUR, 2 logements
+2026-02-13 06:23:26,356 - INFO - [31952] Worker 2 [GROUPE]: Utilisation ref=GROUPE2 pour appliquer a 3 membres
+2026-02-13 06:23:30,845 - INFO - [31946] Worker 1: Traitement groupe 2026-02-20 - 2026-02-20, 79.0EUR, 2 logements
+2026-02-13 06:23:30,846 - INFO - [31946] Worker 1 [GROUPE]: Utilisation ref=GROUPE1 pour appliquer a 6 membres
+2026-02-13 06:23:32,589 - INFO - [31950] Worker 3: Traitement groupe 2026-02-20 - 2026-02-20, 88.0EUR, 2 logements
+2026-02-13 06:23:32,589 - INFO - [31950] Worker 3 [GROUPE]: Utilisation ref=GROUPE3 pour appliquer a 5 membres
+2026-02-13 06:24:02,318 - INFO - [31954] Worker 4: Traitement groupe 2026-02-25 - 2026-02-25, 79.0EUR, 1 logements
+2026-02-13 06:24:02,318 - INFO - [31954] Worker 4 [GROUPE]: Utilisation ref=GROUPE4 pour appliquer a 3 membres
+2026-02-13 06:24:21,042 - INFO - [31952] Worker 2: Traitement groupe 2026-02-25 - 2026-02-25, 56.0EUR, 1 logements
+2026-02-13 06:24:21,043 - INFO - [31952] Worker 2 [GROUPE]: Utilisation ref=GROUPE2 pour appliquer a 3 membres
+2026-02-13 06:24:25,682 - INFO - [31946] Worker 1: Traitement groupe 2026-02-20 - 2026-02-20, 83.0EUR, 2 logements
+2026-02-13 06:24:25,683 - INFO - [31946] Worker 1 [GROUPE]: Utilisation ref=GROUPE1 pour appliquer a 6 membres
+2026-02-13 06:24:37,994 - INFO - [31950] Worker 3: Traitement groupe 2026-02-20 - 2026-02-20, 98.0EUR, 1 logements
+2026-02-13 06:24:37,996 - INFO - [31950] Worker 3 [GROUPE]: Utilisation ref=GROUPE3 pour appliquer a 5 membres
+2026-02-13 06:24:53,938 - INFO - [31954] Worker 4: Traitement groupe 2026-02-26 - 2026-02-26, 67.0EUR, 2 logements
+2026-02-13 06:24:53,939 - INFO - [31954] Worker 4 [GROUPE]: Utilisation ref=GROUPE4 pour appliquer a 3 membres
+2026-02-13 06:25:15,850 - INFO - [31952] Worker 2: Traitement groupe 2026-02-26 - 2026-02-26, 53.0EUR, 2 logements
+2026-02-13 06:25:15,851 - INFO - [31952] Worker 2 [GROUPE]: Utilisation ref=GROUPE2 pour appliquer a 3 membres
+2026-02-13 06:25:26,253 - INFO - [31946] Worker 1: Traitement groupe 2026-02-21 - 2026-02-21, 67.0EUR, 2 logements
+2026-02-13 06:25:26,254 - INFO - [31946] Worker 1 [GROUPE]: Utilisation ref=GROUPE1 pour appliquer a 6 membres
+2026-02-13 06:25:35,216 - INFO - [31950] Worker 3: Traitement groupe 2026-02-21 - 2026-02-21, 83.0EUR, 2 logements
+2026-02-13 06:25:35,217 - INFO - [31950] Worker 3 [GROUPE]: Utilisation ref=GROUPE3 pour appliquer a 5 membres
+2026-02-13 06:25:53,811 - INFO - [31954] Worker 4: Traitement groupe 2026-02-26 - 2026-02-26, 79.0EUR, 1 logements
+2026-02-13 06:25:53,812 - INFO - [31954] Worker 4 [GROUPE]: Utilisation ref=GROUPE4 pour appliquer a 3 membres
+2026-02-13 06:26:10,373 - INFO - [31952] Worker 2: Traitement groupe 2026-02-26 - 2026-02-26, 56.0EUR, 1 logements
+2026-02-13 06:26:10,375 - INFO - [31952] Worker 2 [GROUPE]: Utilisation ref=GROUPE2 pour appliquer a 3 membres
+2026-02-13 06:26:18,543 - INFO - [31946] Worker 1: Traitement groupe 2026-02-21 - 2026-02-21, 79.0EUR, 2 logements
+2026-02-13 06:26:18,545 - INFO - [31946] Worker 1 [GROUPE]: Utilisation ref=GROUPE1 pour appliquer a 6 membres
+2026-02-13 06:26:41,487 - INFO - [31950] Worker 3: Traitement groupe 2026-02-21 - 2026-02-21, 88.0EUR, 2 logements
+2026-02-13 06:26:41,488 - INFO - [31950] Worker 3 [GROUPE]: Utilisation ref=GROUPE3 pour appliquer a 5 membres
+2026-02-13 06:26:49,941 - INFO - [31954] Worker 4: Traitement groupe 2026-02-27 - 2026-02-27, 84.0EUR, 2 logements
+2026-02-13 06:26:49,942 - INFO - [31954] Worker 4 [GROUPE]: Utilisation ref=GROUPE4 pour appliquer a 3 membres
+2026-02-13 06:27:15,046 - INFO - [31952] Worker 2: Traitement groupe 2026-02-27 - 2026-02-27, 69.0EUR, 2 logements
+2026-02-13 06:27:15,047 - INFO - [31952] Worker 2 [GROUPE]: Utilisation ref=GROUPE2 pour appliquer a 3 membres
+2026-02-13 06:27:25,330 - INFO - [31946] Worker 1: Traitement groupe 2026-02-21 - 2026-02-21, 83.0EUR, 2 logements
+2026-02-13 06:27:25,331 - INFO - [31946] Worker 1 [GROUPE]: Utilisation ref=GROUPE1 pour appliquer a 6 membres
+2026-02-13 06:27:36,617 - INFO - [31950] Worker 3: Traitement groupe 2026-02-21 - 2026-02-21, 98.0EUR, 1 logements
+2026-02-13 06:27:36,619 - INFO - [31950] Worker 3 [GROUPE]: Utilisation ref=GROUPE3 pour appliquer a 5 membres
+2026-02-13 06:27:38,098 - INFO - [31954] Worker 4: Traitement groupe 2026-02-27 - 2026-02-27, 99.0EUR, 1 logements
+2026-02-13 06:27:38,099 - INFO - [31954] Worker 4 [GROUPE]: Utilisation ref=GROUPE4 pour appliquer a 3 membres
+2026-02-13 06:28:10,458 - INFO - [31952] Worker 2: Traitement groupe 2026-02-27 - 2026-02-27, 72.0EUR, 1 logements
+2026-02-13 06:28:10,459 - INFO - [31952] Worker 2 [GROUPE]: Utilisation ref=GROUPE2 pour appliquer a 3 membres
+2026-02-13 06:28:27,895 - INFO - [31946] Worker 1: Traitement groupe 2026-02-22 - 2026-02-22, 56.0EUR, 2 logements
+2026-02-13 06:28:27,896 - INFO - [31946] Worker 1 [GROUPE]: Utilisation ref=GROUPE1 pour appliquer a 6 membres
+2026-02-13 06:28:37,846 - INFO - [31954] Worker 4: Traitement groupe 2026-02-28 - 2026-02-28, 84.0EUR, 2 logements
+2026-02-13 06:28:37,847 - INFO - [31954] Worker 4 [GROUPE]: Utilisation ref=GROUPE4 pour appliquer a 3 membres
+2026-02-13 06:28:41,293 - INFO - [31950] Worker 3: Traitement groupe 2026-02-22 - 2026-02-22, 63.0EUR, 2 logements
+2026-02-13 06:28:41,294 - INFO - [31950] Worker 3 [GROUPE]: Utilisation ref=GROUPE3 pour appliquer a 5 membres
+2026-02-13 06:29:10,494 - INFO - [31952] Worker 2: Traitement groupe 2026-02-28 - 2026-02-28, 69.0EUR, 2 logements
+2026-02-13 06:29:10,495 - INFO - [31952] Worker 2 [GROUPE]: Utilisation ref=GROUPE2 pour appliquer a 3 membres
+2026-02-13 06:29:24,490 - INFO - [31946] Worker 1: Traitement groupe 2026-02-22 - 2026-02-22, 66.0EUR, 2 logements
+2026-02-13 06:29:24,491 - INFO - [31946] Worker 1 [GROUPE]: Utilisation ref=GROUPE1 pour appliquer a 6 membres
+2026-02-13 06:29:34,585 - INFO - [31954] Worker 4: Traitement groupe 2026-02-28 - 2026-02-28, 99.0EUR, 1 logements
+2026-02-13 06:29:34,586 - INFO - [31954] Worker 4 [GROUPE]: Utilisation ref=GROUPE4 pour appliquer a 3 membres
+2026-02-13 06:29:45,496 - INFO - [31950] Worker 3: Traitement groupe 2026-02-22 - 2026-02-22, 66.0EUR, 2 logements
+2026-02-13 06:29:45,497 - INFO - [31950] Worker 3 [GROUPE]: Utilisation ref=GROUPE3 pour appliquer a 5 membres
+2026-02-13 06:30:03,045 - INFO - [31952] Worker 2: Traitement groupe 2026-02-28 - 2026-02-28, 72.0EUR, 1 logements
+2026-02-13 06:30:03,046 - INFO - [31952] Worker 2 [GROUPE]: Utilisation ref=GROUPE2 pour appliquer a 3 membres
+2026-02-13 06:30:24,327 - INFO - [31946] Worker 1: Traitement groupe 2026-02-22 - 2026-02-22, 69.0EUR, 2 logements
+2026-02-13 06:30:25,761 - INFO - [31946] Worker 1 [GROUPE]: Utilisation ref=GROUPE1 pour appliquer a 6 membres
+2026-02-13 06:30:25,042 - INFO - [31954] Worker 4: Traitement groupe 2026-03-01 - 2026-03-01, 64.0EUR, 2 logements
+2026-02-13 06:30:25,765 - INFO - [31954] Worker 4 [GROUPE]: Utilisation ref=GROUPE4 pour appliquer a 3 membres
+2026-02-13 06:30:41,919 - INFO - [31950] Worker 3: Traitement groupe 2026-02-22 - 2026-02-22, 74.0EUR, 1 logements
+2026-02-13 06:30:41,920 - INFO - [31950] Worker 3 [GROUPE]: Utilisation ref=GROUPE3 pour appliquer a 5 membres
+2026-02-13 06:30:49,714 - INFO - [31952] Worker 2: Traitement groupe 2026-03-01 - 2026-03-01, 46.0EUR, 2 logements
+2026-02-13 06:30:49,715 - INFO - [31952] Worker 2 [GROUPE]: Utilisation ref=GROUPE2 pour appliquer a 3 membres
+2026-02-13 06:31:34,791 - INFO - [31954] Worker 4: Traitement groupe 2026-03-01 - 2026-03-01, 75.0EUR, 1 logements
+2026-02-13 06:31:37,437 - INFO - [31954] Worker 4 [GROUPE]: Utilisation ref=GROUPE4 pour appliquer a 3 membres
+2026-02-13 06:31:39,382 - INFO - [31946] Worker 1: Traitement groupe 2026-02-23 - 2026-02-23, 61.0EUR, 2 logements
+2026-02-13 06:31:39,383 - INFO - [31946] Worker 1 [GROUPE]: Utilisation ref=GROUPE1 pour appliquer a 6 membres
+2026-02-13 06:31:52,359 - INFO - [31950] Worker 3: Traitement groupe 2026-02-23 - 2026-02-23, 72.0EUR, 2 logements
+2026-02-13 06:31:52,360 - INFO - [31950] Worker 3 [GROUPE]: Utilisation ref=GROUPE3 pour appliquer a 5 membres
+2026-02-13 06:31:58,162 - INFO - [31952] Worker 2: Traitement groupe 2026-03-01 - 2026-03-01, 48.0EUR, 1 logements
+2026-02-13 06:31:58,165 - INFO - [31952] Worker 2 [GROUPE]: Utilisation ref=GROUPE2 pour appliquer a 3 membres
+2026-02-13 06:32:29,418 - INFO - [31954] Worker 4: Traitement groupe 2026-03-02 - 2026-03-02, 73.0EUR, 2 logements
+2026-02-13 06:32:29,421 - INFO - [31954] Worker 4 [GROUPE]: Utilisation ref=GROUPE4 pour appliquer a 3 membres
+2026-02-13 06:32:43,190 - INFO - [31946] Worker 1: Traitement groupe 2026-02-23 - 2026-02-23, 72.0EUR, 2 logements
+2026-02-13 06:32:43,191 - INFO - [31946] Worker 1 [GROUPE]: Utilisation ref=GROUPE1 pour appliquer a 6 membres
+2026-02-13 06:32:50,316 - INFO - [31952] Worker 2: Traitement groupe 2026-03-02 - 2026-03-02, 58.0EUR, 2 logements
+2026-02-13 06:32:50,318 - INFO - [31952] Worker 2 [GROUPE]: Utilisation ref=GROUPE2 pour appliquer a 3 membres
+2026-02-13 06:32:51,626 - INFO - [31950] Worker 3: Traitement groupe 2026-02-23 - 2026-02-23, 77.0EUR, 2 logements
+2026-02-13 06:32:51,628 - INFO - [31950] Worker 3 [GROUPE]: Utilisation ref=GROUPE3 pour appliquer a 5 membres
+2026-02-13 06:33:22,484 - INFO - [31954] Worker 4: Traitement groupe 2026-03-02 - 2026-03-02, 86.0EUR, 1 logements
+2026-02-13 06:33:22,488 - INFO - [31954] Worker 4 [GROUPE]: Utilisation ref=GROUPE4 pour appliquer a 3 membres
+2026-02-13 06:33:45,887 - INFO - [31946] Worker 1: Traitement groupe 2026-02-23 - 2026-02-23, 75.0EUR, 2 logements
+2026-02-13 06:33:45,888 - INFO - [31946] Worker 1 [GROUPE]: Utilisation ref=GROUPE1 pour appliquer a 6 membres
+2026-02-13 06:33:49,754 - INFO - [31952] Worker 2: Traitement groupe 2026-03-02 - 2026-03-02, 60.0EUR, 1 logements
+2026-02-13 06:33:49,755 - INFO - [31952] Worker 2 [GROUPE]: Utilisation ref=GROUPE2 pour appliquer a 3 membres
+2026-02-13 06:33:59,410 - INFO - [31950] Worker 3: Traitement groupe 2026-02-23 - 2026-02-23, 85.0EUR, 1 logements
+2026-02-13 06:33:59,411 - INFO - [31950] Worker 3 [GROUPE]: Utilisation ref=GROUPE3 pour appliquer a 5 membres
+2026-02-13 06:34:19,546 - INFO - [31954] Worker 4: Traitement groupe 2026-03-03 - 2026-03-03, 73.0EUR, 2 logements
+2026-02-13 06:34:19,548 - INFO - [31954] Worker 4 [GROUPE]: Utilisation ref=GROUPE4 pour appliquer a 3 membres
+2026-02-13 06:34:42,129 - INFO - [31952] Worker 2: Traitement groupe 2026-03-03 - 2026-03-03, 58.0EUR, 2 logements
+2026-02-13 06:34:42,133 - INFO - [31952] Worker 2 [GROUPE]: Utilisation ref=GROUPE2 pour appliquer a 3 membres
+2026-02-13 06:34:43,546 - INFO - [31946] Worker 1: Traitement groupe 2026-02-24 - 2026-02-24, 61.0EUR, 2 logements
+2026-02-13 06:34:43,547 - INFO - [31946] Worker 1 [GROUPE]: Utilisation ref=GROUPE1 pour appliquer a 6 membres
+2026-02-13 06:34:59,814 - INFO - [31950] Worker 3: Traitement groupe 2026-02-24 - 2026-02-24, 72.0EUR, 2 logements
+2026-02-13 06:34:59,815 - INFO - [31950] Worker 3 [GROUPE]: Utilisation ref=GROUPE3 pour appliquer a 5 membres
+2026-02-13 06:35:17,110 - INFO - [31954] Worker 4: Traitement groupe 2026-03-03 - 2026-03-03, 86.0EUR, 1 logements
+2026-02-13 06:35:17,112 - INFO - [31954] Worker 4 [GROUPE]: Utilisation ref=GROUPE4 pour appliquer a 3 membres
+2026-02-13 06:35:45,274 - INFO - [31952] Worker 2: Traitement groupe 2026-03-03 - 2026-03-03, 60.0EUR, 1 logements
+2026-02-13 06:35:45,275 - INFO - [31952] Worker 2 [GROUPE]: Utilisation ref=GROUPE2 pour appliquer a 3 membres
+2026-02-13 06:35:46,690 - INFO - [31946] Worker 1: Traitement groupe 2026-02-24 - 2026-02-24, 72.0EUR, 2 logements
+2026-02-13 06:35:46,692 - INFO - [31946] Worker 1 [GROUPE]: Utilisation ref=GROUPE1 pour appliquer a 6 membres
+2026-02-13 06:36:08,978 - INFO - [31950] Worker 3: Traitement groupe 2026-02-24 - 2026-02-24, 77.0EUR, 2 logements
+2026-02-13 06:36:08,979 - INFO - [31950] Worker 3 [GROUPE]: Utilisation ref=GROUPE3 pour appliquer a 5 membres
+2026-02-13 06:36:14,822 - INFO - [31954] Worker 4: Traitement groupe 2026-03-04 - 2026-03-04, 73.0EUR, 2 logements
+2026-02-13 06:36:14,823 - INFO - [31954] Worker 4 [GROUPE]: Utilisation ref=GROUPE4 pour appliquer a 3 membres
+2026-02-13 06:36:38,630 - INFO - [31952] Worker 2: Traitement groupe 2026-03-04 - 2026-03-04, 58.0EUR, 2 logements
+2026-02-13 06:36:38,634 - INFO - [31952] Worker 2 [GROUPE]: Utilisation ref=GROUPE2 pour appliquer a 3 membres
+2026-02-13 06:36:41,435 - INFO - [31946] Worker 1: Traitement groupe 2026-02-24 - 2026-02-24, 75.0EUR, 2 logements
+2026-02-13 06:36:41,436 - INFO - [31946] Worker 1 [GROUPE]: Utilisation ref=GROUPE1 pour appliquer a 6 membres
+2026-02-13 06:37:05,646 - INFO - [31954] Worker 4: Traitement groupe 2026-03-04 - 2026-03-04, 86.0EUR, 1 logements
+2026-02-13 06:37:06,051 - INFO - [31954] Worker 4 [GROUPE]: Utilisation ref=GROUPE4 pour appliquer a 3 membres
+2026-02-13 06:37:09,329 - INFO - [31950] Worker 3: Traitement groupe 2026-02-24 - 2026-02-24, 85.0EUR, 1 logements
+2026-02-13 06:37:09,330 - INFO - [31950] Worker 3 [GROUPE]: Utilisation ref=GROUPE3 pour appliquer a 5 membres
+2026-02-13 06:37:42,387 - INFO - [31952] Worker 2: Traitement groupe 2026-03-04 - 2026-03-04, 60.0EUR, 1 logements
+2026-02-13 06:37:42,388 - INFO - [31952] Worker 2 [GROUPE]: Utilisation ref=GROUPE2 pour appliquer a 3 membres
+2026-02-13 06:37:45,370 - INFO - [31946] Worker 1: Traitement groupe 2026-02-25 - 2026-02-25, 61.0EUR, 2 logements
+2026-02-13 06:37:45,370 - INFO - [31946] Worker 1 [GROUPE]: Utilisation ref=GROUPE1 pour appliquer a 6 membres
+2026-02-13 06:38:09,975 - INFO - [31954] Worker 4: Traitement groupe 2026-03-05 - 2026-03-05, 73.0EUR, 2 logements
+2026-02-13 06:38:09,977 - INFO - [31954] Worker 4 [GROUPE]: Utilisation ref=GROUPE4 pour appliquer a 3 membres
+2026-02-13 06:38:16,817 - INFO - [31950] Worker 3: Traitement groupe 2026-02-25 - 2026-02-25, 72.0EUR, 2 logements
+2026-02-13 06:38:16,818 - INFO - [31950] Worker 3 [GROUPE]: Utilisation ref=GROUPE3 pour appliquer a 5 membres
+2026-02-13 06:38:36,951 - INFO - [31952] Worker 2: Traitement groupe 2026-03-05 - 2026-03-05, 58.0EUR, 2 logements
+2026-02-13 06:38:36,952 - INFO - [31952] Worker 2 [GROUPE]: Utilisation ref=GROUPE2 pour appliquer a 3 membres
+2026-02-13 06:38:40,474 - INFO - [31946] Worker 1: Traitement groupe 2026-02-25 - 2026-02-25, 72.0EUR, 2 logements
+2026-02-13 06:38:40,475 - INFO - [31946] Worker 1 [GROUPE]: Utilisation ref=GROUPE1 pour appliquer a 6 membres
+2026-02-13 06:38:58,581 - INFO - [31954] Worker 4: Traitement groupe 2026-03-05 - 2026-03-05, 86.0EUR, 1 logements
+2026-02-13 06:38:58,723 - INFO - [31954] Worker 4 [GROUPE]: Utilisation ref=GROUPE4 pour appliquer a 3 membres
+2026-02-13 06:39:24,855 - INFO - [31950] Worker 3: Traitement groupe 2026-02-25 - 2026-02-25, 77.0EUR, 2 logements
+2026-02-13 06:39:24,871 - INFO - [31950] Worker 3 [GROUPE]: Utilisation ref=GROUPE3 pour appliquer a 5 membres
+2026-02-13 06:39:38,806 - INFO - [31952] Worker 2: Traitement groupe 2026-03-05 - 2026-03-05, 60.0EUR, 1 logements
+2026-02-13 06:39:38,820 - INFO - [31952] Worker 2 [GROUPE]: Utilisation ref=GROUPE2 pour appliquer a 3 membres
+2026-02-13 06:39:53,586 - INFO - [31946] Worker 1: Traitement groupe 2026-02-25 - 2026-02-25, 75.0EUR, 2 logements
+2026-02-13 06:39:53,590 - INFO - [31946] Worker 1 [GROUPE]: Utilisation ref=GROUPE1 pour appliquer a 6 membres
+2026-02-13 06:40:20,722 - INFO - [31954] Worker 4: Traitement groupe 2026-03-06 - 2026-03-06, 84.0EUR, 2 logements
+2026-02-13 06:40:20,752 - INFO - [31954] Worker 4 [GROUPE]: Utilisation ref=GROUPE4 pour appliquer a 3 membres
+2026-02-13 06:40:45,782 - INFO - [31952] Worker 2: Traitement groupe 2026-03-06 - 2026-03-06, 69.0EUR, 2 logements
+2026-02-13 06:40:55,648 - INFO - [31952] Worker 2 [GROUPE]: Utilisation ref=GROUPE2 pour appliquer a 3 membres
+2026-02-13 06:41:01,232 - INFO - [31950] Worker 3: Traitement groupe 2026-02-25 - 2026-02-25, 85.0EUR, 1 logements
+2026-02-13 06:41:01,241 - INFO - [31950] Worker 3 [GROUPE]: Utilisation ref=GROUPE3 pour appliquer a 5 membres
+2026-02-13 06:41:16,339 - INFO - [31946] Worker 1: Traitement groupe 2026-02-26 - 2026-02-26, 61.0EUR, 2 logements
+2026-02-13 06:41:16,363 - INFO - [31946] Worker 1 [GROUPE]: Utilisation ref=GROUPE1 pour appliquer a 6 membres
+2026-02-13 06:41:35,887 - INFO - [31954] Worker 4: Traitement groupe 2026-03-06 - 2026-03-06, 99.0EUR, 1 logements
+2026-02-13 06:41:36,120 - INFO - [31954] Worker 4 [GROUPE]: Utilisation ref=GROUPE4 pour appliquer a 3 membres
+2026-02-13 06:42:50,294 - INFO - [31952] Worker 2: Traitement groupe 2026-03-06 - 2026-03-06, 72.0EUR, 1 logements
+2026-02-13 06:42:50,295 - INFO - [31950] Worker 3: Traitement groupe 2026-02-26 - 2026-02-26, 72.0EUR, 2 logements
+2026-02-13 06:42:50,535 - INFO - [31950] Worker 3 [GROUPE]: Utilisation ref=GROUPE3 pour appliquer a 5 membres
+2026-02-13 06:42:50,535 - INFO - [31952] Worker 2 [GROUPE]: Utilisation ref=GROUPE2 pour appliquer a 3 membres
+2026-02-13 06:43:44,279 - INFO - [31946] Worker 1: Traitement groupe 2026-02-26 - 2026-02-26, 72.0EUR, 2 logements
+2026-02-13 06:43:44,901 - INFO - [31946] Worker 1 [GROUPE]: Utilisation ref=GROUPE1 pour appliquer a 6 membres
+2026-02-13 06:43:54,541 - INFO - [31954] Worker 4: Traitement groupe 2026-03-07 - 2026-03-07, 84.0EUR, 2 logements
+2026-02-13 06:43:54,571 - INFO - [31954] Worker 4 [GROUPE]: Utilisation ref=GROUPE4 pour appliquer a 3 membres
+2026-02-13 06:45:03,634 - INFO - [31954] Signal d'arret recu
+2026-02-13 06:45:03,634 - INFO - [31940] Signal d'arret recu
+2026-02-13 06:45:04,104 - INFO - [31940] Arret demande pour tous les workers...
+2026-02-13 06:45:04,104 - INFO - [31954] Arret demande pour tous les workers...
+2026-02-13 06:45:03,634 - INFO - [31950] Signal d'arret recu
+2026-02-13 06:45:03,634 - INFO - [31952] Signal d'arret recu
+2026-02-13 06:45:03,634 - INFO - [31960] Signal d'arret recu
+2026-02-13 06:45:04,105 - INFO - [31950] Arret demande pour tous les workers...
+2026-02-13 06:45:04,106 - INFO - [31952] Arret demande pour tous les workers...
+2026-02-13 06:45:04,106 - INFO - [31960] Arret demande pour tous les workers...
+2026-02-13 06:45:03,634 - INFO - [31946] Signal d'arret recu
+2026-02-13 06:45:04,107 - INFO - [31946] Arret demande pour tous les workers...
+Process ForkProcess-6:
+2026-02-13 06:45:04,313 - ERROR - [31946] Erreur connexion BDD: (2013, 'Lost connection to MySQL server during query ([Errno 32] Broken pipe)')
+Traceback (most recent call last):
+  File "/usr/lib/python3.9/multiprocessing/managers.py", line 801, in _callmethod
+    conn = self._tls.connection
+AttributeError: 'ForkAwareLocal' object has no attribute 'connection'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/usr/lib/python3.9/multiprocessing/process.py", line 315, in _bootstrap
+    self.run()
+  File "/usr/lib/python3.9/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "/usr/lib/python3.9/concurrent/futures/process.py", line 237, in _process_worker
+    call_item = call_queue.get(block=True)
+  File "/usr/lib/python3.9/multiprocessing/queues.py", line 103, in get
+    res = self._recv_bytes()
+  File "/usr/lib/python3.9/multiprocessing/connection.py", line 216, in recv_bytes
+    buf = self._recv_bytes(maxlength)
+  File "/usr/lib/python3.9/multiprocessing/connection.py", line 414, in _recv_bytes
+    buf = self._recv(4)
+  File "/usr/lib/python3.9/multiprocessing/connection.py", line 379, in _recv
+    chunk = read(handle, remaining)
+  File "/home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py", line 905, in signal_handler
+    pool.stop()
+  File "/home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py", line 857, in stop
+    self.stop_event.set()
+  File "/usr/lib/python3.9/multiprocessing/managers.py", line 1080, in set
+    return self._callmethod('set')
+  File "/usr/lib/python3.9/multiprocessing/managers.py", line 805, in _callmethod
+    self._connect()
+  File "/usr/lib/python3.9/multiprocessing/managers.py", line 792, in _connect
+    conn = self._Client(self._token.address, authkey=self._authkey)
+  File "/usr/lib/python3.9/multiprocessing/connection.py", line 502, in Client
+    c = SocketClient(address)
+  File "/usr/lib/python3.9/multiprocessing/connection.py", line 630, in SocketClient
+    s.connect(address)
+ConnectionRefusedError: [Errno 111] Connection refused
+2026-02-13 06:45:05,206 - INFO - [31946] Signal d'arret recu
+2026-02-13 06:45:05,206 - INFO - [31952] Signal d'arret recu
+2026-02-13 06:45:05,207 - INFO - [31946] Arret demande pour tous les workers...
+2026-02-13 06:45:05,206 - INFO - [31954] Signal d'arret recu
+2026-02-13 06:45:05,235 - INFO - [31952] Arret demande pour tous les workers...
+2026-02-13 06:45:05,235 - INFO - [31954] Arret demande pour tous les workers...
+2026-02-13 06:45:05,235 - ERROR - [31946] Worker 1: Erreur groupe - [Errno 32] Broken pipe
+2026-02-13 06:45:05,235 - ERROR - [31954] Erreur update status: (2013, 'Lost connection to MySQL server during query ([Errno 32] Broken pipe)')
+2026-02-13 06:45:05,207 - INFO - [31950] Signal d'arret recu
+2026-02-13 06:45:05,236 - INFO - [31950] Arret demande pour tous les workers...
+2026-02-13 06:45:05,656 - ERROR - [31946] Worker 1: Erreur fatale - [Errno 32] Broken pipe
+2026-02-13 06:45:07,238 - ERROR - [31954] Worker 4: Erreur fatale - [Errno 32] Broken pipe
+2026-02-13 06:45:07,658 - ERROR - [31952] Worker 2: Erreur fatale - [Errno 32] Broken pipe
+2026-02-13 06:45:07,659 - ERROR - [31950] Worker 3: Erreur fatale - [Errno 32] Broken pipe
+Traceback (most recent call last):
+  File "/usr/lib/python3.9/multiprocessing/managers.py", line 801, in _callmethod
+    conn = self._tls.connection
+AttributeError: 'ForkAwareLocal' object has no attribute 'connection'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py", line 928, in <module>
+    main()
+  File "/home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py", line 922, in main
+    stats = pool.run()
+  File "/home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py", line 827, in run
+    for future in as_completed(futures):
+  File "/usr/lib/python3.9/concurrent/futures/_base.py", line 245, in as_completed
+    waiter.event.wait(wait_timeout)
+  File "/usr/lib/python3.9/threading.py", line 574, in wait
+    signaled = self._cond.wait(timeout)
+  File "/usr/lib/python3.9/threading.py", line 312, in wait
+    waiter.acquire()
+  File "/home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py", line 905, in signal_handler
+    pool.stop()
+  File "/home/raphael/sms_project/scripts/selenium/superhote_worker_pool.py", line 857, in stop
+    self.stop_event.set()
+  File "/usr/lib/python3.9/multiprocessing/managers.py", line 1080, in set
+    return self._callmethod('set')
+  File "/usr/lib/python3.9/multiprocessing/managers.py", line 805, in _callmethod
+    self._connect()
+  File "/usr/lib/python3.9/multiprocessing/managers.py", line 792, in _connect
+    conn = self._Client(self._token.address, authkey=self._authkey)
+  File "/usr/lib/python3.9/multiprocessing/connection.py", line 502, in Client
+    c = SocketClient(address)
+  File "/usr/lib/python3.9/multiprocessing/connection.py", line 630, in SocketClient
+    s.connect(address)
+ConnectionRefusedError: [Errno 111] Connection refused

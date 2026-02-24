@@ -1,0 +1,21 @@
+[Unit]
+Description=Superhote Scheduled Price Update
+After=network.target mysql.service
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/home/user/smsproject/scripts/selenium
+ExecStart=/usr/bin/python3 /home/user/smsproject/scripts/selenium/run_scheduled_update.py -w 2
+StandardOutput=append:/home/user/smsproject/logs/scheduled_update.log
+StandardError=append:/home/user/smsproject/logs/scheduled_update_error.log
+
+# Timeout apres 2 heures
+TimeoutStartSec=7200
+
+# Redemarrage en cas d'echec (apres 5 minutes)
+Restart=on-failure
+RestartSec=300
+
+[Install]
+WantedBy=multi-user.target

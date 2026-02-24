@@ -1,0 +1,54 @@
+# Environment configuration
+.env
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Backup files
+*.phpok
+*.phpsavok
+*.bak
+*.backup
+
+# Logs
+logs/*.log
+logs/*.txt
+!logs/.gitkeep
+
+# Uploads (keep structure but not files)
+uploads/**/*
+!uploads/.gitkeep
+!uploads/qrcodes/.gitkeep
+
+# Generated files
+generated_contracts/*.html
+generated_contracts/*.pdf
+!generated_contracts/.gitkeep
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Composer
+/vendor/
+composer.lock
+
+# Node modules (si ajouté plus tard)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# PHP
+*.cache

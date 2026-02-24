@@ -1,0 +1,624 @@
+/* ===================================
+   VARIABLES CSS - Système de Design
+   =================================== */
+:root {
+    /* Palette de couleurs principale */
+    --primary-color: #4A90E2;
+    --primary-dark: #357ABD;
+    --primary-light: #6AA8EC;
+
+    --secondary-color: #50C878;
+    --secondary-dark: #3EA860;
+    --secondary-light: #6FD790;
+
+    --accent-color: #FF6B6B;
+    --accent-dark: #E85555;
+    --accent-light: #FF8585;
+
+    --warning-color: #FFA726;
+    --info-color: #29B6F6;
+    --success-color: #66BB6A;
+    --danger-color: #EF5350;
+
+    /* Couleurs neutres */
+    --dark: #2C3E50;
+    --dark-light: #34495E;
+    --gray: #7F8C8D;
+    --gray-light: #BDC3C7;
+    --light: #ECF0F1;
+    --white: #FFFFFF;
+
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --gradient-success: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    --gradient-warning: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    --gradient-info: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    --gradient-dark: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+
+    /* Ombres */
+    --shadow-sm: 0 2px 4px rgba(0,0,0,0.1);
+    --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+    --shadow-lg: 0 10px 25px rgba(0,0,0,0.15);
+    --shadow-xl: 0 20px 40px rgba(0,0,0,0.2);
+
+    /* Espacements */
+    --spacing-xs: 0.25rem;
+    --spacing-sm: 0.5rem;
+    --spacing-md: 1rem;
+    --spacing-lg: 1.5rem;
+    --spacing-xl: 2rem;
+
+    /* Bordures */
+    --border-radius: 8px;
+    --border-radius-lg: 12px;
+    --border-radius-xl: 16px;
+
+    /* Transitions */
+    --transition-fast: 0.15s ease;
+    --transition-normal: 0.3s ease;
+    --transition-slow: 0.5s ease;
+}
+
+/* ===================================
+   STYLES GÉNÉRAUX
+   =================================== */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    min-height: 100vh;
+    color: var(--dark);
+}
+
+.container {
+    animation: fadeIn var(--transition-slow);
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ===================================
+   NAVIGATION BAR - Design Moderne
+   =================================== */
+.navbar {
+    background: var(--gradient-dark) !important;
+    box-shadow: var(--shadow-lg);
+    padding: 1rem 0;
+    transition: all var(--transition-normal);
+}
+
+.navbar-brand {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--white) !important;
+    transition: all var(--transition-fast);
+}
+
+.navbar-brand:hover {
+    transform: scale(1.05);
+    color: var(--primary-light) !important;
+}
+
+.nav-link {
+    color: rgba(255, 255, 255, 0.85) !important;
+    font-weight: 500;
+    padding: 0.5rem 1rem !important;
+    margin: 0 0.25rem;
+    border-radius: var(--border-radius);
+    transition: all var(--transition-fast);
+    position: relative;
+}
+
+.nav-link::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    width: 0;
+    height: 2px;
+    background: var(--primary-light);
+    transition: all var(--transition-normal);
+    transform: translateX(-50%);
+}
+
+.nav-link:hover {
+    color: var(--white) !important;
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-2px);
+}
+
+.nav-link:hover::before {
+    width: 80%;
+}
+
+/* ===================================
+   CARTES - Design Moderne
+   =================================== */
+.card {
+    border: none;
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-md);
+    transition: all var(--transition-normal);
+    overflow: hidden;
+    background: var(--white);
+    margin-bottom: var(--spacing-lg);
+}
+
+.card:hover {
+    transform: translateY(-8px);
+    box-shadow: var(--shadow-xl);
+}
+
+.card-header {
+    background: var(--gradient-primary);
+    color: var(--white);
+    font-weight: 600;
+    font-size: 1.1rem;
+    padding: 1rem 1.25rem;
+    border: none;
+}
+
+.card-body {
+    padding: 1.5rem;
+}
+
+.card-title {
+    font-weight: 700;
+    margin-bottom: var(--spacing-md);
+    color: var(--dark);
+}
+
+.card-text {
+    color: var(--gray);
+    line-height: 1.6;
+    margin-bottom: var(--spacing-lg);
+}
+
+/* Variantes de cartes avec gradients */
+.card-gradient-primary {
+    background: var(--gradient-primary);
+    color: var(--white);
+}
+
+.card-gradient-success {
+    background: var(--gradient-success);
+    color: var(--white);
+}
+
+.card-gradient-warning {
+    background: var(--gradient-warning);
+    color: var(--white);
+}
+
+.card-gradient-info {
+    background: var(--gradient-info);
+    color: var(--white);
+}
+
+.card-gradient-primary .card-title,
+.card-gradient-success .card-title,
+.card-gradient-warning .card-title,
+.card-gradient-info .card-title {
+    color: var(--white);
+}
+
+.card-gradient-primary .card-text,
+.card-gradient-success .card-text,
+.card-gradient-warning .card-text,
+.card-gradient-info .card-text {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* ===================================
+   BOUTONS - Design Moderne
+   =================================== */
+.btn {
+    border-radius: var(--border-radius);
+    padding: 0.6rem 1.5rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 0.875rem;
+    transition: all var(--transition-normal);
+    border: none;
+    box-shadow: var(--shadow-sm);
+    position: relative;
+    overflow: hidden;
+}
+
+.btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+.btn:hover::before {
+    width: 300px;
+    height: 300px;
+}
+
+.btn:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-lg);
+}
+
+.btn:active {
+    transform: translateY(-1px);
+}
+
+/* Boutons avec gradients */
+.btn-outline-primary:hover,
+.btn-primary {
+    background: var(--gradient-primary);
+    border: none;
+    color: var(--white);
+}
+
+.btn-outline-success:hover,
+.btn-success {
+    background: var(--gradient-success);
+    border: none;
+    color: var(--white);
+}
+
+.btn-outline-warning:hover,
+.btn-warning {
+    background: var(--gradient-warning);
+    border: none;
+    color: var(--white);
+}
+
+.btn-outline-info:hover,
+.btn-info {
+    background: var(--gradient-info);
+    border: none;
+    color: var(--white);
+}
+
+/* ===================================
+   FORMULAIRES - Design Moderne
+   =================================== */
+.form-control {
+    border: 2px solid var(--light);
+    border-radius: var(--border-radius);
+    padding: 0.75rem 1rem;
+    transition: all var(--transition-fast);
+    font-size: 0.95rem;
+}
+
+.form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(74, 144, 226, 0.25);
+    transform: translateY(-2px);
+}
+
+.form-group label {
+    font-weight: 600;
+    color: var(--dark);
+    margin-bottom: var(--spacing-sm);
+}
+
+/* ===================================
+   ALERTES - Design Moderne
+   =================================== */
+.alert {
+    border: none;
+    border-radius: var(--border-radius-lg);
+    padding: 1rem 1.5rem;
+    box-shadow: var(--shadow-md);
+    animation: slideInDown 0.5s ease;
+}
+
+@keyframes slideInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.alert-success {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    color: var(--white);
+}
+
+.alert-danger {
+    background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+    color: var(--white);
+}
+
+.alert-warning {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: var(--white);
+}
+
+.alert-info {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: var(--white);
+}
+
+/* ===================================
+   LISTES - Design Moderne
+   =================================== */
+.list-group-item {
+    border: 1px solid rgba(0,0,0,0.08);
+    border-radius: var(--border-radius) !important;
+    margin-bottom: var(--spacing-sm);
+    transition: all var(--transition-fast);
+    padding: 1rem;
+}
+
+.list-group-item:hover {
+    background: var(--light);
+    transform: translateX(5px);
+    box-shadow: var(--shadow-sm);
+}
+
+/* ===================================
+   FOOTER - Design Moderne
+   =================================== */
+footer {
+    background: var(--gradient-dark) !important;
+    margin-top: 4rem !important;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+}
+
+footer p {
+    margin: 0;
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+/* ===================================
+   TITRES - Design Moderne
+   =================================== */
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 700;
+    color: var(--dark);
+    margin-bottom: var(--spacing-lg);
+}
+
+h1 {
+    font-size: 2.5rem;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+h2 {
+    font-size: 2rem;
+    position: relative;
+    padding-bottom: var(--spacing-md);
+}
+
+h2::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 60px;
+    height: 4px;
+    background: var(--gradient-primary);
+    border-radius: 2px;
+}
+
+/* ===================================
+   BADGES ET LABELS
+   =================================== */
+.badge {
+    padding: 0.5rem 1rem;
+    border-radius: var(--border-radius);
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+.badge-primary {
+    background: var(--gradient-primary);
+}
+
+.badge-success {
+    background: var(--gradient-success);
+}
+
+.badge-warning {
+    background: var(--gradient-warning);
+}
+
+.badge-info {
+    background: var(--gradient-info);
+}
+
+/* ===================================
+   ANIMATIONS UTILITAIRES
+   =================================== */
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+.pulse {
+    animation: pulse 2s infinite;
+}
+
+@keyframes bounce {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+.bounce {
+    animation: bounce 1s infinite;
+}
+
+/* ===================================
+   RESPONSIVE DESIGN
+   =================================== */
+@media (max-width: 768px) {
+    h1 {
+        font-size: 2rem;
+    }
+
+    h2 {
+        font-size: 1.5rem;
+    }
+
+    .card {
+        margin-bottom: var(--spacing-md);
+    }
+
+    .btn {
+        display: block;
+        width: 100%;
+        margin-bottom: var(--spacing-sm);
+    }
+
+    .navbar-brand {
+        font-size: 1.25rem;
+    }
+}
+
+/* ===================================
+   CLASSES UTILITAIRES
+   =================================== */
+.text-gradient-primary {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.text-gradient-success {
+    background: var(--gradient-success);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.shadow-custom {
+    box-shadow: var(--shadow-lg);
+}
+
+.rounded-custom {
+    border-radius: var(--border-radius-lg);
+}
+
+/* Effets de survol pour les icônes */
+.icon-hover {
+    transition: all var(--transition-normal);
+}
+
+.icon-hover:hover {
+    transform: rotate(360deg) scale(1.2);
+}
+
+/* ===================================
+   SPINNER DE CHARGEMENT
+   =================================== */
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid rgba(74, 144, 226, 0.3);
+    border-top-color: var(--primary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* ===================================
+   TABLES - Design Moderne
+   =================================== */
+.table {
+    background: var(--white);
+    border-radius: var(--border-radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+}
+
+.table thead {
+    background: var(--gradient-primary);
+    color: var(--white);
+}
+
+.table tbody tr {
+    transition: all var(--transition-fast);
+}
+
+.table tbody tr:hover {
+    background: var(--light);
+    transform: scale(1.01);
+}
+
+/* ===================================
+   CARTES STATISTIQUES
+   =================================== */
+.stat-card {
+    background: var(--white);
+    border-radius: var(--border-radius-lg);
+    padding: 2rem;
+    box-shadow: var(--shadow-md);
+    transition: all var(--transition-normal);
+    position: relative;
+    overflow: hidden;
+}
+
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: var(--gradient-primary);
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-xl);
+}
+
+.stat-number {
+    font-size: 2.5rem;
+    font-weight: 700;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.stat-label {
+    color: var(--gray);
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: var(--spacing-sm);
+}

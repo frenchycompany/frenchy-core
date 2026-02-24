@@ -1,0 +1,1315 @@
+[2026-02-07 11:00:01] [INFO] ========================================
+[2026-02-07 11:00:01] [INFO] Démarrage du script d'automatisation SMS (type: midstay)
+[2026-02-07 11:00:01] [INFO] ========================================
+[2026-02-07 11:00:01] [INFO] === Traitement des SMS mi-parcours (séjours >= 3 nuits) ===
+[2026-02-07 11:00:01] [INFO] Trouvé 4 séjour(s) en cours de 3+ nuits
+[2026-02-07 11:00:01] [INFO] Réservation #3362 : Jour 5 sur 11 (mi-parcours)
+[2026-02-07 11:00:01] [SUCCESS] ✅ Réservation #3362 (Ijes Solar France ) : SMS 'mi_parcours' créé (ID=2068)
+[2026-02-07 11:00:01] [INFO] Réservation #3426 : Jour 1 sur 3 (mi-parcours)
+[2026-02-07 11:00:01] [SUCCESS] ✅ Réservation #3426 (Ian ) : SMS 'mi_parcours' créé (ID=2069)
+[2026-02-07 11:00:01] [SUCCESS] ✅ 2 SMS de mi-parcours créé(s)
+[2026-02-07 11:00:01] [INFO] ========================================
+[2026-02-07 11:00:01] [SUCCESS] Script terminé avec succès (type: midstay)
+[2026-02-07 11:00:01] [INFO] ========================================
+[2026-02-07 19:00:01] [INFO] ========================================
+[2026-02-07 19:00:01] [INFO] Démarrage du script d'automatisation SMS (type: checkin)
+[2026-02-07 19:00:01] [INFO] ========================================
+[2026-02-07 19:00:01] [INFO] === Traitement des check-in du 2026-02-07 ===
+[2026-02-07 19:00:01] [INFO] Trouvé 7 check-in(s) pour aujourd'hui
+[2026-02-07 19:00:01] [SUCCESS] ✅ Réservation #3443 (Mathis ) : SMS 'accueil' créé (ID=2072)
+[2026-02-07 19:00:01] [SUCCESS] ✅ Réservation #3442 (Orlane ) : SMS 'accueil' créé (ID=2073)
+[2026-02-07 19:00:01] [SUCCESS] ✅ Réservation #3438 (Camile ) : SMS 'accueil' créé (ID=2074)
+[2026-02-07 19:00:01] [SUCCESS] ✅ Réservation #3437 (Pauline ) : SMS 'accueil' créé (ID=2075)
+[2026-02-07 19:00:01] [SUCCESS] ✅ Réservation #3432 (Kevin ) : SMS 'accueil' créé (ID=2076)
+[2026-02-07 19:00:01] [SUCCESS] ✅ Réservation #3420 (christelle ) : SMS 'accueil' créé (ID=2077)
+[2026-02-07 19:00:01] [SUCCESS] ✅ Réservation #3356 (Quentin ) : SMS 'accueil' créé (ID=2078)
+[2026-02-07 19:00:01] [SUCCESS] ✅ 7 SMS de check-in créé(s)
+[2026-02-07 19:00:01] [INFO] ========================================
+[2026-02-07 19:00:01] [SUCCESS] Script terminé avec succès (type: checkin)
+[2026-02-07 19:00:01] [INFO] ========================================
+[2026-02-08 08:00:01] [INFO] ========================================
+[2026-02-08 08:00:01] [INFO] Démarrage du script d'automatisation SMS (type: checkout)
+[2026-02-08 08:00:01] [INFO] ========================================
+[2026-02-08 08:00:01] [INFO] === Traitement des check-out du 2026-02-08 ===
+[2026-02-08 08:00:01] [INFO] Trouvé 6 check-out(s) pour aujourd'hui
+[2026-02-08 08:00:01] [SUCCESS] ✅ Réservation #3442 (Orlane ) : SMS 'checkout' créé (ID=2082)
+[2026-02-08 08:00:01] [SUCCESS] ✅ Réservation #3437 (Pauline ) : SMS 'checkout' créé (ID=2083)
+[2026-02-08 08:00:01] [SUCCESS] ✅ Réservation #3435 (Zahariou ) : SMS 'checkout' créé (ID=2084)
+[2026-02-08 08:00:01] [SUCCESS] ✅ Réservation #3420 (christelle ) : SMS 'checkout' créé (ID=2085)
+[2026-02-08 08:00:01] [SUCCESS] ✅ Réservation #3416 (Melissa ) : SMS 'checkout' créé (ID=2086)
+[2026-02-08 08:00:01] [SUCCESS] ✅ Réservation #3356 (Quentin ) : SMS 'checkout' créé (ID=2087)
+[2026-02-08 08:00:01] [SUCCESS] ✅ 6 SMS de check-out créé(s)
+[2026-02-08 08:00:01] [INFO] ========================================
+[2026-02-08 08:00:01] [SUCCESS] Script terminé avec succès (type: checkout)
+[2026-02-08 08:00:01] [INFO] ========================================
+[2026-02-08 09:00:02] [INFO] ========================================
+[2026-02-08 09:00:02] [INFO] Démarrage du script d'automatisation SMS (type: preparation)
+[2026-02-08 09:00:02] [INFO] ========================================
+[2026-02-08 09:00:02] [INFO] === Traitement des préparations pour le 2026-02-12 (4 jours) ===
+[2026-02-08 09:00:02] [INFO] Trouvé 0 arrivée(s) dans 4 jours
+[2026-02-08 09:00:02] [SUCCESS] ✅ 0 SMS de préparation créé(s)
+[2026-02-08 09:00:02] [INFO] ========================================
+[2026-02-08 09:00:02] [SUCCESS] Script terminé avec succès (type: preparation)
+[2026-02-08 09:00:02] [INFO] ========================================
+[2026-02-08 10:00:01] [INFO] ========================================
+[2026-02-08 10:00:01] [INFO] Démarrage du script d'automatisation SMS (type: custom)
+[2026-02-08 10:00:01] [INFO] ========================================
+[2026-02-08 10:00:01] [INFO] === Traitement des automatisations personnalisées ===
+[2026-02-08 10:00:01] [INFO] Trouvé 4 automatisation(s) personnalisée(s) active(s)
+[2026-02-08 10:00:01] [INFO] --- Traitement automatisation: Remerciement post-séjour (ID=1) (tous logements) ---
+[2026-02-08 10:00:01] [INFO] Date cible: 2026-02-07 (date_depart), 2 réservation(s) trouvée(s)
+[2026-02-08 10:00:01] [ERROR] Réservation #3433 : Template 'remerciement' non trouvé
+[2026-02-08 10:00:01] [ERROR] Réservation #3382 : Template 'remerciement' non trouvé
+[2026-02-08 10:00:01] [SUCCESS] ✅ Automatisation 'Remerciement post-séjour' : 0 SMS créé(s)
+[2026-02-08 10:00:01] [INFO] --- Traitement automatisation: Rappel 7j avant arrivée (ID=2) (tous logements) ---
+[2026-02-08 10:00:01] [INFO] Date cible: 2026-02-15 (date_arrivee), 2 réservation(s) trouvée(s)
+[2026-02-08 10:00:01] [ERROR] Réservation #3425 : Template 'rappel_7j' non trouvé
+[2026-02-08 10:00:01] [ERROR] Réservation #2933 : Template 'rappel_7j' non trouvé
+[2026-02-08 10:00:01] [SUCCESS] ✅ Automatisation 'Rappel 7j avant arrivée' : 0 SMS créé(s)
+[2026-02-08 10:00:01] [INFO] --- Traitement automatisation: Satisfaction mi-séjour (ID=3) (tous logements) ---
+[2026-02-08 10:00:01] [INFO] Date cible: 2026-02-05 (date_arrivee), 0 réservation(s) trouvée(s)
+[2026-02-08 10:00:01] [SUCCESS] ✅ Automatisation 'Satisfaction mi-séjour' : 0 SMS créé(s)
+[2026-02-08 10:00:01] [INFO] --- Traitement automatisation: Code accès Logement 1 (ID=4) (logement ID=1) ---
+[2026-02-08 10:00:01] [INFO] Date cible: 2026-02-08 (date_arrivee), 0 réservation(s) trouvée(s)
+[2026-02-08 10:00:01] [SUCCESS] ✅ Automatisation 'Code accès Logement 1' : 0 SMS créé(s)
+[2026-02-08 10:00:01] [INFO] ========================================
+[2026-02-08 10:00:01] [SUCCESS] Script terminé avec succès (type: custom)
+[2026-02-08 10:00:01] [INFO] ========================================
+[2026-02-08 11:00:01] [INFO] ========================================
+[2026-02-08 11:00:01] [INFO] Démarrage du script d'automatisation SMS (type: midstay)
+[2026-02-08 11:00:01] [INFO] ========================================
+[2026-02-08 11:00:01] [INFO] === Traitement des SMS mi-parcours (séjours >= 3 nuits) ===
+[2026-02-08 11:00:01] [INFO] Trouvé 7 séjour(s) en cours de 3+ nuits
+[2026-02-08 11:00:01] [INFO] Réservation #3368 : Jour 6 sur 13 (mi-parcours)
+[2026-02-08 11:00:01] [SUCCESS] ✅ Réservation #3368 (Amy ) : SMS 'mi_parcours' créé (ID=2092)
+[2026-02-08 11:00:01] [SUCCESS] ✅ 1 SMS de mi-parcours créé(s)
+[2026-02-08 11:00:01] [INFO] ========================================
+[2026-02-08 11:00:01] [SUCCESS] Script terminé avec succès (type: midstay)
+[2026-02-08 11:00:01] [INFO] ========================================
+[2026-02-08 19:00:01] [INFO] ========================================
+[2026-02-08 19:00:01] [INFO] Démarrage du script d'automatisation SMS (type: checkin)
+[2026-02-08 19:00:01] [INFO] ========================================
+[2026-02-08 19:00:01] [INFO] === Traitement des check-in du 2026-02-08 ===
+[2026-02-08 19:00:01] [INFO] Trouvé 5 check-in(s) pour aujourd'hui
+[2026-02-08 19:00:01] [SUCCESS] ✅ Réservation #3448 (Roman ) : SMS 'accueil' créé (ID=2094)
+[2026-02-08 19:00:01] [SUCCESS] ✅ Réservation #3447 (Thomas ) : SMS 'accueil' créé (ID=2095)
+[2026-02-08 19:00:01] [SUCCESS] ✅ Réservation #3429 (Moussa ) : SMS 'accueil' créé (ID=2096)
+[2026-02-08 19:00:01] [SUCCESS] ✅ Réservation #3326 (Loris ) : SMS 'accueil' créé (ID=2097)
+[2026-02-08 19:00:01] [SUCCESS] ✅ Réservation #3308 (Marina ) : SMS 'accueil' créé (ID=2098)
+[2026-02-08 19:00:01] [SUCCESS] ✅ 5 SMS de check-in créé(s)
+[2026-02-08 19:00:01] [INFO] ========================================
+[2026-02-08 19:00:01] [SUCCESS] Script terminé avec succès (type: checkin)
+[2026-02-08 19:00:01] [INFO] ========================================
+[2026-02-09 08:00:01] [INFO] ========================================
+[2026-02-09 08:00:01] [INFO] Démarrage du script d'automatisation SMS (type: checkout)
+[2026-02-09 08:00:01] [INFO] ========================================
+[2026-02-09 08:00:01] [INFO] === Traitement des check-out du 2026-02-09 ===
+[2026-02-09 08:00:01] [INFO] Trouvé 3 check-out(s) pour aujourd'hui
+[2026-02-09 08:00:01] [SUCCESS] ✅ Réservation #3432 (Kevin ) : SMS 'checkout' créé (ID=2100)
+[2026-02-09 08:00:01] [SUCCESS] ✅ Réservation #3429 (Moussa ) : SMS 'checkout' créé (ID=2101)
+[2026-02-09 08:00:01] [SUCCESS] ✅ Réservation #3426 (Ian ) : SMS 'checkout' créé (ID=2102)
+[2026-02-09 08:00:01] [SUCCESS] ✅ 3 SMS de check-out créé(s)
+[2026-02-09 08:00:01] [INFO] ========================================
+[2026-02-09 08:00:01] [SUCCESS] Script terminé avec succès (type: checkout)
+[2026-02-09 08:00:01] [INFO] ========================================
+[2026-02-09 09:00:01] [INFO] ========================================
+[2026-02-09 09:00:01] [INFO] Démarrage du script d'automatisation SMS (type: preparation)
+[2026-02-09 09:00:01] [INFO] ========================================
+[2026-02-09 09:00:01] [INFO] === Traitement des préparations pour le 2026-02-13 (4 jours) ===
+[2026-02-09 09:00:01] [INFO] Trouvé 3 arrivée(s) dans 4 jours
+[2026-02-09 09:00:01] [SUCCESS] ✅ Réservation #3451 (Antonin ) : SMS 'preparation' créé (ID=2104)
+[2026-02-09 09:00:01] [SUCCESS] ✅ Réservation #3431 (Thomas ) : SMS 'preparation' créé (ID=2105)
+[2026-02-09 09:00:01] [SUCCESS] ✅ Réservation #3404 (Fany ) : SMS 'preparation' créé (ID=2106)
+[2026-02-09 09:00:01] [SUCCESS] ✅ 3 SMS de préparation créé(s)
+[2026-02-09 09:00:01] [INFO] ========================================
+[2026-02-09 09:00:01] [SUCCESS] Script terminé avec succès (type: preparation)
+[2026-02-09 09:00:01] [INFO] ========================================
+[2026-02-09 10:00:01] [INFO] ========================================
+[2026-02-09 10:00:01] [INFO] Démarrage du script d'automatisation SMS (type: custom)
+[2026-02-09 10:00:01] [INFO] ========================================
+[2026-02-09 10:00:01] [INFO] === Traitement des automatisations personnalisées ===
+[2026-02-09 10:00:01] [INFO] Trouvé 4 automatisation(s) personnalisée(s) active(s)
+[2026-02-09 10:00:01] [INFO] --- Traitement automatisation: Remerciement post-séjour (ID=1) (tous logements) ---
+[2026-02-09 10:00:01] [INFO] Date cible: 2026-02-08 (date_depart), 6 réservation(s) trouvée(s)
+[2026-02-09 10:00:01] [ERROR] Réservation #3442 : Template 'remerciement' non trouvé
+[2026-02-09 10:00:01] [ERROR] Réservation #3437 : Template 'remerciement' non trouvé
+[2026-02-09 10:00:01] [ERROR] Réservation #3435 : Template 'remerciement' non trouvé
+[2026-02-09 10:00:01] [ERROR] Réservation #3420 : Template 'remerciement' non trouvé
+[2026-02-09 10:00:01] [ERROR] Réservation #3416 : Template 'remerciement' non trouvé
+[2026-02-09 10:00:01] [ERROR] Réservation #3356 : Template 'remerciement' non trouvé
+[2026-02-09 10:00:01] [SUCCESS] ✅ Automatisation 'Remerciement post-séjour' : 0 SMS créé(s)
+[2026-02-09 10:00:01] [INFO] --- Traitement automatisation: Rappel 7j avant arrivée (ID=2) (tous logements) ---
+[2026-02-09 10:00:01] [INFO] Date cible: 2026-02-16 (date_arrivee), 3 réservation(s) trouvée(s)
+[2026-02-09 10:00:01] [ERROR] Réservation #3452 : Template 'rappel_7j' non trouvé
+[2026-02-09 10:00:01] [ERROR] Réservation #3436 : Template 'rappel_7j' non trouvé
+[2026-02-09 10:00:01] [ERROR] Réservation #3276 : Template 'rappel_7j' non trouvé
+[2026-02-09 10:00:01] [SUCCESS] ✅ Automatisation 'Rappel 7j avant arrivée' : 0 SMS créé(s)
+[2026-02-09 10:00:01] [INFO] --- Traitement automatisation: Satisfaction mi-séjour (ID=3) (tous logements) ---
+[2026-02-09 10:00:01] [INFO] Date cible: 2026-02-06 (date_arrivee), 4 réservation(s) trouvée(s)
+[2026-02-09 10:00:01] [ERROR] Réservation #3435 : Template 'satisfaction' non trouvé
+[2026-02-09 10:00:01] [ERROR] Réservation #3433 : Template 'satisfaction' non trouvé
+[2026-02-09 10:00:01] [ERROR] Réservation #3426 : Template 'satisfaction' non trouvé
+[2026-02-09 10:00:01] [ERROR] Réservation #3416 : Template 'satisfaction' non trouvé
+[2026-02-09 10:00:01] [SUCCESS] ✅ Automatisation 'Satisfaction mi-séjour' : 0 SMS créé(s)
+[2026-02-09 10:00:01] [INFO] --- Traitement automatisation: Code accès Logement 1 (ID=4) (logement ID=1) ---
+[2026-02-09 10:00:01] [INFO] Date cible: 2026-02-09 (date_arrivee), 0 réservation(s) trouvée(s)
+[2026-02-09 10:00:01] [SUCCESS] ✅ Automatisation 'Code accès Logement 1' : 0 SMS créé(s)
+[2026-02-09 10:00:01] [INFO] ========================================
+[2026-02-09 10:00:01] [SUCCESS] Script terminé avec succès (type: custom)
+[2026-02-09 10:00:01] [INFO] ========================================
+[2026-02-09 11:00:01] [INFO] ========================================
+[2026-02-09 11:00:01] [INFO] Démarrage du script d'automatisation SMS (type: midstay)
+[2026-02-09 11:00:01] [INFO] ========================================
+[2026-02-09 11:00:01] [INFO] === Traitement des SMS mi-parcours (séjours >= 3 nuits) ===
+[2026-02-09 11:00:01] [INFO] Trouvé 10 séjour(s) en cours de 3+ nuits
+[2026-02-09 11:00:01] [INFO] Réservation #3443 : Jour 2 sur 5 (mi-parcours)
+[2026-02-09 11:00:01] [SUCCESS] ✅ Réservation #3443 (Mathis ) : SMS 'mi_parcours' créé (ID=2107)
+[2026-02-09 11:00:01] [SUCCESS] ✅ 1 SMS de mi-parcours créé(s)
+[2026-02-09 11:00:01] [INFO] ========================================
+[2026-02-09 11:00:01] [SUCCESS] Script terminé avec succès (type: midstay)
+[2026-02-09 11:00:01] [INFO] ========================================
+[2026-02-09 19:00:01] [INFO] ========================================
+[2026-02-09 19:00:01] [INFO] Démarrage du script d'automatisation SMS (type: checkin)
+[2026-02-09 19:00:01] [INFO] ========================================
+[2026-02-09 19:00:01] [INFO] === Traitement des check-in du 2026-02-09 ===
+[2026-02-09 19:00:01] [INFO] Trouvé 6 check-in(s) pour aujourd'hui
+[2026-02-09 19:00:01] [SUCCESS] ✅ Réservation #3453 (Mohamed ) : SMS 'accueil' créé (ID=2108)
+[2026-02-09 19:00:01] [SUCCESS] ✅ Réservation #3449 (Ian ) : SMS 'accueil' créé (ID=2109)
+[2026-02-09 19:00:01] [SUCCESS] ✅ Réservation #3446 (Wilfried ) : SMS 'accueil' créé (ID=2110)
+[2026-02-09 19:00:01] [SUCCESS] ✅ Réservation #3444 (Saliou ) : SMS 'accueil' créé (ID=2111)
+[2026-02-09 19:00:01] [SUCCESS] ✅ Réservation #3441 (Sas ) : SMS 'accueil' créé (ID=2112)
+[2026-02-09 19:00:01] [SUCCESS] ✅ Réservation #3417 (Benjamin ) : SMS 'accueil' créé (ID=2113)
+[2026-02-09 19:00:01] [SUCCESS] ✅ 6 SMS de check-in créé(s)
+[2026-02-09 19:00:01] [INFO] ========================================
+[2026-02-09 19:00:01] [SUCCESS] Script terminé avec succès (type: checkin)
+[2026-02-09 19:00:01] [INFO] ========================================
+[2026-02-10 08:00:01] [INFO] ========================================
+[2026-02-10 08:00:01] [INFO] Démarrage du script d'automatisation SMS (type: checkout)
+[2026-02-10 08:00:01] [INFO] ========================================
+[2026-02-10 08:00:01] [INFO] === Traitement des check-out du 2026-02-10 ===
+[2026-02-10 08:00:01] [INFO] Trouvé 0 check-out(s) pour aujourd'hui
+[2026-02-10 08:00:01] [SUCCESS] ✅ 0 SMS de check-out créé(s)
+[2026-02-10 08:00:01] [INFO] ========================================
+[2026-02-10 08:00:01] [SUCCESS] Script terminé avec succès (type: checkout)
+[2026-02-10 08:00:01] [INFO] ========================================
+[2026-02-10 09:00:01] [INFO] ========================================
+[2026-02-10 09:00:01] [INFO] Démarrage du script d'automatisation SMS (type: preparation)
+[2026-02-10 09:00:01] [INFO] ========================================
+[2026-02-10 09:00:01] [INFO] === Traitement des préparations pour le 2026-02-14 (4 jours) ===
+[2026-02-10 09:00:01] [INFO] Trouvé 0 arrivée(s) dans 4 jours
+[2026-02-10 09:00:01] [SUCCESS] ✅ 0 SMS de préparation créé(s)
+[2026-02-10 09:00:01] [INFO] ========================================
+[2026-02-10 09:00:01] [SUCCESS] Script terminé avec succès (type: preparation)
+[2026-02-10 09:00:01] [INFO] ========================================
+[2026-02-10 10:00:01] [INFO] ========================================
+[2026-02-10 10:00:01] [INFO] Démarrage du script d'automatisation SMS (type: custom)
+[2026-02-10 10:00:01] [INFO] ========================================
+[2026-02-10 10:00:01] [INFO] === Traitement des automatisations personnalisées ===
+[2026-02-10 10:00:01] [INFO] Trouvé 4 automatisation(s) personnalisée(s) active(s)
+[2026-02-10 10:00:01] [INFO] --- Traitement automatisation: Remerciement post-séjour (ID=1) (tous logements) ---
+[2026-02-10 10:00:01] [INFO] Date cible: 2026-02-09 (date_depart), 3 réservation(s) trouvée(s)
+[2026-02-10 10:00:01] [ERROR] Réservation #3432 : Template 'remerciement' non trouvé
+[2026-02-10 10:00:01] [ERROR] Réservation #3429 : Template 'remerciement' non trouvé
+[2026-02-10 10:00:01] [ERROR] Réservation #3426 : Template 'remerciement' non trouvé
+[2026-02-10 10:00:01] [SUCCESS] ✅ Automatisation 'Remerciement post-séjour' : 0 SMS créé(s)
+[2026-02-10 10:00:01] [INFO] --- Traitement automatisation: Rappel 7j avant arrivée (ID=2) (tous logements) ---
+[2026-02-10 10:00:01] [INFO] Date cible: 2026-02-17 (date_arrivee), 0 réservation(s) trouvée(s)
+[2026-02-10 10:00:01] [SUCCESS] ✅ Automatisation 'Rappel 7j avant arrivée' : 0 SMS créé(s)
+[2026-02-10 10:00:01] [INFO] --- Traitement automatisation: Satisfaction mi-séjour (ID=3) (tous logements) ---
+[2026-02-10 10:00:01] [INFO] Date cible: 2026-02-07 (date_arrivee), 7 réservation(s) trouvée(s)
+[2026-02-10 10:00:01] [ERROR] Réservation #3443 : Template 'satisfaction' non trouvé
+[2026-02-10 10:00:01] [ERROR] Réservation #3442 : Template 'satisfaction' non trouvé
+[2026-02-10 10:00:01] [ERROR] Réservation #3438 : Template 'satisfaction' non trouvé
+[2026-02-10 10:00:01] [ERROR] Réservation #3437 : Template 'satisfaction' non trouvé
+[2026-02-10 10:00:01] [ERROR] Réservation #3432 : Template 'satisfaction' non trouvé
+[2026-02-10 10:00:01] [ERROR] Réservation #3420 : Template 'satisfaction' non trouvé
+[2026-02-10 10:00:01] [ERROR] Réservation #3356 : Template 'satisfaction' non trouvé
+[2026-02-10 10:00:01] [SUCCESS] ✅ Automatisation 'Satisfaction mi-séjour' : 0 SMS créé(s)
+[2026-02-10 10:00:01] [INFO] --- Traitement automatisation: Code accès Logement 1 (ID=4) (logement ID=1) ---
+[2026-02-10 10:00:01] [INFO] Date cible: 2026-02-10 (date_arrivee), 0 réservation(s) trouvée(s)
+[2026-02-10 10:00:01] [SUCCESS] ✅ Automatisation 'Code accès Logement 1' : 0 SMS créé(s)
+[2026-02-10 10:00:01] [INFO] ========================================
+[2026-02-10 10:00:01] [SUCCESS] Script terminé avec succès (type: custom)
+[2026-02-10 10:00:01] [INFO] ========================================
+[2026-02-10 11:00:02] [INFO] ========================================
+[2026-02-10 11:00:02] [INFO] Démarrage du script d'automatisation SMS (type: midstay)
+[2026-02-10 11:00:02] [INFO] ========================================
+[2026-02-10 11:00:02] [INFO] === Traitement des SMS mi-parcours (séjours >= 3 nuits) ===
+[2026-02-10 11:00:02] [INFO] Trouvé 15 séjour(s) en cours de 3+ nuits
+[2026-02-10 11:00:02] [INFO] Réservation #3438 : Jour 3 sur 7 (mi-parcours)
+[2026-02-10 11:00:02] [SUCCESS] ✅ Réservation #3438 (Camile ) : SMS 'mi_parcours' créé (ID=2115)
+[2026-02-10 11:00:02] [INFO] Réservation #3448 : Jour 2 sur 4 (mi-parcours)
+[2026-02-10 11:00:02] [SUCCESS] ✅ Réservation #3448 (Roman ) : SMS 'mi_parcours' créé (ID=2116)
+[2026-02-10 11:00:02] [INFO] Réservation #3447 : Jour 2 sur 5 (mi-parcours)
+[2026-02-10 11:00:02] [SUCCESS] ✅ Réservation #3447 (Thomas ) : SMS 'mi_parcours' créé (ID=2117)
+[2026-02-10 11:00:02] [INFO] Réservation #3441 : Jour 1 sur 3 (mi-parcours)
+[2026-02-10 11:00:02] [SUCCESS] ✅ Réservation #3441 (Sas ) : SMS 'mi_parcours' créé (ID=2118)
+[2026-02-10 11:00:02] [INFO] Réservation #3444 : Jour 1 sur 3 (mi-parcours)
+[2026-02-10 11:00:02] [SUCCESS] ✅ Réservation #3444 (Saliou ) : SMS 'mi_parcours' créé (ID=2119)
+[2026-02-10 11:00:02] [INFO] Réservation #3446 : Jour 1 sur 3 (mi-parcours)
+[2026-02-10 11:00:02] [SUCCESS] ✅ Réservation #3446 (Wilfried ) : SMS 'mi_parcours' créé (ID=2120)
+[2026-02-10 11:00:02] [INFO] Réservation #3417 : Jour 1 sur 3 (mi-parcours)
+[2026-02-10 11:00:02] [SUCCESS] ✅ Réservation #3417 (Benjamin ) : SMS 'mi_parcours' créé (ID=2121)
+[2026-02-10 11:00:02] [INFO] Réservation #3453 : Jour 1 sur 3 (mi-parcours)
+[2026-02-10 11:00:02] [SUCCESS] ✅ Réservation #3453 (Mohamed ) : SMS 'mi_parcours' créé (ID=2122)
+[2026-02-10 11:00:02] [SUCCESS] ✅ 8 SMS de mi-parcours créé(s)
+[2026-02-10 11:00:02] [INFO] ========================================
+[2026-02-10 11:00:02] [SUCCESS] Script terminé avec succès (type: midstay)
+[2026-02-10 11:00:02] [INFO] ========================================
+[2026-02-10 19:00:01] [INFO] ========================================
+[2026-02-10 19:00:01] [INFO] Démarrage du script d'automatisation SMS (type: checkin)
+[2026-02-10 19:00:01] [INFO] ========================================
+[2026-02-10 19:00:01] [INFO] === Traitement des check-in du 2026-02-10 ===
+[2026-02-10 19:00:01] [INFO] Trouvé 1 check-in(s) pour aujourd'hui
+[2026-02-10 19:00:01] [SUCCESS] ✅ Réservation #3460 (Erkan ) : SMS 'accueil' créé (ID=2123)
+[2026-02-10 19:00:01] [SUCCESS] ✅ 1 SMS de check-in créé(s)
+[2026-02-10 19:00:01] [INFO] ========================================
+[2026-02-10 19:00:01] [SUCCESS] Script terminé avec succès (type: checkin)
+[2026-02-10 19:00:01] [INFO] ========================================
+[2026-02-11 08:00:01] [INFO] ========================================
+[2026-02-11 08:00:02] [INFO] Démarrage du script d'automatisation SMS (type: checkout)
+[2026-02-11 08:00:02] [INFO] ========================================
+[2026-02-11 08:00:02] [INFO] === Traitement des check-out du 2026-02-11 ===
+[2026-02-11 08:00:02] [INFO] Trouvé 1 check-out(s) pour aujourd'hui
+[2026-02-11 08:00:02] [SUCCESS] ✅ Réservation #3449 (Ian ) : SMS 'checkout' créé (ID=2125)
+[2026-02-11 08:00:02] [SUCCESS] ✅ 1 SMS de check-out créé(s)
+[2026-02-11 08:00:02] [INFO] ========================================
+[2026-02-11 08:00:02] [SUCCESS] Script terminé avec succès (type: checkout)
+[2026-02-11 08:00:02] [INFO] ========================================
+[2026-02-11 09:00:01] [INFO] ========================================
+[2026-02-11 09:00:01] [INFO] Démarrage du script d'automatisation SMS (type: preparation)
+[2026-02-11 09:00:01] [INFO] ========================================
+[2026-02-11 09:00:01] [INFO] === Traitement des préparations pour le 2026-02-15 (4 jours) ===
+[2026-02-11 09:00:01] [INFO] Trouvé 2 arrivée(s) dans 4 jours
+[2026-02-11 09:00:01] [SUCCESS] ✅ Réservation #3425 (Hugo ) : SMS 'preparation' créé (ID=2126)
+[2026-02-11 09:00:01] [SUCCESS] ✅ Réservation #2933 (Michael ) : SMS 'preparation' créé (ID=2127)
+[2026-02-11 09:00:01] [SUCCESS] ✅ 2 SMS de préparation créé(s)
+[2026-02-11 09:00:01] [INFO] ========================================
+[2026-02-11 09:00:01] [SUCCESS] Script terminé avec succès (type: preparation)
+[2026-02-11 09:00:01] [INFO] ========================================
+[2026-02-11 10:00:01] [INFO] ========================================
+[2026-02-11 10:00:01] [INFO] Démarrage du script d'automatisation SMS (type: custom)
+[2026-02-11 10:00:01] [INFO] ========================================
+[2026-02-11 10:00:01] [INFO] === Traitement des automatisations personnalisées ===
+[2026-02-11 10:00:01] [INFO] Trouvé 4 automatisation(s) personnalisée(s) active(s)
+[2026-02-11 10:00:01] [INFO] --- Traitement automatisation: Remerciement post-séjour (ID=1) (tous logements) ---
+[2026-02-11 10:00:01] [INFO] Date cible: 2026-02-10 (date_depart), 0 réservation(s) trouvée(s)
+[2026-02-11 10:00:01] [SUCCESS] ✅ Automatisation 'Remerciement post-séjour' : 0 SMS créé(s)
+[2026-02-11 10:00:01] [INFO] --- Traitement automatisation: Rappel 7j avant arrivée (ID=2) (tous logements) ---
+[2026-02-11 10:00:01] [INFO] Date cible: 2026-02-18 (date_arrivee), 3 réservation(s) trouvée(s)
+[2026-02-11 10:00:01] [ERROR] Réservation #3456 : Template 'rappel_7j' non trouvé
+[2026-02-11 10:00:01] [ERROR] Réservation #3366 : Template 'rappel_7j' non trouvé
+[2026-02-11 10:00:01] [ERROR] Réservation #3314 : Template 'rappel_7j' non trouvé
+[2026-02-11 10:00:01] [SUCCESS] ✅ Automatisation 'Rappel 7j avant arrivée' : 0 SMS créé(s)
+[2026-02-11 10:00:01] [INFO] --- Traitement automatisation: Satisfaction mi-séjour (ID=3) (tous logements) ---
+[2026-02-11 10:00:01] [INFO] Date cible: 2026-02-08 (date_arrivee), 5 réservation(s) trouvée(s)
+[2026-02-11 10:00:01] [ERROR] Réservation #3448 : Template 'satisfaction' non trouvé
+[2026-02-11 10:00:01] [ERROR] Réservation #3447 : Template 'satisfaction' non trouvé
+[2026-02-11 10:00:01] [ERROR] Réservation #3429 : Template 'satisfaction' non trouvé
+[2026-02-11 10:00:01] [ERROR] Réservation #3326 : Template 'satisfaction' non trouvé
+[2026-02-11 10:00:01] [ERROR] Réservation #3308 : Template 'satisfaction' non trouvé
+[2026-02-11 10:00:01] [SUCCESS] ✅ Automatisation 'Satisfaction mi-séjour' : 0 SMS créé(s)
+[2026-02-11 10:00:01] [INFO] --- Traitement automatisation: Code accès Logement 1 (ID=4) (logement ID=1) ---
+[2026-02-11 10:00:01] [INFO] Date cible: 2026-02-11 (date_arrivee), 0 réservation(s) trouvée(s)
+[2026-02-11 10:00:01] [SUCCESS] ✅ Automatisation 'Code accès Logement 1' : 0 SMS créé(s)
+[2026-02-11 10:00:01] [INFO] ========================================
+[2026-02-11 10:00:01] [SUCCESS] Script terminé avec succès (type: custom)
+[2026-02-11 10:00:01] [INFO] ========================================
+[2026-02-11 11:00:01] [INFO] ========================================
+[2026-02-11 11:00:01] [INFO] Démarrage du script d'automatisation SMS (type: midstay)
+[2026-02-11 11:00:01] [INFO] ========================================
+[2026-02-11 11:00:01] [INFO] === Traitement des SMS mi-parcours (séjours >= 3 nuits) ===
+[2026-02-11 11:00:01] [INFO] Trouvé 16 séjour(s) en cours de 3+ nuits
+[2026-02-11 11:00:01] [INFO] Réservation #3326 : Jour 3 sur 7 (mi-parcours)
+[2026-02-11 11:00:01] [SUCCESS] ✅ Réservation #3326 (Loris ) : SMS 'mi_parcours' créé (ID=2128)
+[2026-02-11 11:00:01] [INFO] Réservation #3460 : Jour 1 sur 3 (mi-parcours)
+[2026-02-11 11:00:01] [SUCCESS] ✅ Réservation #3460 (Erkan ) : SMS 'mi_parcours' créé (ID=2129)
+[2026-02-11 11:00:01] [SUCCESS] ✅ 2 SMS de mi-parcours créé(s)
+[2026-02-11 11:00:01] [INFO] ========================================
+[2026-02-11 11:00:01] [SUCCESS] Script terminé avec succès (type: midstay)
+[2026-02-11 11:00:01] [INFO] ========================================
+[2026-02-11 19:00:01] [INFO] ========================================
+[2026-02-11 19:00:01] [INFO] Démarrage du script d'automatisation SMS (type: checkin)
+[2026-02-11 19:00:01] [INFO] ========================================
+[2026-02-11 19:00:01] [INFO] === Traitement des check-in du 2026-02-11 ===
+[2026-02-11 19:00:01] [INFO] Trouvé 1 check-in(s) pour aujourd'hui
+[2026-02-11 19:00:01] [SUCCESS] ✅ Réservation #3459 (Ian ) : SMS 'accueil' créé (ID=2131)
+[2026-02-11 19:00:01] [SUCCESS] ✅ 1 SMS de check-in créé(s)
+[2026-02-11 19:00:01] [INFO] ========================================
+[2026-02-11 19:00:01] [SUCCESS] Script terminé avec succès (type: checkin)
+[2026-02-11 19:00:01] [INFO] ========================================
+[2026-02-12 08:00:01] [INFO] ========================================
+[2026-02-12 08:00:01] [INFO] Démarrage du script d'automatisation SMS (type: checkout)
+[2026-02-12 08:00:01] [INFO] ========================================
+[2026-02-12 08:00:01] [INFO] === Traitement des check-out du 2026-02-12 ===
+[2026-02-12 08:00:01] [INFO] Trouvé 7 check-out(s) pour aujourd'hui
+[2026-02-12 08:00:01] [SUCCESS] ✅ Réservation #3453 (Mohamed ) : SMS 'checkout' créé (ID=2133)
+[2026-02-12 08:00:01] [SUCCESS] ✅ Réservation #3448 (Roman ) : SMS 'checkout' créé (ID=2134)
+[2026-02-12 08:00:01] [SUCCESS] ✅ Réservation #3446 (Wilfried ) : SMS 'checkout' créé (ID=2135)
+[2026-02-12 08:00:01] [SUCCESS] ✅ Réservation #3444 (Saliou ) : SMS 'checkout' créé (ID=2136)
+[2026-02-12 08:00:01] [SUCCESS] ✅ Réservation #3443 (Mathis ) : SMS 'checkout' créé (ID=2137)
+[2026-02-12 08:00:01] [SUCCESS] ✅ Réservation #3441 (Sas ) : SMS 'checkout' créé (ID=2138)
+[2026-02-12 08:00:01] [SUCCESS] ✅ Réservation #3417 (Benjamin ) : SMS 'checkout' créé (ID=2139)
+[2026-02-12 08:00:01] [SUCCESS] ✅ 7 SMS de check-out créé(s)
+[2026-02-12 08:00:01] [INFO] ========================================
+[2026-02-12 08:00:01] [SUCCESS] Script terminé avec succès (type: checkout)
+[2026-02-12 08:00:01] [INFO] ========================================
+[2026-02-12 09:00:02] [INFO] ========================================
+[2026-02-12 09:00:02] [INFO] Démarrage du script d'automatisation SMS (type: preparation)
+[2026-02-12 09:00:02] [INFO] ========================================
+[2026-02-12 09:00:02] [INFO] === Traitement des préparations pour le 2026-02-16 (4 jours) ===
+[2026-02-12 09:00:02] [INFO] Trouvé 5 arrivée(s) dans 4 jours
+[2026-02-12 09:00:02] [SUCCESS] ✅ Réservation #3463 (Sandra Maria De Britis ) : SMS 'preparation' créé (ID=2140)
+[2026-02-12 09:00:02] [SUCCESS] ✅ Réservation #3457 (Mickaël ) : SMS 'preparation' créé (ID=2141)
+[2026-02-12 09:00:02] [SUCCESS] ✅ Réservation #3452 (Alice ) : SMS 'preparation' créé (ID=2142)
+[2026-02-12 09:00:02] [SUCCESS] ✅ Réservation #3436 (Ilie ) : SMS 'preparation' créé (ID=2143)
+[2026-02-12 09:00:02] [SUCCESS] ✅ Réservation #3276 (Veronica ) : SMS 'preparation' créé (ID=2144)
+[2026-02-12 09:00:02] [SUCCESS] ✅ 5 SMS de préparation créé(s)
+[2026-02-12 09:00:02] [INFO] ========================================
+[2026-02-12 09:00:02] [SUCCESS] Script terminé avec succès (type: preparation)
+[2026-02-12 09:00:02] [INFO] ========================================
+[2026-02-12 10:00:01] [INFO] ========================================
+[2026-02-12 10:00:01] [INFO] Démarrage du script d'automatisation SMS (type: custom)
+[2026-02-12 10:00:01] [INFO] ========================================
+[2026-02-12 10:00:01] [INFO] === Traitement des automatisations personnalisées ===
+[2026-02-12 10:00:01] [INFO] Trouvé 4 automatisation(s) personnalisée(s) active(s)
+[2026-02-12 10:00:01] [INFO] --- Traitement automatisation: Remerciement post-séjour (ID=1) (tous logements) ---
+[2026-02-12 10:00:01] [INFO] Date cible: 2026-02-11 (date_depart), 1 réservation(s) trouvée(s)
+[2026-02-12 10:00:01] [ERROR] Réservation #3449 : Template 'remerciement' non trouvé
+[2026-02-12 10:00:01] [SUCCESS] ✅ Automatisation 'Remerciement post-séjour' : 0 SMS créé(s)
+[2026-02-12 10:00:01] [INFO] --- Traitement automatisation: Rappel 7j avant arrivée (ID=2) (tous logements) ---
+[2026-02-12 10:00:01] [INFO] Date cible: 2026-02-19 (date_arrivee), 0 réservation(s) trouvée(s)
+[2026-02-12 10:00:01] [SUCCESS] ✅ Automatisation 'Rappel 7j avant arrivée' : 0 SMS créé(s)
+[2026-02-12 10:00:01] [INFO] --- Traitement automatisation: Satisfaction mi-séjour (ID=3) (tous logements) ---
+[2026-02-12 10:00:01] [INFO] Date cible: 2026-02-09 (date_arrivee), 6 réservation(s) trouvée(s)
+[2026-02-12 10:00:01] [ERROR] Réservation #3453 : Template 'satisfaction' non trouvé
+[2026-02-12 10:00:01] [ERROR] Réservation #3449 : Template 'satisfaction' non trouvé
+[2026-02-12 10:00:01] [ERROR] Réservation #3446 : Template 'satisfaction' non trouvé
+[2026-02-12 10:00:01] [ERROR] Réservation #3444 : Template 'satisfaction' non trouvé
+[2026-02-12 10:00:01] [ERROR] Réservation #3441 : Template 'satisfaction' non trouvé
+[2026-02-12 10:00:01] [ERROR] Réservation #3417 : Template 'satisfaction' non trouvé
+[2026-02-12 10:00:01] [SUCCESS] ✅ Automatisation 'Satisfaction mi-séjour' : 0 SMS créé(s)
+[2026-02-12 10:00:01] [INFO] --- Traitement automatisation: Code accès Logement 1 (ID=4) (logement ID=1) ---
+[2026-02-12 10:00:01] [INFO] Date cible: 2026-02-12 (date_arrivee), 0 réservation(s) trouvée(s)
+[2026-02-12 10:00:01] [SUCCESS] ✅ Automatisation 'Code accès Logement 1' : 0 SMS créé(s)
+[2026-02-12 10:00:01] [INFO] ========================================
+[2026-02-12 10:00:01] [SUCCESS] Script terminé avec succès (type: custom)
+[2026-02-12 10:00:01] [INFO] ========================================
+[2026-02-12 11:00:01] [INFO] ========================================
+[2026-02-12 11:00:01] [INFO] Démarrage du script d'automatisation SMS (type: midstay)
+[2026-02-12 11:00:01] [INFO] ========================================
+[2026-02-12 11:00:01] [INFO] === Traitement des SMS mi-parcours (séjours >= 3 nuits) ===
+[2026-02-12 11:00:01] [INFO] Trouvé 9 séjour(s) en cours de 3+ nuits
+[2026-02-12 11:00:01] [INFO] Réservation #3308 : Jour 4 sur 8 (mi-parcours)
+[2026-02-12 11:00:01] [SUCCESS] ✅ Réservation #3308 (Marina ) : SMS 'mi_parcours' créé (ID=2146)
+[2026-02-12 11:00:01] [SUCCESS] ✅ 1 SMS de mi-parcours créé(s)
+[2026-02-12 11:00:01] [INFO] ========================================
+[2026-02-12 11:00:01] [SUCCESS] Script terminé avec succès (type: midstay)
+[2026-02-12 11:00:01] [INFO] ========================================
+[2026-02-12 19:00:01] [INFO] ========================================
+[2026-02-12 19:00:01] [INFO] Démarrage du script d'automatisation SMS (type: checkin)
+[2026-02-12 19:00:01] [INFO] ========================================
+[2026-02-12 19:00:01] [INFO] === Traitement des check-in du 2026-02-12 ===
+[2026-02-12 19:00:01] [INFO] Trouvé 5 check-in(s) pour aujourd'hui
+[2026-02-12 19:00:01] [SUCCESS] ✅ Réservation #3469 (Grégoire ) : SMS 'accueil' créé (ID=2152)
+[2026-02-12 19:00:01] [SUCCESS] ✅ Réservation #3468 (Clara ) : SMS 'accueil' créé (ID=2153)
+[2026-02-12 19:00:01] [SUCCESS] ✅ Réservation #3462 (Christine ) : SMS 'accueil' créé (ID=2154)
+[2026-02-12 19:00:01] [SUCCESS] ✅ Réservation #3458 (YVON ) : SMS 'accueil' créé (ID=2155)
+[2026-02-12 19:00:01] [SUCCESS] ✅ Réservation #3454 (Carine ) : SMS 'accueil' créé (ID=2156)
+[2026-02-12 19:00:01] [SUCCESS] ✅ 5 SMS de check-in créé(s)
+[2026-02-12 19:00:01] [INFO] ========================================
+[2026-02-12 19:00:01] [SUCCESS] Script terminé avec succès (type: checkin)
+[2026-02-12 19:00:01] [INFO] ========================================
+[2026-02-13 08:00:01] [INFO] ========================================
+[2026-02-13 08:00:01] [INFO] Démarrage du script d'automatisation SMS (type: checkout)
+[2026-02-13 08:00:01] [INFO] ========================================
+[2026-02-13 08:00:01] [INFO] === Traitement des check-out du 2026-02-13 ===
+[2026-02-13 08:00:01] [INFO] Trouvé 8 check-out(s) pour aujourd'hui
+[2026-02-13 08:00:01] [SUCCESS] ✅ Réservation #3473 (jennifer ) : SMS 'checkout' créé (ID=2157)
+[2026-02-13 08:00:01] [SUCCESS] ✅ Réservation #3469 (Grégoire ) : SMS 'checkout' créé (ID=2158)
+[2026-02-13 08:00:01] [SUCCESS] ✅ Réservation #3462 (Christine ) : SMS 'checkout' créé (ID=2159)
+[2026-02-13 08:00:01] [SUCCESS] ✅ Réservation #3459 (Ian ) : SMS 'checkout' créé (ID=2160)
+[2026-02-13 08:00:01] [SUCCESS] ✅ Réservation #3458 (YVON ) : SMS 'checkout' créé (ID=2161)
+[2026-02-13 08:00:01] [SUCCESS] ✅ Réservation #3454 (Carine ) : SMS 'checkout' créé (ID=2162)
+[2026-02-13 08:00:01] [SUCCESS] ✅ Réservation #3447 (Thomas ) : SMS 'checkout' créé (ID=2163)
+[2026-02-13 08:00:01] [SUCCESS] ✅ Réservation #3362 (Ijes Solar France ) : SMS 'checkout' créé (ID=2164)
+[2026-02-13 08:00:01] [SUCCESS] ✅ 8 SMS de check-out créé(s)
+[2026-02-13 08:00:01] [INFO] ========================================
+[2026-02-13 08:00:01] [SUCCESS] Script terminé avec succès (type: checkout)
+[2026-02-13 08:00:01] [INFO] ========================================
+[2026-02-13 09:00:01] [INFO] ========================================
+[2026-02-13 09:00:01] [INFO] Démarrage du script d'automatisation SMS (type: preparation)
+[2026-02-13 09:00:01] [INFO] ========================================
+[2026-02-13 09:00:01] [INFO] === Traitement des préparations pour le 2026-02-17 (4 jours) ===
+[2026-02-13 09:00:01] [INFO] Trouvé 0 arrivée(s) dans 4 jours
+[2026-02-13 09:00:01] [SUCCESS] ✅ 0 SMS de préparation créé(s)
+[2026-02-13 09:00:01] [INFO] ========================================
+[2026-02-13 09:00:01] [SUCCESS] Script terminé avec succès (type: preparation)
+[2026-02-13 09:00:01] [INFO] ========================================
+[2026-02-13 10:00:01] [INFO] ========================================
+[2026-02-13 10:00:01] [INFO] Démarrage du script d'automatisation SMS (type: custom)
+[2026-02-13 10:00:01] [INFO] ========================================
+[2026-02-13 10:00:01] [INFO] === Traitement des automatisations personnalisées ===
+[2026-02-13 10:00:01] [INFO] Trouvé 4 automatisation(s) personnalisée(s) active(s)
+[2026-02-13 10:00:01] [INFO] --- Traitement automatisation: Remerciement post-séjour (ID=1) (tous logements) ---
+[2026-02-13 10:00:01] [INFO] Date cible: 2026-02-12 (date_depart), 7 réservation(s) trouvée(s)
+[2026-02-13 10:00:01] [ERROR] Réservation #3453 : Template 'remerciement' non trouvé
+[2026-02-13 10:00:01] [ERROR] Réservation #3448 : Template 'remerciement' non trouvé
+[2026-02-13 10:00:01] [ERROR] Réservation #3446 : Template 'remerciement' non trouvé
+[2026-02-13 10:00:01] [ERROR] Réservation #3444 : Template 'remerciement' non trouvé
+[2026-02-13 10:00:01] [ERROR] Réservation #3443 : Template 'remerciement' non trouvé
+[2026-02-13 10:00:01] [ERROR] Réservation #3441 : Template 'remerciement' non trouvé
+[2026-02-13 10:00:01] [ERROR] Réservation #3417 : Template 'remerciement' non trouvé
+[2026-02-13 10:00:01] [SUCCESS] ✅ Automatisation 'Remerciement post-séjour' : 0 SMS créé(s)
+[2026-02-13 10:00:01] [INFO] --- Traitement automatisation: Rappel 7j avant arrivée (ID=2) (tous logements) ---
+[2026-02-13 10:00:01] [INFO] Date cible: 2026-02-20 (date_arrivee), 2 réservation(s) trouvée(s)
+[2026-02-13 10:00:01] [ERROR] Réservation #3450 : Template 'rappel_7j' non trouvé
+[2026-02-13 10:00:01] [ERROR] Réservation #3427 : Template 'rappel_7j' non trouvé
+[2026-02-13 10:00:01] [SUCCESS] ✅ Automatisation 'Rappel 7j avant arrivée' : 0 SMS créé(s)
+[2026-02-13 10:00:01] [INFO] --- Traitement automatisation: Satisfaction mi-séjour (ID=3) (tous logements) ---
+[2026-02-13 10:00:01] [INFO] Date cible: 2026-02-10 (date_arrivee), 1 réservation(s) trouvée(s)
+[2026-02-13 10:00:01] [ERROR] Réservation #3460 : Template 'satisfaction' non trouvé
+[2026-02-13 10:00:01] [SUCCESS] ✅ Automatisation 'Satisfaction mi-séjour' : 0 SMS créé(s)
+[2026-02-13 10:00:01] [INFO] --- Traitement automatisation: Code accès Logement 1 (ID=4) (logement ID=1) ---
+[2026-02-13 10:00:01] [INFO] Date cible: 2026-02-13 (date_arrivee), 0 réservation(s) trouvée(s)
+[2026-02-13 10:00:01] [SUCCESS] ✅ Automatisation 'Code accès Logement 1' : 0 SMS créé(s)
+[2026-02-13 10:00:01] [INFO] ========================================
+[2026-02-13 10:00:01] [SUCCESS] Script terminé avec succès (type: custom)
+[2026-02-13 10:00:01] [INFO] ========================================
+[2026-02-13 11:00:01] [INFO] ========================================
+[2026-02-13 11:00:01] [INFO] Démarrage du script d'automatisation SMS (type: midstay)
+[2026-02-13 11:00:01] [INFO] ========================================
+[2026-02-13 11:00:01] [INFO] === Traitement des SMS mi-parcours (séjours >= 3 nuits) ===
+[2026-02-13 11:00:01] [INFO] Trouvé 8 séjour(s) en cours de 3+ nuits
+[2026-02-13 11:00:01] [SUCCESS] ✅ 0 SMS de mi-parcours créé(s)
+[2026-02-13 11:00:01] [INFO] ========================================
+[2026-02-13 11:00:01] [SUCCESS] Script terminé avec succès (type: midstay)
+[2026-02-13 11:00:01] [INFO] ========================================
+[2026-02-13 19:00:01] [INFO] ========================================
+[2026-02-13 19:00:01] [INFO] Démarrage du script d'automatisation SMS (type: checkin)
+[2026-02-13 19:00:01] [INFO] ========================================
+[2026-02-13 19:00:01] [INFO] === Traitement des check-in du 2026-02-13 ===
+[2026-02-13 19:00:01] [INFO] Trouvé 3 check-in(s) pour aujourd'hui
+[2026-02-13 19:00:01] [SUCCESS] ✅ Réservation #3451 (Antonin ) : SMS 'accueil' créé (ID=2165)
+[2026-02-13 19:00:01] [SUCCESS] ✅ Réservation #3431 (Thomas ) : SMS 'accueil' créé (ID=2166)
+[2026-02-13 19:00:01] [SUCCESS] ✅ Réservation #3404 (Fany ) : SMS 'accueil' créé (ID=2167)
+[2026-02-13 19:00:01] [SUCCESS] ✅ 3 SMS de check-in créé(s)
+[2026-02-13 19:00:01] [INFO] ========================================
+[2026-02-13 19:00:01] [SUCCESS] Script terminé avec succès (type: checkin)
+[2026-02-13 19:00:01] [INFO] ========================================
+[2026-02-14 08:00:02] [INFO] ========================================
+[2026-02-14 08:00:02] [INFO] Démarrage du script d'automatisation SMS (type: checkout)
+[2026-02-14 08:00:02] [INFO] ========================================
+[2026-02-14 08:00:02] [INFO] === Traitement des check-out du 2026-02-14 ===
+[2026-02-14 08:00:02] [INFO] Trouvé 2 check-out(s) pour aujourd'hui
+[2026-02-14 08:00:02] [SUCCESS] ✅ Réservation #3438 (Camile ) : SMS 'checkout' créé (ID=2169)
+[2026-02-14 08:00:02] [SUCCESS] ✅ Réservation #3439 (cbe ) : SMS 'checkout' créé (ID=2170)
+[2026-02-14 08:00:02] [SUCCESS] ✅ 2 SMS de check-out créé(s)
+[2026-02-14 08:00:02] [INFO] ========================================
+[2026-02-14 08:00:02] [SUCCESS] Script terminé avec succès (type: checkout)
+[2026-02-14 08:00:02] [INFO] ========================================
+[2026-02-14 09:00:01] [INFO] ========================================
+[2026-02-14 09:00:01] [INFO] Démarrage du script d'automatisation SMS (type: preparation)
+[2026-02-14 09:00:01] [INFO] ========================================
+[2026-02-14 09:00:01] [INFO] === Traitement des préparations pour le 2026-02-18 (4 jours) ===
+[2026-02-14 09:00:01] [INFO] Trouvé 4 arrivée(s) dans 4 jours
+[2026-02-14 09:00:01] [SUCCESS] ✅ Réservation #3464 (Elvedin ) : SMS 'preparation' créé (ID=2171)
+[2026-02-14 09:00:01] [SUCCESS] ✅ Réservation #3456 (Veronica ) : SMS 'preparation' créé (ID=2172)
+[2026-02-14 09:00:01] [SUCCESS] ✅ Réservation #3366 (Veronica ) : SMS 'preparation' créé (ID=2173)
+[2026-02-14 09:00:01] [SUCCESS] ✅ Réservation #3314 (Veronica ) : SMS 'preparation' créé (ID=2174)
+[2026-02-14 09:00:01] [SUCCESS] ✅ 4 SMS de préparation créé(s)
+[2026-02-14 09:00:01] [INFO] ========================================
+[2026-02-14 09:00:01] [SUCCESS] Script terminé avec succès (type: preparation)
+[2026-02-14 09:00:01] [INFO] ========================================
+[2026-02-14 10:00:01] [INFO] ========================================
+[2026-02-14 10:00:01] [INFO] Démarrage du script d'automatisation SMS (type: custom)
+[2026-02-14 10:00:01] [INFO] ========================================
+[2026-02-14 10:00:01] [INFO] === Traitement des automatisations personnalisées ===
+[2026-02-14 10:00:01] [INFO] Trouvé 4 automatisation(s) personnalisée(s) active(s)
+[2026-02-14 10:00:01] [INFO] --- Traitement automatisation: Remerciement post-séjour (ID=1) (tous logements) ---
+[2026-02-14 10:00:01] [INFO] Date cible: 2026-02-13 (date_depart), 8 réservation(s) trouvée(s)
+[2026-02-14 10:00:01] [ERROR] Réservation #3473 : Template 'remerciement' non trouvé
+[2026-02-14 10:00:01] [ERROR] Réservation #3469 : Template 'remerciement' non trouvé
+[2026-02-14 10:00:01] [ERROR] Réservation #3462 : Template 'remerciement' non trouvé
+[2026-02-14 10:00:01] [ERROR] Réservation #3459 : Template 'remerciement' non trouvé
+[2026-02-14 10:00:01] [ERROR] Réservation #3458 : Template 'remerciement' non trouvé
+[2026-02-14 10:00:01] [ERROR] Réservation #3454 : Template 'remerciement' non trouvé
+[2026-02-14 10:00:01] [ERROR] Réservation #3447 : Template 'remerciement' non trouvé
+[2026-02-14 10:00:01] [ERROR] Réservation #3362 : Template 'remerciement' non trouvé
+[2026-02-14 10:00:01] [SUCCESS] ✅ Automatisation 'Remerciement post-séjour' : 0 SMS créé(s)
+[2026-02-14 10:00:01] [INFO] --- Traitement automatisation: Rappel 7j avant arrivée (ID=2) (tous logements) ---
+[2026-02-14 10:00:01] [INFO] Date cible: 2026-02-21 (date_arrivee), 2 réservation(s) trouvée(s)
+[2026-02-14 10:00:01] [ERROR] Réservation #3440 : Template 'rappel_7j' non trouvé
+[2026-02-14 10:00:01] [ERROR] Réservation #3350 : Template 'rappel_7j' non trouvé
+[2026-02-14 10:00:01] [SUCCESS] ✅ Automatisation 'Rappel 7j avant arrivée' : 0 SMS créé(s)
+[2026-02-14 10:00:01] [INFO] --- Traitement automatisation: Satisfaction mi-séjour (ID=3) (tous logements) ---
+[2026-02-14 10:00:01] [INFO] Date cible: 2026-02-11 (date_arrivee), 1 réservation(s) trouvée(s)
+[2026-02-14 10:00:01] [ERROR] Réservation #3459 : Template 'satisfaction' non trouvé
+[2026-02-14 10:00:01] [SUCCESS] ✅ Automatisation 'Satisfaction mi-séjour' : 0 SMS créé(s)
+[2026-02-14 10:00:01] [INFO] --- Traitement automatisation: Code accès Logement 1 (ID=4) (logement ID=1) ---
+[2026-02-14 10:00:01] [INFO] Date cible: 2026-02-14 (date_arrivee), 0 réservation(s) trouvée(s)
+[2026-02-14 10:00:01] [SUCCESS] ✅ Automatisation 'Code accès Logement 1' : 0 SMS créé(s)
+[2026-02-14 10:00:01] [INFO] ========================================
+[2026-02-14 10:00:01] [SUCCESS] Script terminé avec succès (type: custom)
+[2026-02-14 10:00:01] [INFO] ========================================
+[2026-02-14 11:00:01] [INFO] ========================================
+[2026-02-14 11:00:01] [INFO] Démarrage du script d'automatisation SMS (type: midstay)
+[2026-02-14 11:00:01] [INFO] ========================================
+[2026-02-14 11:00:01] [INFO] === Traitement des SMS mi-parcours (séjours >= 3 nuits) ===
+[2026-02-14 11:00:01] [INFO] Trouvé 6 séjour(s) en cours de 3+ nuits
+[2026-02-14 11:00:01] [INFO] Réservation #3386 : Jour 13 sur 27 (mi-parcours)
+[2026-02-14 11:00:01] [SUCCESS] ✅ Réservation #3386 (barbosa ) : SMS 'mi_parcours' créé (ID=2175)
+[2026-02-14 11:00:01] [INFO] Réservation #3468 : Jour 2 sur 4 (mi-parcours)
+[2026-02-14 11:00:01] [SUCCESS] ✅ Réservation #3468 (Clara ) : SMS 'mi_parcours' créé (ID=2176)
+[2026-02-14 11:00:01] [SUCCESS] ✅ 2 SMS de mi-parcours créé(s)
+[2026-02-14 11:00:01] [INFO] ========================================
+[2026-02-14 11:00:01] [SUCCESS] Script terminé avec succès (type: midstay)
+[2026-02-14 11:00:01] [INFO] ========================================
+[2026-02-14 19:00:01] [INFO] ========================================
+[2026-02-14 19:00:01] [INFO] Démarrage du script d'automatisation SMS (type: checkin)
+[2026-02-14 19:00:01] [INFO] ========================================
+[2026-02-14 19:00:01] [INFO] === Traitement des check-in du 2026-02-14 ===
+[2026-02-14 19:00:01] [INFO] Trouvé 4 check-in(s) pour aujourd'hui
+[2026-02-14 19:00:01] [SUCCESS] ✅ Réservation #3474 (Mel ) : SMS 'accueil' créé (ID=2177)
+[2026-02-14 19:00:01] [SUCCESS] ✅ Réservation #3470 (Raphaël ) : SMS 'accueil' créé (ID=2178)
+[2026-02-14 19:00:01] [SUCCESS] ✅ Réservation #3461 (Noémie ) : SMS 'accueil' créé (ID=2179)
+[2026-02-14 19:00:01] [SUCCESS] ✅ Réservation #3455 (Florence ) : SMS 'accueil' créé (ID=2180)
+[2026-02-14 19:00:01] [SUCCESS] ✅ 4 SMS de check-in créé(s)
+[2026-02-14 19:00:01] [INFO] ========================================
+[2026-02-14 19:00:01] [SUCCESS] Script terminé avec succès (type: checkin)
+[2026-02-14 19:00:01] [INFO] ========================================
+[2026-02-15 08:00:01] [INFO] ========================================
+[2026-02-15 08:00:01] [INFO] Démarrage du script d'automatisation SMS (type: checkout)
+[2026-02-15 08:00:01] [INFO] ========================================
+[2026-02-15 08:00:01] [INFO] === Traitement des check-out du 2026-02-15 ===
+[2026-02-15 08:00:01] [INFO] Trouvé 8 check-out(s) pour aujourd'hui
+[2026-02-15 08:00:01] [SUCCESS] ✅ Réservation #3474 (Mel ) : SMS 'checkout' créé (ID=2181)
+[2026-02-15 08:00:01] [SUCCESS] ✅ Réservation #3470 (Raphaël ) : SMS 'checkout' créé (ID=2182)
+[2026-02-15 08:00:01] [SUCCESS] ✅ Réservation #3461 (Noémie ) : SMS 'checkout' créé (ID=2183)
+[2026-02-15 08:00:01] [SUCCESS] ✅ Réservation #3460 (Erkan ) : SMS 'checkout' créé (ID=2184)
+[2026-02-15 08:00:01] [SUCCESS] ✅ Réservation #3451 (Antonin ) : SMS 'checkout' créé (ID=2185)
+[2026-02-15 08:00:01] [SUCCESS] ✅ Réservation #3431 (Thomas ) : SMS 'checkout' créé (ID=2186)
+[2026-02-15 08:00:01] [SUCCESS] ✅ Réservation #3368 (Amy ) : SMS 'checkout' créé (ID=2187)
+[2026-02-15 08:00:01] [SUCCESS] ✅ Réservation #3326 (Loris ) : SMS 'checkout' créé (ID=2188)
+[2026-02-15 08:00:01] [SUCCESS] ✅ 8 SMS de check-out créé(s)
+[2026-02-15 08:00:01] [INFO] ========================================
+[2026-02-15 08:00:01] [SUCCESS] Script terminé avec succès (type: checkout)
+[2026-02-15 08:00:01] [INFO] ========================================
+[2026-02-15 09:00:01] [INFO] ========================================
+[2026-02-15 09:00:01] [INFO] Démarrage du script d'automatisation SMS (type: preparation)
+[2026-02-15 09:00:01] [INFO] ========================================
+[2026-02-15 09:00:01] [INFO] === Traitement des préparations pour le 2026-02-19 (4 jours) ===
+[2026-02-15 09:00:01] [INFO] Trouvé 0 arrivée(s) dans 4 jours
+[2026-02-15 09:00:01] [SUCCESS] ✅ 0 SMS de préparation créé(s)
+[2026-02-15 09:00:01] [INFO] ========================================
+[2026-02-15 09:00:01] [SUCCESS] Script terminé avec succès (type: preparation)
+[2026-02-15 09:00:01] [INFO] ========================================
+[2026-02-15 10:00:01] [INFO] ========================================
+[2026-02-15 10:00:01] [INFO] Démarrage du script d'automatisation SMS (type: custom)
+[2026-02-15 10:00:01] [INFO] ========================================
+[2026-02-15 10:00:01] [INFO] === Traitement des automatisations personnalisées ===
+[2026-02-15 10:00:01] [INFO] Trouvé 4 automatisation(s) personnalisée(s) active(s)
+[2026-02-15 10:00:01] [INFO] --- Traitement automatisation: Remerciement post-séjour (ID=1) (tous logements) ---
+[2026-02-15 10:00:01] [INFO] Date cible: 2026-02-14 (date_depart), 2 réservation(s) trouvée(s)
+[2026-02-15 10:00:01] [ERROR] Réservation #3438 : Template 'remerciement' non trouvé
+[2026-02-15 10:00:01] [ERROR] Réservation #3439 : Template 'remerciement' non trouvé
+[2026-02-15 10:00:01] [SUCCESS] ✅ Automatisation 'Remerciement post-séjour' : 0 SMS créé(s)
+[2026-02-15 10:00:01] [INFO] --- Traitement automatisation: Rappel 7j avant arrivée (ID=2) (tous logements) ---
+[2026-02-15 10:00:01] [INFO] Date cible: 2026-02-22 (date_arrivee), 1 réservation(s) trouvée(s)
+[2026-02-15 10:00:01] [ERROR] Réservation #3237 : Template 'rappel_7j' non trouvé
+[2026-02-15 10:00:01] [SUCCESS] ✅ Automatisation 'Rappel 7j avant arrivée' : 0 SMS créé(s)
+[2026-02-15 10:00:01] [INFO] --- Traitement automatisation: Satisfaction mi-séjour (ID=3) (tous logements) ---
+[2026-02-15 10:00:01] [INFO] Date cible: 2026-02-12 (date_arrivee), 6 réservation(s) trouvée(s)
+[2026-02-15 10:00:01] [ERROR] Réservation #3473 : Template 'satisfaction' non trouvé
+[2026-02-15 10:00:01] [ERROR] Réservation #3469 : Template 'satisfaction' non trouvé
+[2026-02-15 10:00:01] [ERROR] Réservation #3468 : Template 'satisfaction' non trouvé
+[2026-02-15 10:00:01] [ERROR] Réservation #3462 : Template 'satisfaction' non trouvé
+[2026-02-15 10:00:01] [ERROR] Réservation #3458 : Template 'satisfaction' non trouvé
+[2026-02-15 10:00:01] [ERROR] Réservation #3454 : Template 'satisfaction' non trouvé
+[2026-02-15 10:00:01] [SUCCESS] ✅ Automatisation 'Satisfaction mi-séjour' : 0 SMS créé(s)
+[2026-02-15 10:00:01] [INFO] --- Traitement automatisation: Code accès Logement 1 (ID=4) (logement ID=1) ---
+[2026-02-15 10:00:01] [INFO] Date cible: 2026-02-15 (date_arrivee), 0 réservation(s) trouvée(s)
+[2026-02-15 10:00:01] [SUCCESS] ✅ Automatisation 'Code accès Logement 1' : 0 SMS créé(s)
+[2026-02-15 10:00:01] [INFO] ========================================
+[2026-02-15 10:00:01] [SUCCESS] Script terminé avec succès (type: custom)
+[2026-02-15 10:00:01] [INFO] ========================================
+[2026-02-15 11:00:01] [INFO] ========================================
+[2026-02-15 11:00:01] [INFO] Démarrage du script d'automatisation SMS (type: midstay)
+[2026-02-15 11:00:01] [INFO] ========================================
+[2026-02-15 11:00:01] [INFO] === Traitement des SMS mi-parcours (séjours >= 3 nuits) ===
+[2026-02-15 11:00:01] [INFO] Trouvé 5 séjour(s) en cours de 3+ nuits
+[2026-02-15 11:00:01] [SUCCESS] ✅ 0 SMS de mi-parcours créé(s)
+[2026-02-15 11:00:01] [INFO] ========================================
+[2026-02-15 11:00:01] [SUCCESS] Script terminé avec succès (type: midstay)
+[2026-02-15 11:00:01] [INFO] ========================================
+[2026-02-15 19:00:01] [INFO] ========================================
+[2026-02-15 19:00:01] [INFO] Démarrage du script d'automatisation SMS (type: checkin)
+[2026-02-15 19:00:01] [INFO] ========================================
+[2026-02-15 19:00:01] [INFO] === Traitement des check-in du 2026-02-15 ===
+[2026-02-15 19:00:01] [INFO] Trouvé 2 check-in(s) pour aujourd'hui
+[2026-02-15 19:00:01] [SUCCESS] ✅ Réservation #3425 (Hugo ) : SMS 'accueil' créé (ID=2192)
+[2026-02-15 19:00:01] [SUCCESS] ✅ Réservation #2933 (Michael ) : SMS 'accueil' créé (ID=2193)
+[2026-02-15 19:00:01] [SUCCESS] ✅ 2 SMS de check-in créé(s)
+[2026-02-15 19:00:01] [INFO] ========================================
+[2026-02-15 19:00:01] [SUCCESS] Script terminé avec succès (type: checkin)
+[2026-02-15 19:00:01] [INFO] ========================================
+[2026-02-16 08:00:01] [INFO] ========================================
+[2026-02-16 08:00:01] [INFO] Démarrage du script d'automatisation SMS (type: checkout)
+[2026-02-16 08:00:01] [INFO] ========================================
+[2026-02-16 08:00:01] [INFO] === Traitement des check-out du 2026-02-16 ===
+[2026-02-16 08:00:01] [INFO] Trouvé 3 check-out(s) pour aujourd'hui
+[2026-02-16 08:00:01] [SUCCESS] ✅ Réservation #3468 (Clara ) : SMS 'checkout' créé (ID=2194)
+[2026-02-16 08:00:01] [SUCCESS] ✅ Réservation #3404 (Fany ) : SMS 'checkout' créé (ID=2195)
+[2026-02-16 08:00:01] [SUCCESS] ✅ Réservation #3308 (Marina ) : SMS 'checkout' créé (ID=2196)
+[2026-02-16 08:00:01] [SUCCESS] ✅ 3 SMS de check-out créé(s)
+[2026-02-16 08:00:01] [INFO] ========================================
+[2026-02-16 08:00:01] [SUCCESS] Script terminé avec succès (type: checkout)
+[2026-02-16 08:00:01] [INFO] ========================================
+[2026-02-16 09:00:01] [INFO] ========================================
+[2026-02-16 09:00:01] [INFO] Démarrage du script d'automatisation SMS (type: preparation)
+[2026-02-16 09:00:01] [INFO] ========================================
+[2026-02-16 09:00:01] [INFO] === Traitement des préparations pour le 2026-02-20 (4 jours) ===
+[2026-02-16 09:00:01] [INFO] Trouvé 2 arrivée(s) dans 4 jours
+[2026-02-16 09:00:01] [SUCCESS] ✅ Réservation #3450 (Cécile ) : SMS 'preparation' créé (ID=2197)
+[2026-02-16 09:00:01] [SUCCESS] ✅ Réservation #3427 (Jocelyn ) : SMS 'preparation' créé (ID=2198)
+[2026-02-16 09:00:01] [SUCCESS] ✅ 2 SMS de préparation créé(s)
+[2026-02-16 09:00:01] [INFO] ========================================
+[2026-02-16 09:00:01] [SUCCESS] Script terminé avec succès (type: preparation)
+[2026-02-16 09:00:01] [INFO] ========================================
+[2026-02-16 10:00:01] [INFO] ========================================
+[2026-02-16 10:00:01] [INFO] Démarrage du script d'automatisation SMS (type: custom)
+[2026-02-16 10:00:01] [INFO] ========================================
+[2026-02-16 10:00:01] [INFO] === Traitement des automatisations personnalisées ===
+[2026-02-16 10:00:01] [INFO] Trouvé 4 automatisation(s) personnalisée(s) active(s)
+[2026-02-16 10:00:01] [INFO] --- Traitement automatisation: Remerciement post-séjour (ID=1) (tous logements) ---
+[2026-02-16 10:00:01] [INFO] Date cible: 2026-02-15 (date_depart), 7 réservation(s) trouvée(s)
+[2026-02-16 10:00:01] [ERROR] Réservation #3474 : Template 'remerciement' non trouvé
+[2026-02-16 10:00:01] [ERROR] Réservation #3470 : Template 'remerciement' non trouvé
+[2026-02-16 10:00:01] [ERROR] Réservation #3461 : Template 'remerciement' non trouvé
+[2026-02-16 10:00:01] [ERROR] Réservation #3451 : Template 'remerciement' non trouvé
+[2026-02-16 10:00:01] [ERROR] Réservation #3431 : Template 'remerciement' non trouvé
+[2026-02-16 10:00:01] [ERROR] Réservation #3368 : Template 'remerciement' non trouvé
+[2026-02-16 10:00:01] [ERROR] Réservation #3326 : Template 'remerciement' non trouvé
+[2026-02-16 10:00:01] [SUCCESS] ✅ Automatisation 'Remerciement post-séjour' : 0 SMS créé(s)
+[2026-02-16 10:00:01] [INFO] --- Traitement automatisation: Rappel 7j avant arrivée (ID=2) (tous logements) ---
+[2026-02-16 10:00:01] [INFO] Date cible: 2026-02-23 (date_arrivee), 2 réservation(s) trouvée(s)
+[2026-02-16 10:00:01] [ERROR] Réservation #3418 : Template 'rappel_7j' non trouvé
+[2026-02-16 10:00:01] [ERROR] Réservation #3309 : Template 'rappel_7j' non trouvé
+[2026-02-16 10:00:01] [SUCCESS] ✅ Automatisation 'Rappel 7j avant arrivée' : 0 SMS créé(s)
+[2026-02-16 10:00:01] [INFO] --- Traitement automatisation: Satisfaction mi-séjour (ID=3) (tous logements) ---
+[2026-02-16 10:00:01] [INFO] Date cible: 2026-02-13 (date_arrivee), 3 réservation(s) trouvée(s)
+[2026-02-16 10:00:01] [ERROR] Réservation #3451 : Template 'satisfaction' non trouvé
+[2026-02-16 10:00:01] [ERROR] Réservation #3431 : Template 'satisfaction' non trouvé
+[2026-02-16 10:00:01] [ERROR] Réservation #3404 : Template 'satisfaction' non trouvé
+[2026-02-16 10:00:01] [SUCCESS] ✅ Automatisation 'Satisfaction mi-séjour' : 0 SMS créé(s)
+[2026-02-16 10:00:01] [INFO] --- Traitement automatisation: Code accès Logement 1 (ID=4) (logement ID=1) ---
+[2026-02-16 10:00:01] [INFO] Date cible: 2026-02-16 (date_arrivee), 0 réservation(s) trouvée(s)
+[2026-02-16 10:00:01] [SUCCESS] ✅ Automatisation 'Code accès Logement 1' : 0 SMS créé(s)
+[2026-02-16 10:00:01] [INFO] ========================================
+[2026-02-16 10:00:01] [SUCCESS] Script terminé avec succès (type: custom)
+[2026-02-16 10:00:01] [INFO] ========================================
+[2026-02-16 11:00:01] [INFO] ========================================
+[2026-02-16 11:00:01] [INFO] Démarrage du script d'automatisation SMS (type: midstay)
+[2026-02-16 11:00:01] [INFO] ========================================
+[2026-02-16 11:00:01] [INFO] === Traitement des SMS mi-parcours (séjours >= 3 nuits) ===
+[2026-02-16 11:00:01] [INFO] Trouvé 5 séjour(s) en cours de 3+ nuits
+[2026-02-16 11:00:01] [INFO] Réservation #3455 : Jour 2 sur 4 (mi-parcours)
+[2026-02-16 11:00:01] [SUCCESS] ✅ Réservation #3455 (Florence ) : SMS 'mi_parcours' créé (ID=2199)
+[2026-02-16 11:00:01] [SUCCESS] ✅ 1 SMS de mi-parcours créé(s)
+[2026-02-16 11:00:01] [INFO] ========================================
+[2026-02-16 11:00:01] [SUCCESS] Script terminé avec succès (type: midstay)
+[2026-02-16 11:00:01] [INFO] ========================================
+[2026-02-16 19:00:01] [INFO] ========================================
+[2026-02-16 19:00:01] [INFO] Démarrage du script d'automatisation SMS (type: checkin)
+[2026-02-16 19:00:01] [INFO] ========================================
+[2026-02-16 19:00:01] [INFO] === Traitement des check-in du 2026-02-16 ===
+[2026-02-16 19:00:01] [INFO] Trouvé 8 check-in(s) pour aujourd'hui
+[2026-02-16 19:00:01] [SUCCESS] ✅ Réservation #3479 (Grégory ) : SMS 'accueil' créé (ID=2200)
+[2026-02-16 19:00:01] [SUCCESS] ✅ Réservation #3476 (Jessica ) : SMS 'accueil' créé (ID=2201)
+[2026-02-16 19:00:01] [SUCCESS] ✅ Réservation #3471 (Johnny ) : SMS 'accueil' créé (ID=2202)
+[2026-02-16 19:00:01] [SUCCESS] ✅ Réservation #3463 (Sandra Maria De Britis ) : SMS 'accueil' créé (ID=2203)
+[2026-02-16 19:00:01] [SUCCESS] ✅ Réservation #3457 (Mickaël ) : SMS 'accueil' créé (ID=2204)
+[2026-02-16 19:00:01] [SUCCESS] ✅ Réservation #3452 (Alice ) : SMS 'accueil' créé (ID=2205)
+[2026-02-16 19:00:01] [SUCCESS] ✅ Réservation #3436 (Ilie ) : SMS 'accueil' créé (ID=2206)
+[2026-02-16 19:00:01] [SUCCESS] ✅ Réservation #3276 (Veronica ) : SMS 'accueil' créé (ID=2207)
+[2026-02-16 19:00:01] [SUCCESS] ✅ 8 SMS de check-in créé(s)
+[2026-02-16 19:00:01] [INFO] ========================================
+[2026-02-16 19:00:01] [SUCCESS] Script terminé avec succès (type: checkin)
+[2026-02-16 19:00:01] [INFO] ========================================
+[2026-02-17 08:00:01] [INFO] ========================================
+[2026-02-17 08:00:01] [INFO] Démarrage du script d'automatisation SMS (type: checkout)
+[2026-02-17 08:00:01] [INFO] ========================================
+[2026-02-17 08:00:01] [INFO] === Traitement des check-out du 2026-02-17 ===
+[2026-02-17 08:00:01] [INFO] Trouvé 3 check-out(s) pour aujourd'hui
+[2026-02-17 08:00:01] [SUCCESS] ✅ Réservation #3480 (MITHAT ) : SMS 'checkout' créé (ID=2215)
+[2026-02-17 08:00:01] [SUCCESS] ✅ Réservation #3476 (Jessica ) : SMS 'checkout' créé (ID=2216)
+[2026-02-17 08:00:01] [INFO] Réservation #3460 : SMS checkout déjà envoyé (flag=dep_sent)
+[2026-02-17 08:00:01] [SUCCESS] ✅ 2 SMS de check-out créé(s)
+[2026-02-17 08:00:01] [INFO] ========================================
+[2026-02-17 08:00:01] [SUCCESS] Script terminé avec succès (type: checkout)
+[2026-02-17 08:00:01] [INFO] ========================================
+[2026-02-17 09:00:01] [INFO] ========================================
+[2026-02-17 09:00:01] [INFO] Démarrage du script d'automatisation SMS (type: preparation)
+[2026-02-17 09:00:01] [INFO] ========================================
+[2026-02-17 09:00:01] [INFO] === Traitement des préparations pour le 2026-02-21 (4 jours) ===
+[2026-02-17 09:00:01] [INFO] Trouvé 2 arrivée(s) dans 4 jours
+[2026-02-17 09:00:01] [SUCCESS] ✅ Réservation #3440 (julien ) : SMS 'preparation' créé (ID=2218)
+[2026-02-17 09:00:01] [SUCCESS] ✅ Réservation #3350 (Slim / Donia ) : SMS 'preparation' créé (ID=2219)
+[2026-02-17 09:00:01] [SUCCESS] ✅ 2 SMS de préparation créé(s)
+[2026-02-17 09:00:01] [INFO] ========================================
+[2026-02-17 09:00:01] [SUCCESS] Script terminé avec succès (type: preparation)
+[2026-02-17 09:00:01] [INFO] ========================================
+[2026-02-17 10:00:01] [INFO] ========================================
+[2026-02-17 10:00:01] [INFO] Démarrage du script d'automatisation SMS (type: custom)
+[2026-02-17 10:00:01] [INFO] ========================================
+[2026-02-17 10:00:01] [INFO] === Traitement des automatisations personnalisées ===
+[2026-02-17 10:00:01] [INFO] Trouvé 4 automatisation(s) personnalisée(s) active(s)
+[2026-02-17 10:00:01] [INFO] --- Traitement automatisation: Remerciement post-séjour (ID=1) (tous logements) ---
+[2026-02-17 10:00:01] [INFO] Date cible: 2026-02-16 (date_depart), 3 réservation(s) trouvée(s)
+[2026-02-17 10:00:01] [ERROR] Réservation #3468 : Template 'remerciement' non trouvé
+[2026-02-17 10:00:01] [ERROR] Réservation #3404 : Template 'remerciement' non trouvé
+[2026-02-17 10:00:01] [ERROR] Réservation #3308 : Template 'remerciement' non trouvé
+[2026-02-17 10:00:01] [SUCCESS] ✅ Automatisation 'Remerciement post-séjour' : 0 SMS créé(s)
+[2026-02-17 10:00:01] [INFO] --- Traitement automatisation: Rappel 7j avant arrivée (ID=2) (tous logements) ---
+[2026-02-17 10:00:01] [INFO] Date cible: 2026-02-24 (date_arrivee), 0 réservation(s) trouvée(s)
+[2026-02-17 10:00:01] [SUCCESS] ✅ Automatisation 'Rappel 7j avant arrivée' : 0 SMS créé(s)
+[2026-02-17 10:00:01] [INFO] --- Traitement automatisation: Satisfaction mi-séjour (ID=3) (tous logements) ---
+[2026-02-17 10:00:01] [INFO] Date cible: 2026-02-14 (date_arrivee), 4 réservation(s) trouvée(s)
+[2026-02-17 10:00:01] [ERROR] Réservation #3474 : Template 'satisfaction' non trouvé
+[2026-02-17 10:00:01] [ERROR] Réservation #3470 : Template 'satisfaction' non trouvé
+[2026-02-17 10:00:01] [ERROR] Réservation #3461 : Template 'satisfaction' non trouvé
+[2026-02-17 10:00:01] [ERROR] Réservation #3455 : Template 'satisfaction' non trouvé
+[2026-02-17 10:00:01] [SUCCESS] ✅ Automatisation 'Satisfaction mi-séjour' : 0 SMS créé(s)
+[2026-02-17 10:00:01] [INFO] --- Traitement automatisation: Code accès Logement 1 (ID=4) (logement ID=1) ---
+[2026-02-17 10:00:01] [INFO] Date cible: 2026-02-17 (date_arrivee), 0 réservation(s) trouvée(s)
+[2026-02-17 10:00:01] [SUCCESS] ✅ Automatisation 'Code accès Logement 1' : 0 SMS créé(s)
+[2026-02-17 10:00:01] [INFO] ========================================
+[2026-02-17 10:00:01] [SUCCESS] Script terminé avec succès (type: custom)
+[2026-02-17 10:00:01] [INFO] ========================================
+[2026-02-17 11:00:01] [INFO] ========================================
+[2026-02-17 11:00:01] [INFO] Démarrage du script d'automatisation SMS (type: midstay)
+[2026-02-17 11:00:01] [INFO] ========================================
+[2026-02-17 11:00:01] [INFO] === Traitement des SMS mi-parcours (séjours >= 3 nuits) ===
+[2026-02-17 11:00:01] [INFO] Trouvé 11 séjour(s) en cours de 3+ nuits
+[2026-02-17 11:00:01] [INFO] Réservation #3479 : Jour 1 sur 3 (mi-parcours)
+[2026-02-17 11:00:01] [SUCCESS] ✅ Réservation #3479 (Grégory ) : SMS 'mi_parcours' créé (ID=2220)
+[2026-02-17 11:00:01] [SUCCESS] ✅ 1 SMS de mi-parcours créé(s)
+[2026-02-17 11:00:01] [INFO] ========================================
+[2026-02-17 11:00:01] [SUCCESS] Script terminé avec succès (type: midstay)
+[2026-02-17 11:00:01] [INFO] ========================================
+[2026-02-17 19:00:01] [INFO] ========================================
+[2026-02-17 19:00:01] [INFO] Démarrage du script d'automatisation SMS (type: checkin)
+[2026-02-17 19:00:01] [INFO] ========================================
+[2026-02-17 19:00:01] [INFO] === Traitement des check-in du 2026-02-17 ===
+[2026-02-17 19:00:01] [INFO] Trouvé 2 check-in(s) pour aujourd'hui
+[2026-02-17 19:00:01] [SUCCESS] ✅ Réservation #3482 (Bilal ) : SMS 'accueil' créé (ID=2221)
+[2026-02-17 19:00:01] [SUCCESS] ✅ Réservation #3477 (Hervé ) : SMS 'accueil' créé (ID=2222)
+[2026-02-17 19:00:01] [SUCCESS] ✅ 2 SMS de check-in créé(s)
+[2026-02-17 19:00:01] [INFO] ========================================
+[2026-02-17 19:00:01] [SUCCESS] Script terminé avec succès (type: checkin)
+[2026-02-17 19:00:01] [INFO] ========================================
+[2026-02-18 08:00:01] [INFO] ========================================
+[2026-02-18 08:00:01] [INFO] Démarrage du script d'automatisation SMS (type: checkout)
+[2026-02-18 08:00:01] [INFO] ========================================
+[2026-02-18 08:00:01] [INFO] === Traitement des check-out du 2026-02-18 ===
+[2026-02-18 08:00:01] [INFO] Trouvé 4 check-out(s) pour aujourd'hui
+[2026-02-18 08:00:01] [SUCCESS] ✅ Réservation #3482 (Bilal ) : SMS 'checkout' créé (ID=2224)
+[2026-02-18 08:00:01] [INFO] Réservation #3460 : SMS checkout déjà envoyé (flag=dep_sent)
+[2026-02-18 08:00:01] [SUCCESS] ✅ Réservation #3455 (Florence ) : SMS 'checkout' créé (ID=2225)
+[2026-02-18 08:00:01] [SUCCESS] ✅ Réservation #3436 (Ilie ) : SMS 'checkout' créé (ID=2226)
+[2026-02-18 08:00:01] [SUCCESS] ✅ 3 SMS de check-out créé(s)
+[2026-02-18 08:00:01] [INFO] ========================================
+[2026-02-18 08:00:01] [SUCCESS] Script terminé avec succès (type: checkout)
+[2026-02-18 08:00:01] [INFO] ========================================
+[2026-02-18 09:00:01] [INFO] ========================================
+[2026-02-18 09:00:01] [INFO] Démarrage du script d'automatisation SMS (type: preparation)
+[2026-02-18 09:00:01] [INFO] ========================================
+[2026-02-18 09:00:01] [INFO] === Traitement des préparations pour le 2026-02-22 (4 jours) ===
+[2026-02-18 09:00:01] [INFO] Trouvé 1 arrivée(s) dans 4 jours
+[2026-02-18 09:00:01] [SUCCESS] ✅ Réservation #3237 (Donovan ) : SMS 'preparation' créé (ID=2228)
+[2026-02-18 09:00:01] [SUCCESS] ✅ 1 SMS de préparation créé(s)
+[2026-02-18 09:00:01] [INFO] ========================================
+[2026-02-18 09:00:01] [SUCCESS] Script terminé avec succès (type: preparation)
+[2026-02-18 09:00:01] [INFO] ========================================
+[2026-02-18 10:00:01] [INFO] ========================================
+[2026-02-18 10:00:01] [INFO] Démarrage du script d'automatisation SMS (type: custom)
+[2026-02-18 10:00:01] [INFO] ========================================
+[2026-02-18 10:00:01] [INFO] === Traitement des automatisations personnalisées ===
+[2026-02-18 10:00:01] [INFO] Trouvé 4 automatisation(s) personnalisée(s) active(s)
+[2026-02-18 10:00:01] [INFO] --- Traitement automatisation: Remerciement post-séjour (ID=1) (tous logements) ---
+[2026-02-18 10:00:01] [INFO] Date cible: 2026-02-17 (date_depart), 2 réservation(s) trouvée(s)
+[2026-02-18 10:00:01] [ERROR] Réservation #3480 : Template 'remerciement' non trouvé
+[2026-02-18 10:00:01] [ERROR] Réservation #3476 : Template 'remerciement' non trouvé
+[2026-02-18 10:00:01] [SUCCESS] ✅ Automatisation 'Remerciement post-séjour' : 0 SMS créé(s)
+[2026-02-18 10:00:01] [INFO] --- Traitement automatisation: Rappel 7j avant arrivée (ID=2) (tous logements) ---
+[2026-02-18 10:00:01] [INFO] Date cible: 2026-02-25 (date_arrivee), 0 réservation(s) trouvée(s)
+[2026-02-18 10:00:01] [SUCCESS] ✅ Automatisation 'Rappel 7j avant arrivée' : 0 SMS créé(s)
+[2026-02-18 10:00:01] [INFO] --- Traitement automatisation: Satisfaction mi-séjour (ID=3) (tous logements) ---
+[2026-02-18 10:00:01] [INFO] Date cible: 2026-02-15 (date_arrivee), 3 réservation(s) trouvée(s)
+[2026-02-18 10:00:01] [ERROR] Réservation #3480 : Template 'satisfaction' non trouvé
+[2026-02-18 10:00:01] [ERROR] Réservation #3425 : Template 'satisfaction' non trouvé
+[2026-02-18 10:00:01] [ERROR] Réservation #2933 : Template 'satisfaction' non trouvé
+[2026-02-18 10:00:01] [SUCCESS] ✅ Automatisation 'Satisfaction mi-séjour' : 0 SMS créé(s)
+[2026-02-18 10:00:01] [INFO] --- Traitement automatisation: Code accès Logement 1 (ID=4) (logement ID=1) ---
+[2026-02-18 10:00:01] [INFO] Date cible: 2026-02-18 (date_arrivee), 0 réservation(s) trouvée(s)
+[2026-02-18 10:00:01] [SUCCESS] ✅ Automatisation 'Code accès Logement 1' : 0 SMS créé(s)
+[2026-02-18 10:00:01] [INFO] ========================================
+[2026-02-18 10:00:01] [SUCCESS] Script terminé avec succès (type: custom)
+[2026-02-18 10:00:01] [INFO] ========================================
+[2026-02-18 11:00:01] [INFO] ========================================
+[2026-02-18 11:00:01] [INFO] Démarrage du script d'automatisation SMS (type: midstay)
+[2026-02-18 11:00:01] [INFO] ========================================
+[2026-02-18 11:00:01] [INFO] === Traitement des SMS mi-parcours (séjours >= 3 nuits) ===
+[2026-02-18 11:00:01] [INFO] Trouvé 9 séjour(s) en cours de 3+ nuits
+[2026-02-18 11:00:01] [INFO] Réservation #2933 : Jour 3 sur 7 (mi-parcours)
+[2026-02-18 11:00:01] [SUCCESS] ✅ Réservation #2933 (Michael ) : SMS 'mi_parcours' créé (ID=2229)
+[2026-02-18 11:00:01] [INFO] Réservation #3425 : Jour 3 sur 6 (mi-parcours)
+[2026-02-18 11:00:01] [SUCCESS] ✅ Réservation #3425 (Hugo ) : SMS 'mi_parcours' créé (ID=2230)
+[2026-02-18 11:00:01] [INFO] Réservation #3452 : Jour 2 sur 4 (mi-parcours)
+[2026-02-18 11:00:01] [SUCCESS] ✅ Réservation #3452 (Alice ) : SMS 'mi_parcours' créé (ID=2231)
+[2026-02-18 11:00:01] [INFO] Réservation #3463 : Jour 2 sur 5 (mi-parcours)
+[2026-02-18 11:00:01] [SUCCESS] ✅ Réservation #3463 (Sandra Maria De Britis ) : SMS 'mi_parcours' créé (ID=2232)
+[2026-02-18 11:00:01] [INFO] Réservation #3471 : Jour 2 sur 5 (mi-parcours)
+[2026-02-18 11:00:01] [SUCCESS] ✅ Réservation #3471 (Johnny ) : SMS 'mi_parcours' créé (ID=2233)
+[2026-02-18 11:00:01] [SUCCESS] ✅ 5 SMS de mi-parcours créé(s)
+[2026-02-18 11:00:01] [INFO] ========================================
+[2026-02-18 11:00:01] [SUCCESS] Script terminé avec succès (type: midstay)
+[2026-02-18 11:00:01] [INFO] ========================================
+[2026-02-18 19:00:01] [INFO] ========================================
+[2026-02-18 19:00:01] [INFO] Démarrage du script d'automatisation SMS (type: checkin)
+[2026-02-18 19:00:01] [INFO] ========================================
+[2026-02-18 19:00:01] [INFO] === Traitement des check-in du 2026-02-18 ===
+[2026-02-18 19:00:01] [INFO] Trouvé 5 check-in(s) pour aujourd'hui
+[2026-02-18 19:00:01] [SUCCESS] ✅ Réservation #3485 (Thibault ) : SMS 'accueil' créé (ID=2234)
+[2026-02-18 19:00:01] [SUCCESS] ✅ Réservation #3464 (Elvedin ) : SMS 'accueil' créé (ID=2235)
+[2026-02-18 19:00:01] [SUCCESS] ✅ Réservation #3456 (Veronica ) : SMS 'accueil' créé (ID=2236)
+[2026-02-18 19:00:01] [SUCCESS] ✅ Réservation #3366 (Veronica ) : SMS 'accueil' créé (ID=2237)
+[2026-02-18 19:00:01] [SUCCESS] ✅ Réservation #3314 (Veronica ) : SMS 'accueil' créé (ID=2238)
+[2026-02-18 19:00:01] [SUCCESS] ✅ 5 SMS de check-in créé(s)
+[2026-02-18 19:00:01] [INFO] ========================================
+[2026-02-18 19:00:01] [SUCCESS] Script terminé avec succès (type: checkin)
+[2026-02-18 19:00:01] [INFO] ========================================
+[2026-02-19 08:00:01] [INFO] ========================================
+[2026-02-19 08:00:01] [INFO] Démarrage du script d'automatisation SMS (type: checkout)
+[2026-02-19 08:00:01] [INFO] ========================================
+[2026-02-19 08:00:01] [INFO] === Traitement des check-out du 2026-02-19 ===
+[2026-02-19 08:00:01] [INFO] Trouvé 2 check-out(s) pour aujourd'hui
+[2026-02-19 08:00:01] [SUCCESS] ✅ Réservation #3479 (Grégory ) : SMS 'checkout' créé (ID=2240)
+[2026-02-19 08:00:01] [SUCCESS] ✅ Réservation #3477 (Hervé ) : SMS 'checkout' créé (ID=2241)
+[2026-02-19 08:00:01] [SUCCESS] ✅ 2 SMS de check-out créé(s)
+[2026-02-19 08:00:01] [INFO] ========================================
+[2026-02-19 08:00:01] [SUCCESS] Script terminé avec succès (type: checkout)
+[2026-02-19 08:00:01] [INFO] ========================================
+[2026-02-19 09:00:01] [INFO] ========================================
+[2026-02-19 09:00:01] [INFO] Démarrage du script d'automatisation SMS (type: preparation)
+[2026-02-19 09:00:01] [INFO] ========================================
+[2026-02-19 09:00:01] [INFO] === Traitement des préparations pour le 2026-02-23 (4 jours) ===
+[2026-02-19 09:00:01] [INFO] Trouvé 2 arrivée(s) dans 4 jours
+[2026-02-19 09:00:01] [SUCCESS] ✅ Réservation #3418 (Amandine ) : SMS 'preparation' créé (ID=2242)
+[2026-02-19 09:00:01] [SUCCESS] ✅ Réservation #3309 (Rim ) : SMS 'preparation' créé (ID=2243)
+[2026-02-19 09:00:01] [SUCCESS] ✅ 2 SMS de préparation créé(s)
+[2026-02-19 09:00:01] [INFO] ========================================
+[2026-02-19 09:00:01] [SUCCESS] Script terminé avec succès (type: preparation)
+[2026-02-19 09:00:01] [INFO] ========================================
+[2026-02-19 10:00:01] [INFO] ========================================
+[2026-02-19 10:00:01] [INFO] Démarrage du script d'automatisation SMS (type: custom)
+[2026-02-19 10:00:01] [INFO] ========================================
+[2026-02-19 10:00:01] [INFO] === Traitement des automatisations personnalisées ===
+[2026-02-19 10:00:01] [INFO] Trouvé 4 automatisation(s) personnalisée(s) active(s)
+[2026-02-19 10:00:01] [INFO] --- Traitement automatisation: Remerciement post-séjour (ID=1) (tous logements) ---
+[2026-02-19 10:00:01] [INFO] Date cible: 2026-02-18 (date_depart), 4 réservation(s) trouvée(s)
+[2026-02-19 10:00:01] [ERROR] Réservation #3482 : Template 'remerciement' non trouvé
+[2026-02-19 10:00:01] [ERROR] Réservation #3460 : Template 'remerciement' non trouvé
+[2026-02-19 10:00:01] [ERROR] Réservation #3455 : Template 'remerciement' non trouvé
+[2026-02-19 10:00:01] [ERROR] Réservation #3436 : Template 'remerciement' non trouvé
+[2026-02-19 10:00:01] [SUCCESS] ✅ Automatisation 'Remerciement post-séjour' : 0 SMS créé(s)
+[2026-02-19 10:00:01] [INFO] --- Traitement automatisation: Rappel 7j avant arrivée (ID=2) (tous logements) ---
+[2026-02-19 10:00:01] [INFO] Date cible: 2026-02-26 (date_arrivee), 0 réservation(s) trouvée(s)
+[2026-02-19 10:00:01] [SUCCESS] ✅ Automatisation 'Rappel 7j avant arrivée' : 0 SMS créé(s)
+[2026-02-19 10:00:01] [INFO] --- Traitement automatisation: Satisfaction mi-séjour (ID=3) (tous logements) ---
+[2026-02-19 10:00:01] [INFO] Date cible: 2026-02-16 (date_arrivee), 8 réservation(s) trouvée(s)
+[2026-02-19 10:00:01] [ERROR] Réservation #3479 : Template 'satisfaction' non trouvé
+[2026-02-19 10:00:01] [ERROR] Réservation #3476 : Template 'satisfaction' non trouvé
+[2026-02-19 10:00:01] [ERROR] Réservation #3471 : Template 'satisfaction' non trouvé
+[2026-02-19 10:00:01] [ERROR] Réservation #3463 : Template 'satisfaction' non trouvé
+[2026-02-19 10:00:01] [ERROR] Réservation #3457 : Template 'satisfaction' non trouvé
+[2026-02-19 10:00:01] [ERROR] Réservation #3452 : Template 'satisfaction' non trouvé
+[2026-02-19 10:00:01] [ERROR] Réservation #3436 : Template 'satisfaction' non trouvé
+[2026-02-19 10:00:01] [ERROR] Réservation #3276 : Template 'satisfaction' non trouvé
+[2026-02-19 10:00:01] [SUCCESS] ✅ Automatisation 'Satisfaction mi-séjour' : 0 SMS créé(s)
+[2026-02-19 10:00:01] [INFO] --- Traitement automatisation: Code accès Logement 1 (ID=4) (logement ID=1) ---
+[2026-02-19 10:00:01] [INFO] Date cible: 2026-02-19 (date_arrivee), 0 réservation(s) trouvée(s)
+[2026-02-19 10:00:01] [SUCCESS] ✅ Automatisation 'Code accès Logement 1' : 0 SMS créé(s)
+[2026-02-19 10:00:01] [INFO] ========================================
+[2026-02-19 10:00:01] [SUCCESS] Script terminé avec succès (type: custom)
+[2026-02-19 10:00:01] [INFO] ========================================
+[2026-02-19 11:00:01] [INFO] ========================================
+[2026-02-19 11:00:01] [INFO] Démarrage du script d'automatisation SMS (type: midstay)
+[2026-02-19 11:00:01] [INFO] ========================================
+[2026-02-19 11:00:01] [INFO] === Traitement des SMS mi-parcours (séjours >= 3 nuits) ===
+[2026-02-19 11:00:01] [INFO] Trouvé 12 séjour(s) en cours de 3+ nuits
+[2026-02-19 11:00:01] [INFO] Réservation #3276 : Jour 3 sur 6 (mi-parcours)
+[2026-02-19 11:00:01] [SUCCESS] ✅ Réservation #3276 (Veronica ) : SMS 'mi_parcours' créé (ID=2244)
+[2026-02-19 11:00:01] [SUCCESS] ✅ 1 SMS de mi-parcours créé(s)
+[2026-02-19 11:00:01] [INFO] ========================================
+[2026-02-19 11:00:01] [SUCCESS] Script terminé avec succès (type: midstay)
+[2026-02-19 11:00:01] [INFO] ========================================
+[2026-02-19 19:00:01] [INFO] ========================================
+[2026-02-19 19:00:01] [INFO] Démarrage du script d'automatisation SMS (type: checkin)
+[2026-02-19 19:00:01] [INFO] ========================================
+[2026-02-19 19:00:01] [INFO] === Traitement des check-in du 2026-02-19 ===
+[2026-02-19 19:00:01] [INFO] Trouvé 2 check-in(s) pour aujourd'hui
+[2026-02-19 19:00:01] [WARNING] Réservation #3492 : Pas de numéro de téléphone
+[2026-02-19 19:00:01] [SUCCESS] ✅ Réservation #3490 (Julie ) : SMS 'accueil' créé (ID=2245)
+[2026-02-19 19:00:01] [SUCCESS] ✅ 1 SMS de check-in créé(s)
+[2026-02-19 19:00:01] [INFO] ========================================
+[2026-02-19 19:00:01] [SUCCESS] Script terminé avec succès (type: checkin)
+[2026-02-19 19:00:01] [INFO] ========================================
+[2026-02-20 08:00:01] [INFO] ========================================
+[2026-02-20 08:00:01] [INFO] Démarrage du script d'automatisation SMS (type: checkout)
+[2026-02-20 08:00:01] [INFO] ========================================
+[2026-02-20 08:00:01] [INFO] === Traitement des check-out du 2026-02-20 ===
+[2026-02-20 08:00:01] [INFO] Trouvé 4 check-out(s) pour aujourd'hui
+[2026-02-20 08:00:01] [WARNING] Réservation #3492 : Pas de numéro de téléphone
+[2026-02-20 08:00:01] [SUCCESS] ✅ Réservation #3490 (Julie ) : SMS 'checkout' créé (ID=2247)
+[2026-02-20 08:00:01] [SUCCESS] ✅ Réservation #3485 (Thibault ) : SMS 'checkout' créé (ID=2248)
+[2026-02-20 08:00:01] [SUCCESS] ✅ Réservation #3452 (Alice ) : SMS 'checkout' créé (ID=2249)
+[2026-02-20 08:00:01] [SUCCESS] ✅ 3 SMS de check-out créé(s)
+[2026-02-20 08:00:01] [INFO] ========================================
+[2026-02-20 08:00:01] [SUCCESS] Script terminé avec succès (type: checkout)
+[2026-02-20 08:00:01] [INFO] ========================================
+[2026-02-20 09:00:01] [INFO] ========================================
+[2026-02-20 09:00:01] [INFO] Démarrage du script d'automatisation SMS (type: preparation)
+[2026-02-20 09:00:01] [INFO] ========================================
+[2026-02-20 09:00:01] [INFO] === Traitement des préparations pour le 2026-02-24 (4 jours) ===
+[2026-02-20 09:00:01] [INFO] Trouvé 0 arrivée(s) dans 4 jours
+[2026-02-20 09:00:01] [SUCCESS] ✅ 0 SMS de préparation créé(s)
+[2026-02-20 09:00:01] [INFO] ========================================
+[2026-02-20 09:00:01] [SUCCESS] Script terminé avec succès (type: preparation)
+[2026-02-20 09:00:01] [INFO] ========================================
+[2026-02-20 10:00:02] [INFO] ========================================
+[2026-02-20 10:00:02] [INFO] Démarrage du script d'automatisation SMS (type: custom)
+[2026-02-20 10:00:02] [INFO] ========================================
+[2026-02-20 10:00:02] [INFO] === Traitement des automatisations personnalisées ===
+[2026-02-20 10:00:02] [INFO] Trouvé 4 automatisation(s) personnalisée(s) active(s)
+[2026-02-20 10:00:02] [INFO] --- Traitement automatisation: Remerciement post-séjour (ID=1) (tous logements) ---
+[2026-02-20 10:00:02] [INFO] Date cible: 2026-02-19 (date_depart), 2 réservation(s) trouvée(s)
+[2026-02-20 10:00:02] [ERROR] Réservation #3479 : Template 'remerciement' non trouvé
+[2026-02-20 10:00:02] [ERROR] Réservation #3477 : Template 'remerciement' non trouvé
+[2026-02-20 10:00:02] [SUCCESS] ✅ Automatisation 'Remerciement post-séjour' : 0 SMS créé(s)
+[2026-02-20 10:00:02] [INFO] --- Traitement automatisation: Rappel 7j avant arrivée (ID=2) (tous logements) ---
+[2026-02-20 10:00:02] [INFO] Date cible: 2026-02-27 (date_arrivee), 0 réservation(s) trouvée(s)
+[2026-02-20 10:00:02] [SUCCESS] ✅ Automatisation 'Rappel 7j avant arrivée' : 0 SMS créé(s)
+[2026-02-20 10:00:02] [INFO] --- Traitement automatisation: Satisfaction mi-séjour (ID=3) (tous logements) ---
+[2026-02-20 10:00:02] [INFO] Date cible: 2026-02-17 (date_arrivee), 2 réservation(s) trouvée(s)
+[2026-02-20 10:00:02] [ERROR] Réservation #3482 : Template 'satisfaction' non trouvé
+[2026-02-20 10:00:02] [ERROR] Réservation #3477 : Template 'satisfaction' non trouvé
+[2026-02-20 10:00:02] [SUCCESS] ✅ Automatisation 'Satisfaction mi-séjour' : 0 SMS créé(s)
+[2026-02-20 10:00:02] [INFO] --- Traitement automatisation: Code accès Logement 1 (ID=4) (logement ID=1) ---
+[2026-02-20 10:00:02] [INFO] Date cible: 2026-02-20 (date_arrivee), 0 réservation(s) trouvée(s)
+[2026-02-20 10:00:02] [SUCCESS] ✅ Automatisation 'Code accès Logement 1' : 0 SMS créé(s)
+[2026-02-20 10:00:02] [INFO] ========================================
+[2026-02-20 10:00:02] [SUCCESS] Script terminé avec succès (type: custom)
+[2026-02-20 10:00:02] [INFO] ========================================
+[2026-02-20 11:00:01] [INFO] ========================================
+[2026-02-20 11:00:01] [INFO] Démarrage du script d'automatisation SMS (type: midstay)
+[2026-02-20 11:00:01] [INFO] ========================================
+[2026-02-20 11:00:01] [INFO] === Traitement des SMS mi-parcours (séjours >= 3 nuits) ===
+[2026-02-20 11:00:01] [INFO] Trouvé 11 séjour(s) en cours de 3+ nuits
+[2026-02-20 11:00:01] [INFO] Réservation #3464 : Jour 2 sur 4 (mi-parcours)
+[2026-02-20 11:00:01] [SUCCESS] ✅ Réservation #3464 (Elvedin ) : SMS 'mi_parcours' créé (ID=2250)
+[2026-02-20 11:00:01] [SUCCESS] ✅ 1 SMS de mi-parcours créé(s)
+[2026-02-20 11:00:01] [INFO] ========================================
+[2026-02-20 11:00:01] [SUCCESS] Script terminé avec succès (type: midstay)
+[2026-02-20 11:00:01] [INFO] ========================================
+[2026-02-20 19:00:01] [INFO] ========================================
+[2026-02-20 19:00:01] [INFO] Démarrage du script d'automatisation SMS (type: checkin)
+[2026-02-20 19:00:01] [INFO] ========================================
+[2026-02-20 19:00:01] [INFO] === Traitement des check-in du 2026-02-20 ===
+[2026-02-20 19:00:01] [INFO] Trouvé 2 check-in(s) pour aujourd'hui
+[2026-02-20 19:00:01] [SUCCESS] ✅ Réservation #3450 (Cécile ) : SMS 'accueil' créé (ID=2251)
+[2026-02-20 19:00:01] [SUCCESS] ✅ Réservation #3427 (Jocelyn ) : SMS 'accueil' créé (ID=2252)
+[2026-02-20 19:00:01] [SUCCESS] ✅ 2 SMS de check-in créé(s)
+[2026-02-20 19:00:01] [INFO] ========================================
+[2026-02-20 19:00:01] [SUCCESS] Script terminé avec succès (type: checkin)
+[2026-02-20 19:00:01] [INFO] ========================================
+[2026-02-21 08:00:01] [INFO] ========================================
+[2026-02-21 08:00:01] [INFO] Démarrage du script d'automatisation SMS (type: checkout)
+[2026-02-21 08:00:01] [INFO] ========================================
+[2026-02-21 08:00:01] [INFO] === Traitement des check-out du 2026-02-21 ===
+[2026-02-21 08:00:01] [INFO] Trouvé 2 check-out(s) pour aujourd'hui
+[2026-02-21 08:00:01] [SUCCESS] ✅ Réservation #3471 (Johnny ) : SMS 'checkout' créé (ID=2254)
+[2026-02-21 08:00:01] [SUCCESS] ✅ Réservation #3425 (Hugo ) : SMS 'checkout' créé (ID=2255)
+[2026-02-21 08:00:01] [SUCCESS] ✅ 2 SMS de check-out créé(s)
+[2026-02-21 08:00:01] [INFO] ========================================
+[2026-02-21 08:00:01] [SUCCESS] Script terminé avec succès (type: checkout)
+[2026-02-21 08:00:01] [INFO] ========================================
+[2026-02-21 09:00:01] [INFO] ========================================
+[2026-02-21 09:00:01] [INFO] Démarrage du script d'automatisation SMS (type: preparation)
+[2026-02-21 09:00:01] [INFO] ========================================
+[2026-02-21 09:00:01] [INFO] === Traitement des préparations pour le 2026-02-25 (4 jours) ===
+[2026-02-21 09:00:01] [INFO] Trouvé 1 arrivée(s) dans 4 jours
+[2026-02-21 09:00:01] [WARNING] Réservation #3494 : Pas de numéro de téléphone
+[2026-02-21 09:00:01] [SUCCESS] ✅ 0 SMS de préparation créé(s)
+[2026-02-21 09:00:01] [INFO] ========================================
+[2026-02-21 09:00:01] [SUCCESS] Script terminé avec succès (type: preparation)
+[2026-02-21 09:00:01] [INFO] ========================================
+[2026-02-21 10:00:01] [INFO] ========================================
+[2026-02-21 10:00:01] [INFO] Démarrage du script d'automatisation SMS (type: custom)
+[2026-02-21 10:00:01] [INFO] ========================================
+[2026-02-21 10:00:01] [INFO] === Traitement des automatisations personnalisées ===
+[2026-02-21 10:00:01] [INFO] Trouvé 4 automatisation(s) personnalisée(s) active(s)
+[2026-02-21 10:00:01] [INFO] --- Traitement automatisation: Remerciement post-séjour (ID=1) (tous logements) ---
+[2026-02-21 10:00:01] [INFO] Date cible: 2026-02-20 (date_depart), 4 réservation(s) trouvée(s)
+[2026-02-21 10:00:01] [WARNING] Réservation #3492 : Pas de numéro de téléphone
+[2026-02-21 10:00:01] [ERROR] Réservation #3490 : Template 'remerciement' non trouvé
+[2026-02-21 10:00:01] [ERROR] Réservation #3485 : Template 'remerciement' non trouvé
+[2026-02-21 10:00:01] [ERROR] Réservation #3452 : Template 'remerciement' non trouvé
+[2026-02-21 10:00:01] [SUCCESS] ✅ Automatisation 'Remerciement post-séjour' : 0 SMS créé(s)
+[2026-02-21 10:00:01] [INFO] --- Traitement automatisation: Rappel 7j avant arrivée (ID=2) (tous logements) ---
+[2026-02-21 10:00:01] [INFO] Date cible: 2026-02-28 (date_arrivee), 1 réservation(s) trouvée(s)
+[2026-02-21 10:00:01] [ERROR] Réservation #3379 : Template 'rappel_7j' non trouvé
+[2026-02-21 10:00:01] [SUCCESS] ✅ Automatisation 'Rappel 7j avant arrivée' : 0 SMS créé(s)
+[2026-02-21 10:00:01] [INFO] --- Traitement automatisation: Satisfaction mi-séjour (ID=3) (tous logements) ---
+[2026-02-21 10:00:01] [INFO] Date cible: 2026-02-18 (date_arrivee), 5 réservation(s) trouvée(s)
+[2026-02-21 10:00:01] [ERROR] Réservation #3485 : Template 'satisfaction' non trouvé
+[2026-02-21 10:00:01] [ERROR] Réservation #3464 : Template 'satisfaction' non trouvé
+[2026-02-21 10:00:01] [ERROR] Réservation #3456 : Template 'satisfaction' non trouvé
+[2026-02-21 10:00:01] [ERROR] Réservation #3366 : Template 'satisfaction' non trouvé
+[2026-02-21 10:00:01] [ERROR] Réservation #3314 : Template 'satisfaction' non trouvé
+[2026-02-21 10:00:01] [SUCCESS] ✅ Automatisation 'Satisfaction mi-séjour' : 0 SMS créé(s)
+[2026-02-21 10:00:01] [INFO] --- Traitement automatisation: Code accès Logement 1 (ID=4) (logement ID=1) ---
+[2026-02-21 10:00:01] [INFO] Date cible: 2026-02-21 (date_arrivee), 0 réservation(s) trouvée(s)
+[2026-02-21 10:00:01] [SUCCESS] ✅ Automatisation 'Code accès Logement 1' : 0 SMS créé(s)
+[2026-02-21 10:00:01] [INFO] ========================================
+[2026-02-21 10:00:01] [SUCCESS] Script terminé avec succès (type: custom)
+[2026-02-21 10:00:01] [INFO] ========================================
+[2026-02-21 11:00:01] [INFO] ========================================
+[2026-02-21 11:00:01] [INFO] Démarrage du script d'automatisation SMS (type: midstay)
+[2026-02-21 11:00:01] [INFO] ========================================
+[2026-02-21 11:00:01] [INFO] === Traitement des SMS mi-parcours (séjours >= 3 nuits) ===
+[2026-02-21 11:00:01] [INFO] Trouvé 9 séjour(s) en cours de 3+ nuits
+[2026-02-21 11:00:01] [INFO] Réservation #3457 : Jour 5 sur 11 (mi-parcours)
+[2026-02-21 11:00:02] [SUCCESS] ✅ Réservation #3457 (Mickaël ) : SMS 'mi_parcours' créé (ID=2256)
+[2026-02-21 11:00:02] [INFO] Réservation #3314 : Jour 3 sur 7 (mi-parcours)
+[2026-02-21 11:00:02] [SUCCESS] ✅ Réservation #3314 (Veronica ) : SMS 'mi_parcours' créé (ID=2257)
+[2026-02-21 11:00:02] [INFO] Réservation #3366 : Jour 3 sur 6 (mi-parcours)
+[2026-02-21 11:00:02] [SUCCESS] ✅ Réservation #3366 (Veronica ) : SMS 'mi_parcours' créé (ID=2258)
+[2026-02-21 11:00:02] [INFO] Réservation #3456 : Jour 3 sur 7 (mi-parcours)
+[2026-02-21 11:00:02] [SUCCESS] ✅ Réservation #3456 (Veronica ) : SMS 'mi_parcours' créé (ID=2259)
+[2026-02-21 11:00:02] [SUCCESS] ✅ 4 SMS de mi-parcours créé(s)
+[2026-02-21 11:00:02] [INFO] ========================================
+[2026-02-21 11:00:02] [SUCCESS] Script terminé avec succès (type: midstay)
+[2026-02-21 11:00:02] [INFO] ========================================
+[2026-02-21 19:00:01] [INFO] ========================================
+[2026-02-21 19:00:01] [INFO] Démarrage du script d'automatisation SMS (type: checkin)
+[2026-02-21 19:00:01] [INFO] ========================================
+[2026-02-21 19:00:01] [INFO] === Traitement des check-in du 2026-02-21 ===
+[2026-02-21 19:00:01] [INFO] Trouvé 4 check-in(s) pour aujourd'hui
+[2026-02-21 19:00:01] [SUCCESS] ✅ Réservation #3489 (Agnès ) : SMS 'accueil' créé (ID=2260)
+[2026-02-21 19:00:01] [SUCCESS] ✅ Réservation #3487 (Thevy ) : SMS 'accueil' créé (ID=2261)
+[2026-02-21 19:00:01] [SUCCESS] ✅ Réservation #3440 (julien ) : SMS 'accueil' créé (ID=2262)
+[2026-02-21 19:00:01] [SUCCESS] ✅ Réservation #3350 (Slim / Donia ) : SMS 'accueil' créé (ID=2263)
+[2026-02-21 19:00:01] [SUCCESS] ✅ 4 SMS de check-in créé(s)
+[2026-02-21 19:00:01] [INFO] ========================================
+[2026-02-21 19:00:01] [SUCCESS] Script terminé avec succès (type: checkin)
+[2026-02-21 19:00:01] [INFO] ========================================
+[2026-02-22 08:00:01] [INFO] ========================================
+[2026-02-22 08:00:01] [INFO] Démarrage du script d'automatisation SMS (type: checkout)
+[2026-02-22 08:00:01] [INFO] ========================================
+[2026-02-22 08:00:01] [INFO] === Traitement des check-out du 2026-02-22 ===
+[2026-02-22 08:00:01] [INFO] Trouvé 6 check-out(s) pour aujourd'hui
+[2026-02-22 08:00:01] [SUCCESS] ✅ Réservation #3464 (Elvedin ) : SMS 'checkout' créé (ID=2265)
+[2026-02-22 08:00:01] [SUCCESS] ✅ Réservation #3450 (Cécile ) : SMS 'checkout' créé (ID=2266)
+[2026-02-22 08:00:01] [SUCCESS] ✅ Réservation #3440 (julien ) : SMS 'checkout' créé (ID=2267)
+[2026-02-22 08:00:01] [SUCCESS] ✅ Réservation #3427 (Jocelyn ) : SMS 'checkout' créé (ID=2268)
+[2026-02-22 08:00:01] [SUCCESS] ✅ Réservation #3276 (Veronica ) : SMS 'checkout' créé (ID=2269)
+[2026-02-22 08:00:01] [SUCCESS] ✅ Réservation #2933 (Michael ) : SMS 'checkout' créé (ID=2270)
+[2026-02-22 08:00:01] [SUCCESS] ✅ 6 SMS de check-out créé(s)
+[2026-02-22 08:00:01] [INFO] ========================================
+[2026-02-22 08:00:01] [SUCCESS] Script terminé avec succès (type: checkout)
+[2026-02-22 08:00:01] [INFO] ========================================
+[2026-02-22 09:00:01] [INFO] ========================================
+[2026-02-22 09:00:01] [INFO] Démarrage du script d'automatisation SMS (type: preparation)
+[2026-02-22 09:00:01] [INFO] ========================================
+[2026-02-22 09:00:01] [INFO] === Traitement des préparations pour le 2026-02-26 (4 jours) ===
+[2026-02-22 09:00:01] [INFO] Trouvé 0 arrivée(s) dans 4 jours
+[2026-02-22 09:00:01] [SUCCESS] ✅ 0 SMS de préparation créé(s)
+[2026-02-22 09:00:01] [INFO] ========================================
+[2026-02-22 09:00:01] [SUCCESS] Script terminé avec succès (type: preparation)
+[2026-02-22 09:00:01] [INFO] ========================================
+[2026-02-22 10:00:01] [INFO] ========================================
+[2026-02-22 10:00:01] [INFO] Démarrage du script d'automatisation SMS (type: custom)
+[2026-02-22 10:00:01] [INFO] ========================================
+[2026-02-22 10:00:01] [INFO] === Traitement des automatisations personnalisées ===
+[2026-02-22 10:00:01] [INFO] Trouvé 4 automatisation(s) personnalisée(s) active(s)
+[2026-02-22 10:00:01] [INFO] --- Traitement automatisation: Remerciement post-séjour (ID=1) (tous logements) ---
+[2026-02-22 10:00:01] [INFO] Date cible: 2026-02-21 (date_depart), 2 réservation(s) trouvée(s)
+[2026-02-22 10:00:01] [ERROR] Réservation #3471 : Template 'remerciement' non trouvé
+[2026-02-22 10:00:01] [ERROR] Réservation #3425 : Template 'remerciement' non trouvé
+[2026-02-22 10:00:01] [SUCCESS] ✅ Automatisation 'Remerciement post-séjour' : 0 SMS créé(s)
+[2026-02-22 10:00:01] [INFO] --- Traitement automatisation: Rappel 7j avant arrivée (ID=2) (tous logements) ---
+[2026-02-22 10:00:01] [INFO] Date cible: 2026-03-01 (date_arrivee), 2 réservation(s) trouvée(s)
+[2026-02-22 10:00:01] [ERROR] Réservation #3465 : Template 'rappel_7j' non trouvé
+[2026-02-22 10:00:01] [ERROR] Réservation #3182 : Template 'rappel_7j' non trouvé
+[2026-02-22 10:00:01] [SUCCESS] ✅ Automatisation 'Rappel 7j avant arrivée' : 0 SMS créé(s)
+[2026-02-22 10:00:01] [INFO] --- Traitement automatisation: Satisfaction mi-séjour (ID=3) (tous logements) ---
+[2026-02-22 10:00:01] [INFO] Date cible: 2026-02-19 (date_arrivee), 2 réservation(s) trouvée(s)
+[2026-02-22 10:00:01] [WARNING] Réservation #3492 : Pas de numéro de téléphone
+[2026-02-22 10:00:01] [ERROR] Réservation #3490 : Template 'satisfaction' non trouvé
+[2026-02-22 10:00:01] [SUCCESS] ✅ Automatisation 'Satisfaction mi-séjour' : 0 SMS créé(s)
+[2026-02-22 10:00:01] [INFO] --- Traitement automatisation: Code accès Logement 1 (ID=4) (logement ID=1) ---
+[2026-02-22 10:00:01] [INFO] Date cible: 2026-02-22 (date_arrivee), 0 réservation(s) trouvée(s)
+[2026-02-22 10:00:01] [SUCCESS] ✅ Automatisation 'Code accès Logement 1' : 0 SMS créé(s)
+[2026-02-22 10:00:01] [INFO] ========================================
+[2026-02-22 10:00:01] [SUCCESS] Script terminé avec succès (type: custom)
+[2026-02-22 10:00:01] [INFO] ========================================
+[2026-02-22 11:00:01] [INFO] ========================================
+[2026-02-22 11:00:01] [INFO] Démarrage du script d'automatisation SMS (type: midstay)
+[2026-02-22 11:00:01] [INFO] ========================================
+[2026-02-22 11:00:01] [INFO] === Traitement des SMS mi-parcours (séjours >= 3 nuits) ===
+[2026-02-22 11:00:01] [INFO] Trouvé 8 séjour(s) en cours de 3+ nuits
+[2026-02-22 11:00:01] [SUCCESS] ✅ 0 SMS de mi-parcours créé(s)
+[2026-02-22 11:00:01] [INFO] ========================================
+[2026-02-22 11:00:01] [SUCCESS] Script terminé avec succès (type: midstay)
+[2026-02-22 11:00:01] [INFO] ========================================
+[2026-02-22 19:00:01] [INFO] ========================================
+[2026-02-22 19:00:01] [INFO] Démarrage du script d'automatisation SMS (type: checkin)
+[2026-02-22 19:00:01] [INFO] ========================================
+[2026-02-22 19:00:01] [INFO] === Traitement des check-in du 2026-02-22 ===
+[2026-02-22 19:00:01] [INFO] Trouvé 1 check-in(s) pour aujourd'hui
+[2026-02-22 19:00:01] [SUCCESS] ✅ Réservation #3237 (Donovan ) : SMS 'accueil' créé (ID=2272)
+[2026-02-22 19:00:01] [SUCCESS] ✅ 1 SMS de check-in créé(s)
+[2026-02-22 19:00:01] [INFO] ========================================
+[2026-02-22 19:00:01] [SUCCESS] Script terminé avec succès (type: checkin)
+[2026-02-22 19:00:01] [INFO] ========================================
+[2026-02-23 08:00:01] [INFO] ========================================
+[2026-02-23 08:00:01] [INFO] Démarrage du script d'automatisation SMS (type: checkout)
+[2026-02-23 08:00:01] [INFO] ========================================
+[2026-02-23 08:00:01] [INFO] === Traitement des check-out du 2026-02-23 ===
+[2026-02-23 08:00:01] [INFO] Trouvé 2 check-out(s) pour aujourd'hui
+[2026-02-23 08:00:01] [SUCCESS] ✅ Réservation #3487 (Thevy ) : SMS 'checkout' créé (ID=2274)
+[2026-02-23 08:00:01] [SUCCESS] ✅ Réservation #3463 (Sandra Maria De Britis ) : SMS 'checkout' créé (ID=2275)
+[2026-02-23 08:00:01] [SUCCESS] ✅ 2 SMS de check-out créé(s)
+[2026-02-23 08:00:01] [INFO] ========================================
+[2026-02-23 08:00:01] [SUCCESS] Script terminé avec succès (type: checkout)
+[2026-02-23 08:00:01] [INFO] ========================================
+[2026-02-23 09:00:01] [INFO] ========================================
+[2026-02-23 09:00:01] [INFO] Démarrage du script d'automatisation SMS (type: preparation)
+[2026-02-23 09:00:01] [INFO] ========================================
+[2026-02-23 09:00:01] [INFO] === Traitement des préparations pour le 2026-02-27 (4 jours) ===
+[2026-02-23 09:00:01] [INFO] Trouvé 1 arrivée(s) dans 4 jours
+[2026-02-23 09:00:01] [WARNING] Réservation #3496 : Pas de numéro de téléphone
+[2026-02-23 09:00:01] [SUCCESS] ✅ 0 SMS de préparation créé(s)
+[2026-02-23 09:00:01] [INFO] ========================================
+[2026-02-23 09:00:01] [SUCCESS] Script terminé avec succès (type: preparation)
+[2026-02-23 09:00:01] [INFO] ========================================
+[2026-02-23 10:00:01] [INFO] ========================================
+[2026-02-23 10:00:01] [INFO] Démarrage du script d'automatisation SMS (type: custom)
+[2026-02-23 10:00:01] [INFO] ========================================
+[2026-02-23 10:00:01] [INFO] === Traitement des automatisations personnalisées ===
+[2026-02-23 10:00:01] [INFO] Trouvé 4 automatisation(s) personnalisée(s) active(s)
+[2026-02-23 10:00:01] [INFO] --- Traitement automatisation: Remerciement post-séjour (ID=1) (tous logements) ---
+[2026-02-23 10:00:01] [INFO] Date cible: 2026-02-22 (date_depart), 6 réservation(s) trouvée(s)
+[2026-02-23 10:00:01] [ERROR] Réservation #3464 : Template 'remerciement' non trouvé
+[2026-02-23 10:00:01] [ERROR] Réservation #3450 : Template 'remerciement' non trouvé
+[2026-02-23 10:00:01] [ERROR] Réservation #3440 : Template 'remerciement' non trouvé
+[2026-02-23 10:00:01] [ERROR] Réservation #3427 : Template 'remerciement' non trouvé
+[2026-02-23 10:00:01] [ERROR] Réservation #3276 : Template 'remerciement' non trouvé
+[2026-02-23 10:00:01] [ERROR] Réservation #2933 : Template 'remerciement' non trouvé
+[2026-02-23 10:00:01] [SUCCESS] ✅ Automatisation 'Remerciement post-séjour' : 0 SMS créé(s)
+[2026-02-23 10:00:01] [INFO] --- Traitement automatisation: Rappel 7j avant arrivée (ID=2) (tous logements) ---
+[2026-02-23 10:00:01] [INFO] Date cible: 2026-03-02 (date_arrivee), 0 réservation(s) trouvée(s)
+[2026-02-23 10:00:01] [SUCCESS] ✅ Automatisation 'Rappel 7j avant arrivée' : 0 SMS créé(s)
+[2026-02-23 10:00:01] [INFO] --- Traitement automatisation: Satisfaction mi-séjour (ID=3) (tous logements) ---
+[2026-02-23 10:00:01] [INFO] Date cible: 2026-02-20 (date_arrivee), 2 réservation(s) trouvée(s)
+[2026-02-23 10:00:01] [ERROR] Réservation #3450 : Template 'satisfaction' non trouvé
+[2026-02-23 10:00:01] [ERROR] Réservation #3427 : Template 'satisfaction' non trouvé
+[2026-02-23 10:00:01] [SUCCESS] ✅ Automatisation 'Satisfaction mi-séjour' : 0 SMS créé(s)
+[2026-02-23 10:00:01] [INFO] --- Traitement automatisation: Code accès Logement 1 (ID=4) (logement ID=1) ---
+[2026-02-23 10:00:01] [INFO] Date cible: 2026-02-23 (date_arrivee), 0 réservation(s) trouvée(s)
+[2026-02-23 10:00:01] [SUCCESS] ✅ Automatisation 'Code accès Logement 1' : 0 SMS créé(s)
+[2026-02-23 10:00:01] [INFO] ========================================
+[2026-02-23 10:00:01] [SUCCESS] Script terminé avec succès (type: custom)
+[2026-02-23 10:00:01] [INFO] ========================================
+[2026-02-23 11:00:02] [INFO] ========================================
+[2026-02-23 11:00:02] [INFO] Démarrage du script d'automatisation SMS (type: midstay)
+[2026-02-23 11:00:02] [INFO] ========================================
+[2026-02-23 11:00:02] [INFO] === Traitement des SMS mi-parcours (séjours >= 3 nuits) ===
+[2026-02-23 11:00:02] [INFO] Trouvé 8 séjour(s) en cours de 3+ nuits
+[2026-02-23 11:00:02] [SUCCESS] ✅ 0 SMS de mi-parcours créé(s)
+[2026-02-23 11:00:02] [INFO] ========================================
+[2026-02-23 11:00:02] [SUCCESS] Script terminé avec succès (type: midstay)
+[2026-02-23 11:00:02] [INFO] ========================================
+[2026-02-23 19:00:01] [INFO] ========================================
+[2026-02-23 19:00:01] [INFO] Démarrage du script d'automatisation SMS (type: checkin)
+[2026-02-23 19:00:01] [INFO] ========================================
+[2026-02-23 19:00:01] [INFO] === Traitement des check-in du 2026-02-23 ===
+[2026-02-23 19:00:01] [INFO] Trouvé 2 check-in(s) pour aujourd'hui
+[2026-02-23 19:00:01] [SUCCESS] ✅ Réservation #3418 (Amandine ) : SMS 'accueil' créé (ID=2276)
+[2026-02-23 19:00:01] [SUCCESS] ✅ Réservation #3309 (Rim ) : SMS 'accueil' créé (ID=2277)
+[2026-02-23 19:00:01] [SUCCESS] ✅ 2 SMS de check-in créé(s)
+[2026-02-23 19:00:01] [INFO] ========================================
+[2026-02-23 19:00:01] [SUCCESS] Script terminé avec succès (type: checkin)
+[2026-02-23 19:00:01] [INFO] ========================================
+[2026-02-24 08:00:02] [INFO] ========================================
+[2026-02-24 08:00:02] [INFO] Démarrage du script d'automatisation SMS (type: checkout)
+[2026-02-24 08:00:02] [INFO] ========================================
+[2026-02-24 08:00:02] [INFO] === Traitement des check-out du 2026-02-24 ===
+[2026-02-24 08:00:02] [INFO] Trouvé 1 check-out(s) pour aujourd'hui
+[2026-02-24 08:00:02] [SUCCESS] ✅ Réservation #3366 (Veronica ) : SMS 'checkout' créé (ID=2279)
+[2026-02-24 08:00:02] [SUCCESS] ✅ 1 SMS de check-out créé(s)
+[2026-02-24 08:00:02] [INFO] ========================================
+[2026-02-24 08:00:02] [SUCCESS] Script terminé avec succès (type: checkout)
+[2026-02-24 08:00:02] [INFO] ========================================
+[2026-02-24 09:00:01] [INFO] ========================================
+[2026-02-24 09:00:01] [INFO] Démarrage du script d'automatisation SMS (type: preparation)
+[2026-02-24 09:00:01] [INFO] ========================================
+[2026-02-24 09:00:01] [INFO] === Traitement des préparations pour le 2026-02-28 (4 jours) ===
+[2026-02-24 09:00:01] [INFO] Trouvé 3 arrivée(s) dans 4 jours
+[2026-02-24 09:00:01] [SUCCESS] ✅ Réservation #3500 (Emma ) : SMS 'preparation' créé (ID=2280)
+[2026-02-24 09:00:01] [WARNING] Réservation #3497 : Pas de numéro de téléphone
+[2026-02-24 09:00:01] [SUCCESS] ✅ Réservation #3379 (Charlotte ) : SMS 'preparation' créé (ID=2281)
+[2026-02-24 09:00:01] [SUCCESS] ✅ 2 SMS de préparation créé(s)
+[2026-02-24 09:00:01] [INFO] ========================================
+[2026-02-24 09:00:01] [SUCCESS] Script terminé avec succès (type: preparation)
+[2026-02-24 09:00:01] [INFO] ========================================
+[2026-02-24 10:00:01] [INFO] ========================================
+[2026-02-24 10:00:01] [INFO] Démarrage du script d'automatisation SMS (type: custom)
+[2026-02-24 10:00:01] [INFO] ========================================
+[2026-02-24 10:00:01] [INFO] === Traitement des automatisations personnalisées ===
+[2026-02-24 10:00:01] [INFO] Trouvé 4 automatisation(s) personnalisée(s) active(s)
+[2026-02-24 10:00:01] [INFO] --- Traitement automatisation: Remerciement post-séjour (ID=1) (tous logements) ---
+[2026-02-24 10:00:01] [INFO] Date cible: 2026-02-23 (date_depart), 2 réservation(s) trouvée(s)
+[2026-02-24 10:00:01] [ERROR] Réservation #3487 : Template 'remerciement' non trouvé
+[2026-02-24 10:00:01] [ERROR] Réservation #3463 : Template 'remerciement' non trouvé
+[2026-02-24 10:00:01] [SUCCESS] ✅ Automatisation 'Remerciement post-séjour' : 0 SMS créé(s)
+[2026-02-24 10:00:01] [INFO] --- Traitement automatisation: Rappel 7j avant arrivée (ID=2) (tous logements) ---
+[2026-02-24 10:00:01] [INFO] Date cible: 2026-03-03 (date_arrivee), 0 réservation(s) trouvée(s)
+[2026-02-24 10:00:01] [SUCCESS] ✅ Automatisation 'Rappel 7j avant arrivée' : 0 SMS créé(s)
+[2026-02-24 10:00:01] [INFO] --- Traitement automatisation: Satisfaction mi-séjour (ID=3) (tous logements) ---
+[2026-02-24 10:00:01] [INFO] Date cible: 2026-02-21 (date_arrivee), 4 réservation(s) trouvée(s)
+[2026-02-24 10:00:01] [ERROR] Réservation #3489 : Template 'satisfaction' non trouvé
+[2026-02-24 10:00:01] [ERROR] Réservation #3487 : Template 'satisfaction' non trouvé
+[2026-02-24 10:00:01] [ERROR] Réservation #3440 : Template 'satisfaction' non trouvé
+[2026-02-24 10:00:01] [ERROR] Réservation #3350 : Template 'satisfaction' non trouvé
+[2026-02-24 10:00:01] [SUCCESS] ✅ Automatisation 'Satisfaction mi-séjour' : 0 SMS créé(s)
+[2026-02-24 10:00:01] [INFO] --- Traitement automatisation: Code accès Logement 1 (ID=4) (logement ID=1) ---
+[2026-02-24 10:00:01] [INFO] Date cible: 2026-02-24 (date_arrivee), 0 réservation(s) trouvée(s)
+[2026-02-24 10:00:01] [SUCCESS] ✅ Automatisation 'Code accès Logement 1' : 0 SMS créé(s)
+[2026-02-24 10:00:01] [INFO] ========================================
+[2026-02-24 10:00:01] [SUCCESS] Script terminé avec succès (type: custom)
+[2026-02-24 10:00:01] [INFO] ========================================
+[2026-02-24 11:00:01] [INFO] ========================================
+[2026-02-24 11:00:01] [INFO] Démarrage du script d'automatisation SMS (type: midstay)
+[2026-02-24 11:00:01] [INFO] ========================================
+[2026-02-24 11:00:01] [INFO] === Traitement des SMS mi-parcours (séjours >= 3 nuits) ===
+[2026-02-24 11:00:01] [INFO] Trouvé 8 séjour(s) en cours de 3+ nuits
+[2026-02-24 11:00:01] [INFO] Réservation #3489 : Jour 3 sur 7 (mi-parcours)
+[2026-02-24 11:00:01] [SUCCESS] ✅ Réservation #3489 (Agnès ) : SMS 'mi_parcours' créé (ID=2282)
+[2026-02-24 11:00:01] [INFO] Réservation #3237 : Jour 2 sur 5 (mi-parcours)
+[2026-02-24 11:00:01] [SUCCESS] ✅ Réservation #3237 (Donovan ) : SMS 'mi_parcours' créé (ID=2283)
+[2026-02-24 11:00:01] [SUCCESS] ✅ 2 SMS de mi-parcours créé(s)
+[2026-02-24 11:00:01] [INFO] ========================================
+[2026-02-24 11:00:01] [SUCCESS] Script terminé avec succès (type: midstay)
+[2026-02-24 11:00:01] [INFO] ========================================

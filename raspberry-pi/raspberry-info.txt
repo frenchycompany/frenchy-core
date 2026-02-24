@@ -1,0 +1,123 @@
+sudo crontab -l
+# Edit this file to introduce tasks to be run by cron.
+# 
+# Each task to run has to be defined through a single line
+# indicating with different fields when the task will be run
+# and what command to run for the task
+# 
+# To define the time you can provide concrete values for
+# minute (m), hour (h), day of month (dom), month (mon),
+# and day of week (dow) or use '*' in these fields (for 'any').
+# 
+# Notice that tasks will be started based on the cron's system
+# daemon's notion of time and timezones.
+# 
+# Output of the crontab jobs (including errors) is sent through
+# email to the user the crontab file belongs to (unless redirected).
+# 
+# For example, you can run a backup of all your user accounts
+# at 5 a.m every week with:
+# 0 5 * * 1 tar -zcf /var/backups/home.tgz /home/
+# 
+# For more information see the manual pages of crontab(5) and cron(8)
+# 
+# m h  dom mon dow   command
+# 0 * * * * /usr/bin/python3 /home/raphael/sms_project/scripts/scenario_h8.py
+0 6 * * * /home/raphael/sms_project/scripts/selenium/run_daily_prices.sh
+
+
+# Synchronisation des reservations depuis les calendriers ICS (toutes les heures)
+
+# SMS Check-out du jour (9h00 le matin)
+
+# SMS Check-in du jour (20h00 le soir)
+
+# SMS Preparation J-4 avant arrivee (10h00)
+
+# SMS Mi-parcours pour sejours longs (12h00)
+
+# SMS Automatisations personnalisees (11h00)
+
+# === SMS Project - Automatisation ===
+
+# Synchronisation des reservations depuis les calendriers ICS (toutes les heures)
+0 * * * * cd /home/raphael/sms_project/scripts && /usr/bin/php sync_reservations.php >> /home/raphael/sms_project/logs/cron_sync.log 2>&1
+
+# SMS Check-out du jour (9h00 le matin)
+0 9 * * * cd /home/raphael/sms_project/scripts && /usr/bin/php auto_send_sms.php --type=checkout >> /home/raphael/sms_project/logs/cron_checkout.log 2>&1
+
+# SMS Check-in du jour (20h00 le soir)
+0 20 * * * cd /home/raphael/sms_project/scripts && /usr/bin/php auto_send_sms.php --type=checkin >> /home/raphael/sms_project/logs/cron_checkin.log 2>&1
+
+# SMS Preparation J-4 avant arrivee (10h00)
+0 10 * * * cd /home/raphael/sms_project/scripts && /usr/bin/php auto_send_sms.php --type=preparation >> /home/raphael/sms_project/logs/cron_preparation.log 2>&1
+
+# SMS Mi-parcours pour sejours longs (12h00)
+0 12 * * * cd /home/raphael/sms_project/scripts && /usr/bin/php auto_send_sms.php --type=midstay >> /home/raphael/sms_project/logs/cron_midstay.log 2>&1
+
+# SMS Automatisations personnalisees (11h00)
+0 11 * * * cd /home/raphael/sms_project/scripts && /usr/bin/php auto_send_sms.php --type=custom >> /home/raphael/sms_project/logs/cron_custom.log 2>&1
+
+# === Fin SMS Project ===
+no crontab for root
+
+
+
+raphael@raspberrypi:~ $ systemctl list-units --type=service --state=running
+  UNIT                           LOAD   ACTIVE SUB     DESCRIPTION
+  apache2.service                loaded active running The Apache HTTP Server
+  avahi-daemon.service           loaded active running Avahi mDNS/DNS-SD Stack
+  bluetooth.service              loaded active running Bluetooth service
+  colord.service                 loaded active running Manage, Install and Generate Color Profiles
+  cron.service                   loaded active running Regular background program processing daemon
+  cups-browsed.service           loaded active running Make remote CUPS printers available locally
+  cups.service                   loaded active running CUPS Scheduler
+  dbus.service                   loaded active running D-Bus System Message Bus
+  dhcpcd.service                 loaded active running DHCP Client Daemon
+  epmd.service                   loaded active running Erlang Port Mapper Daemon
+  fail2ban.service               loaded active running Fail2Ban Service
+  getty@tty1.service             loaded active running Getty on tty1
+  hciuart.service                loaded active running Configure Bluetooth Modems connected by UART
+  lightdm.service                loaded active running Light Display Manager
+  mariadb.service                loaded active running MariaDB 10.5.29 database server
+  packagekit.service             loaded active running PackageKit Daemon
+  php8.2-fpm.service             loaded active running The PHP 8.2 FastCGI Process Manager
+  php8.3-fpm.service             loaded active running The PHP 8.3 FastCGI Process Manager
+  polkit.service                 loaded active running Authorization Manager
+  rng-tools-debian.service       loaded active running LSB: rng-tools (Debian variant)
+  rsyslog.service                loaded active running System Logging Service
+  rtkit-daemon.service           loaded active running RealtimeKit Scheduling Policy Service
+  satisfaction_bot.service       loaded active running Bot satisfaction SMS
+  serial-getty@ttyS0.service     loaded active running Serial Getty on ttyS0
+  ssh.service                    loaded active running OpenBSD Secure Shell server
+  systemd-journald.service       loaded active running Journal Service
+  systemd-logind.service         loaded active running User Login Management
+  systemd-timesyncd.service      loaded active running Network Time Synchronization
+  systemd-udevd.service          loaded active running Rule-based Manager for Device Events and Files
+  triggerhappy.service           loaded active running triggerhappy global hotkey daemon
+  udisks2.service                loaded active running Disk Manager
+  upower.service                 loaded active running Daemon for power management
+  user@1000.service              loaded active running User Manager for UID 1000
+  vncserver-x11-serviced.service loaded active running VNC Server in Service Mode daemon
+  vsftpd.service                 loaded active running vsftpd FTP server
+  wpa_supplicant.service         loaded active running WPA supplicant
+
+LOAD   = Reflects whether the unit definition was properly loaded.
+ACTIVE = The high-level unit activation state, i.e. generalization of SUB.
+SUB    = The low-level unit activation state, values depend on unit type.
+36 loaded units listed.
+
+
+
+raphael@raspberrypi:~ $ sudo ss -tlnp
+State             Recv-Q            Send-Q                        Local Address:Port                         Peer Address:Port            Process                                                                                                                                   
+LISTEN            0                 128                                 0.0.0.0:22                                0.0.0.0:*                users:(("sshd",pid=657,fd=3))                                                                                                            
+LISTEN            0                 128                               127.0.0.1:631                               0.0.0.0:*                users:(("cupsd",pid=13424,fd=7))                                                                                                         
+LISTEN            0                 5                                   0.0.0.0:5900                              0.0.0.0:*                users:(("vncserver-x11-c",pid=625,fd=12))                                                                                                
+LISTEN            0                 32                                        *:21                                      *:*                users:(("vsftpd",pid=604,fd=3))                                                                                                          
+LISTEN            0                 128                                    [::]:22                                   [::]:*                users:(("sshd",pid=657,fd=4))                                                                                                            
+LISTEN            0                 511                                       *:80                                      *:*                users:(("apache2",pid=18330,fd=4),("apache2",pid=14062,fd=4),("apache2",pid=13423,fd=4),("apache2",pid=13422,fd=4),("apache2",pid=13421,fd=4),("apache2",pid=13420,fd=4),("apache2",pid=13419,fd=4),("apache2",pid=732,fd=4))
+LISTEN            0                 4096                                      *:4369                                    *:*                users:(("epmd",pid=570,fd=3),("systemd",pid=1,fd=59))                                                                                    
+LISTEN            0                 128                                   [::1]:631                                  [::]:*                users:(("cupsd",pid=13424,fd=6))                                                                                                         
+LISTEN            0                 80                                        *:3306                                    *:*                users:(("mariadbd",pid=653,fd=36))                                                                                                       
+LISTEN            0                 5                                      [::]:5900                                 [::]:*                users:(("vncserver-x11-c",pid=625,fd=11))      

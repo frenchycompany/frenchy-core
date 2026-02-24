@@ -1,0 +1,34 @@
+# Configuration SMS Project
+# Copy this file to config.ini and fill in your values
+# IMPORTANT: Never commit config.ini to version control
+
+[MODEM]
+port = /dev/ttyUSB0
+pin = 1234
+baudrate = 115200
+
+[MODEMS]
+# Define multiple modems for fallback
+modem1 = /dev/ttyUSB0
+modem2 = /dev/ttyUSB1
+baudrate = 115200
+
+[DATABASE]
+host = 127.0.0.1
+user = sms_user
+password = YOUR_DATABASE_PASSWORD_HERE
+database = sms_db
+
+[OPENAI]
+# Optional: OpenAI API key for AI-powered responses
+api_key = YOUR_OPENAI_API_KEY_HERE
+
+[SATISFACTION]
+# Table name for satisfaction conversations
+table = satisfaction_conversations
+
+[FALLBACK]
+# Admin phone number for message forwarding (E.164 format)
+numero_admin = +33XXXXXXXXX
+# Keywords that trigger admin notification
+mots_declencheurs = code, champagne, taxi, spa, urgence, urgent, probleme, panne
