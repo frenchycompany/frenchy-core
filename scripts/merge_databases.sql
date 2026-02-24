@@ -180,7 +180,8 @@ INSERT IGNORE INTO frenchyconciergerie.satisfaction_conversations SELECT * FROM 
 INSERT INTO frenchyconciergerie.ai_prompts SELECT * FROM sms_db_import.ai_prompts
 ON DUPLICATE KEY UPDATE content = VALUES(content);
 
-INSERT INTO frenchyconciergerie.configuration SELECT * FROM sms_db_import.configuration
+INSERT INTO frenchyconciergerie.configuration (id, key_name, value)
+SELECT id, key_name, value FROM sms_db_import.configuration
 ON DUPLICATE KEY UPDATE value = VALUES(value);
 
 -- Campagnes
