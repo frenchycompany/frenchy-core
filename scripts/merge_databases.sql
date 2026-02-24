@@ -239,6 +239,8 @@ DROP TABLE IF EXISTS frenchyconciergerie.phones;
 -- ÉTAPE 5 : Créer les vues depuis sms_db
 -- =============================================================================
 
+USE frenchyconciergerie;
+
 DROP VIEW IF EXISTS frenchyconciergerie.v_all_reservations;
 CREATE VIEW frenchyconciergerie.v_all_reservations AS
 SELECT `r`.`id`, `r`.`ical_uid`, `r`.`summary`, `r`.`description`, `r`.`start_date`,
