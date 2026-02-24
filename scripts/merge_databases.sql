@@ -40,6 +40,32 @@ CREATE TABLE IF NOT EXISTS frenchyconciergerie.`ville_recommandations` LIKE sms_
 CREATE TABLE IF NOT EXISTS frenchyconciergerie.`logement_equipements` LIKE sms_db_import.`logement_equipements`;
 CREATE TABLE IF NOT EXISTS frenchyconciergerie.`logement_recommandations` LIKE sms_db_import.`logement_recommandations`;
 
+-- Tables présentes dans sms_db mais absentes de IONOS
+CREATE TABLE IF NOT EXISTS frenchyconciergerie.`client` LIKE sms_db_import.`client`;
+CREATE TABLE IF NOT EXISTS frenchyconciergerie.`reservation` LIKE sms_db_import.`reservation`;
+CREATE TABLE IF NOT EXISTS frenchyconciergerie.`logement` LIKE sms_db_import.`logement`;
+CREATE TABLE IF NOT EXISTS frenchyconciergerie.`sms_in` LIKE sms_db_import.`sms_in`;
+CREATE TABLE IF NOT EXISTS frenchyconciergerie.`sms_out` LIKE sms_db_import.`sms_out`;
+CREATE TABLE IF NOT EXISTS frenchyconciergerie.`sms_outbox` LIKE sms_db_import.`sms_outbox`;
+CREATE TABLE IF NOT EXISTS frenchyconciergerie.`sms_messages` LIKE sms_db_import.`sms_messages`;
+CREATE TABLE IF NOT EXISTS frenchyconciergerie.`sms_conversations` LIKE sms_db_import.`sms_conversations`;
+CREATE TABLE IF NOT EXISTS frenchyconciergerie.`conversations` LIKE sms_db_import.`conversations`;
+CREATE TABLE IF NOT EXISTS frenchyconciergerie.`conversation_messages` LIKE sms_db_import.`conversation_messages`;
+CREATE TABLE IF NOT EXISTS frenchyconciergerie.`travel_platforms` LIKE sms_db_import.`travel_platforms`;
+CREATE TABLE IF NOT EXISTS frenchyconciergerie.`travel_account_connections` LIKE sms_db_import.`travel_account_connections`;
+CREATE TABLE IF NOT EXISTS frenchyconciergerie.`travel_listings` LIKE sms_db_import.`travel_listings`;
+CREATE TABLE IF NOT EXISTS frenchyconciergerie.`ical_reservations` LIKE sms_db_import.`ical_reservations`;
+CREATE TABLE IF NOT EXISTS frenchyconciergerie.`ical_sync_log` LIKE sms_db_import.`ical_sync_log`;
+CREATE TABLE IF NOT EXISTS frenchyconciergerie.`listing_mappings` LIKE sms_db_import.`listing_mappings`;
+CREATE TABLE IF NOT EXISTS frenchyconciergerie.`scenario` LIKE sms_db_import.`scenario`;
+CREATE TABLE IF NOT EXISTS frenchyconciergerie.`ia_scenario` LIKE sms_db_import.`ia_scenario`;
+CREATE TABLE IF NOT EXISTS frenchyconciergerie.`client_scenario` LIKE sms_db_import.`client_scenario`;
+CREATE TABLE IF NOT EXISTS frenchyconciergerie.`satisfaction_conversations` LIKE sms_db_import.`satisfaction_conversations`;
+CREATE TABLE IF NOT EXISTS frenchyconciergerie.`ai_prompts` LIKE sms_db_import.`ai_prompts`;
+CREATE TABLE IF NOT EXISTS frenchyconciergerie.`configuration` LIKE sms_db_import.`configuration`;
+CREATE TABLE IF NOT EXISTS frenchyconciergerie.`campagne_immo` LIKE sms_db_import.`campagne_immo`;
+CREATE TABLE IF NOT EXISTS frenchyconciergerie.`modem` LIKE sms_db_import.`modem`;
+
 -- Clients (table étendue)
 CREATE TABLE IF NOT EXISTS frenchyconciergerie.`clients` LIKE sms_db_import.`clients`;
 
