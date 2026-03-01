@@ -6,6 +6,7 @@
 include '../config.php';
 include '../pages/menu.php';
 require_once __DIR__ . '/../includes/csrf.php';
+require_once __DIR__ . '/../includes/rpi_db.php';
 
 $feedback = '';
 
@@ -109,7 +110,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['delete_logement'])) {
         $id = (int) $_POST['logement_id'];
         try {
-            $stmt = $conn->prepare("SELECT COUNT(*) FROM reservation WHERE logement_id = ?");
+            // Vérifier les réservations (RPi)
+            $pdoRpi = getRpiPdo();
+            $stmt = $pdoRpi->prepare("SELECT COUNT(*) FROM reservation WHERE logement_id = ?");
             $stmt->execute([$id]);
             $count = $stmt->fetchColumn();
 
@@ -132,13 +135,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $logements = [];
 try {
+    // Logements + interventions (VPS)
     $logements = $conn->query("
         SELECT l.*,
-               (SELECT COUNT(*) FROM reservation r WHERE r.logement_id = l.id) AS nb_reservations,
                (SELECT COUNT(*) FROM planning p WHERE p.logement_id = l.id) AS nb_interventions
         FROM liste_logements l
         ORDER BY l.actif DESC, l.nom_du_logement ASC
     ")->fetchAll();
+
+    // Comptage réservations par logement (RPi)
+    $resaCounts = [];
+    try {
+        $pdoRpi = getRpiPdo();
+        $rows = $pdoRpi->query("SELECT logement_id, COUNT(*) as cnt FROM reservation GROUP BY logement_id")->fetchAll();
+        foreach ($rows as $row) { $resaCounts[$row['logement_id']] = $row['cnt']; }
+    } catch (PDOException $e) { /* RPi injoignable */ }
+
+    foreach ($logements as &$l) {
+        $l['nb_reservations'] = $resaCounts[$l['id']] ?? 0;
+    }
+    unset($l);
 } catch (PDOException $e) {
     $feedback .= '<div class="alert alert-danger">Erreur chargement logements : ' . htmlspecialchars($e->getMessage()) . '</div>';
 }

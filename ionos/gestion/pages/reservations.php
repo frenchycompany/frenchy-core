@@ -6,6 +6,7 @@
 include '../config.php';
 include '../pages/menu.php';
 require_once __DIR__ . '/../includes/rpi_bridge.php';
+require_once __DIR__ . '/../includes/rpi_db.php';
 
 // Paramètres de filtrage
 $filtre_logement = isset($_GET['logement']) && $_GET['logement'] !== '' ? (int)$_GET['logement'] : null;
@@ -15,25 +16,27 @@ $filtre_date_fin = isset($_GET['date_fin']) && $_GET['date_fin'] !== '' ? $_GET[
 $filtre_plateforme = isset($_GET['plateforme']) && $_GET['plateforme'] !== '' ? $_GET['plateforme'] : null;
 $tri = $_GET['tri'] ?? 'date_desc';
 
-// Récupérer les logements
+// Récupérer les logements (VPS)
 $logements = [];
+$logementNames = [];
 try {
     $logements = $pdo->query("SELECT id, nom_du_logement FROM liste_logements WHERE actif = 1 ORDER BY nom_du_logement")->fetchAll();
+    foreach ($logements as $l) { $logementNames[$l['id']] = $l['nom_du_logement']; }
 } catch (PDOException $e) { /* ignore */ }
 
-// Récupérer les plateformes
+// Récupérer les plateformes (RPi)
 $plateformes = [];
 try {
-    $plateformes = $pdo->query("SELECT DISTINCT plateforme FROM reservation WHERE plateforme IS NOT NULL AND plateforme != '' ORDER BY plateforme")->fetchAll(PDO::FETCH_COLUMN);
+    $pdoRpi = getRpiPdo();
+    $plateformes = $pdoRpi->query("SELECT DISTINCT plateforme FROM reservation WHERE plateforme IS NOT NULL AND plateforme != '' ORDER BY plateforme")->fetchAll(PDO::FETCH_COLUMN);
 } catch (PDOException $e) { /* ignore */ }
 
-// Construire la requête
+// Construire la requête (RPi)
 $sql = "
-    SELECT r.*, l.nom_du_logement,
+    SELECT r.*,
            DATEDIFF(r.date_depart, r.date_arrivee) as duree_sejour,
            DATEDIFF(r.date_arrivee, CURDATE()) as jours_avant_arrivee
     FROM reservation r
-    LEFT JOIN liste_logements l ON r.logement_id = l.id
     WHERE 1=1
 ";
 $params = [];
@@ -61,16 +64,22 @@ if ($filtre_plateforme !== null) {
 
 switch ($tri) {
     case 'date_asc': $sql .= " ORDER BY r.date_arrivee ASC"; break;
-    case 'logement': $sql .= " ORDER BY l.nom_du_logement ASC, r.date_arrivee DESC"; break;
+    case 'logement': $sql .= " ORDER BY r.logement_id ASC, r.date_arrivee DESC"; break;
     default: $sql .= " ORDER BY r.date_arrivee DESC"; break;
 }
 
 $reservations = [];
 $stats = ['total' => 0, 'en_cours' => 0, 'a_venir' => 0, 'passees' => 0];
 try {
-    $stmt = $pdo->prepare($sql);
+    $pdoRpi = getRpiPdo();
+    $stmt = $pdoRpi->prepare($sql);
     $stmt->execute($params);
     $reservations = $stmt->fetchAll();
+    // Enrichir avec noms de logements (VPS)
+    foreach ($reservations as &$r) {
+        $r['nom_du_logement'] = $logementNames[$r['logement_id'] ?? 0] ?? '';
+    }
+    unset($r);
     $stats['total'] = count($reservations);
     foreach ($reservations as $r) {
         if ($r['jours_avant_arrivee'] > 0) $stats['a_venir']++;

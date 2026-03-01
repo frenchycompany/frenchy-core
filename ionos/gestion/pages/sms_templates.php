@@ -6,10 +6,11 @@
 include '../config.php';
 include '../pages/menu.php';
 require_once __DIR__ . '/../includes/rpi_bridge.php';
+require_once __DIR__ . '/../includes/rpi_db.php';
 
 $feedback = '';
 
-// Ajouter/modifier un template
+// Ajouter/modifier un template (RPi)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     validateCsrfToken();
 
@@ -21,11 +22,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if (!empty($name) && !empty($template)) {
             try {
+                $pdoRpi = getRpiPdo();
                 if ($id) {
-                    $stmt = $pdo->prepare("UPDATE sms_templates SET name = ?, template = ?, description = ? WHERE id = ?");
+                    $stmt = $pdoRpi->prepare("UPDATE sms_templates SET name = ?, template = ?, description = ? WHERE id = ?");
                     $stmt->execute([$name, $template, $description, $id]);
                 } else {
-                    $stmt = $pdo->prepare("INSERT INTO sms_templates (name, template, description) VALUES (?, ?, ?)");
+                    $stmt = $pdoRpi->prepare("INSERT INTO sms_templates (name, template, description) VALUES (?, ?, ?)");
                     $stmt->execute([$name, $template, $description]);
                 }
                 $feedback = '<div class="alert alert-success">Template enregistré.</div>';
@@ -38,7 +40,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['delete_template'])) {
         $id = (int)$_POST['template_id'];
         try {
-            $pdo->prepare("DELETE FROM sms_templates WHERE id = ?")->execute([$id]);
+            $pdoRpi = getRpiPdo();
+            $pdoRpi->prepare("DELETE FROM sms_templates WHERE id = ?")->execute([$id]);
             $feedback = '<div class="alert alert-success">Template supprimé.</div>';
         } catch (PDOException $e) {
             $feedback = '<div class="alert alert-danger">Erreur : ' . htmlspecialchars($e->getMessage()) . '</div>';
@@ -46,23 +49,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Récupérer les templates
+// Récupérer les templates (RPi)
 $templates = [];
 try {
-    $templates = $pdo->query("SELECT * FROM sms_templates ORDER BY name")->fetchAll();
+    $pdoRpi = getRpiPdo();
+    $templates = $pdoRpi->query("SELECT * FROM sms_templates ORDER BY name")->fetchAll();
 } catch (PDOException $e) { /* ignore */ }
 
-// Templates par logement
+// Templates par logement (RPi + lookup VPS pour noms)
 $logement_templates = [];
 try {
-    $logement_templates = $pdo->query("
-        SELECT slt.*, l.nom_du_logement
-        FROM sms_logement_templates slt
-        LEFT JOIN liste_logements l ON slt.logement_id = l.id
-        ORDER BY l.nom_du_logement, slt.type_message
-    ")->fetchAll();
+    $pdoRpi = getRpiPdo();
+    $logement_templates = $pdoRpi->query("SELECT * FROM sms_logement_templates ORDER BY logement_id, type_message")->fetchAll();
+    // Enrichir avec noms de logements (VPS)
+    if (!empty($logement_templates)) {
+        $logIds = array_unique(array_filter(array_column($logement_templates, 'logement_id')));
+        $logNames = [];
+        if (!empty($logIds)) {
+            $ph = implode(',', array_fill(0, count($logIds), '?'));
+            $stmt = $pdo->prepare("SELECT id, nom_du_logement FROM liste_logements WHERE id IN ($ph)");
+            $stmt->execute(array_values($logIds));
+            foreach ($stmt->fetchAll() as $l) { $logNames[$l['id']] = $l['nom_du_logement']; }
+        }
+        foreach ($logement_templates as &$lt) {
+            $lt['nom_du_logement'] = $logNames[$lt['logement_id'] ?? 0] ?? '';
+        }
+        unset($lt);
+    }
 } catch (PDOException $e) { /* ignore */ }
 
+// Logements (VPS)
 $logements = [];
 try {
     $logements = $pdo->query("SELECT id, nom_du_logement FROM liste_logements WHERE actif = 1 ORDER BY nom_du_logement")->fetchAll();

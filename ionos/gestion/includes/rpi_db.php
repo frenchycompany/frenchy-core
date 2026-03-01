@@ -12,7 +12,7 @@ function getRpiPdo() {
         $port = env('RPI_DB_PORT', '3306');
         $name = env('RPI_DB_NAME', 'sms_db');
         $user = env('RPI_DB_USER', 'remote');
-        $pass = env('RPI_DB_PASSWORD', '');
+        $pass = env('RPI_DB_PASSWORD', 'remoteionos25');
         $pdoRpi = new PDO(
             "mysql:host={$host};port={$port};dbname={$name};charset=utf8mb4",
             $user,

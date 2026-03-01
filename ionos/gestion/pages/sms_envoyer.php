@@ -38,20 +38,23 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 // Modems disponibles
 $modems = [];
 try {
-    $modems = $pdo->query("SELECT DISTINCT modem FROM sms_in")->fetchAll(PDO::FETCH_COLUMN);
+    $pdoRpi = getRpiPdo();
+    $modems = $pdoRpi->query("SELECT DISTINCT modem FROM sms_in")->fetchAll(PDO::FETCH_COLUMN);
 } catch (PDOException $e) { /* ignore */ }
 if (empty($modems)) $modems = ['modem1'];
 
 // Templates disponibles
 $templates = [];
 try {
-    $templates = $pdo->query("SELECT id, name, template, description FROM sms_templates ORDER BY name")->fetchAll();
+    $pdoRpi = getRpiPdo();
+    $templates = $pdoRpi->query("SELECT id, name, template, description FROM sms_templates ORDER BY name")->fetchAll();
 } catch (PDOException $e) { /* ignore */ }
 
 // Derniers SMS envoyés
 $recent_sent = [];
 try {
-    $recent_sent = $pdo->query("SELECT * FROM sms_out ORDER BY sent_at DESC LIMIT 10")->fetchAll();
+    $pdoRpi = getRpiPdo();
+    $recent_sent = $pdoRpi->query("SELECT * FROM sms_outbox ORDER BY created_at DESC LIMIT 10")->fetchAll();
 } catch (PDOException $e) { /* ignore */ }
 ?>
 

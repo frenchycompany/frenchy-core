@@ -6,27 +6,31 @@
 include '../config.php';
 include '../pages/menu.php';
 require_once __DIR__ . '/../includes/rpi_bridge.php';
+require_once __DIR__ . '/../includes/rpi_db.php';
 
 $feedback = '';
 
-// Récupérer les automatisations
+// Récupérer les automatisations (RPi)
 $automations = [];
 try {
-    $automations = $pdo->query("SELECT * FROM sms_automations ORDER BY trigger_event, delay_hours")->fetchAll();
+    $pdoRpi = getRpiPdo();
+    $automations = $pdoRpi->query("SELECT * FROM sms_automations ORDER BY trigger_event, delay_hours")->fetchAll();
 } catch (PDOException $e) { /* table peut ne pas exister */ }
 
-// Récupérer les templates
+// Récupérer les templates (RPi)
 $templates = [];
 try {
-    $templates = $pdo->query("SELECT id, name, description FROM sms_templates ORDER BY name")->fetchAll();
+    $pdoRpi = getRpiPdo();
+    $templates = $pdoRpi->query("SELECT id, name, description FROM sms_templates ORDER BY name")->fetchAll();
 } catch (PDOException $e) { /* ignore */ }
 
-// Statistiques d'envoi automatique
+// Statistiques d'envoi automatique (RPi)
 $stats = ['total_sent' => 0, 'pending' => 0, 'failed' => 0];
 try {
-    $r = $pdo->query("SELECT COUNT(*) as c FROM sms_outbox WHERE status = 'pending'")->fetch();
+    $pdoRpi = getRpiPdo();
+    $r = $pdoRpi->query("SELECT COUNT(*) as c FROM sms_outbox WHERE status = 'pending'")->fetch();
     $stats['pending'] = $r['c'] ?? 0;
-    $r = $pdo->query("SELECT COUNT(*) as c FROM sms_out WHERE DATE(sent_at) = CURDATE()")->fetch();
+    $r = $pdoRpi->query("SELECT COUNT(*) as c FROM sms_outbox WHERE status = 'sent' AND DATE(sent_at) = CURDATE()")->fetch();
     $stats['total_sent'] = $r['c'] ?? 0;
 } catch (PDOException $e) { /* ignore */ }
 ?>

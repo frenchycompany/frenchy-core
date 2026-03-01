@@ -6,6 +6,7 @@
 include '../config.php';
 include '../pages/menu.php';
 require_once __DIR__ . '/../includes/rpi_bridge.php';
+require_once __DIR__ . '/../includes/rpi_db.php';
 
 function fmt_relative_time($s) {
     if (empty($s)) return '';
@@ -23,24 +24,41 @@ function fmt_relative_time($s) {
     } catch (Exception $e) { return ''; }
 }
 
-// Récupérer les SMS reçus
+// Récupérer les SMS reçus depuis le RPi
 $sms_list = [];
 try {
-    $sms_list = $pdo->query("
-        SELECT s.*, l.nom_du_logement,
-               r.prenom as client_prenom, r.nom as client_nom
+    $pdoRpi = getRpiPdo();
+    $sms_list = $pdoRpi->query("
+        SELECT s.*, r.prenom as client_prenom, r.nom as client_nom, r.logement_id
         FROM sms_in s
         LEFT JOIN reservation r ON s.sender = r.telephone
-        LEFT JOIN liste_logements l ON r.logement_id = l.id
         ORDER BY s.received_at DESC
         LIMIT 200
     ")->fetchAll();
+    // Enrichir avec le nom du logement (VPS)
+    if (!empty($sms_list)) {
+        $logementIds = array_unique(array_filter(array_column($sms_list, 'logement_id')));
+        $logementNames = [];
+        if (!empty($logementIds)) {
+            $placeholders = implode(',', array_fill(0, count($logementIds), '?'));
+            $stmt = $pdo->prepare("SELECT id, nom_du_logement FROM liste_logements WHERE id IN ($placeholders)");
+            $stmt->execute(array_values($logementIds));
+            foreach ($stmt->fetchAll() as $l) {
+                $logementNames[$l['id']] = $l['nom_du_logement'];
+            }
+        }
+        foreach ($sms_list as &$sms) {
+            $sms['nom_du_logement'] = $logementNames[$sms['logement_id'] ?? 0] ?? '';
+        }
+        unset($sms);
+    }
 } catch (PDOException $e) { /* table peut ne pas exister */ }
 
-// Récupérer les conversations récentes
+// Récupérer les conversations récentes (RPi)
 $conversations = [];
 try {
-    $conversations = $pdo->query("
+    $pdoRpi = getRpiPdo();
+    $conversations = $pdoRpi->query("
         SELECT c.*,
                (SELECT COUNT(*) FROM conversation_messages cm WHERE cm.conversation_id = c.id) as nb_messages
         FROM conversations c

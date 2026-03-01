@@ -48,19 +48,10 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
     jerr(403, 'Accès refusé (admin requis).');
 }
 
-// Connexion REMOTE (Raspberry), mêmes creds que ton test corrélation
-$remoteHost = '109.219.194.30';
-$remotePort = 3306;
-$remoteDb   = 'sms_db';
-$remoteUser = 'remote';
-$remotePass = 'remoteionos25';
+// Connexion REMOTE (Raspberry) via helper centralisé
+require_once __DIR__ . '/../includes/rpi_db.php';
 try {
-    $pdoRemote = new PDO(
-        "mysql:host={$remoteHost};port={$remotePort};dbname={$remoteDb};charset=utf8mb4",
-        $remoteUser,
-        $remotePass,
-        [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
-    );
+    $pdoRemote = getRpiPdo();
 } catch (Throwable $e) {
     jerr(500, 'Connexion distante impossible.', $DEBUG?['ex'=>$e->getMessage()]:[]);
 }

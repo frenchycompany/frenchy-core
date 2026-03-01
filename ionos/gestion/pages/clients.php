@@ -6,6 +6,7 @@
 include '../config.php';
 include '../pages/menu.php';
 require_once __DIR__ . '/../includes/rpi_bridge.php';
+require_once __DIR__ . '/../includes/rpi_db.php';
 
 function phone_normalize(?string $raw): string {
     if (!$raw) return '';
@@ -19,7 +20,7 @@ function phone_normalize(?string $raw): string {
 
 $feedback = '';
 
-// Traitement POST
+// Traitement POST (clients sur RPi)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     validateCsrfToken();
 
@@ -33,7 +34,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if (!empty($telephone)) {
             try {
-                $stmt = $pdo->prepare("
+                $pdoRpi = getRpiPdo();
+                $stmt = $pdoRpi->prepare("
                     INSERT INTO clients (telephone, prenom, nom, email, notes, tags)
                     VALUES (?, ?, ?, ?, ?, ?)
                     ON DUPLICATE KEY UPDATE prenom = VALUES(prenom), nom = VALUES(nom),
@@ -51,11 +53,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Recherche
 $search = trim($_GET['q'] ?? '');
 
-// Récupérer les clients
+// Récupérer les clients (RPi — clients + reservation sont sur le RPi)
 $clients = [];
 try {
+    $pdoRpi = getRpiPdo();
     if (!empty($search)) {
-        $stmt = $pdo->prepare("
+        $stmt = $pdoRpi->prepare("
             SELECT c.*, COUNT(DISTINCT r.id) as nb_reservations,
                    MAX(r.date_depart) as dernier_sejour
             FROM clients c
@@ -67,7 +70,7 @@ try {
         $like = "%$search%";
         $stmt->execute([$like, $like, $like, $like]);
     } else {
-        $stmt = $pdo->query("
+        $stmt = $pdoRpi->query("
             SELECT c.*, COUNT(DISTINCT r.id) as nb_reservations,
                    MAX(r.date_depart) as dernier_sejour
             FROM clients c
