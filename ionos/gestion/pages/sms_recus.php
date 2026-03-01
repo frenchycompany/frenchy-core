@@ -4,13 +4,32 @@ error_reporting(E_ALL);
 ini_set('display_errors', 0);
 
 include '../config.php';
-include '../pages/menu.php';
 require_once __DIR__ . '/../includes/rpi_bridge.php';
 require_once __DIR__ . '/../includes/rpi_db.php';
 
 // Rediriger $pdo vers le RPi pour toutes les requêtes SMS de cette page
 // ($conn reste disponible pour les tables VPS si besoin)
-$pdo = getRpiPdo();
+$rpi_error = null;
+try {
+    $pdo = getRpiPdo();
+} catch (Exception $e) {
+    error_log('Erreur connexion RPi : ' . $e->getMessage());
+    $rpi_error = $e->getMessage();
+    $pdo = null;
+}
+?>
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMS Reçus — FrenchyConciergerie</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+<?php include '../pages/menu.php'; ?>
+<?php
 
 // --- Helper Functions ---
 
@@ -105,7 +124,7 @@ $modems = [];
 $total_incoming_messages = 0;
 $archived_count = 0;
 
-try {
+if ($pdo !== null) try {
     // Vérifier si les colonnes archived/is_read existent
     $has_archived_column = false;
     try {
@@ -267,17 +286,14 @@ try {
 }
 ?>
 
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SMS Reçus — FrenchyConciergerie</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-</head>
-<body>
 <div class="container-fluid mt-4">
+
+<?php if ($rpi_error): ?>
+<div class="alert alert-danger">
+    <i class="fas fa-exclamation-triangle"></i>
+    Impossible de se connecter à la base SMS du Raspberry Pi : <?= htmlspecialchars($rpi_error) ?>
+</div>
+<?php endif; ?>
 
 <style>
 :root {
@@ -1035,7 +1051,7 @@ try {
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="msgModalLabel">Message</h5>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+        <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
             <span aria-hidden="true">&times;</span>
         </button>
       </div>
@@ -1044,7 +1060,7 @@ try {
       </div>
       <div class="modal-footer">
         <button id="copyFullBtn" type="button" class="btn btn-secondary">Copier</button>
-        <button type="button" class="btn btn-primary" data-dismiss="modal">Fermer</button>
+        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Fermer</button>
       </div>
     </div>
   </div>
@@ -1257,8 +1273,9 @@ document.addEventListener('DOMContentLoaded', () => {
             $('#msgModalLabel').textContent = viewBtn.dataset.title || 'Message';
             $('#msgFull').textContent = viewBtn.dataset.full || '';
             $('#copyFullBtn').dataset.copy = viewBtn.dataset.full || '';
-            if (typeof jQuery !== 'undefined' && typeof jQuery.fn.modal !== 'undefined') {
-                $('#msgModal').modal('show');
+            const msgModalEl = document.getElementById('msgModal');
+            if (msgModalEl) {
+                bootstrap.Modal.getOrCreateInstance(msgModalEl).show();
             }
         }
     });
@@ -1782,7 +1799,7 @@ function initListView() {
         <h5 class="modal-title" id="smsModalLabel">
           <i class="fas fa-paper-plane"></i> Envoyer un SMS
         </h5>
-        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+        <button type="button" class="close text-white" data-bs-dismiss="modal" aria-label="Close">
           <span aria-hidden="true">&times;</span>
         </button>
       </div>
@@ -1840,7 +1857,7 @@ function initListView() {
           <div id="modalAlert" class="alert d-none" role="alert"></div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-dismiss="modal">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
             <i class="fas fa-times"></i> Annuler
           </button>
           <button type="submit" class="btn btn-primary" id="modalSendBtn">
@@ -1853,7 +1870,7 @@ function initListView() {
 </div>
 
 <!-- Bouton flottant pour envoyer un SMS -->
-<button class="btn btn-primary btn-lg floating-btn" data-toggle="modal" data-target="#smsModal" title="Envoyer un SMS">
+<button class="btn btn-primary btn-lg floating-btn" data-bs-toggle="modal" data-bs-target="#smsModal" title="Envoyer un SMS">
   <i class="fas fa-plus"></i>
 </button>
 
@@ -1926,7 +1943,7 @@ function openSmsModal(phoneNumber, name) {
     messageField.dispatchEvent(new Event('input'));
   }
 
-  $('#smsModal').modal('show');
+  bootstrap.Modal.getOrCreateInstance(document.getElementById('smsModal')).show();
 }
 
 // Soumission du formulaire modal en AJAX
@@ -1955,7 +1972,7 @@ document.getElementById('smsForm').addEventListener('submit', function(e) {
     if (data.success) {
       // Réinitialiser le formulaire après 2 secondes
       setTimeout(() => {
-        $('#smsModal').modal('hide');
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('smsModal')).hide();
         document.getElementById('smsForm').reset();
         alertDiv.classList.add('d-none');
         document.getElementById('modal_message_counter').textContent = '0/160 caractères';
