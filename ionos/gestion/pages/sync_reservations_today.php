@@ -5,8 +5,7 @@ declare(strict_types=1);
 header('Content-Type: application/json; charset=utf-8');
 date_default_timezone_set('Europe/Paris');
 
-require_once '../config.php'; // $conn = LOCAL (Ionos)
-session_start();
+require_once '../config.php'; // $conn = LOCAL (Ionos) — démarre déjà la session
 
 $DEBUG   = isset($_GET['debug'])   && $_GET['debug'] === '1';
 $DRY_RUN = isset($_GET['dry_run']) && $_GET['dry_run'] === '1';
@@ -202,11 +201,13 @@ try {
         if ($findBySourceCheckout) {
             $findBySourceCheckout->execute([$resaId]);
             $existing = $findBySourceCheckout->fetch(PDO::FETCH_ASSOC) ?: null;
+            $findBySourceCheckout->closeCursor();
         }
         if (!$existing) {
             $like = "Auto: ménage de sortie (resa #{$resaId})%";
             $findByHeuristic->execute([$logId, $depart, $like]);
             $existing = $findByHeuristic->fetch(PDO::FETCH_ASSOC) ?: null;
+            $findByHeuristic->closeCursor();
         }
 
         $hadBefore = (bool)$existing;
@@ -253,7 +254,9 @@ try {
 
         // 0) si une intervention existe déjà aujourd'hui pour ce logement (créée manuellement ou via départ), on NE crée PAS.
         $findAnyToday->execute([$logId, $today]);
-        if ($findAnyToday->fetch()) {
+        $alreadyExists = $findAnyToday->fetch();
+        $findAnyToday->closeCursor();
+        if ($alreadyExists) {
             $skipped++;
             $report['arrivals'][] = [
                 'reservation_id'  => $resaId,
@@ -271,13 +274,15 @@ try {
         if ($findBySourceArrival) {
             $findBySourceArrival->execute([$resaId]);
             $existing = $findBySourceArrival->fetch(PDO::FETCH_ASSOC) ?: null;
+            $findBySourceArrival->closeCursor();
         }
 
         // 2) fallback heuristique “avant arrivée”
         if (!$existing) {
-            $like = "Auto: ménage avant arrivée (resa #{$resaId})%";
+            $like = “Auto: ménage avant arrivée (resa #{$resaId})%”;
             $findByHeuristic->execute([$logId, $today, $like]);
             $existing = $findByHeuristic->fetch(PDO::FETCH_ASSOC) ?: null;
+            $findByHeuristic->closeCursor();
         }
 
         $hadBefore = (bool)$existing;
