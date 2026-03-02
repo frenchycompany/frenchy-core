@@ -153,7 +153,7 @@ $findByHeuristic = $conn->prepare("
     LIMIT 1
 ");
 
-// existe-t-il déjà une intervention pour CE logement AUJOURD’HUI (peu importe la source/note) ?
+// existe-t-il déjà une intervention pour CE logement AUJOURD'HUI (peu importe la source/note) ?
 $findAnyToday = $conn->prepare("
     SELECT id FROM planning WHERE logement_id = ? AND date = ? LIMIT 1
 ");
@@ -282,9 +282,9 @@ try {
             $findBySourceArrival->closeCursor();
         }
 
-        // 2) fallback heuristique “avant arrivée”
+        // 2) fallback heuristique "avant arrivée"
         if (!$existing) {
-            $like = “Auto: ménage avant arrivée (resa #{$resaId})%”;
+            $like = "Auto: ménage avant arrivée (resa #{$resaId})%";
             $findByHeuristic->execute([$logId, $today, $like]);
             $existing = $findByHeuristic->fetch(PDO::FETCH_ASSOC) ?: null;
             $findByHeuristic->closeCursor();
@@ -297,13 +297,13 @@ try {
         if (!$hadBefore) {
             if (!$DRY_RUN) {
                 $params = [
-                    ‘:logement_id’=>$logId,
-                    ‘:date’=>$today,   // on planifie pour AUJOURD’HUI
-                    ‘:nb_pers’=>$nbPers,
-                    ‘:nb_jours’=>$nbJours,
-                    ‘:note’=>$note,
+                    ':logement_id'=>$logId,
+                    ':date'=>$today,   // on planifie pour AUJOURD'HUI
+                    ':nb_pers'=>$nbPers,
+                    ':nb_jours'=>$nbJours,
+                    ':note'=>$note,
                 ];
-                if ($pl_has_src_id) $params[‘:resa_id’] = $resaId;
+                if ($pl_has_src_id) $params[':resa_id'] = $resaId;
                 $insertPlanningArrival->execute($params);
                 $interventionId = (int)$conn->lastInsertId();
                 ensure_token_if_possible($conn, $interventionId, $tokens_table);
