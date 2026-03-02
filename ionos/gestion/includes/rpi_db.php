@@ -13,15 +13,18 @@ function getRpiPdo() {
         $name = env('RPI_DB_NAME', 'sms_db');
         $user = env('RPI_DB_USER', 'remote');
         $pass = env('RPI_DB_PASSWORD', 'remoteionos25');
+        $opts = [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_TIMEOUT => 5,
+        ];
+        if (defined('PDO::MYSQL_ATTR_CONNECT_TIMEOUT')) {
+            $opts[PDO::MYSQL_ATTR_CONNECT_TIMEOUT] = 5;
+        }
         $pdoRpi = new PDO(
             "mysql:host={$host};port={$port};dbname={$name};charset=utf8mb4",
             $user,
             $pass,
-            [
-                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-                PDO::ATTR_TIMEOUT => 5,
-                PDO::MYSQL_ATTR_CONNECT_TIMEOUT => 5,
-            ]
+            $opts
         );
     }
     return $pdoRpi;
