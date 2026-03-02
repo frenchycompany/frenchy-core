@@ -2,6 +2,10 @@
 // pages/sync_reservations_today.php
 declare(strict_types=1);
 
+// Forcer affichage erreurs AVANT tout include pour diagnostiquer les 500 vides
+ini_set('display_errors', '1');
+error_reporting(E_ALL);
+
 header('Content-Type: application/json; charset=utf-8');
 date_default_timezone_set('Europe/Paris');
 
@@ -14,14 +18,14 @@ $DRY_RUN = isset($_GET['dry_run']) && $_GET['dry_run'] === '1';
 register_shutdown_function(function() use ($DEBUG) {
     $e = error_get_last();
     if ($e && in_array($e['type'], [E_ERROR,E_PARSE,E_CORE_ERROR,E_COMPILE_ERROR,E_USER_ERROR])) {
-        http_response_code(500);
+        if (!headers_sent()) http_response_code(500);
         $payload = ['status'=>'error','message'=>'Fatal PHP'];
-        if ($DEBUG) $payload['ex'] = $e['message'].' in '.$e['file'].':'.$e['line'];
+        $payload['ex'] = $e['message'].' in '.$e['file'].':'.$e['line'];
         echo json_encode($payload);
     }
 });
+// En production, remettre display_errors à 0 après le shutdown handler
 ini_set('display_errors', '0');
-error_reporting(E_ALL);
 
 // helpers JSON
 function jerr(int $code, string $msg, array $extra = []) {
