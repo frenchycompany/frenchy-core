@@ -43,6 +43,10 @@ $absents = array_filter($allItems, fn($i) => $i['statut'] === 'absent');
 $oks = array_filter($allItems, fn($i) => $i['statut'] === 'ok');
 $nonVerifies = array_filter($allItems, fn($i) => $i['statut'] === 'non_verifie');
 
+// Taches traitees (liees a todo_list)
+$tachesFaites = array_filter($allItems, fn($i) => $i['categorie'] === 'Taches a faire' && $i['statut'] === 'ok');
+$tachesNonFaites = array_filter($allItems, fn($i) => $i['categorie'] === 'Taches a faire' && $i['statut'] !== 'ok');
+
 $total = count($allItems);
 $score = $total > 0 ? round((count($oks) / $total) * 100) : 0;
 ?>
@@ -283,6 +287,12 @@ $score = $total > 0 ? round((count($oks) / $total) * 100) : 0;
             <div class="number"><?= $score ?>%</div>
             <div class="label">Score</div>
         </div>
+        <?php if (count($tachesFaites) > 0 || count($tachesNonFaites) > 0): ?>
+        <div class="rp-score-card" style="border-top:3px solid #7b1fa2">
+            <div class="number" style="color:#7b1fa2"><?= count($tachesFaites) ?>/<?= count($tachesFaites) + count($tachesNonFaites) ?></div>
+            <div class="label">Taches</div>
+        </div>
+        <?php endif; ?>
     </div>
 
     <!-- Problemes signales -->
@@ -317,6 +327,39 @@ $score = $total > 0 ? round((count($oks) / $total) * 100) : 0;
                 <div class="item-name"><?= htmlspecialchars($a['nom_item']) ?></div>
                 <?php if ($a['commentaire']): ?>
                 <div class="item-comment"><?= htmlspecialchars($a['commentaire']) ?></div>
+                <?php endif; ?>
+            </div>
+        </div>
+        <?php endforeach; ?>
+    </div>
+    <?php endif; ?>
+
+    <!-- Taches traitees -->
+    <?php if (!empty($tachesFaites)): ?>
+    <div class="rp-alert" style="background:#f3e5f5; border-left:4px solid #7b1fa2;">
+        <h4 style="color:#7b1fa2"><i class="fas fa-tasks"></i> Taches realisees (<?= count($tachesFaites) ?>)</h4>
+        <?php foreach ($tachesFaites as $t): ?>
+        <div class="rp-alert-item">
+            <div>
+                <div class="item-name"><i class="fas fa-check" style="color:#43a047"></i> <?= htmlspecialchars($t['nom_item']) ?></div>
+                <?php if ($t['commentaire']): ?>
+                <div class="item-comment"><?= htmlspecialchars($t['commentaire']) ?></div>
+                <?php endif; ?>
+            </div>
+        </div>
+        <?php endforeach; ?>
+    </div>
+    <?php endif; ?>
+
+    <?php if (!empty($tachesNonFaites)): ?>
+    <div class="rp-alert rp-alert-warning">
+        <h4><i class="fas fa-clock"></i> Taches non realisees (<?= count($tachesNonFaites) ?>)</h4>
+        <?php foreach ($tachesNonFaites as $t): ?>
+        <div class="rp-alert-item">
+            <div>
+                <div class="item-name"><?= htmlspecialchars($t['nom_item']) ?></div>
+                <?php if ($t['commentaire']): ?>
+                <div class="item-comment"><?= htmlspecialchars($t['commentaire']) ?></div>
                 <?php endif; ?>
             </div>
         </div>

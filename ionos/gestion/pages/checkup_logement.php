@@ -1,7 +1,7 @@
 <?php
 /**
  * Checkup Logement — Lancement d'un checkup
- * La femme de menage choisit un logement et demarre un checkup complet
+ * Hub central : equipements + inventaire + taches + etat general
  */
 include '../config.php';
 include '../pages/menu.php';
@@ -17,6 +17,7 @@ try {
             nb_ok INT DEFAULT 0,
             nb_problemes INT DEFAULT 0,
             nb_absents INT DEFAULT 0,
+            nb_taches_faites INT DEFAULT 0,
             commentaire_general TEXT DEFAULT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -34,13 +35,53 @@ try {
             statut ENUM('ok','probleme','absent','non_verifie') DEFAULT 'non_verifie',
             commentaire TEXT DEFAULT NULL,
             photo_path VARCHAR(500) DEFAULT NULL,
+            todo_task_id INT DEFAULT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             INDEX idx_session (session_id),
             FOREIGN KEY (session_id) REFERENCES checkup_sessions(id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     ");
+
+    // Ajouter les colonnes manquantes sur tables existantes
+    try { $conn->exec("ALTER TABLE checkup_items ADD COLUMN todo_task_id INT DEFAULT NULL AFTER photo_path"); } catch (PDOException $e) {}
+    try { $conn->exec("ALTER TABLE checkup_sessions ADD COLUMN nb_taches_faites INT DEFAULT 0 AFTER nb_absents"); } catch (PDOException $e) {}
 } catch (PDOException $e) {
     // Tables existent deja
+}
+
+// AJAX : preview du logement quand on le selectionne
+if (isset($_GET['ajax_preview']) && isset($_GET['logement_id'])) {
+    header('Content-Type: application/json');
+    $lid = intval($_GET['logement_id']);
+
+    // Taches en attente
+    $stmt = $conn->prepare("SELECT COUNT(*) FROM todo_list WHERE logement_id = ? AND statut IN ('en attente','en cours')");
+    $stmt->execute([$lid]);
+    $nbTaches = $stmt->fetchColumn();
+
+    // Dernier inventaire
+    $stmt = $conn->prepare("SELECT s.date_creation, COUNT(o.id) AS nb_objets FROM sessions_inventaire s LEFT JOIN inventaire_objets o ON o.session_id = s.id WHERE s.logement_id = ? AND s.statut = 'terminee' GROUP BY s.id ORDER BY s.date_creation DESC LIMIT 1");
+    $stmt->execute([$lid]);
+    $lastInv = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    // Equipements renseignes
+    $stmt = $conn->prepare("SELECT COUNT(*) FROM logement_equipements WHERE logement_id = ?");
+    $stmt->execute([$lid]);
+    $hasEquip = $stmt->fetchColumn() > 0;
+
+    // Session en cours
+    $stmt = $conn->prepare("SELECT id FROM checkup_sessions WHERE logement_id = ? AND statut = 'en_cours' ORDER BY created_at DESC LIMIT 1");
+    $stmt->execute([$lid]);
+    $enCours = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    echo json_encode([
+        'nb_taches' => (int)$nbTaches,
+        'dernier_inventaire' => $lastInv ? date('d/m/Y', strtotime($lastInv['date_creation'])) : null,
+        'nb_objets_inventaire' => $lastInv ? (int)$lastInv['nb_objets'] : 0,
+        'has_equipements' => $hasEquip,
+        'session_en_cours' => $enCours ? $enCours['id'] : null,
+    ]);
+    exit;
 }
 
 // Traitement : creer une session de checkup
@@ -53,155 +94,121 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['logement_id'])) {
     $stmt->execute([$logement_id, $intervenant_id]);
     $session_id = $conn->lastInsertId();
 
-    // Generer les items a verifier depuis les equipements du logement
+    $insertStmt = $conn->prepare(
+        "INSERT INTO checkup_items (session_id, categorie, nom_item, todo_task_id) VALUES (?, ?, ?, ?)"
+    );
+
+    // === 1. EQUIPEMENTS ===
     $stmt = $conn->prepare("SELECT * FROM logement_equipements WHERE logement_id = ?");
     $stmt->execute([$logement_id]);
     $equip = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($equip) {
-        // Equipements cuisine
         $cuisine = [
-            'bouilloire' => 'Bouilloire',
-            'grille_pain' => 'Grille-pain',
-            'micro_ondes' => 'Micro-ondes',
-            'four' => 'Four',
-            'plaque_cuisson' => 'Plaques de cuisson',
-            'lave_vaisselle' => 'Lave-vaisselle',
-            'refrigerateur' => 'Refrigerateur',
-            'congelateur' => 'Congelateur',
+            'bouilloire' => 'Bouilloire', 'grille_pain' => 'Grille-pain',
+            'micro_ondes' => 'Micro-ondes', 'four' => 'Four',
+            'plaque_cuisson' => 'Plaques de cuisson', 'lave_vaisselle' => 'Lave-vaisselle',
+            'refrigerateur' => 'Refrigerateur', 'congelateur' => 'Congelateur',
             'ustensiles_cuisine' => 'Ustensiles de cuisine',
         ];
         if ($equip['machine_cafe_type'] && $equip['machine_cafe_type'] !== 'aucune') {
             $cuisine['machine_cafe_type'] = 'Machine a cafe (' . $equip['machine_cafe_type'] . ')';
         }
 
-        // Electromenager / entretien
-        $entretien = [
-            'machine_laver' => 'Machine a laver',
-            'seche_linge' => 'Seche-linge',
-            'fer_repasser' => 'Fer a repasser',
-            'table_repasser' => 'Table a repasser',
-            'aspirateur' => 'Aspirateur',
-            'produits_menage' => 'Produits menage',
-        ];
-
-        // Multimedia
-        $multimedia = [
-            'tv' => 'Television',
-            'enceinte_bluetooth' => 'Enceinte Bluetooth',
-            'console_jeux' => 'Console de jeux',
-        ];
-
-        // Mobilier
-        $mobilier = [
-            'canape' => 'Canape',
-            'canape_convertible' => 'Canape convertible',
-            'table_manger' => 'Table a manger',
-            'bureau' => 'Bureau',
-            'livres' => 'Livres',
-            'jeux_societe' => 'Jeux de societe',
-        ];
-
-        // Literie / linge
-        $literie = [
-            'linge_lit_fourni' => 'Linge de lit',
-            'serviettes_fournies' => 'Serviettes',
-            'oreillers_supplementaires' => 'Oreillers supplementaires',
-            'couvertures_supplementaires' => 'Couvertures supplementaires',
-        ];
-
-        // Salle de bain
-        $sdb = [
-            'baignoire' => 'Baignoire',
-            'douche' => 'Douche',
-            'seche_cheveux' => 'Seche-cheveux',
-            'produits_toilette' => 'Produits de toilette',
-        ];
-
-        // Chauffage / climatisation
-        $confort = [
-            'climatisation' => 'Climatisation',
-            'chauffage' => 'Chauffage',
-            'ventilateur' => 'Ventilateur',
-        ];
-
-        // Exterieur
-        $exterieur = [
-            'balcon' => 'Balcon',
-            'terrasse' => 'Terrasse',
-            'jardin' => 'Jardin',
-            'parking' => 'Parking',
-            'barbecue' => 'Barbecue',
-            'salon_jardin' => 'Salon de jardin',
-        ];
-
-        // Securite
-        $securite = [
-            'detecteur_fumee' => 'Detecteur de fumee',
-            'detecteur_co' => 'Detecteur CO',
-            'extincteur' => 'Extincteur',
-            'trousse_secours' => 'Trousse de secours',
-            'coffre_fort' => 'Coffre-fort',
-        ];
-
-        // Enfants
-        $enfants = [
-            'lit_bebe' => 'Lit bebe',
-            'chaise_haute' => 'Chaise haute',
-            'barriere_securite' => 'Barriere securite',
-            'jeux_enfants' => 'Jeux enfants',
-        ];
-
         $sections = [
             'Cuisine' => $cuisine,
-            'Entretien' => $entretien,
-            'Multimedia' => $multimedia,
-            'Mobilier' => $mobilier,
-            'Literie / Linge' => $literie,
-            'Salle de bain' => $sdb,
-            'Confort' => $confort,
-            'Exterieur' => $exterieur,
-            'Securite' => $securite,
-            'Enfants' => $enfants,
+            'Entretien' => [
+                'machine_laver' => 'Machine a laver', 'seche_linge' => 'Seche-linge',
+                'fer_repasser' => 'Fer a repasser', 'table_repasser' => 'Table a repasser',
+                'aspirateur' => 'Aspirateur', 'produits_menage' => 'Produits menage',
+            ],
+            'Multimedia' => [
+                'tv' => 'Television', 'enceinte_bluetooth' => 'Enceinte Bluetooth',
+                'console_jeux' => 'Console de jeux',
+            ],
+            'Mobilier' => [
+                'canape' => 'Canape', 'canape_convertible' => 'Canape convertible',
+                'table_manger' => 'Table a manger', 'bureau' => 'Bureau',
+                'livres' => 'Livres', 'jeux_societe' => 'Jeux de societe',
+            ],
+            'Literie / Linge' => [
+                'linge_lit_fourni' => 'Linge de lit', 'serviettes_fournies' => 'Serviettes',
+                'oreillers_supplementaires' => 'Oreillers supplementaires',
+                'couvertures_supplementaires' => 'Couvertures supplementaires',
+            ],
+            'Salle de bain' => [
+                'baignoire' => 'Baignoire', 'douche' => 'Douche',
+                'seche_cheveux' => 'Seche-cheveux', 'produits_toilette' => 'Produits de toilette',
+            ],
+            'Confort' => [
+                'climatisation' => 'Climatisation', 'chauffage' => 'Chauffage',
+                'ventilateur' => 'Ventilateur',
+            ],
+            'Exterieur' => [
+                'balcon' => 'Balcon', 'terrasse' => 'Terrasse', 'jardin' => 'Jardin',
+                'parking' => 'Parking', 'barbecue' => 'Barbecue', 'salon_jardin' => 'Salon de jardin',
+            ],
+            'Securite' => [
+                'detecteur_fumee' => 'Detecteur de fumee', 'detecteur_co' => 'Detecteur CO',
+                'extincteur' => 'Extincteur', 'trousse_secours' => 'Trousse de secours',
+                'coffre_fort' => 'Coffre-fort',
+            ],
+            'Enfants' => [
+                'lit_bebe' => 'Lit bebe', 'chaise_haute' => 'Chaise haute',
+                'barriere_securite' => 'Barriere securite', 'jeux_enfants' => 'Jeux enfants',
+            ],
         ];
-
-        $insertStmt = $conn->prepare(
-            "INSERT INTO checkup_items (session_id, categorie, nom_item) VALUES (?, ?, ?)"
-        );
 
         foreach ($sections as $categorie => $items) {
             foreach ($items as $field => $label) {
-                // N'ajouter que les equipements qui sont censes etre presents
                 if (isset($equip[$field]) && $equip[$field]) {
-                    $insertStmt->execute([$session_id, $categorie, $label]);
+                    $insertStmt->execute([$session_id, $categorie, $label, null]);
                 }
             }
         }
     }
 
-    // Ajouter les objets de l'inventaire (dernier inventaire valide)
+    // === 2. INVENTAIRE (dernier inventaire termine) ===
     $stmt = $conn->prepare("
-        SELECT io.nom_objet, io.quantite
+        SELECT io.nom_objet, io.quantite, io.piece
         FROM inventaire_objets io
         INNER JOIN sessions_inventaire si ON io.session_id = si.id
         WHERE si.logement_id = ? AND si.statut = 'terminee'
-        ORDER BY si.id DESC
+        ORDER BY si.date_creation DESC
     ");
     $stmt->execute([$logement_id]);
     $objets = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    $insertStmt = $conn->prepare(
-        "INSERT INTO checkup_items (session_id, categorie, nom_item) VALUES (?, ?, ?)"
-    );
     foreach ($objets as $obj) {
         $label = $obj['nom_objet'];
         if ($obj['quantite'] > 1) {
             $label .= ' (x' . $obj['quantite'] . ')';
         }
-        $insertStmt->execute([$session_id, 'Inventaire', $label]);
+        if ($obj['piece']) {
+            $label .= ' [' . $obj['piece'] . ']';
+        }
+        $insertStmt->execute([$session_id, 'Inventaire', $label, null]);
     }
 
-    // Ajouter les items d'etat general
+    // === 3. TACHES (todo_list en attente ou en cours) ===
+    $stmt = $conn->prepare("
+        SELECT id, description, date_limite, statut
+        FROM todo_list
+        WHERE logement_id = ? AND statut IN ('en attente', 'en cours')
+        ORDER BY date_limite ASC
+    ");
+    $stmt->execute([$logement_id]);
+    $taches = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    foreach ($taches as $t) {
+        $label = $t['description'];
+        if ($t['date_limite']) {
+            $label .= ' (avant le ' . date('d/m', strtotime($t['date_limite'])) . ')';
+        }
+        $insertStmt->execute([$session_id, 'Taches a faire', $label, $t['id']]);
+    }
+
+    // === 4. ETAT GENERAL ===
     $etatGeneral = [
         'Proprete generale du logement',
         'Odeurs (pas de mauvaises odeurs)',
@@ -216,7 +223,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['logement_id'])) {
         'Etat des cles / codes d\'acces',
     ];
     foreach ($etatGeneral as $item) {
-        $insertStmt->execute([$session_id, 'Etat general', $item]);
+        $insertStmt->execute([$session_id, 'Etat general', $item, null]);
     }
 
     // Rediriger vers la page de checkup
@@ -224,9 +231,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['logement_id'])) {
     exit;
 }
 
-// Recuperer les logements
+// Recuperer les logements avec infos rapides
 $logements = $conn->query("
-    SELECT id, nom_du_logement FROM liste_logements WHERE actif = 1 ORDER BY nom_du_logement
+    SELECT l.id, l.nom_du_logement,
+           (SELECT COUNT(*) FROM todo_list t WHERE t.logement_id = l.id AND t.statut IN ('en attente','en cours')) AS nb_taches
+    FROM liste_logements l
+    WHERE l.actif = 1
+    ORDER BY l.nom_du_logement
 ")->fetchAll(PDO::FETCH_ASSOC);
 
 // Recuperer les checkups recents
@@ -247,117 +258,77 @@ $recents = $conn->query("
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Checkup Logement</title>
     <style>
-        .checkup-container {
-            max-width: 600px;
-            margin: 20px auto;
-            padding: 0 15px;
-        }
+        .checkup-container { max-width: 600px; margin: 20px auto; padding: 0 15px; }
         .checkup-header {
             background: linear-gradient(135deg, #1976d2, #1565c0);
-            color: #fff;
-            text-align: center;
-            padding: 25px 15px;
-            border-radius: 15px;
-            margin-bottom: 25px;
+            color: #fff; text-align: center; padding: 25px 15px;
+            border-radius: 15px; margin-bottom: 25px;
         }
-        .checkup-header h2 {
-            margin: 0;
-            font-size: 1.4em;
-        }
-        .checkup-header p {
-            margin: 8px 0 0;
-            opacity: 0.85;
-            font-size: 0.95em;
-        }
+        .checkup-header h2 { margin: 0; font-size: 1.4em; }
+        .checkup-header p { margin: 8px 0 0; opacity: 0.85; font-size: 0.95em; }
         .launch-card {
-            background: #fff;
-            border-radius: 15px;
-            padding: 25px 20px;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-            margin-bottom: 25px;
+            background: #fff; border-radius: 15px; padding: 25px 20px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08); margin-bottom: 25px;
         }
-        .launch-card label {
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 10px;
-            display: block;
-            font-size: 1.05em;
-        }
+        .launch-card label { font-weight: 600; color: #333; margin-bottom: 10px; display: block; font-size: 1.05em; }
         .launch-card select {
-            width: 100%;
-            padding: 14px 12px;
-            font-size: 1.1em;
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
-            background: #fafafa;
-            margin-bottom: 18px;
-            appearance: auto;
+            width: 100%; padding: 14px 12px; font-size: 1.1em;
+            border: 2px solid #e0e0e0; border-radius: 10px;
+            background: #fafafa; margin-bottom: 12px; appearance: auto;
         }
-        .launch-card select:focus {
-            border-color: #1976d2;
-            outline: none;
+        .launch-card select:focus { border-color: #1976d2; outline: none; }
+        /* Preview logement */
+        .logement-preview {
+            display: none; background: #f8fafd; border-radius: 12px;
+            padding: 14px; margin-bottom: 15px; border: 1px solid #e3f2fd;
         }
+        .logement-preview.visible { display: block; }
+        .preview-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 6px 0; font-size: 0.92em;
+        }
+        .preview-row .label { color: #666; }
+        .preview-row .value { font-weight: 600; }
+        .preview-badge {
+            display: inline-block; padding: 3px 10px; border-radius: 15px;
+            font-size: 0.82em; font-weight: 600;
+        }
+        .badge-warning { background: #fff3e0; color: #e65100; }
+        .badge-ok { background: #e8f5e9; color: #2e7d32; }
+        .badge-info { background: #e3f2fd; color: #1565c0; }
+        .badge-none { background: #f5f5f5; color: #999; }
+        .preview-encours {
+            background: #fff3e0; border: 1px solid #ffcc80; border-radius: 10px;
+            padding: 10px 14px; margin-bottom: 10px; font-size: 0.9em; color: #e65100;
+        }
+        .preview-encours a { color: #1565c0; font-weight: 600; }
         .btn-launch {
-            width: 100%;
-            padding: 16px;
-            font-size: 1.15em;
-            font-weight: 700;
-            border: none;
-            border-radius: 12px;
+            width: 100%; padding: 16px; font-size: 1.15em; font-weight: 700;
+            border: none; border-radius: 12px;
             background: linear-gradient(135deg, #43a047, #388e3c);
-            color: #fff;
-            cursor: pointer;
-            transition: transform 0.1s;
+            color: #fff; cursor: pointer; transition: transform 0.1s;
         }
-        .btn-launch:active {
-            transform: scale(0.97);
-        }
-        .history-title {
-            font-size: 1.1em;
-            font-weight: 600;
-            color: #555;
-            margin-bottom: 12px;
-        }
+        .btn-launch:active { transform: scale(0.97); }
+        .history-title { font-size: 1.1em; font-weight: 600; color: #555; margin-bottom: 12px; }
         .history-card {
-            background: #fff;
-            border-radius: 12px;
-            padding: 15px 18px;
-            box-shadow: 0 1px 6px rgba(0,0,0,0.06);
-            margin-bottom: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            text-decoration: none;
-            color: inherit;
-            transition: box-shadow 0.15s;
+            background: #fff; border-radius: 12px; padding: 15px 18px;
+            box-shadow: 0 1px 6px rgba(0,0,0,0.06); margin-bottom: 12px;
+            display: flex; justify-content: space-between; align-items: center;
+            text-decoration: none; color: inherit; transition: box-shadow 0.15s;
         }
-        .history-card:hover {
-            box-shadow: 0 2px 12px rgba(0,0,0,0.12);
-        }
-        .history-info h4 {
-            margin: 0 0 4px;
-            font-size: 1em;
-            color: #333;
-        }
-        .history-info small {
-            color: #888;
-        }
-        .history-stats {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-        }
+        .history-card:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.12); }
+        .history-info h4 { margin: 0 0 4px; font-size: 1em; color: #333; }
+        .history-info small { color: #888; }
+        .history-stats { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
         .stat-badge {
-            display: inline-block;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 0.82em;
-            font-weight: 600;
+            display: inline-block; padding: 4px 10px;
+            border-radius: 20px; font-size: 0.82em; font-weight: 600;
         }
         .stat-ok { background: #e8f5e9; color: #2e7d32; }
         .stat-problem { background: #fbe9e7; color: #c62828; }
         .stat-absent { background: #fff3e0; color: #e65100; }
         .stat-encours { background: #e3f2fd; color: #1565c0; }
+        .stat-taches { background: #f3e5f5; color: #7b1fa2; }
         @media (max-width: 600px) {
             .checkup-container { margin: 10px auto; }
             .checkup-header { padding: 18px 10px; }
@@ -369,18 +340,43 @@ $recents = $conn->query("
 <div class="checkup-container">
     <div class="checkup-header">
         <h2><i class="fas fa-clipboard-check"></i> Checkup Logement</h2>
-        <p>Verification complete : equipements, inventaire, etat general</p>
+        <p>Equipements + Inventaire + Taches + Etat general</p>
     </div>
 
     <div class="launch-card">
         <form method="POST">
             <label for="logement_id"><i class="fas fa-home"></i> Choisir un logement</label>
-            <select name="logement_id" id="logement_id" required>
+            <select name="logement_id" id="logement_id" required onchange="loadPreview(this.value)">
                 <option value="">-- Selectionnez --</option>
                 <?php foreach ($logements as $l): ?>
-                    <option value="<?= $l['id'] ?>"><?= htmlspecialchars($l['nom_du_logement']) ?></option>
+                    <option value="<?= $l['id'] ?>"
+                        <?= $l['nb_taches'] > 0 ? 'data-taches="' . $l['nb_taches'] . '"' : '' ?>>
+                        <?= htmlspecialchars($l['nom_du_logement']) ?>
+                        <?= $l['nb_taches'] > 0 ? ' (' . $l['nb_taches'] . ' tache' . ($l['nb_taches'] > 1 ? 's' : '') . ')' : '' ?>
+                    </option>
                 <?php endforeach; ?>
             </select>
+
+            <div class="logement-preview" id="preview">
+                <div id="previewEnCours" class="preview-encours" style="display:none">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Un checkup est deja en cours pour ce logement.
+                    <a id="linkEnCours" href="#">Reprendre</a> ou lancer un nouveau.
+                </div>
+                <div class="preview-row">
+                    <span class="label"><i class="fas fa-tasks"></i> Taches en attente</span>
+                    <span class="value" id="prevTaches">—</span>
+                </div>
+                <div class="preview-row">
+                    <span class="label"><i class="fas fa-boxes-stacked"></i> Dernier inventaire</span>
+                    <span class="value" id="prevInventaire">—</span>
+                </div>
+                <div class="preview-row">
+                    <span class="label"><i class="fas fa-couch"></i> Equipements</span>
+                    <span class="value" id="prevEquip">—</span>
+                </div>
+            </div>
+
             <button type="submit" class="btn-launch">
                 <i class="fas fa-play-circle"></i> Lancer le checkup
             </button>
@@ -402,11 +398,56 @@ $recents = $conn->query("
                     <?php if ($r['nb_ok'] > 0): ?><span class="stat-badge stat-ok"><?= $r['nb_ok'] ?> OK</span><?php endif; ?>
                     <?php if ($r['nb_problemes'] > 0): ?><span class="stat-badge stat-problem"><?= $r['nb_problemes'] ?> pb</span><?php endif; ?>
                     <?php if ($r['nb_absents'] > 0): ?><span class="stat-badge stat-absent"><?= $r['nb_absents'] ?> abs</span><?php endif; ?>
+                    <?php if ($r['nb_taches_faites'] > 0): ?><span class="stat-badge stat-taches"><?= $r['nb_taches_faites'] ?> taches</span><?php endif; ?>
                 <?php endif; ?>
             </div>
         </a>
     <?php endforeach; ?>
     <?php endif; ?>
 </div>
+
+<script>
+function loadPreview(logementId) {
+    var preview = document.getElementById('preview');
+    if (!logementId) { preview.classList.remove('visible'); return; }
+
+    fetch('checkup_logement.php?ajax_preview=1&logement_id=' + logementId)
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            preview.classList.add('visible');
+
+            // Taches
+            var tEl = document.getElementById('prevTaches');
+            if (data.nb_taches > 0) {
+                tEl.innerHTML = '<span class="preview-badge badge-warning">' + data.nb_taches + ' en attente</span>';
+            } else {
+                tEl.innerHTML = '<span class="preview-badge badge-ok">Aucune</span>';
+            }
+
+            // Inventaire
+            var iEl = document.getElementById('prevInventaire');
+            if (data.dernier_inventaire) {
+                iEl.innerHTML = '<span class="preview-badge badge-info">' + data.dernier_inventaire + ' (' + data.nb_objets_inventaire + ' obj.)</span>';
+            } else {
+                iEl.innerHTML = '<span class="preview-badge badge-none">Jamais fait</span>';
+            }
+
+            // Equipements
+            var eEl = document.getElementById('prevEquip');
+            eEl.innerHTML = data.has_equipements
+                ? '<span class="preview-badge badge-ok">Renseignes</span>'
+                : '<span class="preview-badge badge-none">Non renseignes</span>';
+
+            // Session en cours
+            var ecDiv = document.getElementById('previewEnCours');
+            if (data.session_en_cours) {
+                ecDiv.style.display = 'block';
+                document.getElementById('linkEnCours').href = 'checkup_faire.php?session_id=' + data.session_en_cours;
+            } else {
+                ecDiv.style.display = 'none';
+            }
+        });
+}
+</script>
 </body>
 </html>

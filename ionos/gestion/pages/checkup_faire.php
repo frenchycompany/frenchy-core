@@ -64,6 +64,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
         $stmt->execute([$statut, $commentaire, $item_id, $session_id]);
     }
 
+    // Synchroniser avec todo_list si c'est une tache liee
+    $stmt = $conn->prepare("SELECT todo_task_id FROM checkup_items WHERE id = ? AND session_id = ?");
+    $stmt->execute([$item_id, $session_id]);
+    $taskRow = $stmt->fetch(PDO::FETCH_ASSOC);
+    if ($taskRow && $taskRow['todo_task_id']) {
+        $todoStatut = ($statut === 'ok') ? 'terminée' : 'en cours';
+        $stmt = $conn->prepare("UPDATE todo_list SET statut = ? WHERE id = ?");
+        $stmt->execute([$todoStatut, $taskRow['todo_task_id']]);
+    }
+
     echo json_encode(['success' => true, 'photo_path' => $photo_path]);
     exit;
 }
@@ -80,12 +90,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['terminer'])) {
         $stats[$row['statut']] = $row['nb'];
     }
 
+    // Compter les taches todo_list marquees OK
+    $stmt = $conn->prepare("SELECT COUNT(*) FROM checkup_items WHERE session_id = ? AND todo_task_id IS NOT NULL AND statut = 'ok'");
+    $stmt->execute([$session_id]);
+    $nbTachesFaites = $stmt->fetchColumn();
+
     $stmt = $conn->prepare("
         UPDATE checkup_sessions
         SET statut = 'termine',
             nb_ok = ?,
             nb_problemes = ?,
             nb_absents = ?,
+            nb_taches_faites = ?,
             commentaire_general = ?
         WHERE id = ?
     ");
@@ -93,6 +109,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['terminer'])) {
         $stats['ok'] ?? 0,
         $stats['probleme'] ?? 0,
         $stats['absent'] ?? 0,
+        $nbTachesFaites,
         $commentaire_general,
         $session_id
     ]);
@@ -373,6 +390,26 @@ $progress = $total > 0 ? round(($done / $total) * 100) : 0;
         <div class="progress-text" id="progressText"><?= $done ?> / <?= $total ?> verifies (<?= $progress ?>%)</div>
     </div>
 
+    <!-- Raccourcis rapides -->
+    <div style="display:flex; gap:8px; margin:12px 0;">
+        <a href="inventaire_saisie.php?session_id=<?php
+            // Trouver la derniere session inventaire en cours pour ce logement
+            $invStmt = $conn->prepare("SELECT id FROM sessions_inventaire WHERE logement_id = ? AND statut = 'en_cours' ORDER BY date_creation DESC LIMIT 1");
+            $invStmt->execute([$session['logement_id']]);
+            $invSession = $invStmt->fetch(PDO::FETCH_ASSOC);
+            echo $invSession ? urlencode($invSession['id']) : '';
+        ?>" style="flex:1; padding:10px; background:#e3f2fd; color:#1565c0; border-radius:10px; text-align:center; text-decoration:none; font-weight:600; font-size:0.88em;"
+        <?= $invSession ? '' : 'onclick="event.preventDefault(); if(confirm(\'Pas d\\\'inventaire en cours. Lancer un nouvel inventaire ?\')) window.location.href=\'inventaire_lancer.php\';"' ?>>
+            <i class="fas fa-boxes-stacked"></i> Inventaire
+        </a>
+        <a href="todo.php?logement_id=<?= $session['logement_id'] ?>" style="flex:1; padding:10px; background:#f3e5f5; color:#7b1fa2; border-radius:10px; text-align:center; text-decoration:none; font-weight:600; font-size:0.88em;">
+            <i class="fas fa-tasks"></i> Taches
+        </a>
+        <a href="logement_equipements.php?id=<?= $session['logement_id'] ?>" style="flex:1; padding:10px; background:#e8f5e9; color:#2e7d32; border-radius:10px; text-align:center; text-decoration:none; font-weight:600; font-size:0.88em;">
+            <i class="fas fa-couch"></i> Equipements
+        </a>
+    </div>
+
     <?php foreach ($categories as $catName => $items): ?>
     <?php
         $catDone = 0;
@@ -389,6 +426,7 @@ $progress = $total > 0 ? round(($done / $total) * 100) : 0;
             'Securite' => 'fa-shield-alt',
             'Enfants' => 'fa-baby',
             'Inventaire' => 'fa-boxes-stacked',
+            'Taches a faire' => 'fa-tasks',
             'Etat general' => 'fa-search',
             default => 'fa-check-circle'
         };
