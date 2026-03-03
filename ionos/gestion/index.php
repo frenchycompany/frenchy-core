@@ -196,7 +196,7 @@ $totalPages = ceil($totalInterventions / $itemsPerPage);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Accueil</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap CSS/JS déjà chargés par menu.php -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
@@ -316,7 +316,6 @@ $totalPages = ceil($totalInterventions / $itemsPerPage);
     <h3>Tableau de bord</h3>
     <canvas id="dashboardChart" aria-label="Graphique de la paie et des interventions" role="img"></canvas>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     // Rafraîchissement périodique des notifications
     setInterval(function() {
