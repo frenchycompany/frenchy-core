@@ -155,8 +155,10 @@ foreach ($logements as $lg) {
 
         // Extraire prénom, plateforme et référence
         // Format attendu: "Prénom - Plateforme - Référence"
+        // Note: \s+-\s+ exige des espaces autour du séparateur "-"
+        // pour ne pas confondre avec les prénoms composés (Lou-Ann, Jean-Pierre…)
         if (!preg_match(
-            '/^(?<prenom>[^-]+)\s*-\s*(?<platform>[^-]+?)\s*-\s*(?<ref>\d+)$/iu',
+            '/^(?<prenom>.+?)\s+-\s+(?<platform>.+?)\s+-\s+(?<ref>\d+)$/iu',
             $summary,
             $m
         )) {
