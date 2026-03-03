@@ -78,6 +78,18 @@ $pl_has_src_id    = column_exists($conn,'planning','source_reservation_id');
 $pl_has_src_type  = column_exists($conn,'planning','source_type');
 $tokens_table     = table_exists($conn,'intervention_tokens');
 
+// Vérifier si la base locale a aussi une table reservation (réservations importées via iCal)
+$localHasReservation = table_exists($conn, 'reservation');
+$localNbPersExpr = '0';
+if ($localHasReservation) {
+    $hasNb = column_exists($conn, 'reservation', 'nb_adultes')
+          && column_exists($conn, 'reservation', 'nb_enfants')
+          && column_exists($conn, 'reservation', 'nb_bebes');
+    if ($hasNb) {
+        $localNbPersExpr = '(COALESCE(r.nb_adultes,0) + COALESCE(r.nb_enfants,0) + COALESCE(r.nb_bebes,0))';
+    }
+}
+
 // Lire les DEPARTS du jour (REMOTE)
 try {
     $sqlDeps = "
@@ -100,6 +112,36 @@ try {
     jerr(500, 'Erreur SQL lecture départs (REMOTE)', $DEBUG?['ex'=>$e->getMessage()]:[]);
 }
 
+// Fusionner avec les départs de la base LOCALE (réservations importées via iCal)
+if ($localHasReservation) {
+    try {
+        $sqlLocalDeps = "
+            SELECT
+                r.id AS resa_id,
+                r.logement_id AS logement_id,
+                DATE(r.date_arrivee) AS date_arrivee,
+                DATE(r.date_depart)  AS date_depart,
+                {$localNbPersExpr} AS nb_pers,
+                GREATEST(DATEDIFF(r.date_depart, r.date_arrivee), 0) AS nb_jours
+            FROM reservation r
+            WHERE r.statut = 'confirmée'
+              AND DATE(r.date_depart) = :today
+            ORDER BY r.date_depart ASC
+        ";
+        $stLD = $conn->prepare($sqlLocalDeps);
+        $stLD->execute([':today' => $today]);
+        $localDeps = $stLD->fetchAll(PDO::FETCH_ASSOC);
+        // Dédupliquer par logement_id + date (un logement ne peut avoir qu'un départ par jour)
+        $remoteKeys = array_map(fn($d) => $d['logement_id'] . '_' . $d['date_depart'], $deps);
+        foreach ($localDeps as $ld) {
+            if (!in_array($ld['logement_id'] . '_' . $ld['date_depart'], $remoteKeys)) {
+                $ld['_source'] = 'LOCAL';
+                $deps[] = $ld;
+            }
+        }
+    } catch (Throwable $e) { /* table locale incompatible, on ignore */ }
+}
+
 // Lire les ARRIVÉES du jour (REMOTE)
 try {
     $sqlArrs = "
@@ -120,6 +162,35 @@ try {
     $arrs = $stArrs->fetchAll(PDO::FETCH_ASSOC);
 } catch (Throwable $e) {
     jerr(500, 'Erreur SQL lecture arrivées (REMOTE)', $DEBUG?['ex'=>$e->getMessage()]:[]);
+}
+
+// Fusionner avec les arrivées de la base LOCALE (réservations importées via iCal)
+if ($localHasReservation) {
+    try {
+        $sqlLocalArrs = "
+            SELECT
+                r.id AS resa_id,
+                r.logement_id AS logement_id,
+                DATE(r.date_arrivee) AS date_arrivee,
+                DATE(r.date_depart)  AS date_depart,
+                {$localNbPersExpr} AS nb_pers,
+                GREATEST(DATEDIFF(r.date_depart, r.date_arrivee), 0) AS nb_jours
+            FROM reservation r
+            WHERE r.statut = 'confirmée'
+              AND DATE(r.date_arrivee) = :today
+            ORDER BY r.date_arrivee ASC
+        ";
+        $stLA = $conn->prepare($sqlLocalArrs);
+        $stLA->execute([':today' => $today]);
+        $localArrs = $stLA->fetchAll(PDO::FETCH_ASSOC);
+        $remoteArrKeys = array_map(fn($a) => $a['logement_id'] . '_' . $a['date_arrivee'], $arrs);
+        foreach ($localArrs as $la) {
+            if (!in_array($la['logement_id'] . '_' . $la['date_arrivee'], $remoteArrKeys)) {
+                $la['_source'] = 'LOCAL';
+                $arrs[] = $la;
+            }
+        }
+    } catch (Throwable $e) { /* table locale incompatible, on ignore */ }
 }
 
 // helper : token si possible
@@ -198,7 +269,8 @@ try {
         $depart  = $r['date_depart']; // = today
         $nbPers  = max(0, (int)$r['nb_pers']);
         $nbJours = max(0, (int)$r['nb_jours']);
-        $note    = "Auto: ménage de sortie (resa #{$resaId}) [REMOTE]";
+        $srcLabel = $r['_source'] ?? 'REMOTE';
+        $note    = "Auto: ménage de sortie (resa #{$resaId}) [{$srcLabel}]";
 
         $existing = null;
 
@@ -255,7 +327,8 @@ try {
         $arrivee = $r['date_arrivee']; // = today
         $nbPers  = max(0, (int)$r['nb_pers']);
         $nbJours = max(0, (int)$r['nb_jours']);
-        $note    = "Auto: ménage avant arrivée (resa #{$resaId}) [REMOTE]";
+        $srcLabel = $r['_source'] ?? 'REMOTE';
+        $note    = "Auto: ménage avant arrivée (resa #{$resaId}) [{$srcLabel}]";
 
         // 0) si une intervention existe déjà aujourd'hui pour ce logement (créée manuellement ou via départ), on NE crée PAS.
         $findAnyToday->execute([$logId, $today]);
@@ -335,7 +408,7 @@ try {
         'details'   => $report,
         'mode'      => ($pl_has_src_id && $pl_has_src_type) ? 'with_source_keys' : 'compat',
         'tokens'    => $tokens_table ? 'used' : 'skipped_no_table',
-        'source'    => 'REMOTE:sms_db.reservation',
+        'source'    => 'REMOTE:sms_db.reservation + LOCAL:frenchyconciergerie.reservation',
         'target'    => 'LOCAL:planning'
     ]);
 } catch (Throwable $e) {
