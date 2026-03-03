@@ -14,9 +14,8 @@ if ($selectedIntervenant === false || $selectedIntervenant === null) {
     $selectedIntervenant = 0; // 0 = Tout le monde
 }
 
-// Détermination du domaine pour générer les liens
-$domain = env('APP_URL', 'https://gestion.frenchyconciergerie.fr');
-$domain = rtrim($domain, '/');
+// Domaine pour les liens WhatsApp (toujours le vrai domaine, jamais une IP)
+$domain = 'https://gestion.frenchyconciergerie.fr';
 
 try {
     // Construction dynamique de la requête pour filtrer par intervenant si besoin
