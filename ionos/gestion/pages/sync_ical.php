@@ -10,6 +10,14 @@ require_once __DIR__ . '/../includes/rpi_bridge.php';
 $messages = '';
 $logements_sync = [];
 
+// Handler du bouton "Synchroniser maintenant"
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['sync_all'])) {
+    validateCsrfToken();
+    $script = __DIR__ . '/../../raspberry-pi/scripts/sync_reservations.php';
+    $output = shell_exec('php ' . escapeshellarg($script) . ' 2>&1');
+    $messages = $output ?: 'Synchronisation terminée (aucune sortie)';
+}
+
 // Récupérer les logements avec URL iCal configurée
 try {
     $logements_sync = $pdo->query("
