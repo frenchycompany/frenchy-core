@@ -96,7 +96,7 @@ if ($role !== 'admin') {
 
                 <!-- Réservations & Sync -->
                 <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle <?= in_array($currentFile, ['reservations.php','sync_ical.php','occupation.php']) ? 'active' : '' ?>"
+                    <a class="nav-link dropdown-toggle <?= in_array($currentFile, ['reservations.php','sync_ical.php','occupation.php','import_reservations.php']) ? 'active' : '' ?>"
                        href="#" data-bs-toggle="dropdown">
                         <i class="fas fa-calendar-check"></i> Réservations
                     </a>
@@ -107,6 +107,9 @@ if ($role !== 'admin') {
                             <i class="fas fa-sync-alt"></i> Synchronisation iCal</a></li>
                         <li><a class="dropdown-item" href="<?= BASE_URL ?>pages/occupation.php">
                             <i class="fas fa-chart-pie"></i> Taux d'occupation</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="<?= BASE_URL ?>pages/import_reservations.php">
+                            <i class="fas fa-file-import"></i> Import CSV</a></li>
                     </ul>
                 </li>
 
