@@ -124,8 +124,8 @@ $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
 $totalRentabilite = array_sum(array_column($results, 'rentabilite'));
 
 // Pour les listes déroulantes
-$logements    = $conn->query("SELECT DISTINCT nom_du_logement FROM liste_logements")->fetchAll(PDO::FETCH_ASSOC);
-$intervenants = $conn->query("SELECT DISTINCT nom FROM intervenant")->fetchAll(PDO::FETCH_ASSOC);
+$logements    = $conn->query("SELECT DISTINCT nom_du_logement FROM liste_logements WHERE actif = 1 ORDER BY nom_du_logement")->fetchAll(PDO::FETCH_ASSOC);
+$intervenants = $conn->query("SELECT DISTINCT nom FROM intervenant WHERE actif = 1 ORDER BY nom")->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="fr">

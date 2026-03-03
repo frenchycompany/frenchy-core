@@ -9,7 +9,20 @@ if ($_SESSION['role'] !== 'admin') {
     exit;
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+// Auto-migration : colonne actif pour intervenant
+try {
+    $conn->exec("ALTER TABLE intervenant ADD COLUMN actif TINYINT(1) NOT NULL DEFAULT 1");
+} catch (PDOException $e) { /* colonne existe déjà */ }
+
+// Toggle actif/inactif
+if (isset($_POST['toggle_actif'])) {
+    $tid = (int)$_POST['toggle_actif'];
+    $conn->prepare("UPDATE intervenant SET actif = NOT actif WHERE id = ?")->execute([$tid]);
+    header("Location: intervenants.php");
+    exit;
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['toggle_actif'])) {
     // Récupération des données du formulaire
     $intervenant_id = filter_input(INPUT_POST, 'intervenant_id', FILTER_VALIDATE_INT);
     $nom = filter_input(INPUT_POST, 'nom', FILTER_SANITIZE_STRING);
@@ -58,7 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Récupération de tous les intervenants
-$query = $conn->query("SELECT * FROM intervenant");
+$query = $conn->query("SELECT * FROM intervenant ORDER BY actif DESC, nom ASC");
 $intervenants = $query->fetchAll(PDO::FETCH_ASSOC);
 
 // Liste des rôles disponibles
@@ -92,6 +105,7 @@ $pages_disponibles = $stmt->fetchAll(PDO::FETCH_KEY_PAIR); // Associe ID à chem
             <th>Rôle 2</th>
             <th>Rôle 3</th>
             <th>Pages Accessibles</th>
+            <th>Statut</th>
             <th>Action</th>
         </tr>
         </thead>
@@ -157,9 +171,22 @@ $pages_disponibles = $stmt->fetchAll(PDO::FETCH_KEY_PAIR); // Associe ID à chem
                         <?php endforeach; ?>
                     </td>
                     <td>
-                        <button type="submit" class="btn btn-primary">Modifier</button>
+                        <?php if (!empty($intervenant['actif'])): ?>
+                            <span class="badge badge-success text-bg-success">Actif</span>
+                        <?php else: ?>
+                            <span class="badge badge-secondary text-bg-secondary">Inactif</span>
+                        <?php endif; ?>
                     </td>
+                    <td>
+                        <button type="submit" class="btn btn-primary btn-sm">Modifier</button>
                 </form>
+                        <form method="POST" style="display:inline">
+                            <input type="hidden" name="toggle_actif" value="<?= $intervenant['id'] ?>">
+                            <button type="submit" class="btn btn-sm <?= !empty($intervenant['actif']) ? 'btn-outline-warning' : 'btn-outline-success' ?>" onclick="return confirm('<?= !empty($intervenant['actif']) ? 'Désactiver' : 'Réactiver' ?> cet intervenant ?')">
+                                <?= !empty($intervenant['actif']) ? 'Désactiver' : 'Activer' ?>
+                            </button>
+                        </form>
+                    </td>
             </tr>
         <?php endforeach; ?>
         </tbody>

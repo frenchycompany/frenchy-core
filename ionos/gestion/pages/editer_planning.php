@@ -3,7 +3,10 @@ include '../config.php'; // Connexion à la base de données
 include '../pages/menu.php'; // Inclusion du menu
 
 // Récupération de la liste des intervenants pour le <select>
-$intervStmt = $conn->prepare("SELECT id, nom FROM intervenant ORDER BY nom");
+// Auto-migration : colonne actif pour intervenant
+try { $conn->exec("ALTER TABLE intervenant ADD COLUMN actif TINYINT(1) NOT NULL DEFAULT 1"); } catch (PDOException $e) {}
+
+$intervStmt = $conn->prepare("SELECT id, nom FROM intervenant WHERE actif = 1 ORDER BY nom");
 $intervStmt->execute();
 $intervenantsList = $intervStmt->fetchAll(PDO::FETCH_ASSOC);
 

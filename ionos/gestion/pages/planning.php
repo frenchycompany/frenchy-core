@@ -14,6 +14,11 @@ if (!isset($_SESSION['role'])) {
 
 $is_admin = ($_SESSION['role'] === 'admin');
 
+// Auto-migration : colonne actif pour intervenant
+try {
+    $conn->exec("ALTER TABLE intervenant ADD COLUMN actif TINYINT(1) NOT NULL DEFAULT 1");
+} catch (PDOException $e) { /* colonne existe déjà */ }
+
 // ---------------------------------------------------------------------
 // BONUS/COMPTA : enregistre le bonus fixe 10€ (5€ pour F1, 5€ pour F2)
 // - supprime d'abord les anciens bonus liés à l'intervention
@@ -54,10 +59,54 @@ function handleBonus(PDO $conn, int $planningId, bool $hasBonus, ?int $f1, ?int 
 
 // ---------------------------------------------------------------------
 
-// Filtres de période et de statut
-$date_debut    = isset($_GET['date_debut']) ? $_GET['date_debut'] : date('Y-m-01');
-$date_fin      = isset($_GET['date_fin']) ? $_GET['date_fin'] : date('Y-m-t');
-$statut_filter = isset($_GET['statut_filter']) ? $_GET['statut_filter'] : 'all';
+// Filtres de période, de statut et de logement
+$date_debut      = isset($_GET['date_debut']) ? $_GET['date_debut'] : date('Y-m-01');
+$date_fin        = isset($_GET['date_fin']) ? $_GET['date_fin'] : date('Y-m-t');
+$statut_filter   = isset($_GET['statut_filter']) ? $_GET['statut_filter'] : 'all';
+$logement_filter = isset($_GET['logement_filter']) ? (int)$_GET['logement_filter'] : 0;
+
+// --- Export CSV ---
+if (isset($_GET['export_csv']) && $_GET['export_csv'] === '1') {
+    $csvQuery = "
+        SELECT p.date, l.nom_du_logement, p.nombre_de_personnes, p.nombre_de_jours_reservation,
+               p.statut, c.nom AS conducteur_nom, fm1.nom AS femme1_nom, fm2.nom AS femme2_nom,
+               lav.nom AS laverie_nom, p.note,
+               CASE WHEN p.lit_bebe=1 THEN 'Oui' ELSE 'Non' END AS lit_bebe,
+               CASE WHEN p.early_check_in=1 THEN 'Oui' ELSE 'Non' END AS early_check_in,
+               CASE WHEN p.late_check_out=1 THEN 'Oui' ELSE 'Non' END AS late_check_out,
+               CASE WHEN p.bonus=1 THEN 'Oui' ELSE 'Non' END AS bonus
+        FROM planning p
+        JOIN liste_logements l ON p.logement_id = l.id
+        LEFT JOIN intervenant c ON p.conducteur = c.id
+        LEFT JOIN intervenant fm1 ON p.femme_de_menage_1 = fm1.id
+        LEFT JOIN intervenant fm2 ON p.femme_de_menage_2 = fm2.id
+        LEFT JOIN intervenant lav ON p.laverie = lav.id
+        WHERE p.date BETWEEN ? AND ?
+    ";
+    $csvParams = [$date_debut, $date_fin];
+    if ($statut_filter !== 'all' && $statut_filter !== '') {
+        $csvQuery .= " AND p.statut = ? ";
+        $csvParams[] = $statut_filter;
+    }
+    if ($logement_filter > 0) {
+        $csvQuery .= " AND p.logement_id = ? ";
+        $csvParams[] = $logement_filter;
+    }
+    $csvQuery .= " ORDER BY p.date ASC";
+    $csvStmt = $conn->prepare($csvQuery);
+    $csvStmt->execute($csvParams);
+    $csvRows = $csvStmt->fetchAll(PDO::FETCH_ASSOC);
+
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename="planning_' . $date_debut . '_' . $date_fin . '.csv"');
+    $out = fopen('php://output', 'w');
+    fputcsv($out, ['Date', 'Logement', 'Personnes', 'Jours', 'Statut', 'Conducteur', 'Femme 1', 'Femme 2', 'Laverie', 'Note', 'Lit bébé', 'Early Check-in', 'Late Check-out', 'Bonus'], ';');
+    foreach ($csvRows as $row) {
+        fputcsv($out, array_values($row), ';');
+    }
+    fclose($out);
+    exit;
+}
 
 // Gestion des actions individuelles (hors bulk update)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['bulk_update'])) {
@@ -219,8 +268,8 @@ $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
 $offset = ($page - 1) * $limit;
 
 $countQuery = "
-    SELECT COUNT(*) 
-    FROM planning p 
+    SELECT COUNT(*)
+    FROM planning p
     JOIN liste_logements l ON p.logement_id = l.id
     WHERE p.date BETWEEN ? AND ?
 ";
@@ -228,6 +277,10 @@ $countParams = [$date_debut, $date_fin];
 if ($statut_filter !== 'all' && $statut_filter !== '') {
     $countQuery .= " AND p.statut = ? ";
     $countParams[] = $statut_filter;
+}
+if ($logement_filter > 0) {
+    $countQuery .= " AND p.logement_id = ? ";
+    $countParams[] = $logement_filter;
 }
 $countStmt = $conn->prepare($countQuery);
 $countStmt->execute($countParams);
@@ -255,6 +308,10 @@ if ($statut_filter !== 'all' && $statut_filter !== '') {
     $query .= " AND p.statut = ? ";
     $params[] = $statut_filter;
 }
+if ($logement_filter > 0) {
+    $query .= " AND p.logement_id = ? ";
+    $params[] = $logement_filter;
+}
 $query .= " ORDER BY p.date ASC LIMIT ? OFFSET ? ";
 $params[] = $limit;
 $params[] = $offset;
@@ -268,8 +325,26 @@ for ($i = 0; $i < count($params)-2; $i++) {
 $stmt->execute();
 $interventions = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-$logements = $conn->query("SELECT id, nom_du_logement FROM liste_logements")->fetchAll(PDO::FETCH_ASSOC);
-$intervenants = $conn->query("SELECT id, nom FROM intervenant")->fetchAll(PDO::FETCH_ASSOC);
+$logements = $conn->query("SELECT id, nom_du_logement FROM liste_logements WHERE actif = 1 ORDER BY nom_du_logement")->fetchAll(PDO::FETCH_ASSOC);
+$allLogements = $conn->query("SELECT id, nom_du_logement FROM liste_logements ORDER BY nom_du_logement")->fetchAll(PDO::FETCH_ASSOC);
+$intervenants = $conn->query("SELECT id, nom FROM intervenant WHERE actif = 1 ORDER BY nom")->fetchAll(PDO::FETCH_ASSOC);
+
+// Compteur de charge par intervenant sur la période
+$chargeQuery = "
+    SELECT i.nom,
+           SUM(CASE WHEN p.conducteur = i.id THEN 1 ELSE 0 END) AS nb_conducteur,
+           SUM(CASE WHEN p.femme_de_menage_1 = i.id OR p.femme_de_menage_2 = i.id THEN 1 ELSE 0 END) AS nb_menage,
+           SUM(CASE WHEN p.laverie = i.id THEN 1 ELSE 0 END) AS nb_laverie,
+           COUNT(*) AS nb_total
+    FROM intervenant i
+    JOIN planning p ON (p.conducteur = i.id OR p.femme_de_menage_1 = i.id OR p.femme_de_menage_2 = i.id OR p.laverie = i.id)
+    WHERE i.actif = 1 AND p.date BETWEEN ? AND ?
+    GROUP BY i.id, i.nom
+    ORDER BY nb_total DESC
+";
+$chargeStmt = $conn->prepare($chargeQuery);
+$chargeStmt->execute([$date_debut, $date_fin]);
+$charges = $chargeStmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
 <!DOCTYPE html>
@@ -283,6 +358,20 @@ $intervenants = $conn->query("SELECT id, nom FROM intervenant")->fetchAll(PDO::F
     rel="stylesheet"
     crossorigin="anonymous"
   />
+  <style>
+    /* Colorisation des lignes par statut */
+    tr.statut-fait { background-color: #e8f5e9 !important; }
+    tr.statut-a-faire { background-color: #fff3e0 !important; }
+    tr.statut-a-verifier { background-color: #e3f2fd !important; }
+    tr.statut-verifier { background-color: #fce4ec !important; }
+    tr.statut-annule { background-color: #f5f5f5 !important; opacity: 0.65; text-decoration: line-through; }
+    /* Compteur charge */
+    .charge-cards { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
+    .charge-card { background: #fff; border: 1px solid #dee2e6; border-radius: 8px; padding: 10px 14px; min-width: 150px; flex: 1; }
+    .charge-card .name { font-weight: 700; font-size: 0.95em; }
+    .charge-card .counts { font-size: 0.82em; color: #666; }
+    .charge-card .total { font-size: 1.3em; font-weight: 800; color: #1976d2; }
+  </style>
 </head>
 <body>
 <div class="container mt-4">
@@ -298,7 +387,7 @@ $intervenants = $conn->query("SELECT id, nom FROM intervenant")->fetchAll(PDO::F
                 <label for="date_fin" class="form-label">Date de fin :</label>
                 <input type="date" id="date_fin" name="date_fin" class="form-control" value="<?= htmlspecialchars($date_fin) ?>" required>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <label for="statut_filter" class="form-label">Statut :</label>
                 <select id="statut_filter" name="statut_filter" class="form-control">
                     <option value="all" <?= $statut_filter == 'all' ? 'selected' : '' ?>>Tous</option>
@@ -306,10 +395,25 @@ $intervenants = $conn->query("SELECT id, nom FROM intervenant")->fetchAll(PDO::F
                     <option value="À Vérifier" <?= $statut_filter == 'À Vérifier' ? 'selected' : '' ?>>À Vérifier</option>
                     <option value="Fait" <?= $statut_filter == 'Fait' ? 'selected' : '' ?>>Fait</option>
                     <option value="Vérifier" <?= $statut_filter == 'Vérifier' ? 'selected' : '' ?>>Vérifier</option>
+                    <option value="Annulé" <?= $statut_filter == 'Annulé' ? 'selected' : '' ?>>Annulé</option>
                 </select>
             </div>
-            <div class="col-md-3 d-flex align-items-end gap-2">
-                <button type="submit" class="btn btn-primary w-50">Filtrer</button>
+            <div class="col-md-2">
+                <label for="logement_filter" class="form-label">Logement :</label>
+                <select id="logement_filter" name="logement_filter" class="form-control">
+                    <option value="0">Tous</option>
+                    <?php foreach ($allLogements as $lg): ?>
+                    <option value="<?= $lg['id'] ?>" <?= $logement_filter == $lg['id'] ? 'selected' : '' ?>>
+                        <?= htmlspecialchars($lg['nom_du_logement']) ?>
+                    </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end gap-2">
+                <button type="submit" class="btn btn-primary">Filtrer</button>
+                <a href="?date_debut=<?= urlencode($date_debut) ?>&date_fin=<?= urlencode($date_fin) ?>&statut_filter=<?= urlencode($statut_filter) ?>&logement_filter=<?= $logement_filter ?>&export_csv=1" class="btn btn-outline-success" title="Export CSV">
+                    <i class="fas fa-file-csv"></i>
+                </a>
                 <?php if ($is_admin): ?>
                 <button type="button" id="sync_today_btn" class="btn btn-outline-secondary w-50">
                     Synchroniser (aujourd’hui)
@@ -336,8 +440,29 @@ $intervenants = $conn->query("SELECT id, nom FROM intervenant")->fetchAll(PDO::F
                 <option value="À Vérifier">À Vérifier</option>
                 <option value="Fait">Fait</option>
                 <option value="Vérifier">Vérifier</option>
+                <option value="Annulé">Annulé</option>
             </select>
             <button id="bulk_update_btn" type="button" class="btn btn-success">Appliquer aux sélectionnées</button>
+        </div>
+    </div>
+    <?php endif; ?>
+
+    <!-- Compteur de charge par intervenant -->
+    <?php if (!empty($charges)): ?>
+    <div class="mb-3">
+        <h5>Charge intervenants (<?= date('d/m', strtotime($date_debut)) ?> — <?= date('d/m', strtotime($date_fin)) ?>)</h5>
+        <div class="charge-cards">
+            <?php foreach ($charges as $ch): ?>
+            <div class="charge-card">
+                <div class="name"><?= htmlspecialchars($ch['nom']) ?></div>
+                <div class="total"><?= $ch['nb_total'] ?> interv.</div>
+                <div class="counts">
+                    <?php if ($ch['nb_conducteur'] > 0): ?>Cond: <?= $ch['nb_conducteur'] ?> <?php endif; ?>
+                    <?php if ($ch['nb_menage'] > 0): ?>Mén: <?= $ch['nb_menage'] ?> <?php endif; ?>
+                    <?php if ($ch['nb_laverie'] > 0): ?>Lav: <?= $ch['nb_laverie'] ?> <?php endif; ?>
+                </div>
+            </div>
+            <?php endforeach; ?>
         </div>
     </div>
     <?php endif; ?>
@@ -363,8 +488,17 @@ $intervenants = $conn->query("SELECT id, nom FROM intervenant")->fetchAll(PDO::F
             </tr>
         </thead>
         <tbody>
-            <?php foreach ($interventions as $intervention): ?>
-                <tr id="row_<?= $intervention['id'] ?>">
+            <?php foreach ($interventions as $intervention):
+                $statutSlug = match($intervention['statut']) {
+                    'Fait' => 'fait',
+                    'À Faire' => 'a-faire',
+                    'À Vérifier' => 'a-verifier',
+                    'Vérifier' => 'verifier',
+                    'Annulé' => 'annule',
+                    default => ''
+                };
+            ?>
+                <tr id="row_<?= $intervention['id'] ?>" class="statut-<?= $statutSlug ?>">
                     <?php if ($is_admin): ?>
                     <td data-label="Sélection">
                         <input type="checkbox" class="bulk_checkbox" value="<?= $intervention['id'] ?>">
@@ -472,6 +606,7 @@ $intervenants = $conn->query("SELECT id, nom FROM intervenant")->fetchAll(PDO::F
                                 <option value="À Vérifier" <?= $intervention['statut'] === 'À Vérifier' ? 'selected' : '' ?>>À Vérifier</option>
                                 <option value="Fait" <?= $intervention['statut'] === 'Fait' ? 'selected' : '' ?>>Fait</option>
                                 <option value="Vérifier" <?= $intervention['statut'] === 'Vérifier' ? 'selected' : '' ?>>Vérifier</option>
+                                <option value="Annulé" <?= $intervention['statut'] === 'Annulé' ? 'selected' : '' ?>>Annulé</option>
                             </select>
                         </td>
                         <td data-label="Actions">
@@ -490,7 +625,7 @@ $intervenants = $conn->query("SELECT id, nom FROM intervenant")->fetchAll(PDO::F
       <ul class="pagination">
         <?php for ($i = 1; $i <= $totalPages; $i++): ?>
           <li class="page-item <?= ($i == $page) ? 'active' : '' ?>">
-            <a class="page-link" href="?date_debut=<?= urlencode($date_debut) ?>&date_fin=<?= urlencode($date_fin) ?>&statut_filter=<?= urlencode($statut_filter) ?>&page=<?= $i ?>"><?= $i ?></a>
+            <a class="page-link" href="?date_debut=<?= urlencode($date_debut) ?>&date_fin=<?= urlencode($date_fin) ?>&statut_filter=<?= urlencode($statut_filter) ?>&logement_filter=<?= $logement_filter ?>&page=<?= $i ?>"><?= $i ?></a>
           </li>
         <?php endfor; ?>
       </ul>
@@ -609,6 +744,7 @@ $intervenants = $conn->query("SELECT id, nom FROM intervenant")->fetchAll(PDO::F
             <select name="statut" class="form-control" required>
                 <option value="À Faire">À Faire</option>
                 <option value="À Vérifier">À Vérifier</option>
+                <option value="Annulé">Annulé</option>
             </select>
         </div>
         <button type="submit" class="btn btn-success">Créer</button>
