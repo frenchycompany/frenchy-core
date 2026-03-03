@@ -113,7 +113,7 @@ try {
         $tokenStmt->execute([$intervention['intervention_id']]);
         $tokRow = $tokenStmt->fetch(PDO::FETCH_ASSOC);
         if ($tokRow) {
-            $validationLink = $domain . '/pages/validate?token=' . $tokRow['token'];
+            $validationLink = $domain . '/pages/validate.php?token=' . $tokRow['token'];
             $texte_combined .= "🔗 *Valider* : " . $validationLink . "\n";
         } else {
             $texte_combined .= "🔗 *Valider* : (lien non généré)\n";

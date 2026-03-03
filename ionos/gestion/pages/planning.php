@@ -203,7 +203,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['bulk_update'])) {
         // 4) Lien de validation
         $scheme = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https' : 'http';
         $domain = $scheme . '://' . $_SERVER['HTTP_HOST'];
-        $validation_link = $domain . '/validate/' . $token;
+        $validation_link = $domain . '/pages/validate.php?token=' . $token;
 
         echo '<div class="alert alert-info">';
         echo 'Lien de validation généré : <a href="' . $validation_link . '" target="_blank">' . $validation_link . '</a>';
