@@ -49,6 +49,17 @@ $tachesNonFaites = array_filter($allItems, fn($i) => $i['categorie'] === 'Taches
 
 $total = count($allItems);
 $score = $total > 0 ? round((count($oks) / $total) * 100) : 0;
+
+// Signature
+$signaturePath = null;
+try {
+    $stmt = $conn->prepare("SELECT signature_path FROM checkup_sessions WHERE id = ?");
+    $stmt->execute([$session_id]);
+    $sigRow = $stmt->fetch(PDO::FETCH_ASSOC);
+    if ($sigRow && !empty($sigRow['signature_path'])) {
+        $signaturePath = $sigRow['signature_path'];
+    }
+} catch (PDOException $e) {}
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -418,10 +429,21 @@ $score = $total > 0 ? round((count($oks) / $total) * 100) : 0;
     </div>
     <?php endforeach; ?>
 
+    <!-- Signature -->
+    <?php if ($signaturePath): ?>
+    <div style="background:#fff;border-radius:12px;padding:18px;margin-bottom:15px;box-shadow:0 1px 5px rgba(0,0,0,0.06);text-align:center;">
+        <h4 style="margin:0 0 8px;font-size:1em;color:#333;"><i class="fas fa-signature"></i> Signature de l'intervenant</h4>
+        <img src="../<?= htmlspecialchars($signaturePath) ?>" alt="Signature" style="max-width:250px;max-height:100px;">
+    </div>
+    <?php endif; ?>
+
     <!-- Actions -->
     <div class="rp-actions">
         <a href="checkup_logement.php" class="btn-back">
             <i class="fas fa-arrow-left"></i> Retour
+        </a>
+        <a href="checkup_pdf.php?session_id=<?= $session_id ?>" class="btn-reopen" target="_blank">
+            <i class="fas fa-file-pdf"></i> PDF
         </a>
         <?php if ($session['statut'] === 'termine'): ?>
         <a href="checkup_faire.php?session_id=<?= $session_id ?>" class="btn-reopen">
@@ -429,7 +451,7 @@ $score = $total > 0 ? round((count($oks) / $total) * 100) : 0;
         </a>
         <?php endif; ?>
         <a href="checkup_logement.php" class="btn-new">
-            <i class="fas fa-plus"></i> Nouveau checkup
+            <i class="fas fa-plus"></i> Nouveau
         </a>
     </div>
 </div>

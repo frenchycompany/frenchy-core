@@ -45,6 +45,7 @@ try {
     // Ajouter les colonnes manquantes sur tables existantes
     try { $conn->exec("ALTER TABLE checkup_items ADD COLUMN todo_task_id INT DEFAULT NULL AFTER photo_path"); } catch (PDOException $e) {}
     try { $conn->exec("ALTER TABLE checkup_sessions ADD COLUMN nb_taches_faites INT DEFAULT 0 AFTER nb_absents"); } catch (PDOException $e) {}
+    try { $conn->exec("ALTER TABLE checkup_sessions ADD COLUMN signature_path VARCHAR(500) DEFAULT NULL AFTER commentaire_general"); } catch (PDOException $e) {}
 } catch (PDOException $e) {
     // Tables existent deja
 }
@@ -224,6 +225,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['logement_id'])) {
     ];
     foreach ($etatGeneral as $item) {
         $insertStmt->execute([$session_id, 'Etat general', $item, null]);
+    }
+
+    // === 5. TEMPLATES PERSONNALISES ===
+    try {
+        $stmt = $conn->prepare("
+            SELECT categorie, nom_item FROM checkup_templates
+            WHERE actif = 1 AND (logement_id IS NULL OR logement_id = ?)
+            ORDER BY categorie, ordre, nom_item
+        ");
+        $stmt->execute([$logement_id]);
+        $customItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($customItems as $ci) {
+            $insertStmt->execute([$session_id, $ci['categorie'], $ci['nom_item'], null]);
+        }
+    } catch (PDOException $e) {
+        // Table checkup_templates n'existe pas encore, pas grave
     }
 
     // Rediriger vers la page de checkup
@@ -407,6 +424,17 @@ $recents = $conn->query("
 </div>
 
 <script>
+// Auto-select du logement si on vient d'un QR code
+document.addEventListener('DOMContentLoaded', function() {
+    var params = new URLSearchParams(window.location.search);
+    var autoId = params.get('auto_logement');
+    if (autoId) {
+        var sel = document.getElementById('logement_id');
+        sel.value = autoId;
+        loadPreview(autoId);
+    }
+});
+
 function loadPreview(logementId) {
     var preview = document.getElementById('preview');
     if (!logementId) { preview.classList.remove('visible'); return; }

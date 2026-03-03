@@ -7,6 +7,9 @@
 include '../config.php';
 include '../pages/menu.php';
 
+require_once __DIR__ . '/../includes/validation.php';
+require_once __DIR__ . '/../includes/upload_helper.php';
+
 $session_id = isset($_GET['session_id']) ? intval($_GET['session_id']) : 0;
 
 // Charger la session
@@ -29,30 +32,19 @@ if (!$session) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
     header('Content-Type: application/json');
 
-    $item_id = intval($_POST['item_id'] ?? 0);
-    $statut = $_POST['statut'] ?? '';
-    $commentaire = $_POST['commentaire'] ?? '';
+    $item_id = sanitizeInt($_POST['item_id'] ?? 0);
+    $statut = sanitizeEnum($_POST['statut'] ?? '', ['ok', 'probleme', 'absent', 'non_verifie']);
+    $commentaire = sanitizeString($_POST['commentaire'] ?? '');
 
-    if (!in_array($statut, ['ok', 'probleme', 'absent', 'non_verifie'])) {
+    if (!$statut) {
         echo json_encode(['error' => 'Statut invalide']);
         exit;
     }
 
-    // Gestion de la photo
+    // Gestion de la photo via helper securise
     $photo_path = null;
-    if (!empty($_FILES['photo']['tmp_name']) && $_FILES['photo']['error'] === 0) {
-        $upload_dir = '../uploads/checkup/';
-        if (!is_dir($upload_dir)) {
-            mkdir($upload_dir, 0777, true);
-        }
-        $ext = strtolower(pathinfo($_FILES['photo']['name'], PATHINFO_EXTENSION));
-        $allowed = ['jpg', 'jpeg', 'png', 'webp', 'heic'];
-        if (in_array($ext, $allowed)) {
-            $filename = 'checkup_' . $session_id . '_' . $item_id . '_' . time() . '.' . $ext;
-            if (move_uploaded_file($_FILES['photo']['tmp_name'], $upload_dir . $filename)) {
-                $photo_path = 'uploads/checkup/' . $filename;
-            }
-        }
+    if (!empty($_FILES['photo'])) {
+        $photo_path = handleUpload($_FILES['photo'], 'checkup', 'ck_' . $session_id . '_' . $item_id);
     }
 
     // Mise a jour de l'item
@@ -80,7 +72,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
 
 // Traitement : terminer le checkup
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['terminer'])) {
-    $commentaire_general = $_POST['commentaire_general'] ?? '';
+    $commentaire_general = sanitizeString($_POST['commentaire_general'] ?? '');
+
+    // Sauvegarder la signature si fournie
+    $signaturePath = null;
+    if (!empty($_POST['signature_data'])) {
+        $sigData = $_POST['signature_data'];
+        if (preg_match('/^data:image\/(png|jpeg);base64,/', $sigData, $matches)) {
+            $sigData = preg_replace('/^data:image\/\w+;base64,/', '', $sigData);
+            $sigBinary = base64_decode($sigData);
+            if ($sigBinary !== false && strlen($sigBinary) < 500000) { // Max 500Ko
+                $sigDir = __DIR__ . '/../uploads/signatures/';
+                if (!is_dir($sigDir)) mkdir($sigDir, 0755, true);
+                $sigFile = 'sig_' . $session_id . '_' . time() . '.png';
+                file_put_contents($sigDir . $sigFile, $sigBinary);
+                $signaturePath = 'uploads/signatures/' . $sigFile;
+            }
+        }
+    }
 
     // Compter les stats
     $stmt = $conn->prepare("SELECT statut, COUNT(*) as nb FROM checkup_items WHERE session_id = ? GROUP BY statut");
@@ -95,6 +104,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['terminer'])) {
     $stmt->execute([$session_id]);
     $nbTachesFaites = $stmt->fetchColumn();
 
+    $nbOk = $stats['ok'] ?? 0;
+    $nbPb = $stats['probleme'] ?? 0;
+    $nbAbs = $stats['absent'] ?? 0;
+
     $stmt = $conn->prepare("
         UPDATE checkup_sessions
         SET statut = 'termine',
@@ -102,17 +115,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['terminer'])) {
             nb_problemes = ?,
             nb_absents = ?,
             nb_taches_faites = ?,
-            commentaire_general = ?
+            commentaire_general = ?,
+            signature_path = COALESCE(?, signature_path)
         WHERE id = ?
     ");
-    $stmt->execute([
-        $stats['ok'] ?? 0,
-        $stats['probleme'] ?? 0,
-        $stats['absent'] ?? 0,
-        $nbTachesFaites,
-        $commentaire_general,
-        $session_id
-    ]);
+    $stmt->execute([$nbOk, $nbPb, $nbAbs, $nbTachesFaites, $commentaire_general, $signaturePath, $session_id]);
+
+    // Envoyer une notification si des problemes sont signales
+    if ($nbPb > 0 || $nbAbs > 0) {
+        require_once __DIR__ . '/../includes/notifications.php';
+        $intStmt = $conn->prepare("SELECT nom FROM intervenant WHERE id = ?");
+        $intStmt->execute([$session['intervenant_id'] ?? 0]);
+        $intNom = $intStmt->fetchColumn() ?: 'Inconnu';
+        notifyCheckupProblemes($conn, $session_id, $session['nom_du_logement'], $nbPb, $nbAbs, $intNom);
+    }
 
     header("Location: checkup_rapport.php?session_id=" . $session_id);
     exit;
@@ -490,12 +506,22 @@ $progress = $total > 0 ? round(($done / $total) * 100) : 0;
     </div>
     <?php endforeach; ?>
 
-    <form method="POST" class="ck-general-comment">
+    <form method="POST" class="ck-general-comment" id="finishForm">
         <label><i class="fas fa-comment-dots"></i> Commentaire general</label>
         <textarea name="commentaire_general" placeholder="Remarques generales sur l'etat du logement..."><?= htmlspecialchars($session['commentaire_general'] ?? '') ?></textarea>
+
+        <!-- Signature -->
+        <label style="margin-top:15px"><i class="fas fa-signature"></i> Signature de l'intervenant</label>
+        <div style="position:relative;background:#fafafa;border:2px solid #ddd;border-radius:10px;margin-bottom:10px;">
+            <canvas id="signatureCanvas" width="560" height="150" style="width:100%;height:150px;touch-action:none;cursor:crosshair;"></canvas>
+            <button type="button" onclick="clearSignature()" style="position:absolute;top:5px;right:5px;background:#e0e0e0;border:none;border-radius:6px;padding:4px 10px;font-size:0.8em;cursor:pointer;">
+                <i class="fas fa-eraser"></i> Effacer
+            </button>
+        </div>
+        <input type="hidden" name="signature_data" id="signatureData">
+
         <input type="hidden" name="terminer" value="1">
-        <br>
-        <button type="submit" class="btn-finish" id="btnFinish">
+        <button type="submit" class="btn-finish" id="btnFinish" onclick="prepareSignature()">
             <i class="fas fa-flag-checkered"></i> Terminer le checkup
         </button>
     </form>
@@ -613,6 +639,79 @@ function toggleCategory(el) {
     el.classList.toggle('collapsed');
     const items = el.nextElementSibling;
     items.classList.toggle('hidden');
+}
+
+// Service Worker pour mode hors-ligne
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('../sw-checkup.js').catch(function() {});
+    // Synchroniser au retour en ligne
+    window.addEventListener('online', function() {
+        if (navigator.serviceWorker.controller) {
+            navigator.serviceWorker.controller.postMessage('sync-now');
+        }
+        document.getElementById('offlineBanner')?.remove();
+    });
+    window.addEventListener('offline', function() {
+        if (!document.getElementById('offlineBanner')) {
+            var banner = document.createElement('div');
+            banner.id = 'offlineBanner';
+            banner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#ff9800;color:#fff;text-align:center;padding:8px;font-size:0.9em;font-weight:600;z-index:9999;';
+            banner.innerHTML = '<i class="fas fa-wifi-slash"></i> Mode hors-ligne — Les modifications seront synchronisees au retour';
+            document.body.prepend(banner);
+        }
+    });
+    navigator.serviceWorker.addEventListener('message', function(event) {
+        if (event.data === 'sync-complete') {
+            // Optionnel : afficher une notification de sync terminee
+        }
+    });
+}
+
+// Signature pad
+const sigCanvas = document.getElementById('signatureCanvas');
+const sigCtx = sigCanvas ? sigCanvas.getContext('2d') : null;
+let sigDrawing = false;
+let sigHasContent = false;
+
+if (sigCanvas) {
+    function resizeCanvas() {
+        const rect = sigCanvas.getBoundingClientRect();
+        sigCanvas.width = rect.width;
+        sigCanvas.height = rect.height;
+        sigCtx.strokeStyle = '#333';
+        sigCtx.lineWidth = 2;
+        sigCtx.lineCap = 'round';
+        sigCtx.lineJoin = 'round';
+    }
+    resizeCanvas();
+
+    function getPos(e) {
+        const rect = sigCanvas.getBoundingClientRect();
+        const t = e.touches ? e.touches[0] : e;
+        return { x: t.clientX - rect.left, y: t.clientY - rect.top };
+    }
+
+    sigCanvas.addEventListener('mousedown', function(e) { sigDrawing = true; sigCtx.beginPath(); const p = getPos(e); sigCtx.moveTo(p.x, p.y); });
+    sigCanvas.addEventListener('mousemove', function(e) { if (!sigDrawing) return; const p = getPos(e); sigCtx.lineTo(p.x, p.y); sigCtx.stroke(); sigHasContent = true; });
+    sigCanvas.addEventListener('mouseup', function() { sigDrawing = false; });
+    sigCanvas.addEventListener('mouseleave', function() { sigDrawing = false; });
+
+    sigCanvas.addEventListener('touchstart', function(e) { e.preventDefault(); sigDrawing = true; sigCtx.beginPath(); const p = getPos(e); sigCtx.moveTo(p.x, p.y); }, { passive: false });
+    sigCanvas.addEventListener('touchmove', function(e) { e.preventDefault(); if (!sigDrawing) return; const p = getPos(e); sigCtx.lineTo(p.x, p.y); sigCtx.stroke(); sigHasContent = true; }, { passive: false });
+    sigCanvas.addEventListener('touchend', function() { sigDrawing = false; });
+}
+
+function clearSignature() {
+    if (sigCtx) {
+        sigCtx.clearRect(0, 0, sigCanvas.width, sigCanvas.height);
+        sigHasContent = false;
+    }
+}
+
+function prepareSignature() {
+    if (sigHasContent && sigCanvas) {
+        document.getElementById('signatureData').value = sigCanvas.toDataURL('image/png');
+    }
 }
 </script>
 </body>

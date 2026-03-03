@@ -31,6 +31,11 @@ if (empty($_SESSION['csrf_token'])) {
 }
 $csrf_token = $_SESSION['csrf_token'];
 
+// Charger le systeme i18n
+if (file_exists(__DIR__ . '/../includes/i18n.php')) {
+    require_once __DIR__ . '/../includes/i18n.php';
+}
+
 // Pages accessibles depuis la BDD (système de permissions)
 $pages_accessibles = [];
 try {
@@ -78,6 +83,9 @@ $menu_categories = [
             ['nom' => 'Descriptions',  'chemin' => 'pages/description_logements.php', 'icon' => 'fa-file-alt'],
             ['nom' => 'Machines',      'chemin' => 'pages/machines.php',              'icon' => 'fa-cogs'],
             ['nom' => 'Checkup',      'chemin' => 'pages/checkup_logement.php',     'icon' => 'fa-clipboard-check'],
+            ['nom' => 'Historique checkups', 'chemin' => 'pages/checkup_historique.php', 'icon' => 'fa-history'],
+            ['nom' => 'Dashboard',    'chemin' => 'pages/checkup_dashboard.php',  'icon' => 'fa-tachometer-alt'],
+            ['nom' => 'Stats checkup','chemin' => 'pages/checkup_statistiques.php','icon' => 'fa-chart-line'],
         ]
     ],
     'Réservations' => [
@@ -107,6 +115,7 @@ $menu_categories = [
             ['nom' => 'Sessions',           'chemin' => 'pages/liste_sessions.php',      'icon' => 'fa-clipboard-list'],
             ['nom' => 'Liste objets',       'chemin' => 'pages/liste_objets.php',        'icon' => 'fa-list'],
             ['nom' => 'Étiquettes',         'chemin' => 'pages/impression_etiquettes.php','icon' => 'fa-tags'],
+            ['nom' => 'Comparer',           'chemin' => 'pages/inventaire_comparer.php',  'icon' => 'fa-code-compare'],
         ]
     ],
     'Finance' => [
@@ -239,8 +248,13 @@ foreach ($pages_accessibles as $page) {
 
             </ul>
 
-            <!-- Partie droite : utilisateur -->
+            <!-- Partie droite : langue + utilisateur -->
             <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+                <?php if (function_exists('langSelector')): ?>
+                <li class="nav-item d-flex align-items-center me-2">
+                    <?= langSelector() ?>
+                </li>
+                <?php endif; ?>
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button"
                        data-bs-toggle="dropdown" aria-expanded="false">
