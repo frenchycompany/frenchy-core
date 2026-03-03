@@ -2,6 +2,8 @@
 // Listing complet et détaillé des réservations
 require_once __DIR__ . '/../includes/error_handler.php';
 // DB loaded via config.php
+require_once __DIR__ . '/../includes/rpi_db.php';
+$pdo = getRpiPdo();
 // header loaded via menu.php
 
 if (!($pdo instanceof PDO)) {

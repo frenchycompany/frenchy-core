@@ -1,7 +1,9 @@
 <?php
 // reservation_list.php (version PDO)
 require_once __DIR__ . '/../includes/error_handler.php';  // Gestion centralisée des erreurs
-// DB loaded via config.php   // doit fournir $pdo (PDO)
+// DB loaded via config.php
+require_once __DIR__ . '/../includes/rpi_db.php';
+$pdo = getRpiPdo();   // doit fournir $pdo (PDO)
 // header loaded via menu.php
 require_once __DIR__ . '/../includes/template_helper.php';  // Helper pour templates avec fallback
 // csrf loaded via config.php  // Protection CSRF

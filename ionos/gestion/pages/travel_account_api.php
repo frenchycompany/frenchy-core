@@ -6,7 +6,9 @@
 
 header('Content-Type: application/json; charset=utf-8');
 
-// Include database connection
+include '../config.php';
+require_once __DIR__ . '/../includes/rpi_db.php';
+$pdo = getRpiPdo();
 
 // Get request method and action
 $method = $_SERVER['REQUEST_METHOD'];

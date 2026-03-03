@@ -3,6 +3,9 @@ header('Content-Type: application/json');
 error_reporting(E_ALL);
 ini_set('display_errors', 0); // Don't display errors in JSON response
 
+include '../config.php';
+require_once __DIR__ . '/../includes/rpi_db.php';
+$pdo = getRpiPdo();
 
 // Lire le JSON du POST
 $input = file_get_contents('php://input');

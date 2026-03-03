@@ -2,12 +2,11 @@
 declare(strict_types=1);
 session_start();
 
-require __DIR__ . '/../../vendor/autoload.php';
-require __DIR__ . '/../includes/db.php'; // Utilise $pdo (PDO)
-
-if (empty($pdo)) {
-    http_response_code(500);
-    die("PDO non initialisé (db.php).");
+include '../config.php';
+require_once __DIR__ . '/../includes/rpi_db.php';
+$pdo = getRpiPdo();
+if (file_exists(__DIR__ . '/../../vendor/autoload.php')) {
+    require __DIR__ . '/../../vendor/autoload.php';
 }
 
 function db(): PDO {

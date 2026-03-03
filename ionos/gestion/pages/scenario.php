@@ -4,16 +4,8 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
 // Inclure la configuration et l'en-tête
-
-// 1) Connexion PDO à la DB
-try {
-    // On réutilise les variables $host, $user, $password, $database
-    // définies dans db.php
-    $pdo = new PDO("mysql:host=$host;dbname=$database;charset=utf8mb4", $user, $password);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-} catch (Exception $e) {
-    die("Erreur de connexion : " . $e->getMessage());
-}
+require_once __DIR__ . '/../includes/rpi_db.php';
+$pdo = getRpiPdo();
 
 // 2) Déterminer l'action (create, edit, delete, list)
 $action = isset($_GET['action']) ? $_GET['action'] : 'list';

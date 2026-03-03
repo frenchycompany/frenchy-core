@@ -6,6 +6,8 @@
 
 // header loaded via menu.php
 // DB loaded via config.php
+require_once __DIR__ . '/../includes/rpi_db.php';
+$pdo = getRpiPdo();
 
 $message = '';
 $error = '';

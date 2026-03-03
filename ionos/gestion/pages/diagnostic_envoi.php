@@ -4,6 +4,8 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
 // DB loaded via config.php
+require_once __DIR__ . '/../includes/rpi_db.php';
+$pdo = getRpiPdo();
 require_once __DIR__ . '/../includes/template_helper.php';
 
 echo "<h1>Diagnostic envoi SMS - reservation_list.php</h1>";

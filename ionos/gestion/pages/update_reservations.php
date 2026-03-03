@@ -3,14 +3,14 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-require __DIR__ . '/../../vendor/autoload.php';
-require __DIR__ . '/../includes/db.php'; // Utilise $pdo (PDO)
+include '../config.php';
+require_once __DIR__ . '/../includes/rpi_db.php';
+$pdo = getRpiPdo();
+if (file_exists(__DIR__ . '/../../vendor/autoload.php')) {
+    require __DIR__ . '/../../vendor/autoload.php';
+}
 
 use Sabre\VObject\Reader;
-
-if (!($pdo instanceof PDO)) {
-    die('Erreur: PDO non disponible. Vérifiez la connexion à la base de données.');
-}
 
 // Par défaut, tout en associatif
 $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);

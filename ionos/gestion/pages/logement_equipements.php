@@ -5,6 +5,8 @@
  */
 
 // DB loaded via config.php
+require_once __DIR__ . '/../includes/rpi_db.php';
+$pdo = getRpiPdo();
 // auth loaded via menu.php
 // csrf loaded via config.php
 
