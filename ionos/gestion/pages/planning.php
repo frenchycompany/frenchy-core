@@ -201,8 +201,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['bulk_update'])) {
         $tokStmt->execute([$intervention_id, $token, $expires_at]);
 
         // 4) Lien de validation
-        $scheme = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https' : 'http';
-        $domain = $scheme . '://' . $_SERVER['HTTP_HOST'];
+        $domain = rtrim(env('APP_URL', 'https://gestion.frenchyconciergerie.fr'), '/');
         $validation_link = $domain . '/pages/validate.php?token=' . $token;
 
         echo '<div class="alert alert-info">';

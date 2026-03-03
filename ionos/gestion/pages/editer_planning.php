@@ -15,8 +15,8 @@ if ($selectedIntervenant === false || $selectedIntervenant === null) {
 }
 
 // Détermination du domaine pour générer les liens
-$scheme = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https' : 'http';
-$domain = $scheme . '://' . $_SERVER['HTTP_HOST'];
+$domain = env('APP_URL', 'https://gestion.frenchyconciergerie.fr');
+$domain = rtrim($domain, '/');
 
 try {
     // Construction dynamique de la requête pour filtrer par intervenant si besoin
@@ -76,14 +76,14 @@ try {
         LIMIT 1
     ");
 
-    // Génération du texte formaté pour WhatsApp
-    $texte_combined = "📅 *Planning des interventions - " . htmlspecialchars(date('d/m/Y', strtotime($date))) . "*\n\n";
+    // Génération du texte formaté pour WhatsApp (texte brut, pas de htmlspecialchars)
+    $texte_combined = "📅 *Planning des interventions - " . date('d/m/Y', strtotime($date)) . "*\n\n";
 
     foreach ($interventions as $intervention) {
-        $texte_combined .= "🏠 *Logement* : " . htmlspecialchars($intervention['nom_du_logement']) . "\n";
-        $texte_combined .= "👥 *Personnes* : " . htmlspecialchars($intervention['nombre_de_personnes']) . "\n";
-        $texte_combined .= "📍 *Adresse* : " . htmlspecialchars($intervention['adresse']) . "\n";
-        $texte_combined .= "🔑 *Code* : " . htmlspecialchars($intervention['code']) . "\n";
+        $texte_combined .= "🏠 *Logement* : " . $intervention['nom_du_logement'] . "\n";
+        $texte_combined .= "👥 *Personnes* : " . $intervention['nombre_de_personnes'] . "\n";
+        $texte_combined .= "📍 *Adresse* : " . $intervention['adresse'] . "\n";
+        $texte_combined .= "🔑 *Code* : " . $intervention['code'] . "\n";
 
         // Particularités
         $extras = [];
@@ -104,7 +104,7 @@ try {
         }
 
         if (!empty($intervention['note'])) {
-            $texte_combined .= "📝 *Note* : " . htmlspecialchars($intervention['note']) . "\n";
+            $texte_combined .= "📝 *Note* : " . $intervention['note'] . "\n";
         }
 
         // (La section Intervenants a été retirée)
@@ -114,7 +114,7 @@ try {
         $tokRow = $tokenStmt->fetch(PDO::FETCH_ASSOC);
         if ($tokRow) {
             $validationLink = $domain . '/pages/validate.php?token=' . $tokRow['token'];
-            $texte_combined .= "🔗 *Valider* : " . $validationLink . "\n";
+            $texte_combined .= "🔗 *Valider* :\n" . $validationLink . "\n";
         } else {
             $texte_combined .= "🔗 *Valider* : (lien non généré)\n";
         }

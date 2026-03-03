@@ -79,8 +79,13 @@ if ($role !== 'admin') {
 
                 <!-- Pages dynamiques depuis la BDD (planning, comptabilité, etc.) -->
                 <?php foreach ($pages_accessibles as $page):
-                    $url = BASE_URL . ltrim($page['chemin'], '/');
-                    $isActive = (basename($page['chemin']) === $currentFile);
+                    $chemin = $page['chemin'];
+                    // Corrige les anciens chemins sans le préfixe pages/
+                    if (!str_starts_with($chemin, 'pages/') && file_exists(BASE_PATH . '/pages/' . basename($chemin))) {
+                        $chemin = 'pages/' . basename($chemin);
+                    }
+                    $url = BASE_URL . ltrim($chemin, '/');
+                    $isActive = (basename($chemin) === $currentFile);
                 ?>
                     <li class="nav-item">
                         <a class="nav-link <?= $isActive ? 'active' : '' ?>" href="<?= htmlspecialchars($url) ?>">
