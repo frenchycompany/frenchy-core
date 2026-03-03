@@ -77,6 +77,7 @@ $menu_categories = [
             ['nom' => 'Équipements',   'chemin' => 'pages/logement_equipements.php',  'icon' => 'fa-couch'],
             ['nom' => 'Descriptions',  'chemin' => 'pages/description_logements.php', 'icon' => 'fa-file-alt'],
             ['nom' => 'Machines',      'chemin' => 'pages/machines.php',              'icon' => 'fa-cogs'],
+            ['nom' => 'Checkup',      'chemin' => 'pages/checkup_logement.php',     'icon' => 'fa-clipboard-check'],
         ]
     ],
     'Réservations' => [
