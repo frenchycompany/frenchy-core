@@ -1,6 +1,6 @@
 <?php
-require_once '../db/connection.php';
-include 'inventaire_menu.php';
+include '../config.php';
+include '../pages/menu.php';
 try {
     // On récupère toutes les sessions en cours avec leur logement associé
     $stmt = $conn->prepare("

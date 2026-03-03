@@ -1,8 +1,6 @@
 <?php
-require_once '../db/connection.php';
-
-// Menu navigation
-include 'inventaire_menu.php';
+include '../config.php';
+include '../pages/menu.php';
 
 if (!isset($_GET['id'])) {
     die("ID manquant.");

@@ -1,10 +1,7 @@
 <?php
-require_once '../db/connection.php';
-require_once '../lib/phpqrcode/qrlib.php'; // Ajuste le chemin si besoin
-include 'inventaire_menu.php';
-
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
+include '../config.php';
+include '../pages/menu.php';
+require_once '../lib/phpqrcode/qrlib.php';
 
 // Vérifie que la session est bien spécifiée
 if (!isset($_GET['session_id'])) {

@@ -1,9 +1,6 @@
 <?php
-include 'inventaire_menu.php';
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
-require_once '../db/connection.php';
+include '../config.php';
+include '../pages/menu.php';
 
 
 // Vérifie que la session est bien spécifiée

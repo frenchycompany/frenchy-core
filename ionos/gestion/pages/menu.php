@@ -62,6 +62,10 @@ if ($role !== 'admin') {
 }
 ?>
 
+<!-- Bootstrap 5 + FontAwesome (chargés par le menu pour un rendu cohérent) -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
 <!-- Barre de navigation Bootstrap 5 -->
 <header>
 <nav class="navbar navbar-expand-lg navbar-dark" style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);">
@@ -139,9 +143,30 @@ if ($role !== 'admin') {
                     </ul>
                 </li>
 
+                <!-- Inventaire -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle <?= in_array($currentFile, ['inventaire.php','inventaire_lancer.php','inventaire_saisie.php','inventaire_valider.php','liste_sessions.php','liste_objets.php','objet.php','impression_etiquettes.php']) ? 'active' : '' ?>"
+                       href="#" data-bs-toggle="dropdown">
+                        <i class="fas fa-boxes-stacked"></i> Inventaire
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="<?= BASE_URL ?>pages/inventaire.php">
+                            <i class="fas fa-home"></i> Accueil inventaire</a></li>
+                        <li><a class="dropdown-item" href="<?= BASE_URL ?>pages/inventaire_lancer.php">
+                            <i class="fas fa-plus-circle"></i> Lancer inventaire</a></li>
+                        <li><a class="dropdown-item" href="<?= BASE_URL ?>pages/liste_sessions.php">
+                            <i class="fas fa-clipboard-list"></i> Sessions</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="<?= BASE_URL ?>pages/liste_objets.php">
+                            <i class="fas fa-list"></i> Liste objets</a></li>
+                        <li><a class="dropdown-item" href="<?= BASE_URL ?>pages/impression_etiquettes.php">
+                            <i class="fas fa-tags"></i> Etiquettes</a></li>
+                    </ul>
+                </li>
+
                 <!-- Outils avancés -->
                 <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle <?= in_array($currentFile, ['superhote.php','analyse_marche.php','analyse_concurrence.php','clients.php']) ? 'active' : '' ?>"
+                    <a class="nav-link dropdown-toggle <?= in_array($currentFile, ['superhote.php','analyse_marche.php','analyse_concurrence.php','clients.php','villes.php']) ? 'active' : '' ?>"
                        href="#" data-bs-toggle="dropdown">
                         <i class="fas fa-tools"></i> Outils
                     </a>
@@ -197,4 +222,4 @@ if ($role !== 'admin') {
     </div>
 </nav>
 </header>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

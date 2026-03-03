@@ -1,6 +1,6 @@
 <?php
-require_once '../db/connection.php';
-include 'inventaire_menu.php';
+include '../config.php';
+include '../pages/menu.php';
 ?>
 <head>
 <meta charset="UTF-8">

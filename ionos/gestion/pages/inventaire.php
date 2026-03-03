@@ -1,8 +1,7 @@
 <?php
 // inventaire.php
-
-include 'inventaire_menu.php';
-
+include '../config.php';
+include '../pages/menu.php';
 ?>
 <!DOCTYPE html>
 <html lang="fr">
