@@ -184,7 +184,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['logement_id'])) {
         SELECT io.nom_objet, io.quantite
         FROM inventaire_objets io
         INNER JOIN sessions_inventaire si ON io.session_id = si.id
-        WHERE si.logement_id = ? AND si.statut = 'valide'
+        WHERE si.logement_id = ? AND si.statut = 'terminee'
         ORDER BY si.id DESC
     ");
     $stmt->execute([$logement_id]);

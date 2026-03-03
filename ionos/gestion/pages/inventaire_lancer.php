@@ -1,102 +1,138 @@
 <?php
+/**
+ * Lancer un inventaire — Choix du logement
+ */
 include '../config.php';
 include '../pages/menu.php';
+
+$logements = $conn->query("
+    SELECT l.id, l.nom_du_logement,
+           (SELECT COUNT(*) FROM sessions_inventaire s WHERE s.logement_id = l.id AND s.statut = 'en_cours') AS sessions_en_cours
+    FROM liste_logements l
+    WHERE l.actif = 1
+    ORDER BY l.nom_du_logement
+")->fetchAll(PDO::FETCH_ASSOC);
 ?>
+<!DOCTYPE html>
+<html lang="fr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Lancer un inventaire (mobile)</title>
-<style>
-body {
-    font-family: Arial, sans-serif;
-    margin: 10px;
-    background: #f6f6f6;
-    font-size: 17px;
-}
-form {
-    margin-bottom: 25px;
-    background: #fff;
-    padding: 18px 14px 14px 14px;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px #ececec;
-}
-input[type="text"], input[type="number"], input[type="date"], select, textarea {
-    width: 100%;
-    font-size: 1.12em;
-    padding: 11px;
-    margin: 7px 0 15px 0;
-    border: 1px solid #dadada;
-    border-radius: 6px;
-    box-sizing: border-box;
-}
-input[type="file"] {
-    font-size: 1.13em;
-    margin: 10px 0;
-}
-button, input[type="submit"] {
-    padding: 16px 22px;
-    font-size: 1.15em;
-    margin: 14px 7px 10px 0;
-    border: none;
-    border-radius: 8px;
-    background: #1976d2;
-    color: #fff;
-    font-weight: bold;
-    box-shadow: 0 1px 4px #ddd;
-}
-button:active, input[type="submit"]:active {
-    background: #0d47a1;
-}
-h2, h3 {
-    font-size: 1.25em;
-}
-img {
-    max-width: 92px;
-    height: auto;
-    border-radius: 7px;
-    margin-right: 5px;
-}
-table {
-    width: 100%;
-    background: #fff;
-    border-collapse: collapse;
-    margin-bottom: 16px;
-    border-radius: 7px;
-    box-shadow: 0 1px 4px #e0e0e0;
-    overflow: hidden;
-}
-th, td {
-    padding: 11px 6px;
-    font-size: 1.06em;
-    border-bottom: 1px solid #eee;
-    text-align: left;
-}
-th {
-    background: #e3f2fd;
-}
-tr:last-child td {
-    border-bottom: none;
-}
-@media (max-width: 560px) {
-    body { font-size: 16px; }
-    th, td { padding: 7px 2px; font-size: 0.97em; }
-    img { max-width: 62px; }
-}
-</style>
-</head>
-
-<h2>Lancer un inventaire</h2>
-
-<form action="inventaire_creer_session.php" method="POST">
-    <label for="logement_id">Choisissez un logement :</label>
-    <select name="logement_id" id="logement_id" required>
-        <?php
-        $logements = $conn->query("SELECT id, nom_du_logement FROM liste_logements")->fetchAll(PDO::FETCH_ASSOC);
-        foreach ($logements as $logement) {
-            echo "<option value=\"{$logement['id']}\">{$logement['nom_du_logement']}</option>";
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lancer un inventaire</title>
+    <style>
+        .launch-container {
+            max-width: 520px;
+            margin: 0 auto;
+            padding: 0 12px 30px;
         }
-        ?>
-    </select>
-    <br><br>
-    <button type="submit">Créer une session d'inventaire</button>
-</form>
+        .launch-header {
+            background: linear-gradient(135deg, #43a047, #388e3c);
+            color: #fff;
+            text-align: center;
+            padding: 25px 15px;
+            border-radius: 15px;
+            margin: 15px 0 20px;
+        }
+        .launch-header h2 { margin: 0 0 5px; font-size: 1.3em; }
+        .launch-header p { margin: 0; opacity: 0.85; font-size: 0.92em; }
+        .launch-card {
+            background: #fff;
+            border-radius: 15px;
+            padding: 25px 20px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        }
+        .launch-card label {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+            display: block;
+            font-size: 1.05em;
+        }
+        .launch-card select {
+            width: 100%;
+            padding: 14px 12px;
+            font-size: 1.1em;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            background: #fafafa;
+            margin-bottom: 18px;
+            appearance: auto;
+        }
+        .launch-card select:focus { border-color: #43a047; outline: none; }
+        .warning-encours {
+            background: #fff3e0;
+            border-left: 3px solid #ff9800;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 0.88em;
+            color: #e65100;
+            margin-bottom: 15px;
+            display: none;
+        }
+        .btn-launch {
+            width: 100%;
+            padding: 16px;
+            font-size: 1.15em;
+            font-weight: 700;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #43a047, #388e3c);
+            color: #fff;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        .btn-launch:active { transform: scale(0.97); }
+        .btn-back {
+            display: block;
+            text-align: center;
+            margin-top: 15px;
+            color: #1976d2;
+            text-decoration: none;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+<div class="launch-container">
+    <div class="launch-header">
+        <h2><i class="fas fa-plus-circle"></i> Nouvel inventaire</h2>
+        <p>Selectionnez un logement pour commencer</p>
+    </div>
+
+    <div class="launch-card">
+        <form action="inventaire_creer_session.php" method="POST">
+            <label for="logement_id"><i class="fas fa-home"></i> Logement</label>
+            <select name="logement_id" id="logement_id" required onchange="checkEnCours()">
+                <option value="">-- Selectionnez --</option>
+                <?php foreach ($logements as $l): ?>
+                <option value="<?= $l['id'] ?>" data-encours="<?= $l['sessions_en_cours'] ?>">
+                    <?= htmlspecialchars($l['nom_du_logement']) ?>
+                    <?= $l['sessions_en_cours'] > 0 ? ' (session en cours)' : '' ?>
+                </option>
+                <?php endforeach; ?>
+            </select>
+
+            <div class="warning-encours" id="warningEnCours">
+                <i class="fas fa-exclamation-triangle"></i>
+                Ce logement a deja une session d'inventaire en cours.
+                Vous pouvez quand meme en lancer une nouvelle.
+            </div>
+
+            <button type="submit" class="btn-launch">
+                <i class="fas fa-play-circle"></i> Lancer l'inventaire
+            </button>
+        </form>
+    </div>
+    <a href="inventaire.php" class="btn-back"><i class="fas fa-arrow-left"></i> Retour</a>
+</div>
+
+<script>
+function checkEnCours() {
+    var select = document.getElementById('logement_id');
+    var option = select.options[select.selectedIndex];
+    var warning = document.getElementById('warningEnCours');
+    warning.style.display = (option && option.dataset.encours > 0) ? 'block' : 'none';
+}
+</script>
+</body>
+</html>
