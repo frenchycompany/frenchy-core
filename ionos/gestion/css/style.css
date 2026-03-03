@@ -13,39 +13,7 @@ h1, h2, h3 {
     margin-top: 20px;
 }
 
-/* Navbar (menu) */
-.navbar {
-    background-color: #343a40;
-    padding: 0.5rem 1rem;
-    border-bottom: 3px solid #17a2b8;
-}
-
-.navbar .navbar-brand {
-    color: #ffffff;
-    font-size: 1.5rem;
-    font-weight: bold;
-    text-transform: uppercase;
-    text-decoration: none;
-}
-
-.navbar .nav-link {
-    color: #ffffff;
-    margin-right: 1rem;
-    transition: color 0.3s ease;
-}
-
-.navbar .nav-link:hover {
-    color: #17a2b8;
-}
-
-.navbar-toggler {
-    border: none;
-    outline: none;
-}
-
-.collapse.show {
-    display: block !important;
-}
+/* Navbar : styles gérés dans css/menu.css */
 
 /* Table */
 table {
@@ -142,14 +110,6 @@ footer {
 
 /* Mobile responsiveness */
 @media (max-width: 768px) {
-    .navbar .navbar-brand {
-        font-size: 1.2rem;
-    }
-
-    .navbar .nav-link {
-        font-size: 14px;
-    }
-
     table th, table td {
         font-size: 12px;
         padding: 8px 10px;

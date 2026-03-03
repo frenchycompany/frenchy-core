@@ -1,8 +1,8 @@
 <?php
 /**
  * Menu de navigation unifié — FrenchyConciergerie
- * Combine les modules IONOS (planning, ménage, comptabilité, inventaire)
- * et les modules Raspberry Pi (SMS, réservations, sync iCal, tarifs, marché)
+ * Toutes les pages organisées par catégories
+ * Permissions : admin = tout, user = pages assignées en BDD
  */
 
 if (!defined('BASE_PATH')) {
@@ -31,7 +31,7 @@ if (empty($_SESSION['csrf_token'])) {
 }
 $csrf_token = $_SESSION['csrf_token'];
 
-// Pages accessibles depuis la BDD (système existant IONOS)
+// Pages accessibles depuis la BDD (système de permissions)
 $pages_accessibles = [];
 try {
     if ($role === 'admin') {
@@ -54,24 +54,111 @@ try {
 
 $currentFile = basename($_SERVER['PHP_SELF']);
 
-// Vérification d'accès pour non-admin
-if ($role !== 'admin') {
-    $knownPages = array_map(fn($p) => basename($p['chemin']), $pages_accessibles);
-    // Les nouvelles pages intégrées sont accessibles aux admins uniquement pour l'instant
-    // On peut étendre le système de permissions plus tard
+// Set de noms de fichiers accessibles pour vérification rapide
+$fichiers_accessibles = array_map(fn($p) => basename($p['chemin']), $pages_accessibles);
+
+/**
+ * Vérifie si l'utilisateur a accès à une page
+ */
+function userCanAccess(string $chemin, string $role, array $fichiers_accessibles): bool {
+    if ($role === 'admin') return true;
+    return in_array(basename($chemin), $fichiers_accessibles);
+}
+
+// ============================================
+// DÉFINITION DES CATÉGORIES DU MENU
+// ============================================
+$menu_categories = [
+    'Logements' => [
+        'icon' => 'fa-home',
+        'items' => [
+            ['nom' => 'Planning',      'chemin' => 'pages/planning.php',              'icon' => 'fa-calendar-alt'],
+            ['nom' => 'Logements',     'chemin' => 'pages/logements.php',             'icon' => 'fa-building'],
+            ['nom' => 'Équipements',   'chemin' => 'pages/logement_equipements.php',  'icon' => 'fa-couch'],
+            ['nom' => 'Descriptions',  'chemin' => 'pages/description_logements.php', 'icon' => 'fa-file-alt'],
+            ['nom' => 'Machines',      'chemin' => 'pages/machines.php',              'icon' => 'fa-cogs'],
+        ]
+    ],
+    'Réservations' => [
+        'icon' => 'fa-calendar-check',
+        'items' => [
+            ['nom' => 'Listing complet',    'chemin' => 'pages/reservations.php',        'icon' => 'fa-list'],
+            ['nom' => 'Sync iCal',          'chemin' => 'pages/sync_ical.php',           'icon' => 'fa-sync-alt'],
+            ['nom' => 'Taux d\'occupation', 'chemin' => 'pages/occupation.php',          'icon' => 'fa-chart-pie'],
+            ['nom' => 'Import CSV',         'chemin' => 'pages/import_reservations.php', 'icon' => 'fa-file-import'],
+        ]
+    ],
+    'Communication' => [
+        'icon' => 'fa-comments',
+        'items' => [
+            ['nom' => 'SMS reçus',       'chemin' => 'pages/sms_recus.php',       'icon' => 'fa-inbox'],
+            ['nom' => 'Envoyer SMS',     'chemin' => 'pages/sms_envoyer.php',     'icon' => 'fa-paper-plane'],
+            ['nom' => 'Templates',       'chemin' => 'pages/sms_templates.php',   'icon' => 'fa-file-alt'],
+            ['nom' => 'Automatisations', 'chemin' => 'pages/sms_automations.php', 'icon' => 'fa-robot'],
+            ['nom' => 'Campagnes',       'chemin' => 'pages/sms_campagnes.php',   'icon' => 'fa-bullhorn'],
+        ]
+    ],
+    'Inventaire' => [
+        'icon' => 'fa-boxes-stacked',
+        'items' => [
+            ['nom' => 'Accueil inventaire', 'chemin' => 'pages/inventaire.php',          'icon' => 'fa-warehouse'],
+            ['nom' => 'Lancer inventaire',  'chemin' => 'pages/inventaire_lancer.php',   'icon' => 'fa-plus-circle'],
+            ['nom' => 'Sessions',           'chemin' => 'pages/liste_sessions.php',      'icon' => 'fa-clipboard-list'],
+            ['nom' => 'Liste objets',       'chemin' => 'pages/liste_objets.php',        'icon' => 'fa-list'],
+            ['nom' => 'Étiquettes',         'chemin' => 'pages/impression_etiquettes.php','icon' => 'fa-tags'],
+        ]
+    ],
+    'Finance' => [
+        'icon' => 'fa-euro-sign',
+        'items' => [
+            ['nom' => 'Comptabilité',       'chemin' => 'pages/comptabilite.php',  'icon' => 'fa-calculator'],
+            ['nom' => 'Facturation',        'chemin' => 'pages/facturation.php',   'icon' => 'fa-file-invoice'],
+            ['nom' => 'Superhôte / Tarifs', 'chemin' => 'pages/superhote.php',     'icon' => 'fa-star'],
+            ['nom' => 'Statistiques',       'chemin' => 'pages/statistiques.php',  'icon' => 'fa-chart-bar'],
+            ['nom' => 'Stat. ménage',       'chemin' => 'pages/statistiques_menage.php', 'icon' => 'fa-broom'],
+        ]
+    ],
+    'Outils' => [
+        'icon' => 'fa-tools',
+        'items' => [
+            ['nom' => 'Analyse de marché', 'chemin' => 'pages/analyse_marche.php',      'icon' => 'fa-chart-line'],
+            ['nom' => 'Concurrence',       'chemin' => 'pages/analyse_concurrence.php', 'icon' => 'fa-chart-area'],
+            ['nom' => 'Carnet clients',    'chemin' => 'pages/clients.php',             'icon' => 'fa-address-book'],
+            ['nom' => 'Villes',            'chemin' => 'pages/villes.php',              'icon' => 'fa-city'],
+            ['nom' => 'Todo',              'chemin' => 'pages/todo.php',                'icon' => 'fa-tasks'],
+        ]
+    ],
+];
+
+// Pages déjà listées dans les catégories (pour éviter les doublons)
+$pages_dans_categories = [];
+foreach ($menu_categories as $cat) {
+    foreach ($cat['items'] as $item) {
+        $pages_dans_categories[] = basename($item['chemin']);
+    }
+}
+
+// Pages dynamiques de la BDD qui ne sont dans aucune catégorie
+$pages_hors_categories = [];
+foreach ($pages_accessibles as $page) {
+    $bn = basename($page['chemin']);
+    if (!in_array($bn, $pages_dans_categories)) {
+        $pages_hors_categories[] = $page;
+    }
 }
 ?>
 
-<!-- Bootstrap 5 + FontAwesome (chargés par le menu pour un rendu cohérent) -->
+<!-- Bootstrap 5 + FontAwesome -->
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="<?= BASE_URL ?>css/menu.css">
 
-<!-- Barre de navigation Bootstrap 5 -->
+<!-- Barre de navigation -->
 <header>
-<nav class="navbar navbar-expand-lg navbar-dark" style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);">
+<nav class="navbar navbar-expand-lg navbar-dark fc-navbar">
     <div class="container-fluid">
-        <a class="navbar-brand fw-bold" href="<?= BASE_URL ?>index.php">
-            <i class="fas fa-bolt text-success"></i> FrenchyConciergerie
+        <a class="navbar-brand" href="<?= BASE_URL ?>index.php">
+            <i class="fas fa-bolt"></i> Frenchy
         </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
                 data-bs-target="#navbarNav" aria-controls="navbarNav"
@@ -81,109 +168,72 @@ if ($role !== 'admin') {
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
 
-                <!-- Pages dynamiques depuis la BDD (planning, comptabilité, etc.) -->
-                <?php foreach ($pages_accessibles as $page):
-                    $chemin = $page['chemin'];
-                    // Corrige les anciens chemins sans le préfixe pages/
-                    if (!str_starts_with($chemin, 'pages/') && file_exists(BASE_PATH . '/pages/' . basename($chemin))) {
-                        $chemin = 'pages/' . basename($chemin);
+                <!-- Accueil -->
+                <li class="nav-item">
+                    <a class="nav-link <?= $currentFile === 'index.php' ? 'active' : '' ?>" href="<?= BASE_URL ?>index.php">
+                        <i class="fas fa-tachometer-alt"></i> Accueil
+                    </a>
+                </li>
+
+                <!-- Catégories organisées en dropdowns -->
+                <?php foreach ($menu_categories as $categorie_nom => $categorie): ?>
+                    <?php
+                    // Filtrer les items accessibles à cet utilisateur
+                    $items_visibles = [];
+                    $cat_active = false;
+                    foreach ($categorie['items'] as $item) {
+                        if (userCanAccess($item['chemin'], $role, $fichiers_accessibles)) {
+                            $items_visibles[] = $item;
+                            if (basename($item['chemin']) === $currentFile) {
+                                $cat_active = true;
+                            }
+                        }
                     }
-                    $url = BASE_URL . ltrim($chemin, '/');
-                    $isActive = (basename($chemin) === $currentFile);
-                ?>
-                    <li class="nav-item">
-                        <a class="nav-link <?= $isActive ? 'active' : '' ?>" href="<?= htmlspecialchars($url) ?>">
-                            <?= htmlspecialchars($page['nom']) ?>
+                    if (empty($items_visibles)) continue;
+                    ?>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle <?= $cat_active ? 'active' : '' ?>"
+                           href="#" data-bs-toggle="dropdown">
+                            <i class="fas <?= $categorie['icon'] ?>"></i> <?= $categorie_nom ?>
                         </a>
+                        <ul class="dropdown-menu">
+                            <?php foreach ($items_visibles as $item):
+                                $url = BASE_URL . ltrim($item['chemin'], '/');
+                                $isActive = (basename($item['chemin']) === $currentFile);
+                            ?>
+                                <li>
+                                    <a class="dropdown-item <?= $isActive ? 'active' : '' ?>" href="<?= htmlspecialchars($url) ?>">
+                                        <i class="fas <?= $item['icon'] ?>"></i> <?= htmlspecialchars($item['nom']) ?>
+                                    </a>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
                     </li>
                 <?php endforeach; ?>
 
-                <?php if ($role === 'admin'): ?>
-                <!-- ============================================ -->
-                <!-- MODULES INTÉGRÉS (ex-Raspberry Pi)           -->
-                <!-- ============================================ -->
-
-                <!-- Réservations & Sync -->
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle <?= in_array($currentFile, ['reservations.php','sync_ical.php','occupation.php','import_reservations.php']) ? 'active' : '' ?>"
-                       href="#" data-bs-toggle="dropdown">
-                        <i class="fas fa-calendar-check"></i> Réservations
-                    </a>
-                    <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="<?= BASE_URL ?>pages/reservations.php">
-                            <i class="fas fa-list"></i> Listing complet</a></li>
-                        <li><a class="dropdown-item" href="<?= BASE_URL ?>pages/sync_ical.php">
-                            <i class="fas fa-sync-alt"></i> Synchronisation iCal</a></li>
-                        <li><a class="dropdown-item" href="<?= BASE_URL ?>pages/occupation.php">
-                            <i class="fas fa-chart-pie"></i> Taux d'occupation</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="<?= BASE_URL ?>pages/import_reservations.php">
-                            <i class="fas fa-file-import"></i> Import CSV</a></li>
-                    </ul>
-                </li>
-
-                <!-- SMS & Communication -->
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle <?= in_array($currentFile, ['sms_recus.php','sms_envoyer.php','sms_templates.php','sms_campagnes.php','sms_automations.php']) ? 'active' : '' ?>"
-                       href="#" data-bs-toggle="dropdown">
-                        <i class="fas fa-sms"></i> SMS
-                    </a>
-                    <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="<?= BASE_URL ?>pages/sms_recus.php">
-                            <i class="fas fa-inbox"></i> SMS reçus</a></li>
-                        <li><a class="dropdown-item" href="<?= BASE_URL ?>pages/sms_envoyer.php">
-                            <i class="fas fa-paper-plane"></i> Envoyer SMS</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="<?= BASE_URL ?>pages/sms_templates.php">
-                            <i class="fas fa-file-alt"></i> Templates</a></li>
-                        <li><a class="dropdown-item" href="<?= BASE_URL ?>pages/sms_automations.php">
-                            <i class="fas fa-robot"></i> Automatisations</a></li>
-                        <li><a class="dropdown-item" href="<?= BASE_URL ?>pages/sms_campagnes.php">
-                            <i class="fas fa-bullhorn"></i> Campagnes</a></li>
-                    </ul>
-                </li>
-
-                <!-- Inventaire -->
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle <?= in_array($currentFile, ['inventaire.php','inventaire_lancer.php','inventaire_saisie.php','inventaire_valider.php','liste_sessions.php','liste_objets.php','objet.php','impression_etiquettes.php']) ? 'active' : '' ?>"
-                       href="#" data-bs-toggle="dropdown">
-                        <i class="fas fa-boxes-stacked"></i> Inventaire
-                    </a>
-                    <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="<?= BASE_URL ?>pages/inventaire.php">
-                            <i class="fas fa-home"></i> Accueil inventaire</a></li>
-                        <li><a class="dropdown-item" href="<?= BASE_URL ?>pages/inventaire_lancer.php">
-                            <i class="fas fa-plus-circle"></i> Lancer inventaire</a></li>
-                        <li><a class="dropdown-item" href="<?= BASE_URL ?>pages/liste_sessions.php">
-                            <i class="fas fa-clipboard-list"></i> Sessions</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="<?= BASE_URL ?>pages/liste_objets.php">
-                            <i class="fas fa-list"></i> Liste objets</a></li>
-                        <li><a class="dropdown-item" href="<?= BASE_URL ?>pages/impression_etiquettes.php">
-                            <i class="fas fa-tags"></i> Etiquettes</a></li>
-                    </ul>
-                </li>
-
-                <!-- Outils avancés -->
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle <?= in_array($currentFile, ['superhote.php','analyse_marche.php','analyse_concurrence.php','clients.php','villes.php']) ? 'active' : '' ?>"
-                       href="#" data-bs-toggle="dropdown">
-                        <i class="fas fa-tools"></i> Outils
-                    </a>
-                    <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="<?= BASE_URL ?>pages/superhote.php">
-                            <i class="fas fa-euro-sign"></i> Superhôte (Tarifs)</a></li>
-                        <li><a class="dropdown-item" href="<?= BASE_URL ?>pages/analyse_marche.php">
-                            <i class="fas fa-chart-line"></i> Analyse de marché</a></li>
-                        <li><a class="dropdown-item" href="<?= BASE_URL ?>pages/analyse_concurrence.php">
-                            <i class="fas fa-chart-bar"></i> Concurrence</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="<?= BASE_URL ?>pages/clients.php">
-                            <i class="fas fa-address-book"></i> Carnet clients</a></li>
-                        <li><a class="dropdown-item" href="<?= BASE_URL ?>pages/villes.php">
-                            <i class="fas fa-city"></i> Villes & Recommandations</a></li>
-                    </ul>
-                </li>
+                <!-- Pages dynamiques non catégorisées (ajoutées via admin) -->
+                <?php if (!empty($pages_hors_categories)): ?>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                            <i class="fas fa-ellipsis-h"></i> Autres
+                        </a>
+                        <ul class="dropdown-menu">
+                            <?php foreach ($pages_hors_categories as $page):
+                                $chemin = $page['chemin'];
+                                if (!str_starts_with($chemin, 'pages/') && file_exists(BASE_PATH . '/pages/' . basename($chemin))) {
+                                    $chemin = 'pages/' . basename($chemin);
+                                }
+                                $url = BASE_URL . ltrim($chemin, '/');
+                                $isActive = (basename($chemin) === $currentFile);
+                            ?>
+                                <li>
+                                    <a class="dropdown-item <?= $isActive ? 'active' : '' ?>" href="<?= htmlspecialchars($url) ?>">
+                                        <?= htmlspecialchars($page['nom']) ?>
+                                    </a>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
+                    </li>
                 <?php endif; ?>
 
             </ul>
@@ -191,7 +241,8 @@ if ($role !== 'admin') {
             <!-- Partie droite : utilisateur -->
             <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
                 <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button"
+                       data-bs-toggle="dropdown" aria-expanded="false">
                         <i class="fas fa-user-circle"></i>
                         <?= htmlspecialchars($nom_utilisateur) ?>
                         <?php if ($role === 'admin'): ?>
@@ -205,6 +256,10 @@ if ($role !== 'admin') {
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item" href="<?= BASE_URL ?>pages/admin.php">
                             <i class="fas fa-cog"></i> Administration</a></li>
+                        <li><a class="dropdown-item" href="<?= BASE_URL ?>pages/gestion_pages.php">
+                            <i class="fas fa-file-circle-plus"></i> Gestion pages</a></li>
+                        <li><a class="dropdown-item" href="<?= BASE_URL ?>pages/intervenants.php">
+                            <i class="fas fa-users"></i> Intervenants</a></li>
                         <?php endif; ?>
                         <li><hr class="dropdown-divider"></li>
                         <li>
