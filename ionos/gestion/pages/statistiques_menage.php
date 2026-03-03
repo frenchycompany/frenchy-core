@@ -101,8 +101,7 @@ $query = "
               + 3
             ) AS rentabilite
     FROM planning pl
-    -- on joint via la colonne pl.logement qui contient le nom
-    LEFT JOIN liste_logements ll ON pl.logement = ll.nom_du_logement
+    LEFT JOIN liste_logements ll ON pl.logement_id = ll.id
     LEFT JOIN role rc            ON rc.role = 'Conducteur'
     LEFT JOIN role rm            ON rm.role = 'Femme de ménage'
     LEFT JOIN role rl            ON rl.role = 'Laverie'
