@@ -4,11 +4,10 @@
  * Permet de decrire chaque logement pour les voyageurs
  */
 
-// DB loaded via config.php
+include '../config.php';
+include '../pages/menu.php';
 require_once __DIR__ . '/../includes/rpi_db.php';
 $pdo = getRpiPdo();
-// auth loaded via menu.php
-// csrf loaded via config.php
 
 
 
