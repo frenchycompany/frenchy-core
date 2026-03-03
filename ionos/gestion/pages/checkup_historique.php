@@ -5,6 +5,44 @@
 include '../config.php';
 include '../pages/menu.php';
 
+$isAdmin = ($_SESSION['role'] ?? '') === 'admin';
+
+// Suppression d'un checkup (admin uniquement)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_checkup']) && $isAdmin) {
+    $deleteId = (int)$_POST['delete_checkup'];
+
+    // Recuperer les fichiers a supprimer (photos items + signature)
+    $stmt = $conn->prepare("SELECT photo_path FROM checkup_items WHERE session_id = ? AND photo_path IS NOT NULL AND photo_path != ''");
+    $stmt->execute([$deleteId]);
+    $photos = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+    try {
+        $stmt = $conn->prepare("SELECT signature_path FROM checkup_sessions WHERE id = ?");
+        $stmt->execute([$deleteId]);
+        $sigPath = $stmt->fetchColumn();
+    } catch (PDOException $e) {
+        $sigPath = null;
+    }
+
+    // Supprimer les fichiers physiques
+    foreach ($photos as $photo) {
+        $fullPath = __DIR__ . '/../' . $photo;
+        if (file_exists($fullPath)) @unlink($fullPath);
+    }
+    if ($sigPath) {
+        $fullPath = __DIR__ . '/../' . $sigPath;
+        if (file_exists($fullPath)) @unlink($fullPath);
+    }
+
+    // Supprimer en BDD (CASCADE supprime les checkup_items)
+    $stmt = $conn->prepare("DELETE FROM checkup_sessions WHERE id = ?");
+    $stmt->execute([$deleteId]);
+
+    // Rediriger pour eviter le re-submit
+    header("Location: checkup_historique.php?" . http_build_query($_GET));
+    exit;
+}
+
 // Filtres
 $logement_filter = isset($_GET['logement_id']) ? (int)$_GET['logement_id'] : null;
 $statut_filter = isset($_GET['statut']) ? $_GET['statut'] : null;
@@ -135,6 +173,34 @@ if ($termines > 0) {
         .badge-score { background: #f5f5f5; color: #333; }
         .badge-taches { background: #f3e5f5; color: #7b1fa2; }
         .hist-empty { text-align: center; padding: 40px 20px; color: #999; font-size: 1.05em; }
+        .btn-delete-ck {
+            padding: 6px 10px; background: #fbe9e7; color: #c62828;
+            border: none; border-radius: 8px; font-size: 0.82em;
+            font-weight: 600; cursor: pointer; white-space: nowrap;
+            margin-left: 6px;
+        }
+        .btn-delete-ck:hover { background: #e53935; color: #fff; }
+        /* Modal confirmation */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5); z-index: 9999;
+            align-items: center; justify-content: center;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal-box {
+            background: #fff; border-radius: 15px; padding: 30px 25px;
+            max-width: 400px; width: 90%; text-align: center;
+            box-shadow: 0 5px 30px rgba(0,0,0,0.2);
+        }
+        .modal-box h3 { margin: 0 0 10px; color: #c62828; font-size: 1.1em; }
+        .modal-box p { margin: 0 0 20px; color: #666; font-size: 0.95em; }
+        .modal-actions { display: flex; gap: 10px; justify-content: center; }
+        .modal-actions button {
+            padding: 10px 24px; border: none; border-radius: 8px;
+            font-size: 0.95em; font-weight: 600; cursor: pointer;
+        }
+        .modal-cancel { background: #e0e0e0; color: #555; }
+        .modal-confirm { background: #e53935; color: #fff; }
         @media (max-width: 600px) {
             .hist-stats { flex-wrap: wrap; }
             .hist-stat { min-width: calc(50% - 8px); }
@@ -231,29 +297,72 @@ if ($termines > 0) {
             $total = $c['total_items'] ?: 1;
             $score = round(($c['nb_ok'] / $total) * 100);
         ?>
-        <a class="hist-card status-<?= $c['statut'] ?>"
-           href="<?= $c['statut'] === 'en_cours' ? 'checkup_faire.php?session_id=' . $c['id'] : 'checkup_rapport.php?session_id=' . $c['id'] ?>">
-            <div class="hist-info">
-                <h4><?= htmlspecialchars($c['nom_du_logement']) ?></h4>
-                <small>
-                    <i class="fas fa-clock"></i> <?= date('d/m/Y H:i', strtotime($c['created_at'])) ?>
-                    — <i class="fas fa-user"></i> <?= htmlspecialchars($c['nom_intervenant']) ?>
-                </small>
-            </div>
-            <div class="hist-badges">
-                <?php if ($c['statut'] === 'en_cours'): ?>
-                    <span class="badge badge-encours">En cours</span>
-                <?php else: ?>
-                    <span class="badge badge-score"><?= $score ?>%</span>
-                    <?php if ($c['nb_ok'] > 0): ?><span class="badge badge-ok"><?= $c['nb_ok'] ?> OK</span><?php endif; ?>
-                    <?php if ($c['nb_problemes'] > 0): ?><span class="badge badge-pb"><?= $c['nb_problemes'] ?> pb</span><?php endif; ?>
-                    <?php if ($c['nb_absents'] > 0): ?><span class="badge badge-abs"><?= $c['nb_absents'] ?> abs</span><?php endif; ?>
-                    <?php if ($c['nb_taches_faites'] > 0): ?><span class="badge badge-taches"><?= $c['nb_taches_faites'] ?> taches</span><?php endif; ?>
-                <?php endif; ?>
-            </div>
-        </a>
+        <div class="hist-card status-<?= $c['statut'] ?>">
+            <a href="<?= $c['statut'] === 'en_cours' ? 'checkup_faire.php?session_id=' . $c['id'] : 'checkup_rapport.php?session_id=' . $c['id'] ?>"
+               style="flex:1;text-decoration:none;color:inherit;display:flex;justify-content:space-between;align-items:center;">
+                <div class="hist-info">
+                    <h4><?= htmlspecialchars($c['nom_du_logement']) ?></h4>
+                    <small>
+                        <i class="fas fa-clock"></i> <?= date('d/m/Y H:i', strtotime($c['created_at'])) ?>
+                        — <i class="fas fa-user"></i> <?= htmlspecialchars($c['nom_intervenant']) ?>
+                    </small>
+                </div>
+                <div class="hist-badges">
+                    <?php if ($c['statut'] === 'en_cours'): ?>
+                        <span class="badge badge-encours">En cours</span>
+                    <?php else: ?>
+                        <span class="badge badge-score"><?= $score ?>%</span>
+                        <?php if ($c['nb_ok'] > 0): ?><span class="badge badge-ok"><?= $c['nb_ok'] ?> OK</span><?php endif; ?>
+                        <?php if ($c['nb_problemes'] > 0): ?><span class="badge badge-pb"><?= $c['nb_problemes'] ?> pb</span><?php endif; ?>
+                        <?php if ($c['nb_absents'] > 0): ?><span class="badge badge-abs"><?= $c['nb_absents'] ?> abs</span><?php endif; ?>
+                        <?php if ($c['nb_taches_faites'] > 0): ?><span class="badge badge-taches"><?= $c['nb_taches_faites'] ?> taches</span><?php endif; ?>
+                    <?php endif; ?>
+                </div>
+            </a>
+            <?php if ($isAdmin): ?>
+            <button class="btn-delete-ck" onclick="event.stopPropagation(); confirmDelete(<?= $c['id'] ?>, '<?= htmlspecialchars(addslashes($c['nom_du_logement'])) ?>', '<?= date('d/m/Y H:i', strtotime($c['created_at'])) ?>')">
+                <i class="fas fa-trash-alt"></i>
+            </button>
+            <?php endif; ?>
+        </div>
         <?php endforeach; ?>
     <?php endif; ?>
 </div>
+
+<?php if ($isAdmin): ?>
+<!-- Modal de confirmation de suppression -->
+<div class="modal-overlay" id="deleteModal">
+    <div class="modal-box">
+        <h3><i class="fas fa-exclamation-triangle"></i> Supprimer ce checkup ?</h3>
+        <p id="deleteModalText">Cette action est irreversible.</p>
+        <div class="modal-actions">
+            <button class="modal-cancel" onclick="closeDeleteModal()">Annuler</button>
+            <form method="POST" id="deleteForm" style="margin:0">
+                <input type="hidden" name="delete_checkup" id="deleteCheckupId">
+                <button type="submit" class="modal-confirm"><i class="fas fa-trash-alt"></i> Supprimer</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmDelete(id, logement, date) {
+    document.getElementById('deleteCheckupId').value = id;
+    document.getElementById('deleteModalText').innerHTML =
+        '<strong>' + logement + '</strong><br><small style="color:#888">' + date + '</small><br><br>' +
+        'Toutes les donnees, photos et signature seront supprimees.';
+    document.getElementById('deleteModal').classList.add('active');
+}
+
+function closeDeleteModal() {
+    document.getElementById('deleteModal').classList.remove('active');
+}
+
+// Fermer en cliquant a l'exterieur
+document.getElementById('deleteModal').addEventListener('click', function(e) {
+    if (e.target === this) closeDeleteModal();
+});
+</script>
+<?php endif; ?>
 </body>
 </html>

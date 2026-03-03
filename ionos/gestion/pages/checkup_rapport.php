@@ -6,7 +6,35 @@
 include '../config.php';
 include '../pages/menu.php';
 
+$isAdmin = ($_SESSION['role'] ?? '') === 'admin';
 $session_id = isset($_GET['session_id']) ? intval($_GET['session_id']) : 0;
+
+// Suppression admin
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_checkup']) && $isAdmin) {
+    $deleteId = (int)$_POST['delete_checkup'];
+
+    // Supprimer les fichiers photos
+    $stmt = $conn->prepare("SELECT photo_path FROM checkup_items WHERE session_id = ? AND photo_path IS NOT NULL AND photo_path != ''");
+    $stmt->execute([$deleteId]);
+    foreach ($stmt->fetchAll(PDO::FETCH_COLUMN) as $photo) {
+        $f = __DIR__ . '/../' . $photo;
+        if (file_exists($f)) @unlink($f);
+    }
+
+    // Supprimer la signature
+    try {
+        $stmt = $conn->prepare("SELECT signature_path FROM checkup_sessions WHERE id = ?");
+        $stmt->execute([$deleteId]);
+        $sig = $stmt->fetchColumn();
+        if ($sig) { $f = __DIR__ . '/../' . $sig; if (file_exists($f)) @unlink($f); }
+    } catch (PDOException $e) {}
+
+    // Supprimer en BDD
+    $conn->prepare("DELETE FROM checkup_sessions WHERE id = ?")->execute([$deleteId]);
+
+    header("Location: checkup_historique.php");
+    exit;
+}
 
 // Charger la session
 $stmt = $conn->prepare("
@@ -264,6 +292,66 @@ try {
             .rp-score-card { min-width: calc(50% - 8px); }
             .rp-actions { flex-direction: column; }
         }
+        .btn-delete {
+            background: #ffebee;
+            color: #c62828;
+        }
+        .btn-delete:hover {
+            background: #ffcdd2;
+        }
+        /* Modal suppression */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+        .modal-box {
+            background: #fff;
+            border-radius: 16px;
+            padding: 30px 24px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+        }
+        .modal-box h4 {
+            margin: 0 0 12px;
+            font-size: 1.1em;
+            color: #c62828;
+        }
+        .modal-box p {
+            margin: 0 0 20px;
+            color: #555;
+            font-size: 0.95em;
+        }
+        .modal-box .modal-btns {
+            display: flex;
+            gap: 10px;
+        }
+        .modal-box .modal-btns button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 0.95em;
+            cursor: pointer;
+        }
+        .modal-box .btn-cancel {
+            background: #e0e0e0;
+            color: #333;
+        }
+        .modal-box .btn-confirm-del {
+            background: #c62828;
+            color: #fff;
+        }
         @media print {
             nav, .rp-actions { display: none !important; }
             .rp-section-body { display: block !important; }
@@ -453,7 +541,41 @@ try {
         <a href="checkup_logement.php" class="btn-new">
             <i class="fas fa-plus"></i> Nouveau
         </a>
+        <?php if ($isAdmin): ?>
+        <button type="button" class="btn-delete" onclick="confirmDelete(<?= $session_id ?>)">
+            <i class="fas fa-trash"></i> Supprimer
+        </button>
+        <?php endif; ?>
     </div>
 </div>
+
+<?php if ($isAdmin): ?>
+<!-- Modal de confirmation de suppression -->
+<div class="modal-overlay" id="deleteModal">
+    <div class="modal-box">
+        <h4><i class="fas fa-exclamation-triangle"></i> Supprimer ce checkup ?</h4>
+        <p>Cette action est irreversible. Le checkup, ses items, photos et signature seront definitivement supprimes.</p>
+        <form method="POST" id="deleteForm">
+            <input type="hidden" name="delete_checkup" id="deleteCheckupId" value="">
+            <div class="modal-btns">
+                <button type="button" class="btn-cancel" onclick="closeDeleteModal()">Annuler</button>
+                <button type="submit" class="btn-confirm-del"><i class="fas fa-trash"></i> Supprimer</button>
+            </div>
+        </form>
+    </div>
+</div>
+<script>
+function confirmDelete(id) {
+    document.getElementById('deleteCheckupId').value = id;
+    document.getElementById('deleteModal').classList.add('active');
+}
+function closeDeleteModal() {
+    document.getElementById('deleteModal').classList.remove('active');
+}
+document.getElementById('deleteModal').addEventListener('click', function(e) {
+    if (e.target === this) closeDeleteModal();
+});
+</script>
+<?php endif; ?>
 </body>
 </html>
