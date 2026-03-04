@@ -81,6 +81,7 @@ $menu_categories = [
             ['nom' => 'Logements',     'chemin' => 'pages/logements.php',             'icon' => 'fa-building'],
             ['nom' => 'Équipements',   'chemin' => 'pages/logement_equipements.php',  'icon' => 'fa-couch'],
             ['nom' => 'Descriptions',  'chemin' => 'pages/description_logements.php', 'icon' => 'fa-file-alt'],
+            ['nom' => 'Sites vitrine', 'chemin' => 'pages/sites.php',                 'icon' => 'fa-globe'],
             ['nom' => 'Machines',      'chemin' => 'pages/machines.php',              'icon' => 'fa-cogs'],
             ['nom' => 'Checkup',      'chemin' => 'pages/checkup_logement.php',     'icon' => 'fa-clipboard-check'],
             ['nom' => 'Historique checkups', 'chemin' => 'pages/checkup_historique.php', 'icon' => 'fa-history'],
