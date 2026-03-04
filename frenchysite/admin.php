@@ -94,6 +94,35 @@ try {
         }
     } catch (PDOException $e) { }
 
+    // Migration: add new integration fields (airbnb_url, ics_url) + contact group
+    try {
+        $check_ics = $conn->prepare("SELECT setting_key FROM " . vf_table('settings') . " WHERE setting_key = 'ics_url'");
+        $check_ics->execute();
+        if (!$check_ics->fetch()) {
+            $ins = $conn->prepare("INSERT IGNORE INTO " . vf_table('settings') . " (setting_key, setting_value, setting_group, label, field_type, sort_order) VALUES (?, ?, ?, ?, 'text', ?)");
+            $ins->execute(['airbnb_url', '', 'integrations', 'Lien Airbnb complet', 2]);
+            $ins->execute(['ics_url', '', 'integrations', 'Lien calendrier iCal (.ics)', 3]);
+            // Reorder existing integrations
+            $conn->exec("UPDATE " . vf_table('settings') . " SET sort_order = 1 WHERE setting_key = 'airbnb_id'");
+            $conn->exec("UPDATE " . vf_table('settings') . " SET sort_order = 4 WHERE setting_key = 'matterport_id'");
+        }
+        // Migration: split contact from identity group
+        $check_contact = $conn->prepare("SELECT setting_key FROM " . vf_table('settings') . " WHERE setting_key = 'phone' AND setting_group = 'contact'");
+        $check_contact->execute();
+        if (!$check_contact->fetch()) {
+            $conn->exec("UPDATE " . vf_table('settings') . " SET setting_group = 'contact', sort_order = 1 WHERE setting_key = 'phone'");
+            $conn->exec("UPDATE " . vf_table('settings') . " SET setting_group = 'contact', sort_order = 2, label = 'Téléphone (format brut)' WHERE setting_key = 'phone_raw'");
+            $conn->exec("UPDATE " . vf_table('settings') . " SET setting_group = 'contact', sort_order = 3 WHERE setting_key = 'email'");
+            // Reorder identity: remove address gap
+            $conn->exec("UPDATE " . vf_table('settings') . " SET sort_order = 4, label = 'Adresse complète' WHERE setting_key = 'address'");
+            $conn->exec("UPDATE " . vf_table('settings') . " SET label = 'Nom du logement' WHERE setting_key = 'site_name'");
+            // Set Frenchy defaults if still placeholder
+            $conn->exec("UPDATE " . vf_table('settings') . " SET setting_value = '+33 6 47 55 46 78' WHERE setting_key = 'phone' AND setting_value = '+33 6 00 00 00 00'");
+            $conn->exec("UPDATE " . vf_table('settings') . " SET setting_value = '+33647554678' WHERE setting_key = 'phone_raw' AND setting_value = '+33600000000'");
+            $conn->exec("UPDATE " . vf_table('settings') . " SET setting_value = 'contact@frenchyconciergerie.fr' WHERE setting_key = 'email' AND setting_value = 'contact@example.com'");
+        }
+    } catch (PDOException $e) { }
+
     // Migration: seed guides from config if guides table is empty
     try {
         $guide_count = $conn->query("SELECT COUNT(*) FROM " . vf_table('guides'))->fetchColumn();
@@ -147,7 +176,8 @@ foreach ($photos_raw as $p) {
 }
 
 $group_labels = [
-    'identity'     => 'Identité',
+    'identity'     => 'Identité du logement',
+    'contact'      => 'Contact conciergerie',
     'integrations' => 'Intégrations',
     'colors'       => 'Couleurs',
     'typography'   => 'Typographie',
@@ -303,7 +333,7 @@ $site_name = htmlspecialchars($site['name']);
         <section class="adm-panel" id="panel-settings">
             <form id="form-settings" class="adm-form">
 
-                <?php foreach (['identity', 'integrations'] as $group): ?>
+                <?php foreach (['identity', 'contact', 'integrations'] as $group): ?>
                 <?php if (!empty($settings_grouped[$group])): ?>
                 <fieldset class="adm-fieldset">
                     <legend><?= htmlspecialchars($group_labels[$group] ?? $group) ?></legend>

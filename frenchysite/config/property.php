@@ -14,22 +14,26 @@
 
 return [
 
-    // ══════════ Identité ══════════
+    // ══════════ Identité du logement ══════════
     'name'      => 'Mon Logement',
     'monogram'  => 'ML',
     'tagline'   => 'Bienvenue chez vous',
     'location'  => 'Ville · Région',
-    'phone'     => '+33 6 00 00 00 00',
-    'phone_raw' => '+33600000000',
-    'email'     => 'contact@example.com',
     'address'   => 'Ville, Région, France',
+
+    // ══════════ Contact conciergerie (par défaut = Frenchy Conciergerie) ══════════
+    'phone'     => '+33 6 47 55 46 78',
+    'phone_raw' => '+33647554678',
+    'email'     => 'contact@frenchyconciergerie.fr',
 
     // ══════════ Préfixe BDD (pour partager une base entre logements) ══════════
     // Format : 3 lettres + 2 chiffres + underscore (ex: cv01_, ml02_)
     'db_prefix' => 'ml01_',
 
     // ══════════ Intégrations ══════════
-    'airbnb_id'     => '',
+    'airbnb_id'     => '',          // ID de l'annonce Airbnb (ex: 1548326807445898842)
+    'airbnb_url'    => '',          // Lien complet Airbnb (ex: https://www.airbnb.fr/rooms/...)
+    'ics_url'       => '',          // Lien calendrier iCal (.ics) pour la synchro
     'matterport_id' => '',
 
     // ══════════ Couleurs par défaut ══════════

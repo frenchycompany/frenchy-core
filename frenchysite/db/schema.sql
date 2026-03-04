@@ -72,21 +72,27 @@ CREATE TABLE IF NOT EXISTS vf_guide_blocks (
 -- Données par défaut
 -- ══════════════════════════════════════════════
 
--- ── Identité ──
+-- ── Identité du logement ──
 INSERT INTO vf_settings (setting_key, setting_value, setting_group, label, field_type, sort_order) VALUES
-('site_name',    'Mon Logement',                        'identity', 'Nom du site',       'text',  1),
+('site_name',    'Mon Logement',                        'identity', 'Nom du logement',   'text',  1),
 ('site_tagline', 'Bienvenue chez vous',                  'identity', 'Tagline',            'text',  2),
 ('site_location','Ville · Région',                       'identity', 'Localisation',       'text',  3),
-('phone',        '+33 6 00 00 00 00',                    'identity', 'Téléphone',          'text',  4),
-('phone_raw',    '+33600000000',                         'identity', 'Téléphone (brut)',   'text',  5),
-('email',        'contact@example.com',                  'identity', 'Email',              'text',  6),
-('address',      'Ville, Région, France',                'identity', 'Adresse complète',   'text',  7)
+('address',      'Ville, Région, France',                'identity', 'Adresse complète',   'text',  4)
+ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value);
+
+-- ── Contact conciergerie (par défaut = Frenchy Conciergerie) ──
+INSERT INTO vf_settings (setting_key, setting_value, setting_group, label, field_type, sort_order) VALUES
+('phone',        '+33 6 47 55 46 78',                    'contact', 'Téléphone',          'text',  1),
+('phone_raw',    '+33647554678',                         'contact', 'Téléphone (format brut)', 'text', 2),
+('email',        'contact@frenchyconciergerie.fr',       'contact', 'Email',              'text',  3)
 ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value);
 
 -- ── Intégrations ──
 INSERT INTO vf_settings (setting_key, setting_value, setting_group, label, field_type, sort_order) VALUES
-('airbnb_id',    '',   'integrations', 'ID annonce Airbnb',     'text', 1),
-('matterport_id','',   'integrations', 'ID Matterport',         'text', 2)
+('airbnb_id',    '',   'integrations', 'ID annonce Airbnb',         'text', 1),
+('airbnb_url',   '',   'integrations', 'Lien Airbnb complet',       'text', 2),
+('ics_url',      '',   'integrations', 'Lien calendrier iCal (.ics)','text', 3),
+('matterport_id','',   'integrations', 'ID Matterport',             'text', 4)
 ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value);
 
 -- ── Couleurs ──
