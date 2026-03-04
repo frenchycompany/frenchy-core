@@ -72,9 +72,12 @@ if (isset($_GET['ajax_preview']) && isset($_GET['logement_id'])) {
     } catch (PDOException $e) {}
 
     // Equipements renseignes
-    $stmt = $conn->prepare("SELECT COUNT(*) FROM logement_equipements WHERE logement_id = ?");
-    $stmt->execute([$lid]);
-    $hasEquip = $stmt->fetchColumn() > 0;
+    $hasEquip = false;
+    try {
+        $stmt = $conn->prepare("SELECT COUNT(*) FROM logement_equipements WHERE logement_id = ?");
+        $stmt->execute([$lid]);
+        $hasEquip = $stmt->fetchColumn() > 0;
+    } catch (PDOException $e) {}
 
     // Session en cours
     $stmt = $conn->prepare("SELECT id FROM checkup_sessions WHERE logement_id = ? AND statut = 'en_cours' ORDER BY created_at DESC LIMIT 1");
@@ -106,9 +109,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['logement_id'])) {
     );
 
     // === 1. EQUIPEMENTS ===
-    $stmt = $conn->prepare("SELECT * FROM logement_equipements WHERE logement_id = ?");
-    $stmt->execute([$logement_id]);
-    $equip = $stmt->fetch(PDO::FETCH_ASSOC);
+    $equip = null;
+    try {
+        $stmt = $conn->prepare("SELECT * FROM logement_equipements WHERE logement_id = ?");
+        $stmt->execute([$logement_id]);
+        $equip = $stmt->fetch(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) { /* table n'existe pas encore */ }
 
     if ($equip) {
         $cuisine = [
@@ -176,44 +182,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['logement_id'])) {
     }
 
     // === 2. INVENTAIRE (dernier inventaire termine) ===
-    $stmt = $conn->prepare("
-        SELECT io.nom_objet, io.quantite, io.piece
-        FROM inventaire_objets io
-        INNER JOIN sessions_inventaire si ON io.session_id = si.id
-        WHERE si.logement_id = ? AND si.statut = 'terminee'
-        ORDER BY si.date_creation DESC
-    ");
-    $stmt->execute([$logement_id]);
-    $objets = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    try {
+        $stmt = $conn->prepare("
+            SELECT io.nom_objet, io.quantite, io.piece
+            FROM inventaire_objets io
+            INNER JOIN sessions_inventaire si ON io.session_id = si.id
+            WHERE si.logement_id = ? AND si.statut = 'terminee'
+            ORDER BY si.date_creation DESC
+        ");
+        $stmt->execute([$logement_id]);
+        $objets = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    foreach ($objets as $obj) {
-        $label = $obj['nom_objet'];
-        if ($obj['quantite'] > 1) {
-            $label .= ' (x' . $obj['quantite'] . ')';
+        foreach ($objets as $obj) {
+            $label = $obj['nom_objet'];
+            if ($obj['quantite'] > 1) {
+                $label .= ' (x' . $obj['quantite'] . ')';
+            }
+            if ($obj['piece']) {
+                $label .= ' [' . $obj['piece'] . ']';
+            }
+            $insertStmt->execute([$session_id, 'Inventaire', $label, null]);
         }
-        if ($obj['piece']) {
-            $label .= ' [' . $obj['piece'] . ']';
-        }
-        $insertStmt->execute([$session_id, 'Inventaire', $label, null]);
-    }
+    } catch (PDOException $e) { /* tables inventaire n'existent pas encore */ }
 
     // === 3. TACHES (todo_list en attente ou en cours) ===
-    $stmt = $conn->prepare("
-        SELECT id, description, date_limite, statut
-        FROM todo_list
-        WHERE logement_id = ? AND statut IN ('en attente', 'en cours')
-        ORDER BY date_limite ASC
-    ");
-    $stmt->execute([$logement_id]);
-    $taches = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    try {
+        $stmt = $conn->prepare("
+            SELECT id, description, date_limite, statut
+            FROM todo_list
+            WHERE logement_id = ? AND statut IN ('en attente', 'en cours')
+            ORDER BY date_limite ASC
+        ");
+        $stmt->execute([$logement_id]);
+        $taches = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    foreach ($taches as $t) {
-        $label = $t['description'];
-        if ($t['date_limite']) {
-            $label .= ' (avant le ' . date('d/m', strtotime($t['date_limite'])) . ')';
+        foreach ($taches as $t) {
+            $label = $t['description'];
+            if ($t['date_limite']) {
+                $label .= ' (avant le ' . date('d/m', strtotime($t['date_limite'])) . ')';
+            }
+            $insertStmt->execute([$session_id, 'Taches a faire', $label, $t['id']]);
         }
-        $insertStmt->execute([$session_id, 'Taches a faire', $label, $t['id']]);
-    }
+    } catch (PDOException $e) { /* table todo_list n'existe pas encore */ }
 
     // === 4. ETAT GENERAL ===
     $etatGeneral = [
