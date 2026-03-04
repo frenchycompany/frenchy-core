@@ -2,7 +2,7 @@
 /**
  * API JSON pour le calendrier des réservations
  * Combine : table reservation (RPi) + ical_reservations (RPi)
- * Enrichit avec les noms de logements (VPS)
+ * Enrichit avec les noms de logements + tarifs (VPS)
  */
 header('Content-Type: application/json; charset=utf-8');
 
@@ -22,17 +22,54 @@ $end         = $_GET['end']   ?? date('Y-m-t', strtotime('+3 months'));
 $logement_id = isset($_GET['logement_id']) && $_GET['logement_id'] !== '' ? (int) $_GET['logement_id'] : null;
 
 try {
-    // ── 1. Noms de logements (VPS) ──
+    // ── 1. Logements + tarifs (VPS) ──
     $logementNames = [];
-    $rows = $conn->query("SELECT id, nom_du_logement FROM liste_logements")->fetchAll(PDO::FETCH_ASSOC);
+    $logementPricing = [];
+    $rows = $conn->query("
+        SELECT l.id, l.nom_du_logement,
+               sc.prix_plancher, sc.prix_standard, sc.weekend_pourcent, sc.dimanche_reduction,
+               sc.nuits_minimum, sc.groupe,
+               g.prix_plancher AS g_prix_plancher, g.prix_standard AS g_prix_standard,
+               g.weekend_pourcent AS g_weekend_pourcent, g.dimanche_reduction AS g_dimanche_reduction,
+               g.nuits_minimum AS g_nuits_minimum
+        FROM liste_logements l
+        LEFT JOIN superhote_config sc ON l.id = sc.logement_id
+        LEFT JOIN superhote_groups g ON sc.groupe = g.nom
+    ")->fetchAll(PDO::FETCH_ASSOC);
+
     foreach ($rows as $r) {
         $logementNames[$r['id']] = $r['nom_du_logement'];
+        $logementPricing[$r['id']] = [
+            'prix_plancher'      => (float) ($r['g_prix_plancher'] ?? $r['prix_plancher'] ?? 0),
+            'prix_standard'      => (float) ($r['g_prix_standard'] ?? $r['prix_standard'] ?? 0),
+            'weekend_pourcent'   => (float) ($r['g_weekend_pourcent'] ?? $r['weekend_pourcent'] ?? 10),
+            'dimanche_reduction' => (float) ($r['g_dimanche_reduction'] ?? $r['dimanche_reduction'] ?? 5),
+            'nuits_minimum'      => (int)   ($r['g_nuits_minimum'] ?? $r['nuits_minimum'] ?? 1),
+            'groupe'             => $r['groupe'] ?? null,
+        ];
+    }
+
+    // ── 2. Prix générés par superhote_price_updates (VPS) – prix/nuit par date ──
+    $dailyPrices = []; // [logement_id][date] = prix
+    try {
+        $priceStmt = $conn->prepare("
+            SELECT logement_id, date_start, price
+            FROM superhote_price_updates
+            WHERE date_start >= ? AND date_start <= ? AND status IN ('pending','completed')
+            ORDER BY date_start
+        ");
+        $priceStmt->execute([$start, $end]);
+        foreach ($priceStmt->fetchAll(PDO::FETCH_ASSOC) as $p) {
+            $dailyPrices[(int)$p['logement_id']][$p['date_start']] = (float) $p['price'];
+        }
+    } catch (PDOException $e) {
+        // superhote_price_updates might not exist
     }
 
     $pdoRpi = getRpiPdo();
     $events = [];
 
-    // ── 2. Table reservation (réservations manuelles / SMS) ──
+    // ── 3. Table reservation (réservations manuelles / SMS) ──
     $sql = "
         SELECT id, reference, logement_id, date_arrivee, date_depart,
                prenom, nom, plateforme, telephone, email,
@@ -55,13 +92,14 @@ try {
 
     foreach ($reservations as $r) {
         $guestName = trim(($r['prenom'] ?? '') . ' ' . ($r['nom'] ?? ''));
+        $lid = (int) $r['logement_id'];
         $events[] = [
             'id'            => 'resa_' . $r['id'],
             'title'         => $guestName ?: ($r['reference'] ?: 'Réservation'),
             'start'         => $r['date_arrivee'],
             'end'           => $r['date_depart'],
-            'logement_id'   => (int) $r['logement_id'],
-            'logement_name' => $logementNames[$r['logement_id']] ?? '',
+            'logement_id'   => $lid,
+            'logement_name' => $logementNames[$lid] ?? '',
             'guest_name'    => $guestName,
             'plateforme'    => $r['plateforme'] ?? '',
             'telephone'     => $r['telephone'] ?? '',
@@ -74,9 +112,7 @@ try {
         ];
     }
 
-    // ── 3. Table ical_reservations (sync iCal) ──
-    // On a besoin du mapping connection_id → logement_id
-    // via travel_account_connections → travel_listings → logement_id
+    // ── 4. Table ical_reservations (sync iCal) ──
     $icalSql = "
         SELECT ir.id, ir.summary, ir.start_date, ir.end_date,
                ir.guest_name, ir.guest_email, ir.guest_phone,
@@ -96,20 +132,9 @@ try {
         $stmt->execute($icalParams);
         $icalReservations = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        // Tenter de mapper les réservations iCal aux logements via ics_url dans liste_logements
-        $icsToLogement = [];
-        try {
-            $icsRows = $conn->query("SELECT id, ics_url, ics_url_2 FROM liste_logements WHERE ics_url IS NOT NULL")->fetchAll(PDO::FETCH_ASSOC);
-            // On ne peut pas faire un mapping exact sans l'URL, mais on peut utiliser le connection_id
-        } catch (PDOException $e) { /* ignore */ }
-
         foreach ($icalReservations as $ir) {
-            // Filtrer par logement si nécessaire
-            // Pour les ical_reservations, le mapping logement est plus complexe
-            // On les affiche tous sauf si un filtre logement est actif et qu'on ne peut pas matcher
             $mappedLogementId = null;
 
-            // Essayer de matcher via account_name contenant le nom du logement
             if (!empty($ir['account_name'])) {
                 foreach ($logementNames as $lid => $lname) {
                     if (stripos($ir['account_name'], $lname) !== false || stripos($lname, $ir['account_name']) !== false) {
@@ -123,8 +148,7 @@ try {
                 continue;
             }
 
-            // Éviter les doublons avec les réservations manuelles
-            // (vérifier si même dates + même logement)
+            // Dédoublonnage
             $isDuplicate = false;
             foreach ($events as $existing) {
                 if ($existing['start'] === $ir['start_date'] &&
@@ -155,7 +179,6 @@ try {
             ];
         }
     } catch (PDOException $e) {
-        // ical_reservations table might not exist yet — that's OK
         error_log('calendrier_api ical: ' . $e->getMessage());
     }
 
@@ -165,9 +188,11 @@ try {
     });
 
     echo json_encode([
-        'success' => true,
-        'events'  => $events,
-        'count'   => count($events),
+        'success'  => true,
+        'events'   => $events,
+        'count'    => count($events),
+        'pricing'  => $logementPricing,
+        'daily_prices' => $dailyPrices,
     ]);
 
 } catch (PDOException $e) {

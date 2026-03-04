@@ -304,6 +304,36 @@ foreach ($logements as $idx => $l) {
         .detail-modal { width: 100%; }
     }
 
+    /* ─── Price overlay in timeline ─── */
+    .timeline-price {
+        position: absolute; bottom: 2px; left: 0; right: 0;
+        text-align: center; font-size: 0.62rem; font-weight: 700;
+        color: var(--fc-muted); pointer-events: none; line-height: 1;
+    }
+    .timeline-price.has-event { color: rgba(255,255,255,0.7); }
+    .timeline-label-meta {
+        display: flex; flex-direction: column; gap: 1px;
+    }
+    .timeline-label-pricing {
+        font-size: 0.65rem; color: var(--fc-muted); font-weight: 500;
+        display: flex; gap: 6px; align-items: center;
+    }
+    .timeline-label-pricing .tag {
+        display: inline-flex; align-items: center; gap: 2px;
+        background: #f1f5f9; padding: 1px 5px; border-radius: 4px;
+    }
+    .timeline-label-pricing .tag i { font-size: 0.55rem; }
+
+    /* ─── Price toggle ─── */
+    .price-toggle {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 4px 12px; border-radius: 8px; font-size: 0.78rem;
+        font-weight: 600; background: #f0fdf4; border: 1px solid #bbf7d0;
+        cursor: pointer; transition: all 0.2s; user-select: none; color: #166534;
+    }
+    .price-toggle:hover { background: #dcfce7; }
+    .price-toggle.inactive { background: #f8fafc; border-color: #e2e8f0; color: var(--fc-muted); }
+
     /* ─── Animations ─── */
     @keyframes fadeInUp {
         from { opacity: 0; transform: translateY(10px); }
@@ -400,9 +430,12 @@ foreach ($logements as $idx => $l) {
                 <?= htmlspecialchars($ld['nom']) ?>
             </span>
         <?php endforeach; ?>
-        <span class="legend-chip" style="--chip-color:#94a3b8;margin-left:auto" id="toggleBlocked">
+        <span class="legend-chip" style="--chip-color:#94a3b8" id="toggleBlocked">
             <span class="chip-dot" style="background:#94a3b8"></span>
             Bloqués
+        </span>
+        <span class="price-toggle" style="margin-left:auto" id="togglePrices">
+            <i class="fas fa-euro-sign"></i> Prix/nuit
         </span>
     </div>
 
@@ -449,6 +482,7 @@ foreach ($logements as $idx => $l) {
                             <th style="font-size:0.78rem;font-weight:700;color:var(--fc-muted);border:none">Départ</th>
                             <th style="font-size:0.78rem;font-weight:700;color:var(--fc-muted);border:none">Nuits</th>
                             <th style="font-size:0.78rem;font-weight:700;color:var(--fc-muted);border:none">Plateforme</th>
+                            <th style="font-size:0.78rem;font-weight:700;color:var(--fc-muted);border:none">Prix/nuit</th>
                             <th style="font-size:0.78rem;font-weight:700;color:var(--fc-muted);border:none">Statut</th>
                         </tr>
                     </thead>
@@ -479,8 +513,11 @@ foreach ($logements as $idx => $l) {
     var logements = <?= json_encode($logementData) ?>;
     var logementColors = <?= json_encode($logementColors) ?>;
     var allEvents = [];
+    var pricing = {};      // logement_id => { prix_plancher, prix_standard, nuits_minimum, ... }
+    var dailyPrices = {};  // logement_id => { date => price }
     var activeLogements = new Set(logements.map(function(l) { return l.id; }));
     var showBlocked = false;
+    var showPrices = true;
 
     // Timeline state
     var tlDays = 30;
@@ -499,6 +536,8 @@ foreach ($logements as $idx => $l) {
             .then(function(data) {
                 if (data.success) {
                     allEvents = data.events;
+                    if (data.pricing) pricing = data.pricing;
+                    if (data.daily_prices) dailyPrices = data.daily_prices;
                     if (callback) callback();
                 }
             })
@@ -615,11 +654,20 @@ foreach ($logements as $idx => $l) {
         var events = filteredEvents();
 
         visibleLogements.forEach(function(logement) {
-            // Label
+            // Label with pricing info
             var label = document.createElement('div');
             label.className = 'timeline-label';
-            label.innerHTML = '<span class="timeline-label-dot" style="background:' + logement.color + '"></span>' +
-                '<span class="timeline-label-text" title="' + logement.nom + '">' + logement.nom + '</span>';
+            var pr = pricing[logement.id] || {};
+            var minN = pr.nuits_minimum || 1;
+            var prixStd = pr.prix_standard || 0;
+            var labelHtml = '<span class="timeline-label-dot" style="background:' + logement.color + '"></span>' +
+                '<div class="timeline-label-meta">' +
+                '<span class="timeline-label-text" title="' + logement.nom + '">' + logement.nom + '</span>' +
+                '<span class="timeline-label-pricing">';
+            if (prixStd > 0) labelHtml += '<span class="tag"><i class="fas fa-euro-sign"></i>' + Math.round(prixStd) + '</span>';
+            if (minN > 1) labelHtml += '<span class="tag"><i class="fas fa-moon"></i>min ' + minN + '</span>';
+            labelHtml += '</span></div>';
+            label.innerHTML = labelHtml;
             grid.appendChild(label);
 
             // Cells
@@ -629,7 +677,8 @@ foreach ($logements as $idx => $l) {
             cellContainer.style.minHeight = '52px';
             cellContainer.style.borderBottom = '1px solid #f1f5f9';
 
-            // Day grid lines
+            // Day grid lines + price labels
+            var logDailyPrices = dailyPrices[logement.id] || {};
             days.forEach(function(day, idx) {
                 var dStr = fmt(day);
                 var isToday = dStr === todayStr;
@@ -638,6 +687,15 @@ foreach ($logements as $idx => $l) {
                 line.style.cssText = 'position:absolute;top:0;bottom:0;left:' + (idx * cellW) + 'px;width:' + cellW + 'px;border-right:1px solid #f8f9fa;';
                 if (isToday) line.style.background = 'rgba(99,102,241,0.04)';
                 else if (isWeekend) line.style.background = 'rgba(251,191,36,0.03)';
+
+                // Price label
+                if (showPrices && logDailyPrices[dStr]) {
+                    var priceEl = document.createElement('div');
+                    priceEl.className = 'timeline-price';
+                    priceEl.textContent = Math.round(logDailyPrices[dStr]) + '€';
+                    line.appendChild(priceEl);
+                }
+
                 cellContainer.appendChild(line);
             });
 
@@ -745,7 +803,7 @@ foreach ($logements as $idx => $l) {
         var today = fmt(new Date());
 
         if (!events.length) {
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--fc-muted)">Aucune réservation</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--fc-muted)">Aucune réservation</td></tr>';
             return;
         }
 
@@ -763,6 +821,7 @@ foreach ($logements as $idx => $l) {
                 '<td style="border-color:#f1f5f9;font-size:0.85rem">' + fmtFR(ev.end) + '</td>' +
                 '<td style="border-color:#f1f5f9;font-size:0.85rem;font-weight:700">' + (ev.num_nights || '—') + '</td>' +
                 '<td style="border-color:#f1f5f9;font-size:0.85rem">' + (ev.plateforme || '—') + '</td>' +
+                '<td style="border-color:#f1f5f9;font-size:0.85rem;font-weight:700;color:#10b981">' + (pricing[ev.logement_id] && pricing[ev.logement_id].prix_standard ? Math.round(pricing[ev.logement_id].prix_standard) + '€' : '—') + '</td>' +
                 '<td style="border-color:#f1f5f9">' + (isCurrent ? '<span class="detail-badge" style="background:#dcfce7;color:#166534">En cours</span>' : (isPast ? '<span class="detail-badge" style="background:#f1f5f9;color:#64748b">Passée</span>' : '<span class="detail-badge" style="background:#fef3c7;color:#92400e">A venir</span>')) + '</td>';
             tr.addEventListener('click', function() {
                 var logement = logements.find(function(l) { return l.id === ev.logement_id; });
@@ -814,6 +873,34 @@ foreach ($logements as $idx => $l) {
             var detail = evt.nb_adultes + ' adulte' + (evt.nb_adultes > 1 ? 's' : '');
             if (evt.nb_enfants > 0) detail += ', ' + evt.nb_enfants + ' enfant' + (evt.nb_enfants > 1 ? 's' : '');
             html += detailRow('fa-users', '#ec4899', 'Voyageurs', detail);
+        }
+        // Pricing info
+        if (evt.logement_id && pricing[evt.logement_id]) {
+            var pr = pricing[evt.logement_id];
+            if (pr.prix_standard > 0) {
+                // Calculer prix moyen du séjour à partir des daily prices
+                var dp = dailyPrices[evt.logement_id] || {};
+                var totalPrice = 0, pricedDays = 0;
+                var cursor = new Date(evt.start);
+                var endD = new Date(evt.end);
+                while (cursor < endD) {
+                    var ds = fmt(cursor);
+                    if (dp[ds]) { totalPrice += dp[ds]; pricedDays++; }
+                    cursor.setDate(cursor.getDate() + 1);
+                }
+                var avgPrice = pricedDays > 0 ? Math.round(totalPrice / pricedDays) : Math.round(pr.prix_standard);
+                var estTotal = pricedDays > 0 ? Math.round(totalPrice) : (nights * Math.round(pr.prix_standard));
+
+                html += '<hr style="border-color:#f1f5f9;margin:0.5rem 0">';
+                html += detailRow('fa-euro-sign', '#10b981', 'Prix/nuit moyen', avgPrice + '€/nuit');
+                if (nights > 0) html += detailRow('fa-calculator', '#6366f1', 'Estimation total', '<strong>' + estTotal + '€</strong> (' + nights + ' nuit' + (nights > 1 ? 's' : '') + ')');
+                html += detailRow('fa-tag', '#f59e0b', 'Fourchette', pr.prix_plancher + '€ — ' + pr.prix_standard + '€');
+            }
+            if (pr.nuits_minimum > 1) {
+                var minOk = nights >= pr.nuits_minimum;
+                html += detailRow('fa-moon', '#8b5cf6', 'Nuits minimum', pr.nuits_minimum + ' nuit' + (pr.nuits_minimum > 1 ? 's' : '') +
+                    (minOk ? ' <span class="detail-badge" style="background:#dcfce7;color:#166534">OK</span>' : ' <span class="detail-badge" style="background:#fef2f2;color:#991b1b">Inférieur</span>'));
+            }
         }
         if (evt.source) html += detailRow('fa-database', '#94a3b8', 'Source', evt.source === 'ical' ? 'Sync iCal' : 'Réservation directe');
 
@@ -876,6 +963,12 @@ foreach ($logements as $idx => $l) {
     document.getElementById('toggleBlocked').addEventListener('click', function() {
         showBlocked = !showBlocked;
         this.classList.toggle('active');
+        refresh();
+    });
+
+    document.getElementById('togglePrices').addEventListener('click', function() {
+        showPrices = !showPrices;
+        this.classList.toggle('inactive');
         refresh();
     });
 

@@ -92,6 +92,14 @@ function ensureTablesExist($pdo) {
         $pdo->exec("ALTER TABLE `superhote_config` ADD COLUMN `groupe` VARCHAR(100) DEFAULT NULL");
     } catch (PDOException $e) {}
 
+    // Colonne nuits_minimum
+    try {
+        $pdo->exec("ALTER TABLE `superhote_config` ADD COLUMN `nuits_minimum` INT(11) DEFAULT 1 COMMENT 'Nombre minimum de nuits'");
+    } catch (PDOException $e) {}
+    try {
+        $pdo->exec("ALTER TABLE `superhote_groups` ADD COLUMN `nuits_minimum` INT(11) DEFAULT 1 COMMENT 'Nombre minimum de nuits par defaut'");
+    } catch (PDOException $e) {}
+
     // Table superhote_groups
     $pdo->exec("CREATE TABLE IF NOT EXISTS `superhote_groups` (
         `id` INT(11) NOT NULL AUTO_INCREMENT,
@@ -268,6 +276,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $weekendPourcent = floatval($_POST['weekend_pourcent'] ?? 10);
                 $dimancheReduction = floatval($_POST['dimanche_reduction'] ?? 5);
                 $groupe = trim($_POST['groupe'] ?? '') ?: null;
+                $nuitsMinimum = max(1, intval($_POST['nuits_minimum'] ?? 1));
                 $isActive = isset($_POST['is_active']) ? 1 : 0;
 
                 if ($logementId > 0 && !empty($superhoteId)) {
@@ -283,18 +292,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             weekend_pourcent = ?,
                             dimanche_reduction = ?,
                             groupe = ?,
+                            nuits_minimum = ?,
                             is_active = ?,
                             updated_at = NOW()
                             WHERE logement_id = ?");
                         $stmt->execute([$superhoteId, $superhoteName, $prixPlancher ?: null, $prixStandard ?: null,
-                                       $weekendPourcent, $dimancheReduction, $groupe, $isActive, $logementId]);
+                                       $weekendPourcent, $dimancheReduction, $groupe, $nuitsMinimum, $isActive, $logementId]);
                     } else {
                         $stmt = $pdo->prepare("INSERT INTO superhote_config
                             (logement_id, superhote_property_id, superhote_property_name, prix_plancher, prix_standard,
-                             weekend_pourcent, dimanche_reduction, groupe, is_active)
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                             weekend_pourcent, dimanche_reduction, groupe, nuits_minimum, is_active)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
                         $stmt->execute([$logementId, $superhoteId, $superhoteName, $prixPlancher ?: null,
-                                       $prixStandard ?: null, $weekendPourcent, $dimancheReduction, $groupe, $isActive]);
+                                       $prixStandard ?: null, $weekendPourcent, $dimancheReduction, $groupe, $nuitsMinimum, $isActive]);
                     }
                     $message = "Configuration sauvegardee!";
                     $messageType = "success";
@@ -313,18 +323,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $groupPrixStandard = floatval($_POST['group_prix_standard'] ?? 0) ?: null;
                 $groupWeekendPourcent = floatval($_POST['group_weekend_pourcent'] ?? 10);
                 $groupDimancheReduction = floatval($_POST['group_dimanche_reduction'] ?? 5);
+                $groupNuitsMinimum = max(1, intval($_POST['group_nuits_minimum'] ?? 1));
 
                 if (!empty($groupNom)) {
                     if ($groupId > 0) {
                         $stmt = $pdo->prepare("UPDATE superhote_groups SET nom = ?, description = ?, logement_reference_id = ?,
-                            prix_plancher = ?, prix_standard = ?, weekend_pourcent = ?, dimanche_reduction = ? WHERE id = ?");
+                            prix_plancher = ?, prix_standard = ?, weekend_pourcent = ?, dimanche_reduction = ?, nuits_minimum = ? WHERE id = ?");
                         $stmt->execute([$groupNom, $groupDesc, $groupRefId, $groupPrixPlancher, $groupPrixStandard,
-                                       $groupWeekendPourcent, $groupDimancheReduction, $groupId]);
+                                       $groupWeekendPourcent, $groupDimancheReduction, $groupNuitsMinimum, $groupId]);
                     } else {
                         $stmt = $pdo->prepare("INSERT INTO superhote_groups (nom, description, logement_reference_id,
-                            prix_plancher, prix_standard, weekend_pourcent, dimanche_reduction) VALUES (?, ?, ?, ?, ?, ?, ?)");
+                            prix_plancher, prix_standard, weekend_pourcent, dimanche_reduction, nuits_minimum) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
                         $stmt->execute([$groupNom, $groupDesc, $groupRefId, $groupPrixPlancher, $groupPrixStandard,
-                                       $groupWeekendPourcent, $groupDimancheReduction]);
+                                       $groupWeekendPourcent, $groupDimancheReduction, $groupNuitsMinimum]);
                     }
                     $message = "Groupe sauvegarde!";
                     $messageType = "success";
@@ -611,11 +622,13 @@ try {
     $logements = $pdo->query("
         SELECT l.*, sc.superhote_property_id, sc.superhote_property_name,
                sc.prix_plancher, sc.prix_standard, sc.weekend_pourcent, sc.dimanche_reduction,
+               sc.nuits_minimum,
                sc.groupe, sc.is_active as superhote_active,
                g.prix_plancher as groupe_prix_plancher,
                g.prix_standard as groupe_prix_standard,
                g.weekend_pourcent as groupe_weekend_pourcent,
-               g.dimanche_reduction as groupe_dimanche_reduction
+               g.dimanche_reduction as groupe_dimanche_reduction,
+               g.nuits_minimum as groupe_nuits_minimum
         FROM liste_logements l
         LEFT JOIN superhote_config sc ON l.id = sc.logement_id
         LEFT JOIN superhote_groups g ON sc.groupe = g.nom
@@ -770,6 +783,7 @@ try {
                                     <th>Prix Standard</th>
                                     <th>Weekend +%</th>
                                     <th>Dim -€</th>
+                                    <th>Min nuits</th>
                                     <th>Statut</th>
                                     <th>Actions</th>
                                 </tr>
@@ -784,6 +798,7 @@ try {
                                     $effStandard = $log['groupe_prix_standard'] ?? $log['prix_standard'];
                                     $effWeekend = $log['groupe_weekend_pourcent'] ?? $log['weekend_pourcent'];
                                     $effDimanche = $log['groupe_dimanche_reduction'] ?? $log['dimanche_reduction'];
+                                    $effNuitsMin = $log['groupe_nuits_minimum'] ?? $log['nuits_minimum'] ?? 1;
                                     $fromGroupe = $hasGroupe && !empty($log['groupe_prix_plancher']);
                                 ?>
                                 <tr>
@@ -806,6 +821,7 @@ try {
                                     <td><?= $effStandard ? number_format($effStandard, 0) . '€' : '-' ?><?= $fromGroupe ? ' <small class="text-info" title="Herite du groupe">(G)</small>' : '' ?></td>
                                     <td><?= $effWeekend ? '+' . number_format($effWeekend, 0) . '%' : '-' ?><?= $fromGroupe ? ' <small class="text-info">(G)</small>' : '' ?></td>
                                     <td><?= $effDimanche ? '-' . number_format($effDimanche, 0) . '€' : '-' ?><?= $fromGroupe ? ' <small class="text-info">(G)</small>' : '' ?></td>
+                                    <td><?= intval($effNuitsMin) ?><?= $fromGroupe ? ' <small class="text-info">(G)</small>' : '' ?></td>
                                     <td>
                                         <?php if ($hasConfig && ($log['superhote_active'] ?? 0)): ?>
                                         <span class="badge text-bg-success">Actif</span>
@@ -888,6 +904,7 @@ try {
                                         <th>Prix Standard</th>
                                         <th>WE +%</th>
                                         <th>Dim -€</th>
+                                        <th>Min nuits</th>
                                         <th>Membres</th>
                                         <th>Actions</th>
                                     </tr>
@@ -912,6 +929,7 @@ try {
                                         <td><?= $grp['prix_standard'] ? number_format($grp['prix_standard'], 0) . '€' : '-' ?></td>
                                         <td><?= $grp['weekend_pourcent'] ? '+' . number_format($grp['weekend_pourcent'], 0) . '%' : '-' ?></td>
                                         <td><?= $grp['dimanche_reduction'] ? '-' . number_format($grp['dimanche_reduction'], 0) . '€' : '-' ?></td>
+                                        <td><?= intval($grp['nuits_minimum'] ?? 1) ?></td>
                                         <td><span class="badge text-bg-info"><?= $grp['membre_count'] ?></span></td>
                                         <td>
                                             <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#modalGroup"
@@ -1632,6 +1650,16 @@ try {
                                 </div>
                             </div>
                         </div>
+
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="form-group">
+                                    <label>Nuits minimum</label>
+                                    <input type="number" name="nuits_minimum" id="cfg_nuits_minimum" class="form-control" value="1" min="1" max="30">
+                                    <small class="text-muted">Durée minimum de séjour</small>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="form-check form-switch">
@@ -1732,6 +1760,16 @@ try {
                                     <input type="number" name="group_dimanche_reduction" id="grp_dimanche_reduction" class="form-control" value="5" min="0">
                                     <div class="input-group-append"><span class="input-group-text">€</span></div>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Nuits minimum</label>
+                                <input type="number" name="group_nuits_minimum" id="grp_nuits_minimum" class="form-control" value="1" min="1" max="30">
+                                <small class="text-muted">Durée minimum de séjour par défaut</small>
                             </div>
                         </div>
                     </div>
@@ -1869,6 +1907,7 @@ function openConfigModal(logement) {
     document.getElementById('cfg_prix_standard').value = logement.prix_standard || '';
     document.getElementById('cfg_weekend_pourcent').value = logement.weekend_pourcent || 10;
     document.getElementById('cfg_dimanche_reduction').value = logement.dimanche_reduction || 5;
+    document.getElementById('cfg_nuits_minimum').value = logement.nuits_minimum || 1;
     document.getElementById('cfg_groupe').value = logement.groupe || '';
     document.getElementById('cfg_is_active').checked = logement.superhote_active != 0;
 
@@ -1887,6 +1926,7 @@ function openGroupModal(group) {
         document.getElementById('grp_prix_standard').value = group.prix_standard || '';
         document.getElementById('grp_weekend_pourcent').value = group.weekend_pourcent || 10;
         document.getElementById('grp_dimanche_reduction').value = group.dimanche_reduction || 5;
+        document.getElementById('grp_nuits_minimum').value = group.nuits_minimum || 1;
     } else {
         document.getElementById('grp_modal_title').textContent = 'Nouveau groupe';
         document.getElementById('grp_id').value = '';
@@ -1897,6 +1937,7 @@ function openGroupModal(group) {
         document.getElementById('grp_prix_standard').value = '';
         document.getElementById('grp_weekend_pourcent').value = 10;
         document.getElementById('grp_dimanche_reduction').value = 5;
+        document.getElementById('grp_nuits_minimum').value = 1;
     }
 }
 
