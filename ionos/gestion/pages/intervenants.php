@@ -14,6 +14,24 @@ try {
     $conn->exec("ALTER TABLE intervenant ADD COLUMN actif TINYINT(1) NOT NULL DEFAULT 1");
 } catch (PDOException $e) { /* colonne existe déjà */ }
 
+// Auto-sync : ajouter dans la table `pages` toutes les pages du menu si absentes
+if (isset($menu_categories)) {
+    try {
+        $existingPages = $conn->query("SELECT chemin FROM pages")->fetchAll(PDO::FETCH_COLUMN);
+        $existingBasenames = array_map('basename', $existingPages);
+        $stmtInsert = $conn->prepare("INSERT INTO pages (nom, chemin, afficher_menu) VALUES (?, ?, 1)");
+
+        foreach ($menu_categories as $catItems) {
+            foreach ($catItems['items'] as $item) {
+                if (!in_array(basename($item['chemin']), $existingBasenames)) {
+                    $stmtInsert->execute([$item['nom'], $item['chemin']]);
+                    $existingBasenames[] = basename($item['chemin']);
+                }
+            }
+        }
+    } catch (PDOException $e) { /* table pages n'existe pas encore */ }
+}
+
 // Toggle actif/inactif
 if (isset($_POST['toggle_actif'])) {
     $tid = (int)$_POST['toggle_actif'];
@@ -139,7 +157,7 @@ $pages_disponibles = $stmt->fetchAll(PDO::FETCH_KEY_PAIR); // Associe ID à chem
                         <input type="text" name="username" class="form-control" value="<?= htmlspecialchars($intervenant['nom_utilisateur']) ?>" required>
                     </td>
                     <td>
-                        <input type="text" name="password" class="form-control" value="<?= htmlspecialchars($intervenant['mot_de_passe']) ?>" required>
+                        <input type="password" name="password" class="form-control" value="" placeholder="Laisser vide = inchangé">
                     </td>
                     <td>
                         <select name="role1" class="form-control">
