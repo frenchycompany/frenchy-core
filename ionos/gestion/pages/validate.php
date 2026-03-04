@@ -182,6 +182,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ]);
             }
 
+            // Si requête AJAX (XHR), renvoyer du JSON au lieu d'un redirect
+            // (XHR suit les 303 automatiquement, ce qui casse le flux PRG)
+            $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH'])
+                   && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
+
+            if ($isAjax) {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => true]);
+                exit;
+            }
+
             // PRG : redirection pour casser tout cache et empêcher le repost
             // On passe par 303 See Other vers la même page avec done=1
             header('Location: ' . sprintf('%s?token=%s&done=1&cb=%d',
@@ -323,7 +334,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           var formData = new FormData(form);
           var xhr = new XMLHttpRequest();
           xhr.open('POST', window.location.href, true);
-          xhr.setRequestHeader('Cache-Control', 'no-store'); // hint
+          xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+          xhr.setRequestHeader('Cache-Control', 'no-store');
           xhr.upload.addEventListener('loadstart', function() {
             document.getElementById('uploadProgress').style.display = 'block';
           });
@@ -334,9 +346,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
           });
           xhr.onload = function() {
-            if (xhr.status === 200 || xhr.status === 303) {
-              // Rediriger vers la page done au lieu de reload (sinon le token used=1 affiche "deja utilise")
-              window.location.href = 'validate.php?token=<?= urlencode($token) ?>&done=1&cb=' + Date.now();
+            if (xhr.status === 200) {
+              try {
+                var resp = JSON.parse(xhr.responseText);
+                if (resp.success) {
+                  window.location.href = 'validate.php?token=<?= urlencode($token) ?>&done=1&cb=' + Date.now();
+                  return;
+                }
+              } catch(e) {}
+              // Fallback : si la réponse n'est pas du JSON, c'est la page HTML (erreurs de validation)
+              document.open();
+              document.write(xhr.responseText);
+              document.close();
             } else {
               alert('Erreur lors de l\'upload (' + xhr.status + ')');
             }
