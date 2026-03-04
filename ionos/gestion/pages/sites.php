@@ -63,7 +63,7 @@ function loadLogementEquipements($conn, $logementId) {
 
 // ── Helper : créer les tables BDD avec préfixe ──
 function createSiteTables($conn, $dbPrefix, $siteName, $logementData, $equipements) {
-    $schemaFile = __DIR__ . '/../../frenchysite/db/schema.sql';
+    $schemaFile = __DIR__ . '/../../../frenchysite/db/schema.sql';
     if (!file_exists($schemaFile)) {
         throw new Exception("Fichier schema.sql introuvable dans frenchysite/db/");
     }
