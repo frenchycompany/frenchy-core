@@ -175,13 +175,26 @@ foreach ($photos_raw as $p) {
     $photos_grouped[$p['photo_group']][] = $p;
 }
 
+// Labels et ordre d'affichage des groupes de paramètres (100% dynamique depuis la BDD)
 $group_labels = [
     'identity'     => 'Identité du logement',
     'contact'      => 'Contact conciergerie',
     'integrations' => 'Intégrations',
-    'colors'       => 'Couleurs',
+    'colors'       => 'Palette de couleurs',
     'typography'   => 'Typographie',
+    'modules'      => 'Modules',
 ];
+// Ordre d'affichage des groupes (les groupes non listés apparaissent à la fin)
+$group_order = ['identity', 'contact', 'integrations', 'colors', 'typography'];
+// Trier les groupes dans l'ordre voulu
+$sorted_groups = [];
+foreach ($group_order as $g) {
+    if (!empty($settings_grouped[$g])) $sorted_groups[$g] = $settings_grouped[$g];
+}
+// Ajouter les groupes restants (non prévus) à la fin
+foreach ($settings_grouped as $g => $fields) {
+    if (!isset($sorted_groups[$g]) && $g !== 'modules') $sorted_groups[$g] = $fields;
+}
 
 // Section labels from config
 $section_labels = [];
@@ -243,7 +256,6 @@ $site_name = htmlspecialchars($site['name']);
         <div class="adm-container">
             <button class="adm-tab is-active" data-tab="modules">Modules</button>
             <button class="adm-tab" data-tab="settings">Paramètres</button>
-            <button class="adm-tab" data-tab="colors">Couleurs & Typo</button>
             <button class="adm-tab" data-tab="texts">Textes</button>
             <button class="adm-tab" data-tab="guides">Guides</button>
             <button class="adm-tab" data-tab="photos">Photos</button>
@@ -329,47 +341,20 @@ $site_name = htmlspecialchars($site['name']);
 
         </section>
 
-        <!-- ═══════════════ TAB: PARAMÈTRES ═══════════════ -->
+        <!-- ═══════════════ TAB: PARAMÈTRES (100% dynamique depuis la BDD) ═══════════════ -->
         <section class="adm-panel" id="panel-settings">
             <form id="form-settings" class="adm-form">
 
-                <?php foreach (['identity', 'contact', 'integrations'] as $group): ?>
-                <?php if (!empty($settings_grouped[$group])): ?>
+                <?php foreach ($sorted_groups as $group => $fields): ?>
                 <fieldset class="adm-fieldset">
-                    <legend><?= htmlspecialchars($group_labels[$group] ?? $group) ?></legend>
+                    <legend><?= htmlspecialchars($group_labels[$group] ?? ucfirst($group)) ?></legend>
 
-                    <?php foreach ($settings_grouped[$group] as $s): ?>
-                    <div class="adm-field">
-                        <label for="s-<?= htmlspecialchars($s['setting_key']) ?>"><?= htmlspecialchars($s['label'] ?? $s['setting_key']) ?></label>
-                        <input
-                            type="text"
-                            id="s-<?= htmlspecialchars($s['setting_key']) ?>"
-                            name="<?= htmlspecialchars($s['setting_key']) ?>"
-                            value="<?= htmlspecialchars($s['setting_value']) ?>"
-                            class="adm-input"
-                        >
-                    </div>
-                    <?php endforeach; ?>
-
-                </fieldset>
-                <?php endif; ?>
-                <?php endforeach; ?>
-
-                <div class="adm-form-actions">
-                    <button type="submit" class="adm-btn adm-btn-primary">Enregistrer les paramètres</button>
-                </div>
-            </form>
-        </section>
-
-        <!-- ═══════════════ TAB: COULEURS & TYPO ═══════════════ -->
-        <section class="adm-panel" id="panel-colors">
-            <form id="form-colors" class="adm-form">
-
-                <?php if (!empty($settings_grouped['colors'])): ?>
-                <fieldset class="adm-fieldset">
-                    <legend>Palette de couleurs</legend>
+                    <?php
+                    // Groupe "colors" : affichage spécial avec color pickers
+                    $has_colors = ($group === 'colors');
+                    if ($has_colors): ?>
                     <div class="adm-color-grid">
-                        <?php foreach ($settings_grouped['colors'] as $s): ?>
+                        <?php foreach ($fields as $s): ?>
                         <div class="adm-color-item">
                             <input
                                 type="color"
@@ -392,10 +377,43 @@ $site_name = htmlspecialchars($site['name']);
                         </div>
                         <?php endforeach; ?>
                     </div>
-                </fieldset>
-                <?php endif; ?>
+                    <?php else: ?>
+                    <?php // Tous les autres groupes : rendu dynamique selon field_type ?>
+                    <?php foreach ($fields as $s): ?>
+                    <div class="adm-field">
+                        <label for="s-<?= htmlspecialchars($s['setting_key']) ?>"><?= htmlspecialchars($s['label'] ?? $s['setting_key']) ?></label>
+                        <?php if ($s['field_type'] === 'textarea'): ?>
+                        <textarea
+                            id="s-<?= htmlspecialchars($s['setting_key']) ?>"
+                            name="<?= htmlspecialchars($s['setting_key']) ?>"
+                            class="adm-textarea"
+                            rows="3"
+                        ><?= htmlspecialchars($s['setting_value']) ?></textarea>
+                        <?php elseif ($s['field_type'] === 'color'): ?>
+                        <input
+                            type="color"
+                            id="s-<?= htmlspecialchars($s['setting_key']) ?>"
+                            name="<?= htmlspecialchars($s['setting_key']) ?>"
+                            value="<?= htmlspecialchars($s['setting_value']) ?>"
+                            class="adm-color-picker"
+                        >
+                        <?php else: ?>
+                        <input
+                            type="text"
+                            id="s-<?= htmlspecialchars($s['setting_key']) ?>"
+                            name="<?= htmlspecialchars($s['setting_key']) ?>"
+                            value="<?= htmlspecialchars($s['setting_value']) ?>"
+                            class="adm-input"
+                        >
+                        <?php endif; ?>
+                    </div>
+                    <?php endforeach; ?>
+                    <?php endif; ?>
 
-                <!-- Preview -->
+                </fieldset>
+
+                <?php // Aperçu couleurs juste après le groupe colors ?>
+                <?php if ($has_colors): ?>
                 <fieldset class="adm-fieldset">
                     <legend>Aperçu</legend>
                     <div class="adm-preview" id="color-preview">
@@ -410,27 +428,12 @@ $site_name = htmlspecialchars($site['name']);
                         </div>
                     </div>
                 </fieldset>
-
-                <?php if (!empty($settings_grouped['typography'])): ?>
-                <fieldset class="adm-fieldset">
-                    <legend>Typographie</legend>
-                    <?php foreach ($settings_grouped['typography'] as $s): ?>
-                    <div class="adm-field">
-                        <label for="s-<?= htmlspecialchars($s['setting_key']) ?>"><?= htmlspecialchars($s['label']) ?></label>
-                        <input
-                            type="text"
-                            id="s-<?= htmlspecialchars($s['setting_key']) ?>"
-                            name="<?= htmlspecialchars($s['setting_key']) ?>"
-                            value="<?= htmlspecialchars($s['setting_value']) ?>"
-                            class="adm-input"
-                        >
-                    </div>
-                    <?php endforeach; ?>
-                </fieldset>
                 <?php endif; ?>
 
+                <?php endforeach; ?>
+
                 <div class="adm-form-actions">
-                    <button type="submit" class="adm-btn adm-btn-primary">Enregistrer couleurs & typo</button>
+                    <button type="submit" class="adm-btn adm-btn-primary">Enregistrer tous les paramètres</button>
                 </div>
             </form>
         </section>
