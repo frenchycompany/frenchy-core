@@ -36,17 +36,23 @@ if (!is_dir($logDir)) {
     mkdir($logDir, 0755, true);
 }
 
+// Vérifier une seule fois si le fichier de log est accessible en écriture
+$logFileWritable = is_writable($logFile) || (!file_exists($logFile) && is_writable($logDir));
+if (!$logFileWritable) {
+    echo "[" . date('Y-m-d H:i:s') . "] ⚠️  Impossible d'écrire dans {$logFile} — log fichier désactivé\n";
+}
+
 /**
  * Écrire dans le log et afficher à l'écran
  */
 function logMessage($message, $toFile = true) {
-    global $logFile;
+    global $logFile, $logFileWritable;
     $timestamp = date('Y-m-d H:i:s');
     $line = "[{$timestamp}] {$message}\n";
 
     echo $line;
 
-    if ($toFile) {
+    if ($toFile && $logFileWritable) {
         file_put_contents($logFile, $line, FILE_APPEND);
     }
 }
