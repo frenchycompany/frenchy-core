@@ -36,9 +36,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['toggle_actif'])) {
 
     try {
         if ($intervenant_id) {
-            // Mise à jour d'un intervenant existant (inclus la mise à jour du nom d'utilisateur et mot de passe)
-            $stmt = $conn->prepare("UPDATE intervenant SET nom = ?, numero = ?, role1 = ?, role2 = ?, role3 = ?, nom_utilisateur = ?, mot_de_passe = ? WHERE id = ?");
-            $stmt->execute([$nom, $numero, $role1, $role2, $role3, $username, $password, $intervenant_id]);
+            // Mise à jour d'un intervenant existant
+            if (!empty($password)) {
+                // Mot de passe fourni → hasher et mettre à jour
+                $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+                $stmt = $conn->prepare("UPDATE intervenant SET nom = ?, numero = ?, role1 = ?, role2 = ?, role3 = ?, nom_utilisateur = ?, mot_de_passe = ? WHERE id = ?");
+                $stmt->execute([$nom, $numero, $role1, $role2, $role3, $username, $hashedPassword, $intervenant_id]);
+            } else {
+                // Pas de mot de passe → ne pas toucher au hash existant
+                $stmt = $conn->prepare("UPDATE intervenant SET nom = ?, numero = ?, role1 = ?, role2 = ?, role3 = ?, nom_utilisateur = ? WHERE id = ?");
+                $stmt->execute([$nom, $numero, $role1, $role2, $role3, $username, $intervenant_id]);
+            }
 
             // Supprime les pages existantes pour cet intervenant
             $stmt = $conn->prepare("DELETE FROM intervenants_pages WHERE intervenant_id = ?");
@@ -52,9 +60,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['toggle_actif'])) {
                 }
             }
         } else {
-            // Création d'un nouvel intervenant (avec nom d'utilisateur et mot de passe)
+            // Création d'un nouvel intervenant (avec mot de passe hashé)
+            $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
             $stmt = $conn->prepare("INSERT INTO intervenant (nom, numero, role1, role2, role3, nom_utilisateur, mot_de_passe) VALUES (?, ?, ?, ?, ?, ?, ?)");
-            $stmt->execute([$nom, $numero, $role1, $role2, $role3, $username, $password]);
+            $stmt->execute([$nom, $numero, $role1, $role2, $role3, $username, $hashedPassword]);
             $intervenant_id = $conn->lastInsertId();
 
             // Ajoute les pages accessibles

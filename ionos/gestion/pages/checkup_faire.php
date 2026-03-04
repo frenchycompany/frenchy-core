@@ -10,17 +10,58 @@ include '../pages/menu.php';
 require_once __DIR__ . '/../includes/validation.php';
 require_once __DIR__ . '/../includes/upload_helper.php';
 
+// Auto-create tables si elles n'existent pas encore
+try {
+    $conn->exec("
+        CREATE TABLE IF NOT EXISTS checkup_sessions (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            logement_id INT NOT NULL,
+            intervenant_id INT DEFAULT NULL,
+            statut ENUM('en_cours','termine') DEFAULT 'en_cours',
+            nb_ok INT DEFAULT 0,
+            nb_problemes INT DEFAULT 0,
+            nb_absents INT DEFAULT 0,
+            nb_taches_faites INT DEFAULT 0,
+            commentaire_general TEXT DEFAULT NULL,
+            signature_path VARCHAR(500) DEFAULT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            INDEX idx_logement (logement_id),
+            INDEX idx_statut (statut)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    ");
+    $conn->exec("
+        CREATE TABLE IF NOT EXISTS checkup_items (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            session_id INT NOT NULL,
+            categorie VARCHAR(50) NOT NULL,
+            nom_item VARCHAR(255) NOT NULL,
+            statut ENUM('ok','probleme','absent','non_verifie') DEFAULT 'non_verifie',
+            commentaire TEXT DEFAULT NULL,
+            photo_path VARCHAR(500) DEFAULT NULL,
+            todo_task_id INT DEFAULT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_session (session_id),
+            FOREIGN KEY (session_id) REFERENCES checkup_sessions(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    ");
+} catch (PDOException $e) { /* tables existent déjà */ }
+
 $session_id = isset($_GET['session_id']) ? intval($_GET['session_id']) : 0;
 
 // Charger la session
-$stmt = $conn->prepare("
-    SELECT cs.*, l.nom_du_logement
-    FROM checkup_sessions cs
-    JOIN liste_logements l ON cs.logement_id = l.id
-    WHERE cs.id = ?
-");
-$stmt->execute([$session_id]);
-$session = $stmt->fetch(PDO::FETCH_ASSOC);
+try {
+    $stmt = $conn->prepare("
+        SELECT cs.*, l.nom_du_logement
+        FROM checkup_sessions cs
+        JOIN liste_logements l ON cs.logement_id = l.id
+        WHERE cs.id = ?
+    ");
+    $stmt->execute([$session_id]);
+    $session = $stmt->fetch(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    $session = null;
+}
 
 if (!$session) {
     echo '<div class="alert alert-danger m-3">Session de checkup introuvable.</div>';
@@ -410,9 +451,12 @@ $progress = $total > 0 ? round(($done / $total) * 100) : 0;
     <div style="display:flex; gap:8px; margin:12px 0;">
         <a href="inventaire_saisie.php?session_id=<?php
             // Trouver la derniere session inventaire en cours pour ce logement
-            $invStmt = $conn->prepare("SELECT id FROM sessions_inventaire WHERE logement_id = ? AND statut = 'en_cours' ORDER BY date_creation DESC LIMIT 1");
-            $invStmt->execute([$session['logement_id']]);
-            $invSession = $invStmt->fetch(PDO::FETCH_ASSOC);
+            $invSession = null;
+            try {
+                $invStmt = $conn->prepare("SELECT id FROM sessions_inventaire WHERE logement_id = ? AND statut = 'en_cours' ORDER BY date_creation DESC LIMIT 1");
+                $invStmt->execute([$session['logement_id']]);
+                $invSession = $invStmt->fetch(PDO::FETCH_ASSOC);
+            } catch (PDOException $e) { /* table n'existe pas encore */ }
             echo $invSession ? urlencode($invSession['id']) : '';
         ?>" style="flex:1; padding:10px; background:#e3f2fd; color:#1565c0; border-radius:10px; text-align:center; text-decoration:none; font-weight:600; font-size:0.88em;"
         <?= $invSession ? '' : 'onclick="event.preventDefault(); if(confirm(\'Pas d\\\'inventaire en cours. Lancer un nouvel inventaire ?\')) window.location.href=\'inventaire_lancer.php\';"' ?>>
