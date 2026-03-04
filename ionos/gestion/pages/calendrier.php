@@ -334,6 +334,63 @@ foreach ($logements as $idx => $l) {
     .price-toggle:hover { background: #dcfce7; }
     .price-toggle.inactive { background: #f8fafc; border-color: #e2e8f0; color: var(--fc-muted); }
 
+    /* ─── Gap indicator in timeline ─── */
+    .timeline-gap {
+        position: absolute; top: 14px; height: 24px; border-radius: 6px;
+        background: repeating-linear-gradient(
+            90deg, #fef3c7 0px, #fef3c7 4px, transparent 4px, transparent 8px
+        );
+        border: 1px dashed #f59e0b; z-index: 0; display: flex;
+        align-items: center; justify-content: center;
+        font-size: 0.6rem; font-weight: 700; color: #92400e;
+        cursor: default; pointer-events: none;
+    }
+
+    /* ─── Checkin/Checkout markers ─── */
+    .timeline-event .ev-checkin {
+        position: absolute; left: -1px; top: -1px; bottom: -1px; width: 4px;
+        border-radius: 8px 0 0 8px; background: rgba(255,255,255,0.5);
+    }
+    .timeline-event .ev-checkout {
+        position: absolute; right: -1px; top: -1px; bottom: -1px; width: 4px;
+        border-radius: 0 8px 8px 0; background: rgba(0,0,0,0.15);
+    }
+
+    /* ─── Platform badges ─── */
+    .platform-icon {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 18px; height: 18px; border-radius: 4px; font-size: 0.55rem;
+        font-weight: 900; color: #fff; margin-right: 4px; flex-shrink: 0;
+        letter-spacing: -0.5px;
+    }
+    .platform-icon.airbnb { background: #ff385c; }
+    .platform-icon.booking { background: #003b95; }
+    .platform-icon.direct { background: #10b981; }
+    .platform-icon.other { background: #94a3b8; }
+
+    /* ─── Sync button ─── */
+    .sync-btn {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 4px 12px; border-radius: 8px; font-size: 0.78rem;
+        font-weight: 600; background: #eff6ff; border: 1px solid #bfdbfe;
+        cursor: pointer; transition: all 0.2s; user-select: none; color: #1e40af;
+    }
+    .sync-btn:hover { background: #dbeafe; }
+    .sync-btn.syncing { opacity: 0.7; pointer-events: none; }
+    .sync-btn .fa-spin { display: none; }
+    .sync-btn.syncing .fa-spin { display: inline-block; }
+    .sync-btn.syncing .fa-sync-alt { display: none; }
+
+    /* ─── Toast notification ─── */
+    .cal-toast {
+        position: fixed; bottom: 2rem; right: 2rem; z-index: 10000;
+        background: var(--fc-card); border-radius: 12px; padding: 0.75rem 1.25rem;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.15); border: 1px solid var(--fc-border);
+        font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 8px;
+        transform: translateY(100px); opacity: 0; transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .cal-toast.show { transform: translateY(0); opacity: 1; }
+
     /* ─── Animations ─── */
     @keyframes fadeInUp {
         from { opacity: 0; transform: translateY(10px); }
@@ -419,6 +476,16 @@ foreach ($logements as $idx => $l) {
             <div class="stat-value" style="--accent-from:#ec4899;--accent-to:#f472b6" id="stat-occupancy">0%</div>
             <div class="stat-label">Taux d'occupation</div>
         </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background:linear-gradient(135deg,#059669,#34d399)"><i class="fas fa-coins"></i></div>
+            <div class="stat-value" style="--accent-from:#059669;--accent-to:#34d399" id="stat-revenue">0€</div>
+            <div class="stat-label">Revenu estimé</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background:linear-gradient(135deg,#dc2626,#f87171)"><i class="fas fa-triangle-exclamation"></i></div>
+            <div class="stat-value" style="--accent-from:#dc2626;--accent-to:#f87171" id="stat-gaps">0</div>
+            <div class="stat-label">Trous détectés</div>
+        </div>
     </div>
 
     <!-- Legend (clickable filter) -->
@@ -436,6 +503,9 @@ foreach ($logements as $idx => $l) {
         </span>
         <span class="price-toggle" style="margin-left:auto" id="togglePrices">
             <i class="fas fa-euro-sign"></i> Prix/nuit
+        </span>
+        <span class="sync-btn" id="syncBtn" title="Synchroniser tous les calendriers iCal">
+            <i class="fas fa-sync-alt"></i><i class="fas fa-spinner fa-spin"></i> Sync iCal
         </span>
     </div>
 
@@ -483,6 +553,7 @@ foreach ($logements as $idx => $l) {
                             <th style="font-size:0.78rem;font-weight:700;color:var(--fc-muted);border:none">Nuits</th>
                             <th style="font-size:0.78rem;font-weight:700;color:var(--fc-muted);border:none">Plateforme</th>
                             <th style="font-size:0.78rem;font-weight:700;color:var(--fc-muted);border:none">Prix/nuit</th>
+                            <th style="font-size:0.78rem;font-weight:700;color:var(--fc-muted);border:none">Est. total</th>
                             <th style="font-size:0.78rem;font-weight:700;color:var(--fc-muted);border:none">Statut</th>
                         </tr>
                     </thead>
@@ -503,6 +574,8 @@ foreach ($logements as $idx => $l) {
     </div>
     <div class="detail-modal-body" id="detail-body"></div>
 </div>
+
+<div class="cal-toast" id="calToast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
 <script>
@@ -569,11 +642,70 @@ foreach ($logements as $idx => $l) {
         var nbLogements = activeLogements.size || 1;
         var occ = nbLogements > 0 && tlDays > 0 ? Math.round((nights / (nbLogements * tlDays)) * 100) : 0;
 
+        // Revenue estimation
+        var revenue = 0;
+        events.forEach(function(e) {
+            if (e.logement_id && dailyPrices[e.logement_id]) {
+                var dp = dailyPrices[e.logement_id];
+                var cursor = new Date(e.start);
+                var endD = new Date(e.end);
+                while (cursor < endD) {
+                    var ds = fmt(cursor);
+                    if (dp[ds]) revenue += dp[ds];
+                    else if (pricing[e.logement_id]) revenue += pricing[e.logement_id].prix_standard || 0;
+                    cursor.setDate(cursor.getDate() + 1);
+                }
+            } else if (e.logement_id && pricing[e.logement_id]) {
+                var n = e.num_nights || Math.round((new Date(e.end) - new Date(e.start)) / 86400000);
+                revenue += n * (pricing[e.logement_id].prix_standard || 0);
+            }
+        });
+
+        // Gap detection
+        var totalGaps = detectGaps(filteredEvents()).length;
+
         animateValue('stat-total', total);
         animateValue('stat-current', current);
         animateValue('stat-upcoming', upcoming);
         animateValue('stat-nights', nights);
         document.getElementById('stat-occupancy').textContent = Math.min(occ, 100) + '%';
+        document.getElementById('stat-revenue').textContent = formatRevenue(Math.round(revenue));
+        document.getElementById('stat-gaps').textContent = totalGaps;
+    }
+
+    function formatRevenue(amount) {
+        if (amount >= 1000) return Math.round(amount / 100) / 10 + 'k€';
+        return amount + '€';
+    }
+
+    function detectGaps(events) {
+        var gaps = [];
+        var today = fmt(new Date());
+        logements.forEach(function(logement) {
+            if (!activeLogements.has(logement.id)) return;
+            var minNights = (pricing[logement.id] || {}).nuits_minimum || 1;
+            var logEvents = events.filter(function(e) {
+                return e.logement_id === logement.id && !e.is_blocked;
+            }).sort(function(a, b) { return a.start > b.start ? 1 : -1; });
+
+            for (var i = 0; i < logEvents.length - 1; i++) {
+                var gapStart = logEvents[i].end;
+                var gapEnd = logEvents[i + 1].start;
+                if (gapStart >= gapEnd) continue;
+                var gapDays = Math.round((new Date(gapEnd) - new Date(gapStart)) / 86400000);
+                // A gap that's too short for min nights and in the future
+                if (gapDays > 0 && gapDays < minNights && gapStart >= today) {
+                    gaps.push({
+                        logement_id: logement.id,
+                        start: gapStart,
+                        end: gapEnd,
+                        days: gapDays,
+                        minNights: minNights
+                    });
+                }
+            }
+        });
+        return gaps;
     }
 
     function animateValue(id, target) {
@@ -701,6 +833,7 @@ foreach ($logements as $idx => $l) {
 
             // Events for this logement
             var logEvents = events.filter(function(e) { return e.logement_id === logement.id; });
+            logEvents.sort(function(a, b) { return a.start > b.start ? 1 : -1; });
             logEvents.forEach(function(evt) {
                 var evStart = new Date(evt.start);
                 var evEnd = new Date(evt.end);
@@ -715,8 +848,21 @@ foreach ($logements as $idx => $l) {
                 bar.style.width = Math.max(cellW - 4, (endOffset - startOffset) * cellW - 4) + 'px';
                 if (!evt.is_blocked) bar.style.background = 'linear-gradient(135deg, ' + logement.color + ', ' + logement.color + 'cc)';
 
-                var icon = evt.is_blocked ? 'fa-lock' : (evt.plateforme && evt.plateforme.toLowerCase().includes('airbnb') ? 'fa-a' : (evt.plateforme && evt.plateforme.toLowerCase().includes('booking') ? 'fa-b' : 'fa-user'));
-                bar.innerHTML = '<i class="fas ' + icon + ' timeline-event-icon"></i>' + (evt.guest_name || evt.title || '');
+                // Platform icon
+                var platformHtml = '';
+                if (!evt.is_blocked) {
+                    var pf = (evt.plateforme || '').toLowerCase();
+                    if (pf.includes('airbnb')) platformHtml = '<span class="platform-icon airbnb">A</span>';
+                    else if (pf.includes('booking')) platformHtml = '<span class="platform-icon booking">B</span>';
+                    else if (pf.includes('direct')) platformHtml = '<span class="platform-icon direct">D</span>';
+                    else platformHtml = '<span class="platform-icon other"><i class="fas fa-user" style="font-size:0.5rem"></i></span>';
+                } else {
+                    platformHtml = '<i class="fas fa-lock timeline-event-icon"></i>';
+                }
+
+                var barWidth = Math.max(cellW - 4, (endOffset - startOffset) * cellW - 4);
+                bar.innerHTML = platformHtml + (barWidth > 80 ? (evt.guest_name || evt.title || '') : '') +
+                    '<span class="ev-checkin"></span><span class="ev-checkout"></span>';
 
                 bar.addEventListener('click', function(e) {
                     e.stopPropagation();
@@ -724,6 +870,22 @@ foreach ($logements as $idx => $l) {
                 });
 
                 cellContainer.appendChild(bar);
+            });
+
+            // Gap indicators
+            var allGaps = detectGaps(events);
+            var logGaps = allGaps.filter(function(g) { return g.logement_id === logement.id; });
+            logGaps.forEach(function(gap) {
+                var gStart = Math.max(0, Math.round((new Date(gap.start) - days[0]) / 86400000));
+                var gEnd = Math.min(tlDays, Math.round((new Date(gap.end) - days[0]) / 86400000));
+                if (gEnd <= 0 || gStart >= tlDays) return;
+                var gapEl = document.createElement('div');
+                gapEl.className = 'timeline-gap';
+                gapEl.style.left = (gStart * cellW + 2) + 'px';
+                gapEl.style.width = Math.max(cellW - 4, (gEnd - gStart) * cellW - 4) + 'px';
+                gapEl.textContent = gap.days + 'j';
+                gapEl.title = 'Trou de ' + gap.days + ' jour' + (gap.days > 1 ? 's' : '') + ' (min ' + gap.minNights + ' nuits)';
+                cellContainer.appendChild(gapEl);
             });
 
             // Today marker
@@ -803,7 +965,7 @@ foreach ($logements as $idx => $l) {
         var today = fmt(new Date());
 
         if (!events.length) {
-            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--fc-muted)">Aucune réservation</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:2rem;color:var(--fc-muted)">Aucune réservation</td></tr>';
             return;
         }
 
@@ -822,6 +984,7 @@ foreach ($logements as $idx => $l) {
                 '<td style="border-color:#f1f5f9;font-size:0.85rem;font-weight:700">' + (ev.num_nights || '—') + '</td>' +
                 '<td style="border-color:#f1f5f9;font-size:0.85rem">' + (ev.plateforme || '—') + '</td>' +
                 '<td style="border-color:#f1f5f9;font-size:0.85rem;font-weight:700;color:#10b981">' + (pricing[ev.logement_id] && pricing[ev.logement_id].prix_standard ? Math.round(pricing[ev.logement_id].prix_standard) + '€' : '—') + '</td>' +
+                '<td style="border-color:#f1f5f9;font-size:0.85rem;font-weight:700;color:#6366f1">' + estimateRevenue(ev) + '</td>' +
                 '<td style="border-color:#f1f5f9">' + (isCurrent ? '<span class="detail-badge" style="background:#dcfce7;color:#166534">En cours</span>' : (isPast ? '<span class="detail-badge" style="background:#f1f5f9;color:#64748b">Passée</span>' : '<span class="detail-badge" style="background:#fef3c7;color:#92400e">A venir</span>')) + '</td>';
             tr.addEventListener('click', function() {
                 var logement = logements.find(function(l) { return l.id === ev.logement_id; });
@@ -972,6 +1135,39 @@ foreach ($logements as $idx => $l) {
         refresh();
     });
 
+    // Sync iCal button
+    document.getElementById('syncBtn').addEventListener('click', function() {
+        var btn = this;
+        if (btn.classList.contains('syncing')) return;
+        btn.classList.add('syncing');
+        fetch('ical_sync_api.php?action=sync_all_icals', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            btn.classList.remove('syncing');
+            if (data.success) {
+                showToast('<i class="fas fa-check-circle" style="color:#10b981"></i> ' + (data.message || 'Synchronisation terminée'), 'success');
+                loadAndRender();
+            } else {
+                showToast('<i class="fas fa-exclamation-circle" style="color:#ef4444"></i> ' + (data.error || 'Erreur'), 'error');
+            }
+        })
+        .catch(function() {
+            btn.classList.remove('syncing');
+            showToast('<i class="fas fa-exclamation-circle" style="color:#ef4444"></i> Erreur réseau', 'error');
+        });
+    });
+
+    function showToast(html, type) {
+        var toast = document.getElementById('calToast');
+        toast.innerHTML = html;
+        toast.style.borderColor = type === 'success' ? '#bbf7d0' : '#fecaca';
+        toast.classList.add('show');
+        setTimeout(function() { toast.classList.remove('show'); }, 4000);
+    }
+
     // ═══════════════════════════════════════
     // TIMELINE NAVIGATION
     // ═══════════════════════════════════════
@@ -1004,6 +1200,22 @@ foreach ($logements as $idx => $l) {
         if (typeof d === 'string') return d.slice(0, 10);
         var mm = d.getMonth() + 1, dd = d.getDate();
         return d.getFullYear() + '-' + (mm < 10 ? '0' : '') + mm + '-' + (dd < 10 ? '0' : '') + dd;
+    }
+
+    function estimateRevenue(ev) {
+        if (!ev.logement_id) return '—';
+        var dp = dailyPrices[ev.logement_id] || {};
+        var pr = pricing[ev.logement_id] || {};
+        var total = 0, counted = false;
+        var cursor = new Date(ev.start);
+        var endD = new Date(ev.end);
+        while (cursor < endD) {
+            var ds = fmt(cursor);
+            if (dp[ds]) { total += dp[ds]; counted = true; }
+            else if (pr.prix_standard) { total += pr.prix_standard; counted = true; }
+            cursor.setDate(cursor.getDate() + 1);
+        }
+        return counted ? Math.round(total) + '€' : '—';
     }
 
     function fmtFR(d) {
