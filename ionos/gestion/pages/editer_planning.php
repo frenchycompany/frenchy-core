@@ -11,7 +11,8 @@ $intervStmt->execute();
 $intervenantsList = $intervStmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Récupération des paramètres GET
-$date = filter_input(INPUT_GET, 'date', FILTER_SANITIZE_STRING) ?? date('Y-m-d');
+$date = filter_input(INPUT_GET, 'date') ?? date('Y-m-d');
+$date = trim($date);
 $selectedIntervenant = filter_input(INPUT_GET, 'intervenant', FILTER_VALIDATE_INT);
 if ($selectedIntervenant === false || $selectedIntervenant === null) {
     $selectedIntervenant = 0; // 0 = Tout le monde
@@ -54,13 +55,17 @@ try {
 
     if ($selectedIntervenant > 0) {
         // Filtrer si l'intervenant est dans l'une des colonnes de Planning
+        // Note : chaque occurrence doit avoir un nom de paramètre unique pour PDO
         $sql .= " AND (
-            p.conducteur = :interv
-            OR p.femme_de_menage_1 = :interv
-            OR p.femme_de_menage_2 = :interv
-            OR p.laverie = :interv
+            p.conducteur = :interv1
+            OR p.femme_de_menage_1 = :interv2
+            OR p.femme_de_menage_2 = :interv3
+            OR p.laverie = :interv4
         )";
-        $params[':interv'] = $selectedIntervenant;
+        $params[':interv1'] = $selectedIntervenant;
+        $params[':interv2'] = $selectedIntervenant;
+        $params[':interv3'] = $selectedIntervenant;
+        $params[':interv4'] = $selectedIntervenant;
     }
 
     $stmt = $conn->prepare($sql);
