@@ -68,12 +68,10 @@ function generateDbPrefix($name, $conn) {
     return $letters . substr(time(), -4) . '_';
 }
 
-// ── Helper : charger les équipements d'un logement (table sur la base RPI) ──
+// ── Helper : charger les équipements d'un logement ──
 function loadLogementEquipements($conn, $logementId) {
     try {
-        require_once __DIR__ . '/../includes/rpi_db.php';
-        $pdo = getRpiPdo();
-        $stmt = $pdo->prepare("SELECT * FROM logement_equipements WHERE logement_id = :id");
+        $stmt = $conn->prepare("SELECT * FROM logement_equipements WHERE logement_id = :id");
         $stmt->execute([':id' => $logementId]);
         return $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
     } catch (PDOException $e) {

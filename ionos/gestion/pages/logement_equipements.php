@@ -6,8 +6,9 @@
 
 include '../config.php';
 include '../pages/menu.php';
-require_once __DIR__ . '/../includes/rpi_db.php';
-$pdo = getRpiPdo();
+
+// Utiliser $conn (base locale) — logement_equipements est sur frenchyconciergerie
+$pdo = $conn;
 
 
 
