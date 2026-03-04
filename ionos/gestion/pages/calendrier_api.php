@@ -22,7 +22,15 @@ $end         = $_GET['end']   ?? date('Y-m-t', strtotime('+3 months'));
 $logement_id = isset($_GET['logement_id']) && $_GET['logement_id'] !== '' ? (int) $_GET['logement_id'] : null;
 
 try {
-    // ── 1. Logements + tarifs (VPS) ──
+    // ── Connexion RPI (nécessaire pour superhote + réservations) ──
+    $pdoRpi = null;
+    try {
+        $pdoRpi = getRpiPdo();
+    } catch (Exception $e) {
+        error_log('calendrier_api RPi connection: ' . $e->getMessage());
+    }
+
+    // ── 1. Logements (VPS) + tarifs (RPI) ──
     $logementNames = [];
     $logementPricing = [];
 
@@ -44,22 +52,23 @@ try {
         }
     }
 
-    // Ensuite enrichir avec les tarifs (peut échouer si tables superhote n'existent pas)
-    try {
-        $rows = $conn->query("
-            SELECT l.id,
+    // Enrichir avec les tarifs depuis la base RPI (superhote_config + superhote_groups)
+    if ($pdoRpi) try {
+        $configRows = $pdoRpi->query("
+            SELECT sc.logement_id,
                    sc.prix_plancher, sc.prix_standard, sc.weekend_pourcent, sc.dimanche_reduction,
                    sc.nuits_minimum, sc.groupe,
                    g.prix_plancher AS g_prix_plancher, g.prix_standard AS g_prix_standard,
                    g.weekend_pourcent AS g_weekend_pourcent, g.dimanche_reduction AS g_dimanche_reduction,
                    g.nuits_minimum AS g_nuits_minimum
-            FROM liste_logements l
-            LEFT JOIN superhote_config sc ON l.id = sc.logement_id
+            FROM superhote_config sc
             LEFT JOIN superhote_groups g ON sc.groupe = g.nom
         ")->fetchAll(PDO::FETCH_ASSOC);
 
-        foreach ($rows as $r) {
-            $logementPricing[$r['id']] = [
+        foreach ($configRows as $r) {
+            $lid = (int) $r['logement_id'];
+            if (!isset($logementNames[$lid])) continue; // ignorer les logements inactifs
+            $logementPricing[$lid] = [
                 'prix_plancher'      => (float) ($r['g_prix_plancher'] ?? $r['prix_plancher'] ?? 0),
                 'prix_standard'      => (float) ($r['g_prix_standard'] ?? $r['prix_standard'] ?? 0),
                 'weekend_pourcent'   => (float) ($r['g_weekend_pourcent'] ?? $r['weekend_pourcent'] ?? 10),
@@ -75,10 +84,10 @@ try {
     // ── 2. Calcul dynamique des prix par jour (même algorithme que superhote.php) ──
     $dailyPrices = []; // [logement_id][date] = prix
     $superhoteSettings = [];
-    try {
-        $settingsRows = $conn->query("SELECT setting_key, setting_value FROM superhote_settings")->fetchAll(PDO::FETCH_ASSOC);
+    if ($pdoRpi) try {
+        $settingsRows = $pdoRpi->query("SELECT key_name, value FROM superhote_settings")->fetchAll(PDO::FETCH_ASSOC);
         foreach ($settingsRows as $sr) {
-            $superhoteSettings[$sr['setting_key']] = $sr['setting_value'];
+            $superhoteSettings[$sr['key_name']] = $sr['value'];
         }
     } catch (PDOException $e) { /* table might not exist */ }
 
@@ -123,13 +132,6 @@ try {
             $dailyPrices[$lid][$cursor->format('Y-m-d')] = round($prix, 0);
             $cursor->modify('+1 day');
         }
-    }
-
-    $pdoRpi = null;
-    try {
-        $pdoRpi = getRpiPdo();
-    } catch (Exception $e) {
-        error_log('calendrier_api RPi connection: ' . $e->getMessage());
     }
     $events = [];
 
