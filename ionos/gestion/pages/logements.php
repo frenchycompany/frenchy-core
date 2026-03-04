@@ -11,6 +11,18 @@ require_once __DIR__ . '/../includes/rpi_db.php';
 $feedback = '';
 
 // ============================================================
+// AUTO-MIGRATION : ajout colonne airbnb_url si absente
+// ============================================================
+try {
+    $cols = array_column($conn->query("SHOW COLUMNS FROM liste_logements")->fetchAll(), 'Field');
+    if (!in_array('airbnb_url', $cols)) {
+        $conn->exec("ALTER TABLE liste_logements ADD COLUMN `airbnb_url` VARCHAR(500) DEFAULT NULL AFTER `ics_url_2`");
+    }
+} catch (PDOException $e) {
+    error_log('Migration logements airbnb_url : ' . $e->getMessage());
+}
+
+// ============================================================
 // ACTIONS POST
 // ============================================================
 
@@ -31,6 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $code  = trim($_POST['code'] ?? '');
         $ics_url = trim($_POST['ics_url'] ?? '');
         $ics_url_2 = trim($_POST['ics_url_2'] ?? '');
+        $airbnb_url = trim($_POST['airbnb_url'] ?? '');
 
         if (empty($nom)) {
             $feedback = '<div class="alert alert-danger">Le nom du logement est obligatoire.</div>';
@@ -39,12 +52,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt = $conn->prepare("
                     INSERT INTO liste_logements
                     (nom_du_logement, adresse, description, m2, nombre_de_personnes, poid_menage,
-                     prix_vente_menage, valeur_locative, valeur_fonciere, code, ics_url, ics_url_2, actif)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+                     prix_vente_menage, valeur_locative, valeur_fonciere, code, ics_url, ics_url_2, airbnb_url, actif)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
                 ");
                 $stmt->execute([$nom, $adresse ?: null, $description ?: null, $m2, $nombre_de_personnes,
                     $poid_menage, $prix_vente_menage, $valeur_locative, $valeur_fonciere,
-                    $code, $ics_url ?: null, $ics_url_2 ?: null]);
+                    $code, $ics_url ?: null, $ics_url_2 ?: null, $airbnb_url ?: null]);
                 $feedback = '<div class="alert alert-success">Logement ajouté avec succès.</div>';
             } catch (PDOException $e) {
                 $feedback = '<div class="alert alert-danger">Erreur : ' . htmlspecialchars($e->getMessage()) . '</div>';
@@ -67,6 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $code  = trim($_POST['code'] ?? '');
         $ics_url = trim($_POST['ics_url'] ?? '');
         $ics_url_2 = trim($_POST['ics_url_2'] ?? '');
+        $airbnb_url = trim($_POST['airbnb_url'] ?? '');
 
         if (empty($nom)) {
             $feedback = '<div class="alert alert-danger">Le nom du logement est obligatoire.</div>';
@@ -77,12 +91,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         nom_du_logement = ?, adresse = ?, description = ?,
                         m2 = ?, nombre_de_personnes = ?, poid_menage = ?,
                         prix_vente_menage = ?, valeur_locative = ?, valeur_fonciere = ?,
-                        code = ?, ics_url = ?, ics_url_2 = ?
+                        code = ?, ics_url = ?, ics_url_2 = ?, airbnb_url = ?
                     WHERE id = ?
                 ");
                 $stmt->execute([$nom, $adresse ?: null, $description ?: null, $m2, $nombre_de_personnes,
                     $poid_menage, $prix_vente_menage, $valeur_locative, $valeur_fonciere,
-                    $code, $ics_url ?: null, $ics_url_2 ?: null, $id]);
+                    $code, $ics_url ?: null, $ics_url_2 ?: null, $airbnb_url ?: null, $id]);
                 $feedback = '<div class="alert alert-success">Logement mis à jour.</div>';
             } catch (PDOException $e) {
                 $feedback = '<div class="alert alert-danger">Erreur : ' . htmlspecialchars($e->getMessage()) . '</div>';
@@ -214,6 +228,7 @@ $nb_inactifs = count($logements) - $nb_actifs;
                             <th>Poids ménage</th>
                             <th>Prix ménage</th>
                             <th>iCal</th>
+                            <th>Airbnb</th>
                             <th>Résa.</th>
                             <th>Interv.</th>
                             <th>Statut</th>
@@ -243,6 +258,15 @@ $nb_inactifs = count($logements) - $nb_actifs;
                                     <?php if (!empty($l['ics_url_2'])): ?>
                                         <span class="badge bg-info badge-ics">+2</span>
                                     <?php endif; ?>
+                                <?php else: ?>
+                                    <span class="badge bg-secondary badge-ics"><i class="fas fa-times"></i></span>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <?php if (!empty($l['airbnb_url'])): ?>
+                                    <a href="<?= htmlspecialchars($l['airbnb_url']) ?>" target="_blank" class="badge bg-danger badge-ics text-decoration-none" title="Voir l'annonce Airbnb">
+                                        <i class="fas fa-external-link-alt"></i> Lien
+                                    </a>
                                 <?php else: ?>
                                     <span class="badge bg-secondary badge-ics"><i class="fas fa-times"></i></span>
                                 <?php endif; ?>
@@ -282,7 +306,7 @@ $nb_inactifs = count($logements) - $nb_actifs;
                         </tr>
                     <?php endforeach; ?>
                     <?php if (empty($logements)): ?>
-                        <tr><td colspan="12" class="text-center text-muted py-4">Aucun logement enregistré.</td></tr>
+                        <tr><td colspan="13" class="text-center text-muted py-4">Aucun logement enregistré.</td></tr>
                     <?php endif; ?>
                     </tbody>
                 </table>
@@ -368,6 +392,12 @@ $nb_inactifs = count($logements) - $nb_actifs;
                             <div class="mb-3">
                                 <label class="form-label">URL iCal secondaire</label>
                                 <input type="url" class="form-control" name="ics_url_2" placeholder="https://...">
+                            </div>
+
+                            <h6 class="text-muted mb-3 mt-3">Airbnb</h6>
+                            <div class="mb-3">
+                                <label class="form-label">URL annonce Airbnb</label>
+                                <input type="url" class="form-control" name="airbnb_url" placeholder="https://www.airbnb.fr/rooms/...">
                             </div>
                         </div>
                     </div>
@@ -459,6 +489,12 @@ $nb_inactifs = count($logements) - $nb_actifs;
                                 <label class="form-label">URL iCal secondaire</label>
                                 <input type="url" class="form-control" name="ics_url_2" id="edit_ics2">
                             </div>
+
+                            <h6 class="text-muted mb-3 mt-3">Airbnb</h6>
+                            <div class="mb-3">
+                                <label class="form-label">URL annonce Airbnb</label>
+                                <input type="url" class="form-control" name="airbnb_url" id="edit_airbnb">
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -488,6 +524,7 @@ function editLogement(l) {
     document.getElementById('edit_code').value      = l.code || '';
     document.getElementById('edit_ics').value       = l.ics_url || '';
     document.getElementById('edit_ics2').value      = l.ics_url_2 || '';
+    document.getElementById('edit_airbnb').value    = l.airbnb_url || '';
 
     new bootstrap.Modal(document.getElementById('editModal')).show();
 }
