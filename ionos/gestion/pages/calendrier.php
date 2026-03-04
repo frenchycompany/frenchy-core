@@ -606,6 +606,7 @@ foreach ($logements as $idx => $l) {
     // Timeline state
     var tlDays = 30;
     var tlStart = new Date();
+    tlStart.setHours(0, 0, 0, 0); // normalize to midnight to avoid offset rounding errors
     tlStart.setDate(tlStart.getDate() - 3); // start 3 days before today
 
     var fcCalendar = null;
@@ -1195,6 +1196,7 @@ foreach ($logements as $idx => $l) {
     });
     document.getElementById('tl-today').addEventListener('click', function() {
         tlStart = new Date();
+        tlStart.setHours(0, 0, 0, 0);
         tlStart.setDate(tlStart.getDate() - 3);
         loadAndRender();
     });
