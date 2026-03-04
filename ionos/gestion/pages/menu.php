@@ -92,6 +92,7 @@ $menu_categories = [
     'Réservations' => [
         'icon' => 'fa-calendar-check',
         'items' => [
+            ['nom' => 'Calendrier',         'chemin' => 'pages/calendrier.php',          'icon' => 'fa-calendar'],
             ['nom' => 'Listing complet',    'chemin' => 'pages/reservations.php',        'icon' => 'fa-list'],
             ['nom' => 'Sync iCal',          'chemin' => 'pages/sync_ical.php',           'icon' => 'fa-sync-alt'],
             ['nom' => 'Taux d\'occupation', 'chemin' => 'pages/occupation.php',          'icon' => 'fa-chart-pie'],
