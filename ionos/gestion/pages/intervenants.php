@@ -1,18 +1,24 @@
 <?php
-session_start();
-include '../config.php'; // Inclut la configuration de la base de données
-include '../pages/menu.php'; // Inclut le menu de navigation
+/**
+ * Gestion des Intervenants — FrenchyConciergerie
+ */
+include '../config.php';
+include '../pages/menu.php';
+require_once __DIR__ . '/../includes/csrf.php';
 
-// Vérifie si l'utilisateur est admin
-if ($_SESSION['role'] !== 'admin') {
-    header("Location: ../index.php");
+// Vérification admin
+if (($_SESSION['role'] ?? '') !== 'admin') {
+    header("Location: ../error.php?message=" . urlencode('Accès réservé aux administrateurs.'));
     exit;
 }
 
-// Auto-migration : colonne actif pour intervenant
+// Auto-migration : colonne actif
 try {
-    $conn->exec("ALTER TABLE intervenant ADD COLUMN actif TINYINT(1) NOT NULL DEFAULT 1");
-} catch (PDOException $e) { /* colonne existe déjà */ }
+    $cols = array_column($conn->query("SHOW COLUMNS FROM intervenant")->fetchAll(), 'Field');
+    if (!in_array('actif', $cols)) {
+        $conn->exec("ALTER TABLE intervenant ADD COLUMN actif TINYINT(1) NOT NULL DEFAULT 1");
+    }
+} catch (PDOException $e) { /* table n'existe pas encore */ }
 
 // Auto-sync : ajouter dans la table `pages` toutes les pages du menu si absentes
 if (isset($menu_categories)) {
@@ -32,252 +38,336 @@ if (isset($menu_categories)) {
     } catch (PDOException $e) { /* table pages n'existe pas encore */ }
 }
 
-// Toggle actif/inactif
-if (isset($_POST['toggle_actif'])) {
-    $tid = (int)$_POST['toggle_actif'];
-    $conn->prepare("UPDATE intervenant SET actif = NOT actif WHERE id = ?")->execute([$tid]);
-    header("Location: intervenants.php");
-    exit;
-}
+$feedback = '';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['toggle_actif'])) {
-    // Récupération des données du formulaire
-    $intervenant_id = filter_input(INPUT_POST, 'intervenant_id', FILTER_VALIDATE_INT);
-    $nom = filter_input(INPUT_POST, 'nom', FILTER_SANITIZE_STRING);
-    $numero = filter_input(INPUT_POST, 'numero', FILTER_SANITIZE_STRING);
-    $role1 = filter_input(INPUT_POST, 'role1', FILTER_SANITIZE_STRING);
-    $role2 = filter_input(INPUT_POST, 'role2', FILTER_SANITIZE_STRING);
-    $role3 = filter_input(INPUT_POST, 'role3', FILTER_SANITIZE_STRING);
-    $username = filter_input(INPUT_POST, 'username', FILTER_SANITIZE_STRING);
-    $password = filter_input(INPUT_POST, 'password', FILTER_SANITIZE_STRING);
-    $pages_accessibles = isset($_POST['pages_accessibles']) ? $_POST['pages_accessibles'] : [];
+// ============================================================
+// ACTIONS POST
+// ============================================================
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    validateCsrfToken();
 
-    try {
-        if ($intervenant_id) {
-            // Mise à jour d'un intervenant existant
-            if (!empty($password)) {
-                // Mot de passe fourni → hasher et mettre à jour
-                $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-                $stmt = $conn->prepare("UPDATE intervenant SET nom = ?, numero = ?, role1 = ?, role2 = ?, role3 = ?, nom_utilisateur = ?, mot_de_passe = ? WHERE id = ?");
-                $stmt->execute([$nom, $numero, $role1, $role2, $role3, $username, $hashedPassword, $intervenant_id]);
-            } else {
-                // Pas de mot de passe → ne pas toucher au hash existant
-                $stmt = $conn->prepare("UPDATE intervenant SET nom = ?, numero = ?, role1 = ?, role2 = ?, role3 = ?, nom_utilisateur = ? WHERE id = ?");
-                $stmt->execute([$nom, $numero, $role1, $role2, $role3, $username, $intervenant_id]);
-            }
+    // --- Toggle actif/inactif ---
+    if (isset($_POST['toggle_actif'])) {
+        $tid = (int) $_POST['toggle_actif'];
+        try {
+            $conn->prepare("UPDATE intervenant SET actif = NOT actif WHERE id = ?")->execute([$tid]);
+            $feedback = '<div class="alert alert-success alert-dismissible fade show">Statut mis à jour.<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+        } catch (PDOException $e) {
+            $feedback = '<div class="alert alert-danger">Erreur : ' . htmlspecialchars($e->getMessage()) . '</div>';
+        }
+    }
 
-            // Supprime les pages existantes pour cet intervenant
-            $stmt = $conn->prepare("DELETE FROM intervenants_pages WHERE intervenant_id = ?");
-            $stmt->execute([$intervenant_id]);
+    // --- Créer ou modifier un intervenant ---
+    if (isset($_POST['save_intervenant'])) {
+        $intervenant_id = (int) ($_POST['intervenant_id'] ?? 0);
+        $nom      = trim($_POST['nom'] ?? '');
+        $numero   = trim($_POST['numero'] ?? '');
+        $role1    = trim($_POST['role1'] ?? '');
+        $role2    = trim($_POST['role2'] ?? '');
+        $role3    = trim($_POST['role3'] ?? '');
+        $username = trim($_POST['username'] ?? '');
+        $password = $_POST['password'] ?? '';
+        $pages_accessibles = $_POST['pages_accessibles'] ?? [];
 
-            // Ajoute les nouvelles pages accessibles
-            if (!empty($pages_accessibles)) {
-                $stmt = $conn->prepare("INSERT INTO intervenants_pages (intervenant_id, page_id) VALUES (?, ?)");
-                foreach ($pages_accessibles as $page_id) {
-                    $stmt->execute([$intervenant_id, (int)$page_id]);
-                }
-            }
+        if (empty($nom)) {
+            $feedback = '<div class="alert alert-danger">Le nom est obligatoire.</div>';
         } else {
-            // Création d'un nouvel intervenant (avec mot de passe hashé)
-            $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-            $stmt = $conn->prepare("INSERT INTO intervenant (nom, numero, role1, role2, role3, nom_utilisateur, mot_de_passe) VALUES (?, ?, ?, ?, ?, ?, ?)");
-            $stmt->execute([$nom, $numero, $role1, $role2, $role3, $username, $hashedPassword]);
-            $intervenant_id = $conn->lastInsertId();
-
-            // Ajoute les pages accessibles
-            if (!empty($pages_accessibles)) {
-                $stmt = $conn->prepare("INSERT INTO intervenants_pages (intervenant_id, page_id) VALUES (?, ?)");
-                foreach ($pages_accessibles as $page_id) {
-                    $stmt->execute([$intervenant_id, (int)$page_id]);
+            try {
+                if ($intervenant_id > 0) {
+                    // Mise à jour
+                    if (!empty($password)) {
+                        $hash = password_hash($password, PASSWORD_DEFAULT);
+                        $stmt = $conn->prepare("UPDATE intervenant SET nom = ?, numero = ?, role1 = ?, role2 = ?, role3 = ?, nom_utilisateur = ?, mot_de_passe = ? WHERE id = ?");
+                        $stmt->execute([$nom, $numero, $role1, $role2, $role3, $username, $hash, $intervenant_id]);
+                    } else {
+                        $stmt = $conn->prepare("UPDATE intervenant SET nom = ?, numero = ?, role1 = ?, role2 = ?, role3 = ?, nom_utilisateur = ? WHERE id = ?");
+                        $stmt->execute([$nom, $numero, $role1, $role2, $role3, $username, $intervenant_id]);
+                    }
+                    $feedback = '<div class="alert alert-success alert-dismissible fade show">Intervenant mis à jour.<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+                } else {
+                    // Création
+                    if (empty($password)) {
+                        $feedback = '<div class="alert alert-danger">Le mot de passe est obligatoire pour un nouvel intervenant.</div>';
+                    } else {
+                        $hash = password_hash($password, PASSWORD_DEFAULT);
+                        $stmt = $conn->prepare("INSERT INTO intervenant (nom, numero, role1, role2, role3, nom_utilisateur, mot_de_passe) VALUES (?, ?, ?, ?, ?, ?, ?)");
+                        $stmt->execute([$nom, $numero, $role1, $role2, $role3, $username, $hash]);
+                        $intervenant_id = $conn->lastInsertId();
+                        $feedback = '<div class="alert alert-success alert-dismissible fade show">Intervenant créé.<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+                    }
                 }
+
+                // Pages accessibles
+                if ($intervenant_id > 0) {
+                    $conn->prepare("DELETE FROM intervenants_pages WHERE intervenant_id = ?")->execute([$intervenant_id]);
+                    if (!empty($pages_accessibles)) {
+                        $stmt = $conn->prepare("INSERT INTO intervenants_pages (intervenant_id, page_id) VALUES (?, ?)");
+                        foreach ($pages_accessibles as $page_id) {
+                            $stmt->execute([$intervenant_id, (int) $page_id]);
+                        }
+                    }
+                }
+            } catch (PDOException $e) {
+                $feedback = '<div class="alert alert-danger">Erreur : ' . htmlspecialchars($e->getMessage()) . '</div>';
             }
         }
-    } catch (PDOException $e) {
-        die("Erreur lors de la mise à jour : " . $e->getMessage());
     }
 }
 
-// Récupération de tous les intervenants
-$query = $conn->query("SELECT * FROM intervenant ORDER BY actif DESC, nom ASC");
-$intervenants = $query->fetchAll(PDO::FETCH_ASSOC);
-
-// Liste des rôles disponibles
+// ============================================================
+// DONNÉES
+// ============================================================
+$intervenants = $conn->query("SELECT * FROM intervenant ORDER BY actif DESC, nom ASC")->fetchAll(PDO::FETCH_ASSOC);
 $roles_disponibles = ['Conducteur', 'Femme de ménage', 'Laverie', 'Maintenance', 'Superviseur'];
+$pages_disponibles = $conn->query("SELECT id, nom, chemin FROM pages ORDER BY nom")->fetchAll(PDO::FETCH_ASSOC);
 
-// Récupération des pages disponibles
-$stmt = $conn->query("SELECT id, chemin FROM pages");
-$pages_disponibles = $stmt->fetchAll(PDO::FETCH_KEY_PAIR); // Associe ID à chemin
+// Pré-charger les pages accessibles par intervenant
+$pages_par_intervenant = [];
+try {
+    $rows = $conn->query("SELECT intervenant_id, page_id FROM intervenants_pages")->fetchAll();
+    foreach ($rows as $r) {
+        $pages_par_intervenant[$r['intervenant_id']][] = $r['page_id'];
+    }
+} catch (PDOException $e) { /* table n'existe pas encore */ }
+
+$nb_actifs = count(array_filter($intervenants, fn($i) => !empty($i['actif'])));
+$nb_inactifs = count($intervenants) - $nb_actifs;
 ?>
 
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestion des Intervenants</title>
+    <title>Gestion des Intervenants — FrenchyConciergerie</title>
     <link rel="stylesheet" href="../css/style.css">
+    <style>
+        .intervenant-inactif { opacity: 0.55; }
+        .role-badge { font-size: 0.8rem; }
+        .pages-list { font-size: 0.8rem; max-height: 80px; overflow-y: auto; }
+    </style>
 </head>
 <body>
-<div class="container mt-4">
-    <h2>Gestion des Intervenants</h2>
-    <table class="table table-striped">
-        <thead>
-        <tr>
-            <th>Nom</th>
-            <th>Numéro</th>
-            <th>Nom d'utilisateur</th>
-            <th>Mot de passe</th>
-            <th>Rôle 1</th>
-            <th>Rôle 2</th>
-            <th>Rôle 3</th>
-            <th>Pages Accessibles</th>
-            <th>Statut</th>
-            <th>Action</th>
-        </tr>
-        </thead>
-        <tbody>
-        <?php foreach ($intervenants as $intervenant): ?>
-            <?php
-            // Récupère les pages accessibles pour cet intervenant
-            $stmt = $conn->prepare("SELECT page_id FROM intervenants_pages WHERE intervenant_id = ?");
-            $stmt->execute([$intervenant['id']]);
-            $pages_utilisateur = $stmt->fetchAll(PDO::FETCH_COLUMN);
-            ?>
-            <tr>
-                <form method="POST" action="">
-                    <td>
-                        <input type="text" name="nom" class="form-control" value="<?= htmlspecialchars($intervenant['nom']) ?>" required>
-                        <input type="hidden" name="intervenant_id" value="<?= $intervenant['id'] ?>">
-                    </td>
-                    <td>
-                        <input type="text" name="numero" class="form-control" value="<?= htmlspecialchars($intervenant['numero']) ?>" required>
-                    </td>
-                    <td>
-                        <input type="text" name="username" class="form-control" value="<?= htmlspecialchars($intervenant['nom_utilisateur']) ?>" required>
-                    </td>
-                    <td>
-                        <input type="password" name="password" class="form-control" value="" placeholder="Laisser vide = inchangé">
-                    </td>
-                    <td>
-                        <select name="role1" class="form-control">
-                            <option value="">-- Sélectionnez --</option>
-                            <?php foreach ($roles_disponibles as $role): ?>
-                                <option value="<?= htmlspecialchars($role) ?>" <?= $intervenant['role1'] === $role ? 'selected' : '' ?>>
-                                    <?= htmlspecialchars($role) ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-                    </td>
-                    <td>
-                        <select name="role2" class="form-control">
-                            <option value="">-- Sélectionnez --</option>
-                            <?php foreach ($roles_disponibles as $role): ?>
-                                <option value="<?= htmlspecialchars($role) ?>" <?= $intervenant['role2'] === $role ? 'selected' : '' ?>>
-                                    <?= htmlspecialchars($role) ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-                    </td>
-                    <td>
-                        <select name="role3" class="form-control">
-                            <option value="">-- Sélectionnez --</option>
-                            <?php foreach ($roles_disponibles as $role): ?>
-                                <option value="<?= htmlspecialchars($role) ?>" <?= $intervenant['role3'] === $role ? 'selected' : '' ?>>
-                                    <?= htmlspecialchars($role) ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-                    </td>
-                    <td>
-                        <?php foreach ($pages_disponibles as $id => $chemin): ?>
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="pages_accessibles[]" value="<?= $id ?>" <?= in_array($id, $pages_utilisateur) ? 'checked' : '' ?>>
-                                <label class="form-check-label"><?= $chemin ?></label>
-                            </div>
-                        <?php endforeach; ?>
-                    </td>
-                    <td>
-                        <?php if (!empty($intervenant['actif'])): ?>
-                            <span class="badge badge-success text-bg-success">Actif</span>
-                        <?php else: ?>
-                            <span class="badge badge-secondary text-bg-secondary">Inactif</span>
-                        <?php endif; ?>
-                    </td>
-                    <td>
-                        <button type="submit" class="btn btn-primary btn-sm">Modifier</button>
-                </form>
-                        <form method="POST" style="display:inline">
-                            <input type="hidden" name="toggle_actif" value="<?= $intervenant['id'] ?>">
-                            <button type="submit" class="btn btn-sm <?= !empty($intervenant['actif']) ? 'btn-outline-warning' : 'btn-outline-success' ?>" onclick="return confirm('<?= !empty($intervenant['actif']) ? 'Désactiver' : 'Réactiver' ?> cet intervenant ?')">
-                                <?= !empty($intervenant['actif']) ? 'Désactiver' : 'Activer' ?>
-                            </button>
-                        </form>
-                    </td>
-            </tr>
-        <?php endforeach; ?>
-        </tbody>
-    </table>
+<div class="container-fluid mt-4">
 
-    <h3>Créer un nouvel intervenant</h3>
-    <form method="POST" action="" class="mb-4">
-        <div class="form-group">
-            <label for="nom">Nom :</label>
-            <input type="text" name="nom" id="nom" class="form-control" required>
+    <div class="row mb-4">
+        <div class="col">
+            <h2><i class="fas fa-users text-info"></i> Gestion des Intervenants</h2>
+            <p class="text-muted">
+                <?= count($intervenants) ?> intervenant(s) —
+                <span class="text-success"><?= $nb_actifs ?> actif(s)</span>
+                <?php if ($nb_inactifs > 0): ?>
+                    / <span class="text-secondary"><?= $nb_inactifs ?> inactif(s)</span>
+                <?php endif; ?>
+            </p>
         </div>
-        <div class="form-group">
-            <label for="numero">Numéro :</label>
-            <input type="text" name="numero" id="numero" class="form-control" required>
+        <div class="col-auto">
+            <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#intervenantModal" onclick="resetModal()">
+                <i class="fas fa-plus"></i> Nouvel intervenant
+            </button>
         </div>
-        <div class="form-group">
-            <label for="username">Nom d'utilisateur :</label>
-            <input type="text" name="username" id="username" class="form-control" required>
+    </div>
+
+    <?= $feedback ?>
+
+    <!-- Tableau des intervenants -->
+    <div class="card">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Nom</th>
+                            <th>Téléphone</th>
+                            <th>Identifiant</th>
+                            <th>Rôles</th>
+                            <th>Pages</th>
+                            <th>Statut</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    <?php foreach ($intervenants as $i): ?>
+                        <?php $iPages = $pages_par_intervenant[$i['id']] ?? []; ?>
+                        <tr class="<?= empty($i['actif']) ? 'intervenant-inactif' : '' ?>">
+                            <td><strong><?= htmlspecialchars($i['nom']) ?></strong></td>
+                            <td><?= htmlspecialchars($i['numero']) ?></td>
+                            <td><code><?= htmlspecialchars($i['nom_utilisateur']) ?></code></td>
+                            <td>
+                                <?php foreach (['role1', 'role2', 'role3'] as $rk): ?>
+                                    <?php if (!empty($i[$rk])): ?>
+                                        <span class="badge bg-primary role-badge"><?= htmlspecialchars($i[$rk]) ?></span>
+                                    <?php endif; ?>
+                                <?php endforeach; ?>
+                                <?php if (empty($i['role1']) && empty($i['role2']) && empty($i['role3'])): ?>
+                                    <span class="text-muted">—</span>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <div class="pages-list">
+                                    <?php
+                                    $count = count($iPages);
+                                    if ($count > 0) {
+                                        echo '<span class="badge bg-info">' . $count . ' page' . ($count > 1 ? 's' : '') . '</span>';
+                                    } else {
+                                        echo '<span class="text-muted">Aucune</span>';
+                                    }
+                                    ?>
+                                </div>
+                            </td>
+                            <td>
+                                <form method="POST" style="display:inline">
+                                    <?php echoCsrfField(); ?>
+                                    <input type="hidden" name="toggle_actif" value="<?= $i['id'] ?>">
+                                    <?php if (!empty($i['actif'])): ?>
+                                        <button type="submit" class="btn btn-sm btn-success" title="Cliquer pour désactiver">
+                                            <i class="fas fa-check-circle"></i> Actif
+                                        </button>
+                                    <?php else: ?>
+                                        <button type="submit" class="btn btn-sm btn-secondary" title="Cliquer pour activer">
+                                            <i class="fas fa-pause-circle"></i> Inactif
+                                        </button>
+                                    <?php endif; ?>
+                                </form>
+                            </td>
+                            <td>
+                                <button type="button" class="btn btn-sm btn-warning"
+                                        onclick="editIntervenant(<?= htmlspecialchars(json_encode(array_merge($i, ['pages' => $iPages]))) ?>)"
+                                        title="Modifier">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                    <?php if (empty($intervenants)): ?>
+                        <tr><td colspan="7" class="text-center text-muted py-4">Aucun intervenant enregistré.</td></tr>
+                    <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
         </div>
-        <div class="form-group">
-            <label for="password">Mot de passe :</label>
-            <input type="text" name="password" id="password" class="form-control" required>
-        </div>
-        <div class="form-group">
-            <label for="role1">Rôle 1 :</label>
-            <select name="role1" id="role1" class="form-control">
-                <option value="">-- Sélectionnez --</option>
-                <?php foreach ($roles_disponibles as $role): ?>
-                    <option value="<?= htmlspecialchars($role) ?>"><?= htmlspecialchars($role) ?></option>
-                <?php endforeach; ?>
-            </select>
-        </div>
-        <div class="form-group">
-            <label for="role2">Rôle 2 :</label>
-            <select name="role2" id="role2" class="form-control">
-                <option value="">-- Sélectionnez --</option>
-                <?php foreach ($roles_disponibles as $role): ?>
-                    <option value="<?= htmlspecialchars($role) ?>"><?= htmlspecialchars($role) ?></option>
-                <?php endforeach; ?>
-            </select>
-        </div>
-        <div class="form-group">
-            <label for="role3">Rôle 3 :</label>
-            <select name="role3" id="role3" class="form-control">
-                <option value="">-- Sélectionnez --</option>
-                <?php foreach ($roles_disponibles as $role): ?>
-                    <option value="<?= htmlspecialchars($role) ?>"><?= htmlspecialchars($role) ?></option>
-                <?php endforeach; ?>
-            </select>
-        </div>
-        <div class="form-group">
-            <label>Pages Accessibles :</label>
-            <?php foreach ($pages_disponibles as $id => $chemin): ?>
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" name="pages_accessibles[]" value="<?= $id ?>">
-                    <label class="form-check-label"><?= $chemin ?></label>
-                </div>
-            <?php endforeach; ?>
-        </div>
-        <button type="submit" class="btn btn-success">Créer</button>
-    </form>
+    </div>
 </div>
 
-<!-- Bootstrap JavaScript -->
-<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+<!-- ════════════════════════════════════════════════════════ -->
+<!-- MODAL : Créer / Modifier un intervenant                 -->
+<!-- ════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="intervenantModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white" id="modal-header">
+                <h5 class="modal-title" id="modal-title"><i class="fas fa-plus"></i> Nouvel intervenant</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST">
+                <?php echoCsrfField(); ?>
+                <input type="hidden" name="intervenant_id" id="m_id" value="0">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-3">Identité</h6>
+                            <div class="mb-3">
+                                <label class="form-label">Nom *</label>
+                                <input type="text" class="form-control" name="nom" id="m_nom" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Téléphone</label>
+                                <input type="tel" class="form-control" name="numero" id="m_numero">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Nom d'utilisateur *</label>
+                                <input type="text" class="form-control" name="username" id="m_username" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label" id="m_password_label">Mot de passe *</label>
+                                <input type="password" class="form-control" name="password" id="m_password">
+                                <small class="form-text text-muted" id="m_password_hint" style="display:none">Laisser vide = inchangé</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-3">Rôles</h6>
+                            <?php for ($r = 1; $r <= 3; $r++): ?>
+                            <div class="mb-3">
+                                <label class="form-label">Rôle <?= $r ?></label>
+                                <select class="form-select" name="role<?= $r ?>" id="m_role<?= $r ?>">
+                                    <option value="">— Aucun —</option>
+                                    <?php foreach ($roles_disponibles as $role): ?>
+                                        <option value="<?= htmlspecialchars($role) ?>"><?= htmlspecialchars($role) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <?php endfor; ?>
+
+                            <h6 class="text-muted mb-3 mt-3">Pages accessibles</h6>
+                            <div style="max-height:200px; overflow-y:auto; border:1px solid #dee2e6; border-radius:6px; padding:0.75rem;">
+                                <?php foreach ($pages_disponibles as $p): ?>
+                                <div class="form-check">
+                                    <input class="form-check-input page-check" type="checkbox" name="pages_accessibles[]"
+                                           value="<?= $p['id'] ?>" id="page_<?= $p['id'] ?>">
+                                    <label class="form-check-label" for="page_<?= $p['id'] ?>">
+                                        <?= htmlspecialchars($p['nom'] ?: basename($p['chemin'])) ?>
+                                    </label>
+                                </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" name="save_intervenant" class="btn btn-primary" id="m_submit">
+                        <i class="fas fa-save"></i> Créer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function resetModal() {
+    document.getElementById('m_id').value = '0';
+    document.getElementById('m_nom').value = '';
+    document.getElementById('m_numero').value = '';
+    document.getElementById('m_username').value = '';
+    document.getElementById('m_password').value = '';
+    document.getElementById('m_password').required = true;
+    document.getElementById('m_password_label').textContent = 'Mot de passe *';
+    document.getElementById('m_password_hint').style.display = 'none';
+    document.getElementById('m_role1').value = '';
+    document.getElementById('m_role2').value = '';
+    document.getElementById('m_role3').value = '';
+    document.querySelectorAll('.page-check').forEach(c => c.checked = false);
+    document.getElementById('modal-title').innerHTML = '<i class="fas fa-plus"></i> Nouvel intervenant';
+    document.getElementById('modal-header').className = 'modal-header bg-success text-white';
+    document.getElementById('m_submit').innerHTML = '<i class="fas fa-plus"></i> Créer';
+    document.getElementById('m_submit').className = 'btn btn-success';
+}
+
+function editIntervenant(i) {
+    document.getElementById('m_id').value = i.id;
+    document.getElementById('m_nom').value = i.nom || '';
+    document.getElementById('m_numero').value = i.numero || '';
+    document.getElementById('m_username').value = i.nom_utilisateur || '';
+    document.getElementById('m_password').value = '';
+    document.getElementById('m_password').required = false;
+    document.getElementById('m_password_label').textContent = 'Mot de passe';
+    document.getElementById('m_password_hint').style.display = 'block';
+    document.getElementById('m_role1').value = i.role1 || '';
+    document.getElementById('m_role2').value = i.role2 || '';
+    document.getElementById('m_role3').value = i.role3 || '';
+
+    document.querySelectorAll('.page-check').forEach(c => {
+        c.checked = (i.pages || []).includes(parseInt(c.value));
+    });
+
+    document.getElementById('modal-title').innerHTML = '<i class="fas fa-edit"></i> Modifier : ' + (i.nom || '');
+    document.getElementById('modal-header').className = 'modal-header bg-warning text-dark';
+    document.getElementById('m_submit').innerHTML = '<i class="fas fa-save"></i> Enregistrer';
+    document.getElementById('m_submit').className = 'btn btn-warning';
+
+    new bootstrap.Modal(document.getElementById('intervenantModal')).show();
+}
+</script>
 </body>
 </html>
