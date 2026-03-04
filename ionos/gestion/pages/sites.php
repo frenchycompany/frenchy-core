@@ -406,6 +406,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_site'])) {
                         $siteUrl    = 'https://gestion.frenchyconciergerie.fr/sites/' . $site_slug;
                         $deployPath = $sitesRoot . '/' . $site_slug;
 
+                        // Vérifier que le moteur source existe
+                        if (!$frenchysiteSource || !is_dir($frenchysiteSource)) {
+                            throw new Exception("Moteur FrenchySite introuvable. Chemin testé : " . (__DIR__ . '/../../../frenchysite') . " (realpath=" . var_export($frenchysiteSource, true) . ")");
+                        }
+
                         // 1. Créer les tables BDD
                         $equipements = loadLogementEquipements($conn, $logement_id);
                         createSiteTables($conn, $dbPrefix, $siteName, $logement, $equipements);
@@ -430,12 +435,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_site'])) {
                             ':admin_pass_hash' => $passHash,
                         ]);
 
+                        // Vérifier que le déploiement a bien fonctionné
+                        $deployOk = is_dir($deployPath) && file_exists($deployPath . '/index.php');
+
                         $feedback = "<div class='alert alert-success'>
                             <i class='fas fa-check-circle'></i> Site créé avec succès !<br>
                             <strong>" . htmlspecialchars($siteName) . "</strong><br>
                             <small>
                                 Préfixe BDD : <code>{$dbPrefix}</code><br>
-                                Dossier : <code>{$site_slug}/</code><br>
+                                Dossier : <code>{$deployPath}</code> " . ($deployOk ? '✅' : '❌ fichiers absents !') . "<br>
+                                Source : <code>{$frenchysiteSource}</code><br>
                                 URL : <a href='{$siteUrl}' target='_blank'>{$siteUrl}</a><br>
                                 Admin : <a href='{$siteUrl}/admin.php' target='_blank'>{$siteUrl}/admin.php</a> (admin / {$admin_pass})
                             </small>
