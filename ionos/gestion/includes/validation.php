@@ -59,25 +59,4 @@ function requireAuth(string $requiredRole = 'user'): void {
     }
 }
 
-/**
- * Verifie le token CSRF pour les requetes POST
- */
-function verifyCsrfToken(): bool {
-    if ($_SERVER['REQUEST_METHOD'] !== 'POST') return true;
-
-    // Exempter les appels AJAX avec header custom (defense en profondeur)
-    if (isset($_POST['ajax']) || isset($_POST['ajax_action'])) {
-        // Les appels AJAX fetch() avec FormData sont proteges par SameSite cookie
-        return true;
-    }
-
-    $token = $_POST['csrf_token'] ?? '';
-    $sessionToken = $_SESSION['csrf_token'] ?? '';
-
-    if (empty($sessionToken) || !hash_equals($sessionToken, $token)) {
-        http_response_code(403);
-        echo '<div style="padding:40px;text-align:center;color:#e53935;">Token CSRF invalide. Rechargez la page.</div>';
-        return false;
-    }
-    return true;
-}
+// verifyCsrfToken() est deja definie dans includes/csrf.php (charge par config.php)
