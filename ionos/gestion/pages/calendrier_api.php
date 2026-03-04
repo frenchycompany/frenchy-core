@@ -72,21 +72,57 @@ try {
         error_log('calendrier_api pricing: ' . $e->getMessage());
     }
 
-    // ── 2. Prix générés par superhote_price_updates (VPS) – prix/nuit par date ──
+    // ── 2. Calcul dynamique des prix par jour (même algorithme que superhote.php) ──
     $dailyPrices = []; // [logement_id][date] = prix
+    $superhoteSettings = [];
     try {
-        $priceStmt = $conn->prepare("
-            SELECT logement_id, date_start, price
-            FROM superhote_price_updates
-            WHERE date_start >= ? AND date_start <= ? AND status IN ('pending','completed')
-            ORDER BY date_start
-        ");
-        $priceStmt->execute([$start, $end]);
-        foreach ($priceStmt->fetchAll(PDO::FETCH_ASSOC) as $p) {
-            $dailyPrices[(int)$p['logement_id']][$p['date_start']] = (float) $p['price'];
+        $settingsRows = $conn->query("SELECT setting_key, setting_value FROM superhote_settings")->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($settingsRows as $sr) {
+            $superhoteSettings[$sr['setting_key']] = $sr['setting_value'];
         }
-    } catch (PDOException $e) {
-        // superhote_price_updates might not exist
+    } catch (PDOException $e) { /* table might not exist */ }
+
+    $palierJ1_3 = floatval($superhoteSettings['palier_j1_3_pourcent'] ?? 25) / 100;
+    $palierJ4_6 = floatval($superhoteSettings['palier_j4_6_pourcent'] ?? 50) / 100;
+    $palierJ7_13 = floatval($superhoteSettings['palier_j7_13_pourcent'] ?? 75) / 100;
+
+    $today = new DateTime('today');
+    $dateStart = new DateTime($start);
+    $dateEnd = new DateTime($end);
+
+    foreach ($logementPricing as $lid => $lp) {
+        if ($lp['prix_standard'] <= 0) continue;
+        $ecart = $lp['prix_standard'] - $lp['prix_plancher'];
+        $cursor = clone $dateStart;
+        while ($cursor <= $dateEnd) {
+            $joursAvant = max(0, (int) $today->diff($cursor)->format('%r%a'));
+            $jourSemaine = (int) $cursor->format('w'); // 0=dim, 5=ven, 6=sam
+
+            // Prix de base selon anticipation
+            if ($joursAvant == 0) {
+                $prix = $lp['prix_plancher'];
+            } elseif ($joursAvant <= 3) {
+                $prix = $lp['prix_plancher'] + ($ecart * $palierJ1_3);
+            } elseif ($joursAvant <= 6) {
+                $prix = $lp['prix_plancher'] + ($ecart * $palierJ4_6);
+            } elseif ($joursAvant <= 13) {
+                $prix = $lp['prix_plancher'] + ($ecart * $palierJ7_13);
+            } else {
+                $prix = $lp['prix_standard'];
+            }
+
+            // Weekend (vendredi/samedi)
+            if ($jourSemaine == 5 || $jourSemaine == 6) {
+                $prix = $prix * (1 + $lp['weekend_pourcent'] / 100);
+            }
+            // Dimanche
+            elseif ($jourSemaine == 0) {
+                $prix = $prix - $lp['dimanche_reduction'];
+            }
+
+            $dailyPrices[$lid][$cursor->format('Y-m-d')] = round($prix, 0);
+            $cursor->modify('+1 day');
+        }
     }
 
     $pdoRpi = null;
