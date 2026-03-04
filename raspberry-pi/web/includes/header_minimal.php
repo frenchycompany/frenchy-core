@@ -408,6 +408,9 @@ if ($current_page !== 'login.php') {
                     <a class="dropdown-item" href="logements.php">
                         <i class="fas fa-home"></i> Logements
                     </a>
+                    <a class="dropdown-item" href="sites.php">
+                        <i class="fas fa-globe"></i> Sites vitrine
+                    </a>
                     <a class="dropdown-item" href="logement_equipements.php">
                         <i class="fas fa-bed"></i> Equipements
                     </a>
@@ -448,6 +451,7 @@ if ($current_page !== 'login.php') {
                 'reservation_list.php' => 'Reservations du jour',
                 'superhote_config.php' => 'Gestion des tarifs',
                 'logements.php' => 'Logements',
+                'sites.php' => 'Sites vitrine',
                 'logement_equipements.php' => 'Equipements logements',
                 'villes.php' => 'Villes & Recommandations',
                 'templates.php' => 'Templates SMS',
