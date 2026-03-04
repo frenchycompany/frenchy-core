@@ -216,6 +216,27 @@ INSERT INTO vf_texts (section_key, field_key, field_value, label, field_type, so
 ('guide_cuisine', 'nespresso',      'Remplissez le réservoir d''eau à l''arrière de la machine\nAllumez la machine — elle chauffe en 25 secondes\nInsérez une capsule et placez votre tasse\nAppuyez sur le bouton petit ou grand café\nLes capsules usagées vont dans le bac intégré', 'Machine Nespresso (1 par ligne)', 'textarea', 6),
 ('guide_cuisine', 'lave_vaisselle', 'Chargez la vaisselle (assiettes en bas, verres en haut)\nAjoutez une pastille dans le compartiment de la porte\nSélectionnez le programme <strong>Eco</strong> (bouton 2) pour un usage quotidien\nAppuyez sur <strong>Start</strong>', 'Lave-vaisselle (1 par ligne)', 'textarea', 7),
 ('guide_cuisine', 'tri',            'Poubelle grise : déchets ménagers\nPoubelle jaune : emballages, plastiques, cartons\nBac vert : verre\nCompost (jardin) : épluchures, marc de café', 'Tri des déchets (1 par ligne)', 'textarea', 8),
-('guide_cuisine', 'consignes',      'Merci de laisser la cuisine propre et rangée en fin de séjour. Le lave-vaisselle doit être vidé. Les poubelles pleines peuvent être déposées dans le local poubelles à l''extérieur (côté garage).', 'Consignes de fin de séjour', 'textarea', 9)
+('guide_cuisine', 'consignes',      'Merci de laisser la cuisine propre et rangée en fin de séjour. Le lave-vaisselle doit être vidé. Les poubelles pleines peuvent être déposées dans le local poubelles à l''extérieur (côté garage).', 'Consignes de fin de séjour', 'textarea', 9),
+('guide_cuisine', 'micro_ondes',    '', 'Micro-ondes (1 par ligne)', 'textarea', 10),
+
+-- Chauffage / Climatisation
+('guide_chauffage',     'title',        'Chauffage',                                   'Titre',              'text',     1),
+('guide_chauffage',     'subtitle',     'Comment régler le chauffage',                 'Sous-titre',         'text',     2),
+('guide_chauffage',     'instructions', '', 'Instructions (1 par ligne)', 'textarea', 3),
+
+('guide_climatisation', 'title',        'Climatisation',                               'Titre',              'text',     1),
+('guide_climatisation', 'subtitle',     'Comment utiliser la climatisation',            'Sous-titre',         'text',     2),
+('guide_climatisation', 'instructions', '', 'Instructions (1 par ligne)', 'textarea', 3),
+
+-- Ménager (machine à laver, sèche-linge)
+('guide_menager', 'title',          'Buanderie',                                       'Titre',              'text',     1),
+('guide_menager', 'subtitle',       'Machine à laver et sèche-linge',                  'Sous-titre',         'text',     2),
+('guide_menager', 'machine_laver',  '', 'Machine à laver (1 par ligne)', 'textarea', 3),
+('guide_menager', 'seche_linge',    '', 'Sèche-linge (1 par ligne)', 'textarea', 4),
+
+-- Canapé convertible
+('guide_canape', 'title',           'Canapé convertible',                              'Titre',              'text',     1),
+('guide_canape', 'subtitle',        'Comment déplier le canapé-lit',                   'Sous-titre',         'text',     2),
+('guide_canape', 'instructions',    '', 'Instructions (1 par ligne)', 'textarea', 3)
 
 ON DUPLICATE KEY UPDATE field_value = VALUES(field_value);

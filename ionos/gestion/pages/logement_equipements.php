@@ -99,6 +99,17 @@ try {
             jeux_enfants TINYINT(1) DEFAULT 0,
             animaux_acceptes TINYINT(1) DEFAULT 0,
             animaux_conditions TEXT DEFAULT NULL,
+            guide_tv TEXT DEFAULT NULL,
+            guide_canape_convertible TEXT DEFAULT NULL,
+            guide_plaque_cuisson TEXT DEFAULT NULL,
+            guide_four TEXT DEFAULT NULL,
+            guide_micro_ondes TEXT DEFAULT NULL,
+            guide_chauffage TEXT DEFAULT NULL,
+            guide_climatisation TEXT DEFAULT NULL,
+            guide_machine_cafe TEXT DEFAULT NULL,
+            guide_machine_laver TEXT DEFAULT NULL,
+            guide_lave_vaisselle TEXT DEFAULT NULL,
+            guide_seche_linge TEXT DEFAULT NULL,
             fumer_autorise TINYINT(1) DEFAULT 0,
             fetes_autorisees TINYINT(1) DEFAULT 0,
             heure_checkin VARCHAR(50) DEFAULT '15:00',
@@ -112,6 +123,16 @@ try {
             UNIQUE KEY unique_logement (logement_id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     ");
+
+    // Ajouter les colonnes guide_* si elles n'existent pas encore
+    $guideColumns = [
+        'guide_tv', 'guide_canape_convertible', 'guide_plaque_cuisson', 'guide_four',
+        'guide_micro_ondes', 'guide_chauffage', 'guide_climatisation', 'guide_machine_cafe',
+        'guide_machine_laver', 'guide_lave_vaisselle', 'guide_seche_linge'
+    ];
+    foreach ($guideColumns as $col) {
+        try { $pdo->exec("ALTER TABLE logement_equipements ADD COLUMN $col TEXT DEFAULT NULL"); } catch (PDOException $e) {}
+    }
 
     // Inserer les logements manquants
     $pdo->exec("
@@ -196,7 +217,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'canape_type', 'table_manger_places', 'type_lits', 'chauffage_type',
                     'parking_type', 'animaux_conditions',
                     'heure_checkin', 'heure_checkout', 'instructions_depart',
-                    'infos_quartier', 'numeros_urgence', 'notes_supplementaires'
+                    'infos_quartier', 'numeros_urgence', 'notes_supplementaires',
+                    'guide_tv', 'guide_canape_convertible', 'guide_plaque_cuisson', 'guide_four',
+                    'guide_micro_ondes', 'guide_chauffage', 'guide_climatisation', 'guide_machine_cafe',
+                    'guide_machine_laver', 'guide_lave_vaisselle', 'guide_seche_linge'
                 ];
 
                 $data = [];
@@ -546,6 +570,20 @@ if ($selectedLogement && !empty($selectedLogement['ville_id'])) {
                                         </div>
                                     </div>
                                 </div>
+
+                                <div class="form-group mt-3">
+                                    <label><i class="fas fa-book"></i> Guide d'utilisation — Chauffage</label>
+                                    <textarea name="guide_chauffage" class="form-control form-control-sm" rows="3"
+                                              placeholder="Ex: Le thermostat est dans le couloir. Reglez la temperature souhaitee..."><?= htmlspecialchars($selectedLogement['guide_chauffage'] ?? '') ?></textarea>
+                                    <small class="text-muted">1 etape par ligne. Comment regler le chauffage.</small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label><i class="fas fa-book"></i> Guide d'utilisation — Climatisation</label>
+                                    <textarea name="guide_climatisation" class="form-control form-control-sm" rows="3"
+                                              placeholder="Ex: La telecommande est sur la table, appuyez sur ON, reglez la temperature..."><?= htmlspecialchars($selectedLogement['guide_climatisation'] ?? '') ?></textarea>
+                                    <small class="text-muted">1 etape par ligne. Comment utiliser la climatisation.</small>
+                                </div>
                             </div>
 
                             <!-- Onglet Acces -->
@@ -670,6 +708,41 @@ if ($selectedLogement && !empty($selectedLogement['ville_id'])) {
                                     </div>
                                 </div>
 
+                                <div class="form-group mt-3">
+                                    <label><i class="fas fa-book"></i> Guide d'utilisation — Four</label>
+                                    <textarea name="guide_four" class="form-control form-control-sm" rows="3"
+                                              placeholder="Ex: Tournez le selecteur de mode... Reglez la temperature..."><?= htmlspecialchars($selectedLogement['guide_four'] ?? '') ?></textarea>
+                                    <small class="text-muted">1 etape par ligne. Visible par les voyageurs sur le site.</small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label><i class="fas fa-book"></i> Guide d'utilisation — Plaques de cuisson</label>
+                                    <textarea name="guide_plaque_cuisson" class="form-control form-control-sm" rows="3"
+                                              placeholder="Ex: Appuyez sur ON/OFF, selectionnez la zone, reglez la puissance..."><?= htmlspecialchars($selectedLogement['guide_plaque_cuisson'] ?? '') ?></textarea>
+                                    <small class="text-muted">1 etape par ligne.</small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label><i class="fas fa-book"></i> Guide d'utilisation — Micro-ondes</label>
+                                    <textarea name="guide_micro_ondes" class="form-control form-control-sm" rows="2"
+                                              placeholder="Ex: Placez votre plat, reglez la puissance et le temps..."><?= htmlspecialchars($selectedLogement['guide_micro_ondes'] ?? '') ?></textarea>
+                                    <small class="text-muted">1 etape par ligne.</small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label><i class="fas fa-book"></i> Guide d'utilisation — Machine a cafe</label>
+                                    <textarea name="guide_machine_cafe" class="form-control form-control-sm" rows="3"
+                                              placeholder="Ex: Remplissez le reservoir, inserez une capsule, appuyez sur le bouton..."><?= htmlspecialchars($selectedLogement['guide_machine_cafe'] ?? '') ?></textarea>
+                                    <small class="text-muted">1 etape par ligne.</small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label><i class="fas fa-book"></i> Guide d'utilisation — Lave-vaisselle</label>
+                                    <textarea name="guide_lave_vaisselle" class="form-control form-control-sm" rows="3"
+                                              placeholder="Ex: Chargez la vaisselle, ajoutez une pastille, selectionnez Eco..."><?= htmlspecialchars($selectedLogement['guide_lave_vaisselle'] ?? '') ?></textarea>
+                                    <small class="text-muted">1 etape par ligne.</small>
+                                </div>
+
                                 <h6 class="mt-3"><i class="fas fa-snowflake"></i> Gros electromenager</h6>
                                 <div class="row">
                                     <div class="col-md-3">
@@ -737,6 +810,20 @@ if ($selectedLogement && !empty($selectedLogement['ville_id'])) {
                                     </div>
                                 </div>
 
+                                <div class="form-group mt-3">
+                                    <label><i class="fas fa-book"></i> Guide d'utilisation — Machine a laver</label>
+                                    <textarea name="guide_machine_laver" class="form-control form-control-sm" rows="3"
+                                              placeholder="Ex: Chargez le linge, ajoutez la lessive dans le bac, selectionnez programme coton 40°..."><?= htmlspecialchars($selectedLogement['guide_machine_laver'] ?? '') ?></textarea>
+                                    <small class="text-muted">1 etape par ligne.</small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label><i class="fas fa-book"></i> Guide d'utilisation — Seche-linge</label>
+                                    <textarea name="guide_seche_linge" class="form-control form-control-sm" rows="2"
+                                              placeholder="Ex: Videz le filtre avant chaque utilisation, selectionnez programme coton..."><?= htmlspecialchars($selectedLogement['guide_seche_linge'] ?? '') ?></textarea>
+                                    <small class="text-muted">1 etape par ligne.</small>
+                                </div>
+
                                 <h6 class="mt-3"><i class="fas fa-broom"></i> Nettoyage</h6>
                                 <div class="row">
                                     <div class="col-md-4">
@@ -780,6 +867,13 @@ if ($selectedLogement && !empty($selectedLogement['ville_id'])) {
                                             <div class="input-group-append"><span class="input-group-text">"</span></div>
                                         </div>
                                     </div>
+                                </div>
+
+                                <div class="form-group mt-2">
+                                    <label><i class="fas fa-book"></i> Guide d'utilisation — TV</label>
+                                    <textarea name="guide_tv" class="form-control form-control-sm" rows="3"
+                                              placeholder="Ex: Prenez la telecommande, appuyez sur ON, selectionnez l'entree HDMI1..."><?= htmlspecialchars($selectedLogement['guide_tv'] ?? '') ?></textarea>
+                                    <small class="text-muted">1 etape par ligne. Comment allumer, changer de source, etc.</small>
                                 </div>
 
                                 <h6 class="mt-3"><i class="fas fa-play-circle"></i> Streaming</h6>
@@ -875,6 +969,13 @@ if ($selectedLogement && !empty($selectedLogement['ville_id'])) {
                                         </div>
                                     </div>
                                 </div>
+                                <div class="form-group mt-2">
+                                    <label><i class="fas fa-book"></i> Guide — Canape convertible</label>
+                                    <textarea name="guide_canape_convertible" class="form-control form-control-sm" rows="2"
+                                              placeholder="Ex: Retirez les coussins, tirez la poignee sous l'assise, depliez le matelas..."><?= htmlspecialchars($selectedLogement['guide_canape_convertible'] ?? '') ?></textarea>
+                                    <small class="text-muted">1 etape par ligne. Comment le deplier/replier.</small>
+                                </div>
+
                                 <div class="row mt-2">
                                     <div class="col-md-2">
                                         <div class="custom-control custom-checkbox pt-2">

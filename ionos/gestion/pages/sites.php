@@ -175,6 +175,41 @@ function createSiteTables($conn, $dbPrefix, $siteName, $logementData, $equipemen
         if (!empty($horaires)) {
             $stmtText->execute([implode(' · ', $horaires), 'hero', 'kicker']);
         }
+
+        // Injecter les guides d'utilisation personnalisés
+        if (!empty($equipements['guide_four'])) {
+            $stmtText->execute([$equipements['guide_four'], 'guide_cuisine', 'four']);
+        }
+        if (!empty($equipements['guide_plaque_cuisson'])) {
+            $stmtText->execute([$equipements['guide_plaque_cuisson'], 'guide_cuisine', 'induction']);
+        }
+        if (!empty($equipements['guide_micro_ondes'])) {
+            $stmtText->execute([$equipements['guide_micro_ondes'], 'guide_cuisine', 'micro_ondes']);
+        }
+        if (!empty($equipements['guide_machine_cafe'])) {
+            $stmtText->execute([$equipements['guide_machine_cafe'], 'guide_cuisine', 'nespresso']);
+        }
+        if (!empty($equipements['guide_lave_vaisselle'])) {
+            $stmtText->execute([$equipements['guide_lave_vaisselle'], 'guide_cuisine', 'lave_vaisselle']);
+        }
+        if (!empty($equipements['guide_tv'])) {
+            $stmtText->execute([$equipements['guide_tv'], 'guide_cinema', 'allumer']);
+        }
+        if (!empty($equipements['guide_canape_convertible'])) {
+            $stmtText->execute([$equipements['guide_canape_convertible'], 'guide_canape', 'instructions']);
+        }
+        if (!empty($equipements['guide_chauffage'])) {
+            $stmtText->execute([$equipements['guide_chauffage'], 'guide_chauffage', 'instructions']);
+        }
+        if (!empty($equipements['guide_climatisation'])) {
+            $stmtText->execute([$equipements['guide_climatisation'], 'guide_climatisation', 'instructions']);
+        }
+        if (!empty($equipements['guide_machine_laver'])) {
+            $stmtText->execute([$equipements['guide_machine_laver'], 'guide_menager', 'machine_laver']);
+        }
+        if (!empty($equipements['guide_seche_linge'])) {
+            $stmtText->execute([$equipements['guide_seche_linge'], 'guide_menager', 'seche_linge']);
+        }
     }
 
     // Seed les guides par défaut
@@ -185,6 +220,10 @@ function createSiteTables($conn, $dbPrefix, $siteName, $logementData, $equipemen
         ['sport',   'Salle de Sport','Restez actif pendant votre séjour',             '<path d="M2 12h4m12 0h4"/><path d="M6 8v8"/><path d="M18 8v8"/><path d="M4 10v4"/><path d="M20 10v4"/>', 4],
         ['cinema',  'Salle Cinéma',  'Votre cinéma privé',                            '<rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 8h20"/><polygon points="10,11 10,17 15,14" fill="currentColor" stroke="none"/>', 5],
         ['cuisine', 'Cuisine',       'Tout pour préparer vos repas en toute autonomie','<path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/>', 6],
+        ['chauffage','Chauffage',    'Comment régler le chauffage',                  '<path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/>', 7],
+        ['climatisation','Climatisation','Comment utiliser la climatisation',        '<path d="M2 12h20M12 2v20M4.93 4.93l14.14 14.14M19.07 4.93L4.93 19.07"/>', 8],
+        ['menager', 'Buanderie',    'Machine à laver et sèche-linge',               '<circle cx="12" cy="12" r="3"/><rect x="2" y="2" width="20" height="20" rx="2"/><path d="M6 2v2M18 2v2"/>', 9],
+        ['canape',  'Canapé convertible','Comment déplier le canapé-lit',            '<path d="M2 4v16M22 4v16M2 12h20M6 12V8h12v4"/>', 10],
     ];
 
     $stmtGuide = $conn->prepare("INSERT IGNORE INTO {$dbPrefix}guides (slug, title, subtitle, icon_svg, is_active, sort_order) VALUES (?, ?, ?, ?, 1, ?)");
