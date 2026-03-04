@@ -6,22 +6,80 @@
 include '../config.php';
 include '../pages/menu.php';
 
+// Créer les tables si elles n'existent pas
+try {
+    $conn->exec("
+        CREATE TABLE IF NOT EXISTS checkup_sessions (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            logement_id INT NOT NULL,
+            intervenant_id INT DEFAULT NULL,
+            statut ENUM('en_cours','termine') DEFAULT 'en_cours',
+            nb_ok INT DEFAULT 0,
+            nb_problemes INT DEFAULT 0,
+            nb_absents INT DEFAULT 0,
+            nb_taches_faites INT DEFAULT 0,
+            commentaire_general TEXT DEFAULT NULL,
+            signature_path VARCHAR(500) DEFAULT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            INDEX idx_logement (logement_id),
+            INDEX idx_statut (statut)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    ");
+    $conn->exec("
+        CREATE TABLE IF NOT EXISTS todo_list (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            logement_id INT NOT NULL,
+            description TEXT NOT NULL,
+            statut ENUM('en attente','en cours','termine') DEFAULT 'en attente',
+            date_limite DATE DEFAULT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_logement (logement_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    ");
+    $conn->exec("
+        CREATE TABLE IF NOT EXISTS sessions_inventaire (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            logement_id INT NOT NULL,
+            statut ENUM('en_cours','terminee') DEFAULT 'en_cours',
+            date_creation TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_logement (logement_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    ");
+    $conn->exec("
+        CREATE TABLE IF NOT EXISTS inventaire_objets (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            session_id INT NOT NULL,
+            nom_objet VARCHAR(255) NOT NULL,
+            quantite INT DEFAULT 1,
+            piece VARCHAR(100) DEFAULT NULL,
+            INDEX idx_session (session_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    ");
+} catch (PDOException $e) {
+    // Tables existent deja
+}
+
 // Donnees par logement
-$logements = $conn->query("
-    SELECT l.id, l.nom_du_logement,
-        (SELECT COUNT(*) FROM todo_list t WHERE t.logement_id = l.id AND t.statut IN ('en attente','en cours')) AS nb_taches,
-        (SELECT cs.id FROM checkup_sessions cs WHERE cs.logement_id = l.id AND cs.statut = 'termine' ORDER BY cs.created_at DESC LIMIT 1) AS last_checkup_id,
-        (SELECT cs.created_at FROM checkup_sessions cs WHERE cs.logement_id = l.id AND cs.statut = 'termine' ORDER BY cs.created_at DESC LIMIT 1) AS last_checkup_date,
-        (SELECT cs.nb_ok FROM checkup_sessions cs WHERE cs.logement_id = l.id AND cs.statut = 'termine' ORDER BY cs.created_at DESC LIMIT 1) AS last_ok,
-        (SELECT cs.nb_problemes FROM checkup_sessions cs WHERE cs.logement_id = l.id AND cs.statut = 'termine' ORDER BY cs.created_at DESC LIMIT 1) AS last_pb,
-        (SELECT cs.nb_absents FROM checkup_sessions cs WHERE cs.logement_id = l.id AND cs.statut = 'termine' ORDER BY cs.created_at DESC LIMIT 1) AS last_abs,
-        (SELECT cs.id FROM checkup_sessions cs WHERE cs.logement_id = l.id AND cs.statut = 'en_cours' ORDER BY cs.created_at DESC LIMIT 1) AS checkup_en_cours,
-        (SELECT s.date_creation FROM sessions_inventaire s WHERE s.logement_id = l.id AND s.statut = 'terminee' ORDER BY s.date_creation DESC LIMIT 1) AS last_inventaire_date,
-        (SELECT COUNT(o.id) FROM inventaire_objets o JOIN sessions_inventaire s ON o.session_id = s.id WHERE s.logement_id = l.id AND s.statut = 'terminee') AS nb_objets
-    FROM liste_logements l
-    WHERE l.actif = 1
-    ORDER BY l.nom_du_logement
-")->fetchAll(PDO::FETCH_ASSOC);
+try {
+    $logements = $conn->query("
+        SELECT l.id, l.nom_du_logement,
+            (SELECT COUNT(*) FROM todo_list t WHERE t.logement_id = l.id AND t.statut IN ('en attente','en cours')) AS nb_taches,
+            (SELECT cs.id FROM checkup_sessions cs WHERE cs.logement_id = l.id AND cs.statut = 'termine' ORDER BY cs.created_at DESC LIMIT 1) AS last_checkup_id,
+            (SELECT cs.created_at FROM checkup_sessions cs WHERE cs.logement_id = l.id AND cs.statut = 'termine' ORDER BY cs.created_at DESC LIMIT 1) AS last_checkup_date,
+            (SELECT cs.nb_ok FROM checkup_sessions cs WHERE cs.logement_id = l.id AND cs.statut = 'termine' ORDER BY cs.created_at DESC LIMIT 1) AS last_ok,
+            (SELECT cs.nb_problemes FROM checkup_sessions cs WHERE cs.logement_id = l.id AND cs.statut = 'termine' ORDER BY cs.created_at DESC LIMIT 1) AS last_pb,
+            (SELECT cs.nb_absents FROM checkup_sessions cs WHERE cs.logement_id = l.id AND cs.statut = 'termine' ORDER BY cs.created_at DESC LIMIT 1) AS last_abs,
+            (SELECT cs.id FROM checkup_sessions cs WHERE cs.logement_id = l.id AND cs.statut = 'en_cours' ORDER BY cs.created_at DESC LIMIT 1) AS checkup_en_cours,
+            (SELECT s.date_creation FROM sessions_inventaire s WHERE s.logement_id = l.id AND s.statut = 'terminee' ORDER BY s.date_creation DESC LIMIT 1) AS last_inventaire_date,
+            (SELECT COUNT(o.id) FROM inventaire_objets o JOIN sessions_inventaire s ON o.session_id = s.id WHERE s.logement_id = l.id AND s.statut = 'terminee') AS nb_objets
+        FROM liste_logements l
+        WHERE l.actif = 1
+        ORDER BY l.nom_du_logement
+    ")->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    $logements = [];
+}
 
 // Stats globales
 $totalLogements = count($logements);

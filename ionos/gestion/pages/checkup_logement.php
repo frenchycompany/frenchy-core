@@ -56,14 +56,20 @@ if (isset($_GET['ajax_preview']) && isset($_GET['logement_id'])) {
     $lid = intval($_GET['logement_id']);
 
     // Taches en attente
-    $stmt = $conn->prepare("SELECT COUNT(*) FROM todo_list WHERE logement_id = ? AND statut IN ('en attente','en cours')");
-    $stmt->execute([$lid]);
-    $nbTaches = $stmt->fetchColumn();
+    $nbTaches = 0;
+    try {
+        $stmt = $conn->prepare("SELECT COUNT(*) FROM todo_list WHERE logement_id = ? AND statut IN ('en attente','en cours')");
+        $stmt->execute([$lid]);
+        $nbTaches = $stmt->fetchColumn();
+    } catch (PDOException $e) {}
 
     // Dernier inventaire
-    $stmt = $conn->prepare("SELECT s.date_creation, COUNT(o.id) AS nb_objets FROM sessions_inventaire s LEFT JOIN inventaire_objets o ON o.session_id = s.id WHERE s.logement_id = ? AND s.statut = 'terminee' GROUP BY s.id ORDER BY s.date_creation DESC LIMIT 1");
-    $stmt->execute([$lid]);
-    $lastInv = $stmt->fetch(PDO::FETCH_ASSOC);
+    $lastInv = null;
+    try {
+        $stmt = $conn->prepare("SELECT s.date_creation, COUNT(o.id) AS nb_objets FROM sessions_inventaire s LEFT JOIN inventaire_objets o ON o.session_id = s.id WHERE s.logement_id = ? AND s.statut = 'terminee' GROUP BY s.id ORDER BY s.date_creation DESC LIMIT 1");
+        $stmt->execute([$lid]);
+        $lastInv = $stmt->fetch(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {}
 
     // Equipements renseignes
     $stmt = $conn->prepare("SELECT COUNT(*) FROM logement_equipements WHERE logement_id = ?");
@@ -249,24 +255,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['logement_id'])) {
 }
 
 // Recuperer les logements avec infos rapides
-$logements = $conn->query("
-    SELECT l.id, l.nom_du_logement,
-           (SELECT COUNT(*) FROM todo_list t WHERE t.logement_id = l.id AND t.statut IN ('en attente','en cours')) AS nb_taches
-    FROM liste_logements l
-    WHERE l.actif = 1
-    ORDER BY l.nom_du_logement
-")->fetchAll(PDO::FETCH_ASSOC);
+try {
+    $logements = $conn->query("
+        SELECT l.id, l.nom_du_logement,
+               (SELECT COUNT(*) FROM todo_list t WHERE t.logement_id = l.id AND t.statut IN ('en attente','en cours')) AS nb_taches
+        FROM liste_logements l
+        WHERE l.actif = 1
+        ORDER BY l.nom_du_logement
+    ")->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    // Fallback sans compteur todo_list si la table n'existe pas
+    try {
+        $logements = $conn->query("
+            SELECT l.id, l.nom_du_logement, 0 AS nb_taches
+            FROM liste_logements l
+            WHERE l.actif = 1
+            ORDER BY l.nom_du_logement
+        ")->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e2) {
+        $logements = [];
+    }
+}
 
 // Recuperer les checkups recents
-$recents = $conn->query("
-    SELECT cs.*, l.nom_du_logement,
-           COALESCE(i.nom, 'Inconnu') AS nom_intervenant
-    FROM checkup_sessions cs
-    JOIN liste_logements l ON cs.logement_id = l.id
-    LEFT JOIN intervenant i ON cs.intervenant_id = i.id
-    ORDER BY cs.created_at DESC
-    LIMIT 20
-")->fetchAll(PDO::FETCH_ASSOC);
+try {
+    $recents = $conn->query("
+        SELECT cs.*, l.nom_du_logement,
+               COALESCE(i.nom, 'Inconnu') AS nom_intervenant
+        FROM checkup_sessions cs
+        JOIN liste_logements l ON cs.logement_id = l.id
+        LEFT JOIN intervenant i ON cs.intervenant_id = i.id
+        ORDER BY cs.created_at DESC
+        LIMIT 20
+    ")->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    $recents = [];
+}
 ?>
 <!DOCTYPE html>
 <html lang="fr">
