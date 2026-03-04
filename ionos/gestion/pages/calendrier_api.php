@@ -26,14 +26,22 @@ try {
     $logementNames = [];
     $logementPricing = [];
 
-    // D'abord charger les noms de logements (requête simple, toujours fiable)
+    // D'abord charger les noms de logements actifs
     try {
-        $rows = $conn->query("SELECT id, nom_du_logement FROM liste_logements ORDER BY nom_du_logement")->fetchAll(PDO::FETCH_ASSOC);
+        $rows = $conn->query("SELECT id, nom_du_logement FROM liste_logements WHERE actif = 1 ORDER BY nom_du_logement")->fetchAll(PDO::FETCH_ASSOC);
         foreach ($rows as $r) {
             $logementNames[$r['id']] = $r['nom_du_logement'];
         }
     } catch (PDOException $e) {
-        error_log('calendrier_api logements: ' . $e->getMessage());
+        // Fallback si colonne actif n'existe pas
+        try {
+            $rows = $conn->query("SELECT id, nom_du_logement FROM liste_logements ORDER BY nom_du_logement")->fetchAll(PDO::FETCH_ASSOC);
+            foreach ($rows as $r) {
+                $logementNames[$r['id']] = $r['nom_du_logement'];
+            }
+        } catch (PDOException $e2) {
+            error_log('calendrier_api logements: ' . $e2->getMessage());
+        }
     }
 
     // Ensuite enrichir avec les tarifs (peut échouer si tables superhote n'existent pas)

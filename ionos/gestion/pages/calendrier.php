@@ -9,8 +9,12 @@ include '../pages/menu.php';
 
 $logements = [];
 try {
-    $logements = $conn->query("SELECT id, nom_du_logement FROM liste_logements ORDER BY nom_du_logement")->fetchAll(PDO::FETCH_ASSOC);
-} catch (PDOException $e) { /* ignore */ }
+    $logements = $conn->query("SELECT id, nom_du_logement FROM liste_logements WHERE actif = 1 ORDER BY nom_du_logement")->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    try {
+        $logements = $conn->query("SELECT id, nom_du_logement FROM liste_logements ORDER BY nom_du_logement")->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e2) { /* ignore */ }
+}
 
 // Palette moderne
 $couleurs = [
