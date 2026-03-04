@@ -489,14 +489,8 @@ $charges = $chargeStmt->fetchAll(PDO::FETCH_ASSOC);
         </thead>
         <tbody>
             <?php foreach ($interventions as $intervention):
-                $statutSlug = match($intervention['statut']) {
-                    'Fait' => 'fait',
-                    'À Faire' => 'a-faire',
-                    'À Vérifier' => 'a-verifier',
-                    'Vérifier' => 'verifier',
-                    'Annulé' => 'annule',
-                    default => ''
-                };
+                $statutSlugs = ['Fait'=>'fait','À Faire'=>'a-faire','À Vérifier'=>'a-verifier','Vérifier'=>'verifier','Annulé'=>'annule'];
+                $statutSlug = $statutSlugs[$intervention['statut']] ?? '';
             ?>
                 <tr id="row_<?= $intervention['id'] ?>" class="statut-<?= $statutSlug ?>">
                     <?php if ($is_admin): ?>

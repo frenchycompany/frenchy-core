@@ -474,22 +474,14 @@ $progress = $total > 0 ? round(($done / $total) * 100) : 0;
     <?php
         $catDone = 0;
         foreach ($items as $it) { if ($it['statut'] !== 'non_verifie') $catDone++; }
-        $catIcon = match($catName) {
-            'Cuisine' => 'fa-utensils',
-            'Entretien' => 'fa-broom',
-            'Multimedia' => 'fa-tv',
-            'Mobilier' => 'fa-couch',
-            'Literie / Linge' => 'fa-bed',
-            'Salle de bain' => 'fa-bath',
-            'Confort' => 'fa-temperature-high',
-            'Exterieur' => 'fa-tree',
-            'Securite' => 'fa-shield-alt',
-            'Enfants' => 'fa-baby',
-            'Inventaire' => 'fa-boxes-stacked',
-            'Taches a faire' => 'fa-tasks',
+        $catIcons = [
+            'Cuisine' => 'fa-utensils', 'Entretien' => 'fa-broom', 'Multimedia' => 'fa-tv',
+            'Mobilier' => 'fa-couch', 'Literie / Linge' => 'fa-bed', 'Salle de bain' => 'fa-bath',
+            'Confort' => 'fa-temperature-high', 'Exterieur' => 'fa-tree', 'Securite' => 'fa-shield-alt',
+            'Enfants' => 'fa-baby', 'Inventaire' => 'fa-boxes-stacked', 'Taches a faire' => 'fa-tasks',
             'Etat general' => 'fa-search',
-            default => 'fa-check-circle'
-        };
+        ];
+        $catIcon = $catIcons[$catName] ?? 'fa-check-circle';
     ?>
     <div class="ck-categorie">
         <div class="ck-categorie-title" onclick="toggleCategory(this)">
@@ -505,12 +497,14 @@ $progress = $total > 0 ? round(($done / $total) * 100) : 0;
                 <div class="ck-item-header" onclick="toggleDetails(<?= $item['id'] ?>)">
                     <span class="ck-item-name"><?= htmlspecialchars($item['nom_item']) ?></span>
                     <span class="ck-item-status-icon" id="icon-<?= $item['id'] ?>">
-                        <?= match($item['statut']) {
+                        <?php
+                        $statusIcons = [
                             'ok' => '<i class="fas fa-check-circle" style="color:#43a047"></i>',
                             'probleme' => '<i class="fas fa-exclamation-triangle" style="color:#e53935"></i>',
                             'absent' => '<i class="fas fa-times-circle" style="color:#ff9800"></i>',
-                            default => '<i class="fas fa-circle" style="color:#ccc"></i>'
-                        } ?>
+                        ];
+                        echo $statusIcons[$item['statut']] ?? '<i class="fas fa-circle" style="color:#ccc"></i>';
+                        ?>
                     </span>
                 </div>
                 <div class="ck-actions">

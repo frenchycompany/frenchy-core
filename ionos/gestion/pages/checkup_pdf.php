@@ -316,8 +316,9 @@ try {
                 <span class="item-comment"> — <?= htmlspecialchars($item['commentaire']) ?></span>
             <?php endif; ?>
         </span>
-        <span style="font-size:9pt;font-weight:600;color:<?= match($item['statut']){'ok'=>'#43a047','probleme'=>'#e53935','absent'=>'#ff9800',default=>'#bbb'} ?>">
-            <?= match($item['statut']){'ok'=>'OK','probleme'=>'Probleme','absent'=>'Absent',default=>'-'} ?>
+        <?php $sColors = ['ok'=>'#43a047','probleme'=>'#e53935','absent'=>'#ff9800']; $sLabels = ['ok'=>'OK','probleme'=>'Probleme','absent'=>'Absent']; ?>
+        <span style="font-size:9pt;font-weight:600;color:<?= $sColors[$item['statut']] ?? '#bbb' ?>">
+            <?= $sLabels[$item['statut']] ?? '-' ?>
         </span>
     </div>
     <?php endforeach; ?>
