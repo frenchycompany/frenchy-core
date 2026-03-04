@@ -99,12 +99,16 @@ require_once __DIR__ . '/menu_categories.php';
 $existing = $conn->query("SELECT chemin FROM pages")->fetchAll(PDO::FETCH_COLUMN);
 $synced = 0;
 
-$insertStmt = $conn->prepare("INSERT INTO pages (nom, chemin, afficher_menu) VALUES (?, ?, 1)");
+$insertStmt = $conn->prepare("INSERT IGNORE INTO pages (nom, chemin, afficher_menu) VALUES (?, ?, 1)");
 foreach ($menu_categories as $cat) {
     foreach ($cat['items'] as $item) {
         if (!in_array($item['chemin'], $existing)) {
-            $insertStmt->execute([$item['nom'], $item['chemin']]);
-            $synced++;
+            try {
+                $insertStmt->execute([$item['nom'], $item['chemin']]);
+                $synced++;
+            } catch (PDOException $e) {
+                // Doublon ignoré
+            }
         }
     }
 }
@@ -119,10 +123,9 @@ if ($synced > 0) {
 // DONNÉES
 // ============================================================
 $pages = $conn->query("
-    SELECT p.*, COUNT(ip.intervenant_id) AS nb_users
+    SELECT p.id, p.nom, p.chemin, p.afficher_menu,
+           (SELECT COUNT(*) FROM intervenants_pages ip WHERE ip.page_id = p.id) AS nb_users
     FROM pages p
-    LEFT JOIN intervenants_pages ip ON p.id = ip.page_id
-    GROUP BY p.id
     ORDER BY p.afficher_menu DESC, p.nom ASC
 ")->fetchAll(PDO::FETCH_ASSOC);
 $nb_visibles = count(array_filter($pages, fn($p) => !empty($p['afficher_menu'])));
