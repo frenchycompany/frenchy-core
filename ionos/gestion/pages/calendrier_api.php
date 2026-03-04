@@ -81,14 +81,36 @@ try {
         error_log('calendrier_api pricing: ' . $e->getMessage());
     }
 
-    // ── 2. Calcul dynamique des prix par jour (même algorithme que superhote.php) ──
+    // ── 2. Calcul dynamique des prix par jour (même algorithme que generate_prices.php) ──
     $dailyPrices = []; // [logement_id][date] = prix
     $superhoteSettings = [];
+    $seasons = [];
+    $holidays = [];
+    $occupancyRules = [];
+
     if ($pdoRpi) try {
         $settingsRows = $pdoRpi->query("SELECT key_name, value FROM superhote_settings")->fetchAll(PDO::FETCH_ASSOC);
         foreach ($settingsRows as $sr) {
             $superhoteSettings[$sr['key_name']] = $sr['value'];
         }
+    } catch (PDOException $e) { /* table might not exist */ }
+
+    // Charger les saisons actives
+    $saisonsEnabled = ($superhoteSettings['saisons_enabled'] ?? '1') === '1';
+    if ($saisonsEnabled && $pdoRpi) try {
+        $seasons = $pdoRpi->query("SELECT * FROM superhote_seasons WHERE is_active = 1 ORDER BY priorite DESC")->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) { /* table might not exist */ }
+
+    // Charger les jours fériés actifs
+    $holidaysEnabled = ($superhoteSettings['holidays_enabled'] ?? '1') === '1';
+    if ($holidaysEnabled && $pdoRpi) try {
+        $holidays = $pdoRpi->query("SELECT * FROM superhote_holidays WHERE is_active = 1")->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) { /* table might not exist */ }
+
+    // Charger les règles d'occupation
+    $occupancyEnabled = ($superhoteSettings['occupancy_enabled'] ?? '1') === '1';
+    if ($occupancyEnabled && $pdoRpi) try {
+        $occupancyRules = $pdoRpi->query("SELECT * FROM superhote_occupancy_rules WHERE is_active = 1 ORDER BY seuil_occupation_min ASC")->fetchAll(PDO::FETCH_ASSOC);
     } catch (PDOException $e) { /* table might not exist */ }
 
     $palierJ1_3 = floatval($superhoteSettings['palier_j1_3_pourcent'] ?? 25) / 100;
@@ -99,6 +121,36 @@ try {
     $dateStart = new DateTime($start);
     $dateEnd = new DateTime($end);
 
+    // Pré-calculer les taux d'occupation par logement
+    $occupancyRates = [];
+    if ($occupancyEnabled && !empty($occupancyRules) && $pdoRpi) {
+        $occupancyDays = intval($superhoteSettings['occupancy_calculation_days'] ?? 14);
+        foreach ($logementPricing as $lid => $lp) {
+            try {
+                $occStmt = $pdoRpi->prepare("
+                    SELECT COUNT(DISTINCT DATE(d.date)) as jours_occupes
+                    FROM (
+                        SELECT DATE_ADD(CURDATE(), INTERVAL n DAY) as date
+                        FROM (
+                            SELECT a.N + b.N * 10 as n
+                            FROM (SELECT 0 AS N UNION SELECT 1 UNION SELECT 2 UNION SELECT 3 UNION SELECT 4 UNION SELECT 5 UNION SELECT 6 UNION SELECT 7 UNION SELECT 8 UNION SELECT 9) a,
+                                 (SELECT 0 AS N UNION SELECT 1 UNION SELECT 2 UNION SELECT 3) b
+                        ) numbers
+                        WHERE n < ?
+                    ) d
+                    INNER JOIN reservation r ON d.date >= r.date_arrivee AND d.date < r.date_depart
+                    WHERE r.logement_id = ? AND r.statut != 'annulee'
+                ");
+                $occStmt->execute([$occupancyDays, $lid]);
+                $occResult = $occStmt->fetch(PDO::FETCH_ASSOC);
+                $joursOccupes = intval($occResult['jours_occupes'] ?? 0);
+                $occupancyRates[$lid] = round(($joursOccupes / $occupancyDays) * 100, 2);
+            } catch (PDOException $e) {
+                $occupancyRates[$lid] = 50; // Valeur par défaut
+            }
+        }
+    }
+
     foreach ($logementPricing as $lid => $lp) {
         if ($lp['prix_standard'] <= 0) continue;
         $ecart = $lp['prix_standard'] - $lp['prix_plancher'];
@@ -107,7 +159,7 @@ try {
             $joursAvant = max(0, (int) $today->diff($cursor)->format('%r%a'));
             $jourSemaine = (int) $cursor->format('w'); // 0=dim, 5=ven, 6=sam
 
-            // Prix de base selon anticipation
+            // 1. Prix de base selon anticipation
             if ($joursAvant == 0) {
                 $prix = $lp['prix_plancher'];
             } elseif ($joursAvant <= 3) {
@@ -120,13 +172,71 @@ try {
                 $prix = $lp['prix_standard'];
             }
 
-            // Weekend (vendredi/samedi)
+            // 2. Weekend (vendredi/samedi)
             if ($jourSemaine == 5 || $jourSemaine == 6) {
                 $prix = $prix * (1 + $lp['weekend_pourcent'] / 100);
             }
             // Dimanche
             elseif ($jourSemaine == 0) {
                 $prix = $prix - $lp['dimanche_reduction'];
+            }
+
+            // 3. Ajustement saisonnier
+            if ($saisonsEnabled && !empty($seasons)) {
+                $month = intval($cursor->format('m'));
+                $day = intval($cursor->format('d'));
+                $dateCompare = sprintf('2000-%02d-%02d', $month, $day);
+                foreach ($seasons as $season) {
+                    $debut = $season['date_debut'];
+                    $fin = $season['date_fin'];
+                    $inSeason = false;
+                    if ($debut > $fin) {
+                        $inSeason = ($dateCompare >= $debut || $dateCompare <= $fin);
+                    } else {
+                        $inSeason = ($dateCompare >= $debut && $dateCompare <= $fin);
+                    }
+                    if ($inSeason) {
+                        $majoration = floatval($season['majoration_pourcent'] ?? 0);
+                        $reduction = floatval($season['reduction_pourcent'] ?? 0);
+                        if ($majoration > 0) {
+                            $prix = $prix * (1 + $majoration / 100);
+                        } elseif ($reduction > 0) {
+                            $prix = $prix * (1 - $reduction / 100);
+                        }
+                        break; // Priorité la plus haute d'abord (ORDER BY priorite DESC)
+                    }
+                }
+            }
+
+            // 4. Ajustement jours fériés
+            if ($holidaysEnabled && !empty($holidays)) {
+                $year = intval($cursor->format('Y'));
+                foreach ($holidays as $holiday) {
+                    $ferieMonth = intval(substr($holiday['date_ferie'], 5, 2));
+                    $ferieDay = intval(substr($holiday['date_ferie'], 8, 2));
+                    $joursAutour = intval($holiday['jours_autour'] ?? 0);
+                    $ferieDate = new DateTime("$year-$ferieMonth-$ferieDay");
+                    $diff = intval($cursor->diff($ferieDate)->format('%r%a'));
+                    if (abs($diff) <= $joursAutour) {
+                        $prix = $prix * (1 + floatval($holiday['majoration_pourcent'] ?? 0) / 100);
+                        break;
+                    }
+                }
+            }
+
+            // 5. Ajustement selon occupation
+            if ($occupancyEnabled && !empty($occupancyRules) && isset($occupancyRates[$lid])) {
+                $occRate = $occupancyRates[$lid];
+                foreach ($occupancyRules as $rule) {
+                    if ($occRate >= floatval($rule['seuil_occupation_min']) &&
+                        $occRate < floatval($rule['seuil_occupation_max'])) {
+                        $ajustement = floatval($rule['ajustement_pourcent'] ?? 0);
+                        if ($ajustement != 0) {
+                            $prix = $prix * (1 + $ajustement / 100);
+                        }
+                        break;
+                    }
+                }
             }
 
             $dailyPrices[$lid][$cursor->format('Y-m-d')] = round($prix, 0);
