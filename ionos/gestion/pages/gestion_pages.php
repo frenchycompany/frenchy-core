@@ -92,10 +92,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // ============================================================
+// AUTO-SYNC : s'assurer que toutes les pages du menu existent en BDD
+// ============================================================
+require_once __DIR__ . '/menu_categories.php';
+
+$existing = $conn->query("SELECT chemin FROM pages")->fetchAll(PDO::FETCH_COLUMN);
+$synced = 0;
+
+$insertStmt = $conn->prepare("INSERT INTO pages (nom, chemin, afficher_menu) VALUES (?, ?, 1)");
+foreach ($menu_categories as $cat) {
+    foreach ($cat['items'] as $item) {
+        if (!in_array($item['chemin'], $existing)) {
+            $insertStmt->execute([$item['nom'], $item['chemin']]);
+            $synced++;
+        }
+    }
+}
+
+if ($synced > 0) {
+    $feedback .= '<div class="alert alert-info alert-dismissible fade show"><i class="fas fa-sync"></i> '
+        . $synced . ' page(s) synchronisée(s) depuis le menu.'
+        . '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+}
+
+// ============================================================
 // DONNÉES
 // ============================================================
-$pages = $conn->query("SELECT * FROM pages ORDER BY afficher_menu DESC, nom ASC")->fetchAll(PDO::FETCH_ASSOC);
+$pages = $conn->query("
+    SELECT p.*, COUNT(ip.intervenant_id) AS nb_users
+    FROM pages p
+    LEFT JOIN intervenants_pages ip ON p.id = ip.page_id
+    GROUP BY p.id
+    ORDER BY p.afficher_menu DESC, p.nom ASC
+")->fetchAll(PDO::FETCH_ASSOC);
 $nb_visibles = count(array_filter($pages, fn($p) => !empty($p['afficher_menu'])));
+
+// Index chemin → catégorie pour affichage
+$chemin_to_category = [];
+foreach ($menu_categories as $cat_name => $cat) {
+    foreach ($cat['items'] as $item) {
+        $chemin_to_category[$item['chemin']] = $cat_name;
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -138,16 +176,31 @@ $nb_visibles = count(array_filter($pages, fn($p) => !empty($p['afficher_menu']))
                             <th>ID</th>
                             <th>Nom</th>
                             <th>Chemin</th>
+                            <th>Catégorie</th>
+                            <th>Utilisateurs</th>
                             <th>Menu</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                     <?php foreach ($pages as $p): ?>
+                        <?php $cat = $chemin_to_category[$p['chemin']] ?? null; ?>
                         <tr class="<?= empty($p['afficher_menu']) ? 'page-hidden' : '' ?>">
                             <td><strong>#<?= $p['id'] ?></strong></td>
                             <td><?= htmlspecialchars($p['nom']) ?></td>
                             <td><code><?= htmlspecialchars($p['chemin']) ?></code></td>
+                            <td>
+                                <?php if ($cat): ?>
+                                    <span class="badge bg-primary"><?= htmlspecialchars($cat) ?></span>
+                                <?php else: ?>
+                                    <span class="badge bg-secondary">Personnalisée</span>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <span class="badge bg-<?= $p['nb_users'] > 0 ? 'info' : 'light text-muted' ?>">
+                                    <i class="fas fa-users"></i> <?= (int)$p['nb_users'] ?>
+                                </span>
+                            </td>
                             <td>
                                 <form method="POST" style="display:inline">
                                     <?php echoCsrfField(); ?>
@@ -179,7 +232,7 @@ $nb_visibles = count(array_filter($pages, fn($p) => !empty($p['afficher_menu']))
                         </tr>
                     <?php endforeach; ?>
                     <?php if (empty($pages)): ?>
-                        <tr><td colspan="5" class="text-center text-muted py-4">Aucune page enregistrée.</td></tr>
+                        <tr><td colspan="7" class="text-center text-muted py-4">Aucune page enregistrée.</td></tr>
                     <?php endif; ?>
                     </tbody>
                 </table>
