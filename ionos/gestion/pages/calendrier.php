@@ -6,11 +6,10 @@
  */
 include '../config.php';
 include '../pages/menu.php';
-require_once __DIR__ . '/../includes/rpi_db.php';
 
 $logements = [];
 try {
-    $logements = $conn->query("SELECT id, nom_du_logement FROM liste_logements WHERE actif = 1 ORDER BY nom_du_logement")->fetchAll(PDO::FETCH_ASSOC);
+    $logements = $conn->query("SELECT id, nom_du_logement FROM liste_logements ORDER BY nom_du_logement")->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) { /* ignore */ }
 
 // Palette moderne
