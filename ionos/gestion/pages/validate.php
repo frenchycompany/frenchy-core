@@ -335,9 +335,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           });
           xhr.onload = function() {
             if (xhr.status === 200 || xhr.status === 303) {
-              // Si le serveur a fait un PRG (303), le navigateur suit la redirection
-              // Pour XHR, on force un refresh pour afficher l'état final
-              window.location.reload();
+              // Rediriger vers la page done au lieu de reload (sinon le token used=1 affiche "deja utilise")
+              window.location.href = 'validate.php?token=<?= urlencode($token) ?>&done=1&cb=' + Date.now();
             } else {
               alert('Erreur lors de l\'upload (' + xhr.status + ')');
             }

@@ -4,6 +4,22 @@
  * Interface tactile pour verifier chaque item : OK / Probleme / Absent
  * Possibilite d'ajouter un commentaire et une photo par item
  */
+
+// Debug : attraper les erreurs fatales silencieuses en production
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
+register_shutdown_function(function() {
+    $error = error_get_last();
+    if ($error && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
+        http_response_code(500);
+        echo '<pre style="background:#fdd;padding:20px;margin:20px;border:2px solid #c00;border-radius:8px;">';
+        echo "<b>Erreur fatale :</b> {$error['message']}\n";
+        echo "Fichier : {$error['file']}\n";
+        echo "Ligne : {$error['line']}\n";
+        echo '</pre>';
+    }
+});
+
 include '../config.php';
 include '../pages/menu.php';
 
