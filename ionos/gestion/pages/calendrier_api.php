@@ -133,6 +133,42 @@ try {
             $cursor->modify('+1 day');
         }
     }
+
+    // ── 2b. Fallback : superhote_price_updates (VPS) pour logements sans calcul dynamique ──
+    if (count($dailyPrices) === 0) {
+        try {
+            $priceStmt = $conn->prepare("
+                SELECT logement_id, date_start, price
+                FROM superhote_price_updates
+                WHERE date_start >= ? AND date_start <= ? AND status IN ('pending','completed')
+                ORDER BY date_start
+            ");
+            $priceStmt->execute([$start, $end]);
+            foreach ($priceStmt->fetchAll(PDO::FETCH_ASSOC) as $p) {
+                $lid = (int) $p['logement_id'];
+                $dailyPrices[$lid][$p['date_start']] = (float) $p['price'];
+            }
+        } catch (PDOException $e) {
+            // superhote_price_updates might not exist on VPS
+        }
+
+        // Aussi fallback pour $logementPricing depuis superhote_price_updates
+        if (count($logementPricing) === 0 && count($dailyPrices) > 0) {
+            foreach ($dailyPrices as $lid => $prices) {
+                if (!isset($logementNames[$lid])) continue;
+                $avg = array_sum($prices) / count($prices);
+                $logementPricing[$lid] = [
+                    'prix_plancher'      => round(min($prices)),
+                    'prix_standard'      => round($avg),
+                    'weekend_pourcent'   => 10,
+                    'dimanche_reduction' => 5,
+                    'nuits_minimum'      => 1,
+                    'groupe'             => null,
+                ];
+            }
+        }
+    }
+
     $events = [];
 
     // ── 3. Table reservation (réservations manuelles / SMS) ──
@@ -257,11 +293,17 @@ try {
     });
 
     echo json_encode([
-        'success'  => true,
-        'events'   => $events,
-        'count'    => count($events),
-        'pricing'  => $logementPricing,
-        'daily_prices' => $dailyPrices,
+        'success'      => true,
+        'events'       => $events,
+        'count'        => count($events),
+        'pricing'      => (object) $logementPricing,
+        'daily_prices' => (object) $dailyPrices,
+        '_debug'       => [
+            'rpi_connected'     => $pdoRpi !== null,
+            'logements_count'   => count($logementNames),
+            'pricing_count'     => count($logementPricing),
+            'daily_prices_count'=> count($dailyPrices),
+        ],
     ]);
 
 } catch (PDOException $e) {
