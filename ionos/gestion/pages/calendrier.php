@@ -163,9 +163,10 @@ foreach ($logements as $idx => $l) {
     }
     .timeline-day-header .day-num { font-weight: 700; font-size: 0.82rem; color: var(--fc-text); }
     .timeline-day-header .day-name { font-weight: 500; color: var(--fc-muted); font-size: 0.65rem; text-transform: uppercase; }
-    .timeline-day-header.today { background: rgba(99,102,241,0.08); }
-    .timeline-day-header.today .day-num { color: var(--fc-accent); }
-    .timeline-day-header.weekend { background: #fef9f0; }
+    .timeline-day-header.today { background: rgba(99,102,241,0.1); }
+    .timeline-day-header.today .day-num { color: #fff; background: var(--fc-accent); width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+    .timeline-day-header.weekend { background: #fefbf3; }
+    .timeline-day-header.weekend .day-name { color: #d97706; }
 
     .timeline-row {
         display: contents;
@@ -192,17 +193,18 @@ foreach ($logements as $idx => $l) {
     .timeline-cell.weekend { background: rgba(251,191,36,0.03); }
 
     .timeline-event {
-        position: absolute; top: 8px; height: 36px; border-radius: 8px;
+        position: absolute; top: 7px; height: 38px; border-radius: 10px;
         display: flex; align-items: center; padding: 0 10px;
         font-size: 0.78rem; font-weight: 600; color: #fff;
         cursor: pointer; z-index: 1; overflow: hidden;
         white-space: nowrap; text-overflow: ellipsis;
         transition: transform 0.15s ease, box-shadow 0.15s ease;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        gap: 4px;
     }
     .timeline-event:hover {
-        transform: translateY(-1px); z-index: 5;
-        box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+        transform: translateY(-2px); z-index: 5;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.25);
     }
     .timeline-event.blocked {
         background: repeating-linear-gradient(
@@ -211,17 +213,23 @@ foreach ($logements as $idx => $l) {
         color: #64748b;
     }
     .timeline-event-icon { margin-right: 6px; font-size: 0.72rem; opacity: 0.85; }
+    .ev-nights {
+        font-size: 0.6rem; font-weight: 700; opacity: 0.85;
+        background: rgba(0,0,0,0.15); padding: 1px 5px; border-radius: 4px;
+        margin-left: auto; flex-shrink: 0;
+    }
 
     /* Today marker */
     .today-marker {
         position: absolute; top: 0; bottom: 0; width: 2px;
         background: var(--fc-accent); z-index: 3;
-        box-shadow: 0 0 8px rgba(99,102,241,0.4);
+        box-shadow: 0 0 10px rgba(99,102,241,0.5);
     }
     .today-marker::before {
-        content: ''; position: absolute; top: -3px; left: -4px;
-        width: 10px; height: 10px; border-radius: 50%;
+        content: ''; position: absolute; top: -4px; left: -5px;
+        width: 12px; height: 12px; border-radius: 50%;
         background: var(--fc-accent);
+        box-shadow: 0 0 0 3px rgba(99,102,241,0.2);
     }
 
     /* ─── Calendar View (FullCalendar overrides) ─── */
@@ -351,12 +359,12 @@ foreach ($logements as $idx => $l) {
 
     /* ─── Checkin/Checkout markers ─── */
     .timeline-event .ev-checkin {
-        position: absolute; left: -1px; top: -1px; bottom: -1px; width: 4px;
-        border-radius: 8px 0 0 8px; background: rgba(255,255,255,0.5);
+        position: absolute; left: 0; top: 0; bottom: 0; width: 5px;
+        border-radius: 10px 0 0 10px; background: rgba(255,255,255,0.4);
     }
     .timeline-event .ev-checkout {
-        position: absolute; right: -1px; top: -1px; bottom: -1px; width: 4px;
-        border-radius: 0 8px 8px 0; background: rgba(0,0,0,0.15);
+        position: absolute; right: 0; top: 0; bottom: 0; width: 5px;
+        border-radius: 0 10px 10px 0; background: rgba(0,0,0,0.12);
     }
 
     /* ─── Platform badges ─── */
@@ -638,7 +646,7 @@ foreach ($logements as $idx => $l) {
         events.forEach(function(e) {
             if (e.start <= today && e.end > today) current++;
             if (e.start > today) upcoming++;
-            var d1 = new Date(e.start), d2 = new Date(e.end);
+            var d1 = parseLocal(e.start), d2 = parseLocal(e.end);
             if (!isNaN(d1) && !isNaN(d2)) nights += Math.max(0, Math.round((d2 - d1) / 86400000));
         });
         // Occupancy: nuitées / (nb logements actifs * nb jours affichés)
@@ -650,8 +658,8 @@ foreach ($logements as $idx => $l) {
         events.forEach(function(e) {
             if (e.logement_id && dailyPrices[e.logement_id]) {
                 var dp = dailyPrices[e.logement_id];
-                var cursor = new Date(e.start);
-                var endD = new Date(e.end);
+                var cursor = parseLocal(e.start);
+                var endD = parseLocal(e.end);
                 while (cursor < endD) {
                     var ds = fmt(cursor);
                     if (dp[ds]) revenue += dp[ds];
@@ -659,7 +667,7 @@ foreach ($logements as $idx => $l) {
                     cursor.setDate(cursor.getDate() + 1);
                 }
             } else if (e.logement_id && pricing[e.logement_id]) {
-                var n = e.num_nights || Math.round((new Date(e.end) - new Date(e.start)) / 86400000);
+                var n = e.num_nights || Math.round((parseLocal(e.end) - parseLocal(e.start)) / 86400000);
                 revenue += n * (pricing[e.logement_id].prix_standard || 0);
             }
         });
@@ -695,7 +703,7 @@ foreach ($logements as $idx => $l) {
                 var gapStart = logEvents[i].end;
                 var gapEnd = logEvents[i + 1].start;
                 if (gapStart >= gapEnd) continue;
-                var gapDays = Math.round((new Date(gapEnd) - new Date(gapStart)) / 86400000);
+                var gapDays = Math.round((parseLocal(gapEnd) - parseLocal(gapStart)) / 86400000);
                 // A gap that's too short for min nights and in the future
                 if (gapDays > 0 && gapDays < minNights && gapStart >= today) {
                     gaps.push({
@@ -820,8 +828,8 @@ foreach ($logements as $idx => $l) {
                 var isWeekend = day.getDay() === 0 || day.getDay() === 6;
                 var line = document.createElement('div');
                 line.style.cssText = 'position:absolute;top:0;bottom:0;left:' + (idx * cellW) + 'px;width:' + cellW + 'px;border-right:1px solid #f8f9fa;';
-                if (isToday) line.style.background = 'rgba(99,102,241,0.04)';
-                else if (isWeekend) line.style.background = 'rgba(251,191,36,0.03)';
+                if (isToday) line.style.background = 'rgba(99,102,241,0.06)';
+                else if (isWeekend) line.style.background = 'rgba(251,191,36,0.05)';
 
                 // Price label
                 if (showPrices && logDailyPrices[dStr]) {
@@ -838,8 +846,8 @@ foreach ($logements as $idx => $l) {
             var logEvents = events.filter(function(e) { return e.logement_id === logement.id; });
             logEvents.sort(function(a, b) { return a.start > b.start ? 1 : -1; });
             logEvents.forEach(function(evt) {
-                var evStart = new Date(evt.start);
-                var evEnd = new Date(evt.end);
+                var evStart = parseLocal(evt.start);
+                var evEnd = parseLocal(evt.end);
                 var startOffset = Math.max(0, Math.round((evStart - days[0]) / 86400000));
                 var endOffset = Math.min(tlDays, Math.round((evEnd - days[0]) / 86400000));
                 if (endOffset <= 0 || startOffset >= tlDays) return;
@@ -864,7 +872,10 @@ foreach ($logements as $idx => $l) {
                 }
 
                 var barWidth = Math.max(cellW - 4, (endOffset - startOffset) * cellW - 4);
-                bar.innerHTML = platformHtml + (barWidth > 80 ? (evt.guest_name || evt.title || '') : '') +
+                var evNights = evt.num_nights || Math.round((evEnd - evStart) / 86400000);
+                var nameText = barWidth > 80 ? (evt.guest_name || evt.title || '') : '';
+                var nightsTag = barWidth > 55 && evNights > 0 ? '<span class="ev-nights">' + evNights + 'n</span>' : '';
+                bar.innerHTML = platformHtml + nameText + nightsTag +
                     '<span class="ev-checkin"></span><span class="ev-checkout"></span>';
 
                 bar.addEventListener('click', function(e) {
@@ -879,8 +890,8 @@ foreach ($logements as $idx => $l) {
             var allGaps = detectGaps(events);
             var logGaps = allGaps.filter(function(g) { return g.logement_id === logement.id; });
             logGaps.forEach(function(gap) {
-                var gStart = Math.max(0, Math.round((new Date(gap.start) - days[0]) / 86400000));
-                var gEnd = Math.min(tlDays, Math.round((new Date(gap.end) - days[0]) / 86400000));
+                var gStart = Math.max(0, Math.round((parseLocal(gap.start) - days[0]) / 86400000));
+                var gEnd = Math.min(tlDays, Math.round((parseLocal(gap.end) - days[0]) / 86400000));
                 if (gEnd <= 0 || gStart >= tlDays) return;
                 var gapEl = document.createElement('div');
                 gapEl.className = 'timeline-gap';
@@ -892,7 +903,7 @@ foreach ($logements as $idx => $l) {
             });
 
             // Today marker
-            var todayIdx = Math.round((new Date(todayStr) - days[0]) / 86400000);
+            var todayIdx = Math.round((parseLocal(todayStr) - days[0]) / 86400000);
             if (todayIdx >= 0 && todayIdx < tlDays) {
                 var marker = document.createElement('div');
                 marker.className = 'today-marker';
@@ -904,7 +915,7 @@ foreach ($logements as $idx => $l) {
         });
 
         // Scroll to today
-        var todayOffset = Math.round((new Date(todayStr) - days[0]) / 86400000);
+        var todayOffset = Math.round((parseLocal(todayStr) - days[0]) / 86400000);
         if (todayOffset > 3) {
             container.scrollLeft = Math.max(0, (todayOffset - 2) * cellW);
         }
@@ -1047,8 +1058,8 @@ foreach ($logements as $idx => $l) {
                 // Calculer prix moyen du séjour à partir des daily prices
                 var dp = dailyPrices[evt.logement_id] || {};
                 var totalPrice = 0, pricedDays = 0;
-                var cursor = new Date(evt.start);
-                var endD = new Date(evt.end);
+                var cursor = parseLocal(evt.start);
+                var endD = parseLocal(evt.end);
                 while (cursor < endD) {
                     var ds = fmt(cursor);
                     if (dp[ds]) { totalPrice += dp[ds]; pricedDays++; }
@@ -1205,13 +1216,19 @@ foreach ($logements as $idx => $l) {
         return d.getFullYear() + '-' + (mm < 10 ? '0' : '') + mm + '-' + (dd < 10 ? '0' : '') + dd;
     }
 
+    // Parse "YYYY-MM-DD" as local date (not UTC) to avoid timezone offset issues
+    function parseLocal(s) {
+        var p = s.slice(0, 10).split('-');
+        return new Date(parseInt(p[0]), parseInt(p[1]) - 1, parseInt(p[2]));
+    }
+
     function estimateRevenue(ev) {
         if (!ev.logement_id) return '—';
         var dp = dailyPrices[ev.logement_id] || {};
         var pr = pricing[ev.logement_id] || {};
         var total = 0, counted = false;
-        var cursor = new Date(ev.start);
-        var endD = new Date(ev.end);
+        var cursor = parseLocal(ev.start);
+        var endD = parseLocal(ev.end);
         while (cursor < endD) {
             var ds = fmt(cursor);
             if (dp[ds]) { total += dp[ds]; counted = true; }
