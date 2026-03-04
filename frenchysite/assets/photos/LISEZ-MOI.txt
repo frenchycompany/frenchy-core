@@ -1,0 +1,41 @@
+═══════════════════════════════════════════════
+  PHOTOS — Château de Vertefeuille
+═══════════════════════════════════════════════
+
+Placez vos photos dans les sous-dossiers suivants.
+Le site utilise des images Unsplash en fallback tant que
+les fichiers locaux ne sont pas présents.
+
+Formats recommandés : .jpg ou .webp
+Résolution : minimum 1600px de large pour le hero et la galerie.
+
+──────────────────────────────
+  hero/
+──────────────────────────────
+  facade-chateau.jpg      → Photo principale du hero (façade ou vue d'ensemble)
+
+──────────────────────────────
+  galerie/
+──────────────────────────────
+  facade.jpg              → Façade du château (large, 2 colonnes)
+  salon.jpg               → Grand salon
+  chambre.jpg             → Chambre principale
+  jardin.jpg              → Jardin et parc
+  salle-a-manger.jpg      → Salle à manger
+  bibliotheque.jpg        → Bibliothèque (large, 2 colonnes)
+
+──────────────────────────────
+  experience/
+──────────────────────────────
+  confort.jpg             → Photo illustrant le confort / volumes
+  charme.jpg              → Photo illustrant le charme historique
+  accueil.jpg             → Photo illustrant l'accueil / service
+
+═══════════════════════════════════════════════
+  CONSEILS PHOTO
+═══════════════════════════════════════════════
+  - Lumière naturelle, tons chauds
+  - Matériaux authentiques : pierre, bois, laiton, verdure
+  - Pas de filtre trop saturé
+  - Format paysage de préférence
+  - Poids < 500 Ko si possible (optimiser avec TinyPNG ou similaire)
