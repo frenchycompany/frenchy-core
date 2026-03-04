@@ -1,0 +1,84 @@
+<?php
+/**
+ * Configuration de la propriété — TEMPLATE
+ *
+ * Pour créer un site pour un nouveau logement :
+ *   1. Copiez ce fichier en config/property.php
+ *   2. Remplissez les informations ci-dessous
+ *   3. Changez le db_prefix (3 lettres + 2 chiffres, ex: ml02_)
+ *   4. Créez un .env avec les credentials de la BDD (même BDD possible)
+ *   5. Ouvrez /admin.php — le schéma s'installe automatiquement
+ *   6. Personnalisez textes, photos et couleurs via l'admin
+ */
+
+return [
+
+    // ══════════ Identité ══════════
+    'name'      => 'Nom du logement',
+    'monogram'  => 'XX',
+    'tagline'   => 'Votre slogan',
+    'location'  => 'Ville · Département',
+    'phone'     => '+33 6 00 00 00 00',
+    'phone_raw' => '+33600000000',
+    'email'     => 'contact@example.com',
+    'address'   => 'Ville, Département, France',
+
+    // ══════════ Préfixe BDD (pour partager une base entre logements) ══════════
+    // Format : 3 lettres + 2 chiffres + underscore (ex: cv01_, ml02_)
+    // IMPORTANT : chaque logement doit avoir un préfixe unique
+    'db_prefix' => 'xx01_',
+
+    // ══════════ Intégrations ══════════
+    'airbnb_id'     => '',   // ID listing Airbnb (laisser vide pour masquer)
+    'matterport_id' => '',   // ID Matterport (laisser vide pour masquer)
+
+    // ══════════ Couleurs par défaut ══════════
+    'colors' => [
+        'green'    => '#1D5345',
+        'green_dk' => '#153d33',
+        'beige'    => '#CFCDB0',
+        'grey'     => '#B2ACA9',
+        'brown'    => '#6C5C4F',
+        'offwhite' => '#E8E4D0',
+        'dark'     => '#2B2924',
+    ],
+
+    // ══════════ Typographie ══════════
+    'font_display' => 'Playfair Display',
+    'font_body'    => 'Inter',
+
+    // ══════════ Sections actives (dans l'ordre d'affichage) ══════════
+    // Chaque clé = fichier dans sections/
+    // 'nav' = texte dans le menu (absent = pas dans le menu)
+    // 'id'  = ancre HTML (par défaut = la clé)
+    'sections' => [
+        'hero'        => ['label' => 'Hero (accueil)'],
+        'band'        => ['label' => 'Bandeau chiffres clés'],
+        'histoire'    => ['label' => 'Histoire',      'nav' => 'Histoire'],
+        'experience'  => ['label' => 'L\'expérience', 'nav' => 'L\'expérience'],
+        'galerie'     => ['label' => 'Galerie',       'nav' => 'Galerie'],
+        'visite'      => ['label' => 'Visite 360°',   'nav' => 'Visite 360°'],
+        'reservation' => ['label' => 'Réservation',   'nav' => 'Réserver', 'id' => 'reserver'],
+        'contact'     => ['label' => 'Contact',       'nav' => 'Contact'],
+    ],
+
+    // ══════════ Guides (modes d'emploi QR codes) ══════════
+    // Chaque clé = fichier .php à la racine
+    // Pour désactiver un guide, commentez-le ou supprimez-le
+    'guides' => [
+        'wifi' => [
+            'label'       => 'WiFi',
+            'admin_label' => 'WiFi',
+            'icon'        => '<path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1" fill="currentColor" stroke="none"/>',
+        ],
+        // Ajoutez d'autres guides ici...
+    ],
+
+    // ══════════ Photos fallback ══════════
+    // Utilisées si aucune photo n'est uploadée dans l'admin
+    'photo_fallbacks' => [
+        'hero' => 'https://images.unsplash.com/photo-1564501049412-61c2a3083791?w=2000&q=80',
+        'galerie' => [],
+        'experience' => [],
+    ],
+];
