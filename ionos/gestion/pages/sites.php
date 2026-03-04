@@ -10,8 +10,11 @@ if (!($conn instanceof PDO)) {
     die('Erreur: PDO non disponible.');
 }
 
-// Racine ionos (là où sont déployés les sites : ionos/vertefeuille, ionos/alexia, etc.)
-$ionosRoot = realpath(__DIR__ . '/../../');
+// Dossier de déploiement des sites vitrine : ionos/gestion/sites/{slug}/
+$sitesRoot = realpath(__DIR__ . '/..') . '/sites';
+if (!is_dir($sitesRoot)) {
+    mkdir($sitesRoot, 0755, true);
+}
 // Moteur FrenchySite source
 $frenchysiteSource = realpath(__DIR__ . '/../../../frenchysite');
 
@@ -375,8 +378,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_site'])) {
         $feedback = "<div class='alert alert-danger'><i class='fas fa-exclamation-triangle'></i> Veuillez sélectionner un logement</div>";
     } elseif (empty($site_slug) || strlen($site_slug) < 3) {
         $feedback = "<div class='alert alert-danger'><i class='fas fa-exclamation-triangle'></i> Le nom du sous-domaine doit faire au moins 3 caractères (lettres, chiffres, tirets)</div>";
-    } elseif (is_dir($ionosRoot . '/' . $site_slug)) {
-        $feedback = "<div class='alert alert-danger'><i class='fas fa-exclamation-triangle'></i> Le dossier <code>{$site_slug}/</code> existe déjà sur le serveur</div>";
+    } elseif (is_dir($sitesRoot . '/' . $site_slug)) {
+        $feedback = "<div class='alert alert-danger'><i class='fas fa-exclamation-triangle'></i> Le dossier <code>sites/{$site_slug}/</code> existe déjà sur le serveur</div>";
     } else {
         // Vérifier unicité logement
         $stmt = $conn->prepare("SELECT COUNT(*) FROM frenchysite_instances WHERE logement_id = :lid");
@@ -400,8 +403,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_site'])) {
                     try {
                         $siteName   = $logement['nom_du_logement'];
                         $dbPrefix   = generateDbPrefix($siteName, $conn);
-                        $siteUrl    = 'https://' . $site_slug . '.frenchyconciergerie.fr';
-                        $deployPath = $ionosRoot . '/' . $site_slug;
+                        $siteUrl    = 'https://gestion.frenchyconciergerie.fr/sites/' . $site_slug;
+                        $deployPath = $sitesRoot . '/' . $site_slug;
 
                         // 1. Créer les tables BDD
                         $equipements = loadLogementEquipements($conn, $logement_id);
@@ -591,10 +594,10 @@ foreach ($sites as $site) {
                             <input type="text" class="form-control" id="site_slug" name="site_slug"
                                    placeholder="alexia" pattern="[a-z0-9\-]{3,}" required
                                    title="Lettres minuscules, chiffres et tirets (min 3 caractères)">
-                            <span class="input-group-text">.frenchyconciergerie.fr</span>
+                            <span class="input-group-text"></span>
                         </div>
                         <div class="form-text">
-                            Le site sera accessible sur <strong id="preview_url">___</strong>.frenchyconciergerie.fr
+                            Le site sera accessible sur <strong>gestion.frenchyconciergerie.fr/sites/<span id="preview_url">___</span></strong>
                         </div>
                     </div>
 
@@ -630,7 +633,7 @@ foreach ($sites as $site) {
                         <li>Configure le <code>.env</code> et <code>property.php</code></li>
                         <li>Pré-remplit les données du logement et équipements</li>
                     </ul>
-                    <strong>3.</strong> Créez le sous-domaine chez IONOS pointant vers le dossier<br><br>
+                    <strong>3.</strong> Le site est immédiatement accessible via <code>/sites/{slug}/</code><br><br>
                     <strong>4.</strong> Personnalisez via <code>/admin.php</code> du site
                 </small>
             </div>
@@ -725,7 +728,7 @@ foreach ($sites as $site) {
                                                     title="Modifier">
                                                 <i class="fas fa-edit"></i>
                                             </button>
-                                            <form method="POST" style="display:inline" onsubmit="return confirm('Supprimer ce site, ses tables BDD et le dossier <?= htmlspecialchars($slug) ?>/ ?')">
+                                            <form method="POST" style="display:inline" onsubmit="return confirm('Supprimer ce site, ses tables BDD et le dossier sites/<?= htmlspecialchars($slug) ?>/ ?')">
                                                 <?php echoCsrfField(); ?>
                                                 <input type="hidden" name="site_id" value="<?= $site['id'] ?>">
                                                 <button type="submit" name="delete_site" class="btn btn-sm btn-danger" title="Supprimer">
