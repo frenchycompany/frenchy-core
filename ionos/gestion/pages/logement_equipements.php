@@ -56,6 +56,7 @@ try {
             netflix TINYINT(1) DEFAULT 0,
             amazon_prime TINYINT(1) DEFAULT 0,
             disney_plus TINYINT(1) DEFAULT 0,
+            molotov_tv TINYINT(1) DEFAULT 0,
             chaines_tv TEXT DEFAULT NULL,
             enceinte_bluetooth TINYINT(1) DEFAULT 0,
             console_jeux TINYINT(1) DEFAULT 0,
@@ -128,10 +129,12 @@ try {
     $guideColumns = [
         'guide_tv', 'guide_canape_convertible', 'guide_plaque_cuisson', 'guide_four',
         'guide_micro_ondes', 'guide_chauffage', 'guide_climatisation', 'guide_machine_cafe',
-        'guide_machine_laver', 'guide_lave_vaisselle', 'guide_seche_linge'
+        'guide_machine_laver', 'guide_lave_vaisselle', 'guide_seche_linge',
+        'molotov_tv'
     ];
     foreach ($guideColumns as $col) {
-        try { $pdo->exec("ALTER TABLE logement_equipements ADD COLUMN $col TEXT DEFAULT NULL"); } catch (PDOException $e) {}
+        $colType = str_starts_with($col, 'guide_') ? 'TEXT DEFAULT NULL' : 'TINYINT(1) DEFAULT 0';
+        try { $pdo->exec("ALTER TABLE logement_equipements ADD COLUMN $col $colType"); } catch (PDOException $e) {}
     }
 
     // Inserer les logements manquants
@@ -198,7 +201,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'ascenseur', 'bouilloire', 'grille_pain', 'micro_ondes', 'four', 'plaque_cuisson',
                     'lave_vaisselle', 'refrigerateur', 'congelateur', 'ustensiles_cuisine',
                     'machine_laver', 'seche_linge', 'fer_repasser', 'table_repasser', 'aspirateur', 'produits_menage',
-                    'tv', 'netflix', 'amazon_prime', 'disney_plus', 'enceinte_bluetooth', 'console_jeux',
+                    'tv', 'netflix', 'amazon_prime', 'disney_plus', 'molotov_tv', 'enceinte_bluetooth', 'console_jeux',
                     'livres', 'jeux_societe', 'canape', 'canape_convertible', 'table_manger', 'bureau',
                     'linge_lit_fourni', 'serviettes_fournies', 'oreillers_supplementaires', 'couvertures_supplementaires',
                     'climatisation', 'chauffage', 'ventilateur', 'baignoire', 'douche', 'seche_cheveux', 'produits_toilette',
@@ -897,6 +900,15 @@ if ($selectedLogement && !empty($selectedLogement['ville_id'])) {
                                             <input type="checkbox" class="custom-control-input" name="disney_plus" id="disney_plus"
                                                    <?= ($selectedLogement['disney_plus'] ?? 0) ? 'checked' : '' ?>>
                                             <label class="custom-control-label" for="disney_plus">Disney+</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row mt-2">
+                                    <div class="col-md-3">
+                                        <div class="custom-control custom-checkbox">
+                                            <input type="checkbox" class="custom-control-input" name="molotov_tv" id="molotov_tv"
+                                                   <?= ($selectedLogement['molotov_tv'] ?? 0) ? 'checked' : '' ?>>
+                                            <label class="custom-control-label" for="molotov_tv">Molotov TV</label>
                                         </div>
                                     </div>
                                 </div>

@@ -159,6 +159,7 @@ function createSiteTables($conn, $dbPrefix, $siteName, $logementData, $equipemen
             if (!empty($equipements['netflix']))      $streaming[] = 'Netflix';
             if (!empty($equipements['amazon_prime'])) $streaming[] = 'Amazon Prime Video';
             if (!empty($equipements['disney_plus']))  $streaming[] = 'Disney+';
+            if (!empty($equipements['molotov_tv']))   $streaming[] = 'Molotov TV';
             if (!empty($streaming)) {
                 $contenu = '<strong>' . implode(' / ', $streaming) . '</strong> — Utilisez la télécommande pour naviguer dans les applications. Les comptes sont déjà connectés.';
                 $stmtText->execute([$contenu, 'guide_cinema', 'contenu']);
