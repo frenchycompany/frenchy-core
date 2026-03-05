@@ -1,8 +1,4 @@
 <?php
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
-
 // pages/planning.php
 include '../config.php'; // Connexion à la base de données
 include '../pages/menu.php'; // Inclusion du menu de navigation
@@ -69,6 +65,10 @@ $date_debut      = isset($_GET['date_debut']) ? $_GET['date_debut'] : date('Y-m-
 $date_fin        = isset($_GET['date_fin']) ? $_GET['date_fin'] : date('Y-m-t');
 $statut_filter   = isset($_GET['statut_filter']) ? $_GET['statut_filter'] : 'all';
 $logement_filter = isset($_GET['logement_filter']) ? (int)$_GET['logement_filter'] : 0;
+
+// Validation des dates pour eviter les erreurs SQL
+if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date_debut)) $date_debut = date('Y-m-01');
+if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date_fin))   $date_fin   = date('Y-m-t');
 
 // --- Export CSV ---
 if (isset($_GET['export_csv']) && $_GET['export_csv'] === '1') {
@@ -329,7 +329,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['bulk_update'])) {
 
 // --- Requêtes de liste/pagination ---
 
-$limit = 10;
+$limit = 25;
 $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
 $offset = ($page - 1) * $limit;
 
@@ -348,10 +348,15 @@ if ($logement_filter > 0) {
     $countQuery .= " AND p.logement_id = ? ";
     $countParams[] = $logement_filter;
 }
-$countStmt = $conn->prepare($countQuery);
-$countStmt->execute($countParams);
-$totalCount = $countStmt->fetchColumn();
-$totalPages = ceil($totalCount / $limit);
+try {
+    $countStmt = $conn->prepare($countQuery);
+    $countStmt->execute($countParams);
+    $totalCount = $countStmt->fetchColumn();
+} catch (PDOException $e) {
+    error_log('planning.php count error: ' . $e->getMessage());
+    $totalCount = 0;
+}
+$totalPages = max(1, ceil($totalCount / $limit));
 
 $query = "
     SELECT 
@@ -378,18 +383,16 @@ if ($logement_filter > 0) {
     $query .= " AND p.logement_id = ? ";
     $params[] = $logement_filter;
 }
-$query .= " ORDER BY p.date ASC LIMIT ? OFFSET ? ";
-$params[] = $limit;
-$params[] = $offset;
+$query .= " ORDER BY p.date ASC LIMIT " . (int)$limit . " OFFSET " . (int)$offset;
 
-$stmt = $conn->prepare($query);
-$stmt->bindValue(count($params)-1, $limit, PDO::PARAM_INT);
-$stmt->bindValue(count($params), $offset, PDO::PARAM_INT);
-for ($i = 0; $i < count($params)-2; $i++) {
-    $stmt->bindValue($i+1, $params[$i]);
+try {
+    $stmt = $conn->prepare($query);
+    $stmt->execute($params);
+    $interventions = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    error_log('planning.php query error: ' . $e->getMessage());
+    $interventions = [];
 }
-$stmt->execute();
-$interventions = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 $logements = $conn->query("SELECT id, nom_du_logement FROM liste_logements WHERE actif = 1 ORDER BY nom_du_logement")->fetchAll(PDO::FETCH_ASSOC);
 $allLogements = $conn->query("SELECT id, nom_du_logement FROM liste_logements ORDER BY nom_du_logement")->fetchAll(PDO::FETCH_ASSOC);
@@ -431,16 +434,44 @@ $charges = $chargeStmt->fetchAll(PDO::FETCH_ASSOC);
     tr.statut-a-verifier { background-color: #e3f2fd !important; }
     tr.statut-verifier { background-color: #fce4ec !important; }
     tr.statut-annule { background-color: #f5f5f5 !important; opacity: 0.65; text-decoration: line-through; }
+
+    /* Tableau planning compact */
+    .table-planning { font-size: 0.85em; }
+    .table-planning th { white-space: nowrap; font-size: 0.8em; text-transform: uppercase; letter-spacing: 0.02em; }
+    .table-planning td { vertical-align: middle; padding: 0.35rem 0.4rem; }
+    .table-planning .form-control,
+    .table-planning .form-select { font-size: 0.82em; padding: 0.2rem 0.4rem; min-height: unset; }
+    .table-planning select.form-control { padding-right: 1.5rem; }
+    .table-planning textarea.form-control { resize: vertical; min-height: 2em; }
+    .table-planning input[type="number"] { max-width: 65px; }
+    .table-planning input[type="date"] { max-width: 130px; }
+    .table-planning .btn-sm { font-size: 0.75em; padding: 0.2rem 0.5rem; }
+    .table-planning .particulars-group { font-size: 0.82em; }
+    .table-planning .particulars-group .form-check { margin-bottom: 0; padding-top: 0; padding-bottom: 0; }
+
     /* Compteur charge */
     .charge-cards { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
     .charge-card { background: #fff; border: 1px solid #dee2e6; border-radius: 8px; padding: 10px 14px; min-width: 150px; flex: 1; }
     .charge-card .name { font-weight: 700; font-size: 0.95em; }
     .charge-card .counts { font-size: 0.82em; color: #666; }
     .charge-card .total { font-size: 1.3em; font-weight: 800; color: #1976d2; }
+
+    /* Container pleine largeur pour le tableau */
+    .container-planning { max-width: 100%; padding: 0 15px; }
+    .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+    /* Resume stats inline */
+    .planning-summary { display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 12px; font-size: 0.85em; }
+    .planning-summary .badge { font-size: 0.9em; }
+
+    @media (max-width: 992px) {
+      .table-planning th:nth-child(n+8),
+      .table-planning td:nth-child(n+8) { min-width: 100px; }
+    }
   </style>
 </head>
 <body>
-<div class="container mt-4">
+<div class="container-fluid mt-4 container-planning">
     <h2>Gestion du Planning</h2>
 
     <form method="GET" action="planning.php" class="mb-4">
@@ -533,7 +564,18 @@ $charges = $chargeStmt->fetchAll(PDO::FETCH_ASSOC);
     </div>
     <?php endif; ?>
 
-    <table class="table table-striped">
+    <!-- Resume rapide -->
+    <div class="planning-summary">
+        <span><strong><?= (int)$totalCount ?></strong> intervention<?= $totalCount > 1 ? 's' : '' ?></span>
+        <span class="text-muted">|</span>
+        <span><?= htmlspecialchars(date('d/m/Y', strtotime($date_debut))) ?> &rarr; <?= htmlspecialchars(date('d/m/Y', strtotime($date_fin))) ?></span>
+        <?php if ($totalPages > 1): ?>
+        <span class="text-muted">| Page <?= $page ?>/<?= $totalPages ?></span>
+        <?php endif; ?>
+    </div>
+
+    <div class="table-responsive">
+    <table class="table table-striped table-planning">
         <thead>
             <tr>
                 <?php if ($is_admin): ?>
@@ -700,16 +742,31 @@ $charges = $chargeStmt->fetchAll(PDO::FETCH_ASSOC);
             <?php endforeach; ?>
         </tbody>
     </table>
+    </div><!-- /table-responsive -->
 
+    <?php if ($totalPages > 1): ?>
     <nav>
-      <ul class="pagination">
-        <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+      <ul class="pagination pagination-sm">
+        <?php if ($page > 1): ?>
+          <li class="page-item"><a class="page-link" href="?date_debut=<?= urlencode($date_debut) ?>&date_fin=<?= urlencode($date_fin) ?>&statut_filter=<?= urlencode($statut_filter) ?>&logement_filter=<?= $logement_filter ?>&page=<?= $page - 1 ?>">&laquo;</a></li>
+        <?php endif; ?>
+        <?php
+          $start = max(1, $page - 3);
+          $end = min($totalPages, $page + 3);
+          if ($start > 1) echo '<li class="page-item disabled"><span class="page-link">...</span></li>';
+          for ($i = $start; $i <= $end; $i++):
+        ?>
           <li class="page-item <?= ($i == $page) ? 'active' : '' ?>">
             <a class="page-link" href="?date_debut=<?= urlencode($date_debut) ?>&date_fin=<?= urlencode($date_fin) ?>&statut_filter=<?= urlencode($statut_filter) ?>&logement_filter=<?= $logement_filter ?>&page=<?= $i ?>"><?= $i ?></a>
           </li>
         <?php endfor; ?>
+        <?php if ($end < $totalPages) echo '<li class="page-item disabled"><span class="page-link">...</span></li>'; ?>
+        <?php if ($page < $totalPages): ?>
+          <li class="page-item"><a class="page-link" href="?date_debut=<?= urlencode($date_debut) ?>&date_fin=<?= urlencode($date_fin) ?>&statut_filter=<?= urlencode($statut_filter) ?>&logement_filter=<?= $logement_filter ?>&page=<?= $page + 1 ?>">&raquo;</a></li>
+        <?php endif; ?>
       </ul>
     </nav>
+    <?php endif; ?>
 
     <?php if ($is_admin): ?>
     <h3>Créer une nouvelle intervention</h3>
