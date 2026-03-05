@@ -30,8 +30,13 @@
 | `ionos/db/connection.php` | 34 | Mot de passe DB | `**Baycpq25**` |
 | `ionos/admin/index.php` | 17-18 | Admin user/pass | `admin` / `frenchyconciergerie2026` |
 | `ionos/cdansmaville/evenements/generate_seo.php` | 7 | Cle OpenAI | `sk-proj-fKEGQ...` |
+| `ionos/cdansmaville/generate_daily_text.php` | 53 | Cle OpenAI | meme cle |
+| `ionos/cdansmaville/evenements/process_cleangpt.php` | 33 | Cle OpenAI | meme cle |
+| `ionos/cdansmaville/evenements/process_split.php` | 31 | Cle OpenAI | meme cle |
+| `ionos/cdansmaville/evenements/process_chatgpt.php` | 34 | Cle OpenAI | meme cle |
 | `ionos/cdansmaville/evenements/process_image.php` | 9 | Cle Google Vision | `AIzaSyBBJ9...` |
 | `ionos/cdansmaville/evenements/upload.php` | 13 | Cle Google Vision | `AIzaSyAfK...` |
+| `ionos/admin/menage.php` | 13 | Admin pass | `frenchyconciergerie2026` |
 | `ionos/frenchycompany/db/connection.php` | 6 | Mot de passe DB | `**Baycpq25**` |
 | `ionos/gestion/OK V2/db/connection.php` | 6 | Mot de passe DB | `**Baycpq25**` |
 | `ionos/cdansmaville/evenements/db/connection.php` | 6 | Mot de passe DB | `**Baycpq25**` |
@@ -95,7 +100,53 @@ Ces fichiers permettent une configuration non-authentifiee de la BDD :
 
 **Action :** Supprimer ou conditionner a `APP_DEBUG` dans `.env`.
 
-### 1.7 Adresses IP hardcodees
+### 1.7 Injection SQL par concatenation
+
+- `ionos/admin/menage.php:216` : `$conn->exec("UPDATE FC_menages SET paye = 1 WHERE id IN ($ids)")` — les IDs sont passes par `array_map('intval', ...)` mais le pattern reste dangereux (concatenation directe).
+
+**Action :** Utiliser des prepared statements avec placeholders.
+
+### 1.8 Path traversal dans la suppression de fichiers
+
+Fichiers supprimes avec des chemins provenant de la base de donnees sans validation :
+- `pages/checkup_historique.php:29-34` : `@unlink(__DIR__ . '/../' . $photo)` sans `basename()`
+- `pages/checkup_rapport.php:37,45` : meme pattern
+- `pages/inventaire_saisie.php:51,54` : meme pattern
+
+**Action :** Valider les chemins avec `basename()` ou verifier qu'ils ne contiennent pas `..`.
+
+### 1.9 Upload sans validation MIME
+
+- `pages/ajouter_objet.php:29-32` : extension utilisee sans whitelist ni validation MIME
+- `includes/upload_helper.php:77-80` : fichiers HEIC exclus de la validation MIME
+
+**Action :** Valider le type MIME avec `finfo_file()` pour tous les uploads.
+
+### 1.10 Comparaison mot de passe en clair (legacy)
+
+`ionos/vertefeuille/admin/auth.php:59-63` : fallback qui compare le mot de passe en clair si le hash bcrypt n'est pas detecte :
+```php
+return hash_equals($stored, $input); // COMPARAISON EN CLAIR
+```
+
+**Action :** Forcer le hashing bcrypt pour tous les mots de passe, supprimer le fallback.
+
+### 1.11 `unserialize()` sur fichiers cache
+
+`ionos/gestion/src/Cache.php:60,119,201,235` : `unserialize(file_get_contents($filename))` — risque d'injection d'objets PHP si un attaquant peut ecrire dans le cache.
+
+**Action :** Remplacer par `json_encode/json_decode`.
+
+### 1.12 Dumps SQL dans le depot
+
+- `ionos/dbs13515816.sql`
+- `ionos/dbs13572887.sql`
+
+Ces dumps peuvent contenir des donnees de production. Ils ne devraient pas etre dans le depot.
+
+**Action :** Supprimer et ajouter `*.sql` au `.gitignore`.
+
+### 1.13 Adresses IP hardcodees
 
 - `ionos/gestion/pages/agent_dashboard.php:2-3` : IP Raspberry Pi `http://109.219.194.30` hardcodee
 - `ionos/gestion/pages/superhote.php:23` : meme IP
@@ -260,18 +311,24 @@ openai>=1.0.0        # Inclus mais utilise en mode fallback uniquement
 ## 6. PRIORITES D'ACTION
 
 ### Immediat (securite critique)
-1. **Revoquer** la cle OpenAI `sk-proj-fKEGQ...`
+1. **Revoquer** la cle OpenAI `sk-proj-fKEGQ...` (presente dans 5 fichiers)
 2. **Revoquer** les 2 cles Google Vision
 3. **Changer** le mot de passe DB `**Baycpq25**` sur tous les services
 4. **Supprimer** les credentials hardcodes de tous les fichiers PHP
 5. **Proteger/supprimer** les fichiers `install.php`
+6. **Corriger** l'injection SQL dans `ionos/admin/menage.php:216`
+7. **Corriger** le path traversal dans les suppressions de fichiers (checkup, inventaire)
+8. **Supprimer** les dumps SQL du depot (`ionos/dbs*.sql`)
 
 ### Court terme (1-2 semaines)
-6. Migrer TOUS les credentials vers `.env`
-7. Ajouter CSRF sur tous les formulaires
-8. Desactiver `display_errors` en production
-9. Passer les cookies de session en `secure: true`
-10. Supprimer `OK V2/`, `install site/`, `_archive/`, fichiers debug
+9. Migrer TOUS les credentials vers `.env`
+10. Ajouter CSRF sur tous les formulaires
+11. Desactiver `display_errors` en production
+12. Passer les cookies de session en `secure: true`
+13. Supprimer `OK V2/`, `install site/`, `_archive/`, fichiers debug
+14. Ajouter validation MIME sur les uploads (`finfo_file()`)
+15. Supprimer le fallback mot de passe en clair (`vertefeuille/admin/auth.php`)
+16. Remplacer `unserialize()` par `json_decode()` dans `Cache.php`
 
 ### Moyen terme (1-2 mois)
 11. Centraliser les connexions DB (un seul `connection.php`)
