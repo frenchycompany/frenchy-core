@@ -55,9 +55,15 @@ try {
     jerr(500, 'Connexion distante impossible.', $DEBUG?['ex'=>$e->getMessage()]:[]);
 }
 
-// introspection
-function table_exists(PDO $c, string $t): bool { try { $c->query("SELECT 1 FROM `$t` LIMIT 1"); return true; } catch(Throwable $e){ return false; } }
-function column_exists(PDO $c, string $t, string $col): bool { try { $s=$c->prepare("SHOW COLUMNS FROM `$t` LIKE ?"); $s->execute([$col]); return (bool)$s->fetch(); } catch(Throwable $e){ return false; } }
+// introspection (closeCursor obligatoire avec EMULATE_PREPARES=false)
+function table_exists(PDO $c, string $t): bool {
+    try { $s = $c->query("SELECT 1 FROM `$t` LIMIT 1"); $s->closeCursor(); return true; }
+    catch(Throwable $e){ return false; }
+}
+function column_exists(PDO $c, string $t, string $col): bool {
+    try { $s=$c->prepare("SHOW COLUMNS FROM `$t` LIKE ?"); $s->execute([$col]); $r=(bool)$s->fetch(); $s->closeCursor(); return $r; }
+    catch(Throwable $e){ return false; }
+}
 
 // vérif REMOTE
 if (!table_exists($pdoRemote, 'reservation')) jerr(500, "Table 'reservation' introuvable sur la base distante.");
@@ -200,7 +206,9 @@ function ensure_token_if_possible(PDO $c, int $pid, bool $enabled): void {
     try {
         $ch = $c->prepare("SELECT 1 FROM intervention_tokens WHERE intervention_id = ? LIMIT 1");
         $ch->execute([$pid]);
-        if ($ch->fetch()) return;
+        $exists = (bool)$ch->fetch();
+        $ch->closeCursor();
+        if ($exists) return;
         $token = bin2hex(random_bytes(16));
         $exp = date('Y-m-d H:i:s', strtotime('+7 days'));
         $ins = $c->prepare("INSERT INTO intervention_tokens (intervention_id, token, expires_at) VALUES (?, ?, ?)");
@@ -208,49 +216,53 @@ function ensure_token_if_possible(PDO $c, int $pid, bool $enabled): void {
     } catch (Throwable $e) { /* ignore */ }
 }
 
-// statements LOCAL
-$findBySourceCheckout = $pl_has_src_id && $pl_has_src_type
-    ? $conn->prepare("SELECT id, statut FROM planning WHERE source_reservation_id = ? AND source_type = 'AUTO_CHECKOUT' LIMIT 1")
-    : null;
-$findBySourceArrival = $pl_has_src_id && $pl_has_src_type
-    ? $conn->prepare("SELECT id, statut FROM planning WHERE source_reservation_id = ? AND source_type = 'AUTO_ARRIVAL' LIMIT 1")
-    : null;
+// statements LOCAL (dans try-catch car EMULATE_PREPARES=false peut échouer si curseur ouvert)
+try {
+    $findBySourceCheckout = $pl_has_src_id && $pl_has_src_type
+        ? $conn->prepare("SELECT id, statut FROM planning WHERE source_reservation_id = ? AND source_type = 'AUTO_CHECKOUT' LIMIT 1")
+        : null;
+    $findBySourceArrival = $pl_has_src_id && $pl_has_src_type
+        ? $conn->prepare("SELECT id, statut FROM planning WHERE source_reservation_id = ? AND source_type = 'AUTO_ARRIVAL' LIMIT 1")
+        : null;
 
-$findByHeuristic = $conn->prepare("
-    SELECT id, statut 
-    FROM planning
-    WHERE logement_id = ?
-      AND date = ?
-      AND note LIKE ?
-    LIMIT 1
-");
+    $findByHeuristic = $conn->prepare("
+        SELECT id, statut
+        FROM planning
+        WHERE logement_id = ?
+          AND date = ?
+          AND note LIKE ?
+        LIMIT 1
+    ");
 
-$findAnyOnDate = $conn->prepare("
-    SELECT id FROM planning WHERE logement_id = ? AND date = ? LIMIT 1
-");
+    $findAnyOnDate = $conn->prepare("
+        SELECT id FROM planning WHERE logement_id = ? AND date = ? LIMIT 1
+    ");
 
-$insertPlanningCheckout = $conn->prepare("
-    INSERT INTO planning (
-        logement_id, date, nombre_de_personnes, nombre_de_jours_reservation, statut, note
-        ".($pl_has_src_id ? ", source_reservation_id" : "")."
-        ".($pl_has_src_type ? ", source_type" : "")."
-    ) VALUES (
-        :logement_id, :date, :nb_pers, :nb_jours, 'À Faire', :note
-        ".($pl_has_src_id ? ", :resa_id" : "")."
-        ".($pl_has_src_type ? ", 'AUTO_CHECKOUT'" : "")."
-    )
-");
-$insertPlanningArrival = $conn->prepare("
-    INSERT INTO planning (
-        logement_id, date, nombre_de_personnes, nombre_de_jours_reservation, statut, note
-        ".($pl_has_src_id ? ", source_reservation_id" : "")."
-        ".($pl_has_src_type ? ", source_type" : "")."
-    ) VALUES (
-        :logement_id, :date, :nb_pers, :nb_jours, 'À Faire', :note
-        ".($pl_has_src_id ? ", :resa_id" : "")."
-        ".($pl_has_src_type ? ", 'AUTO_ARRIVAL'" : "")."
-    )
-");
+    $insertPlanningCheckout = $conn->prepare("
+        INSERT INTO planning (
+            logement_id, date, nombre_de_personnes, nombre_de_jours_reservation, statut, note
+            ".($pl_has_src_id ? ", source_reservation_id" : "")."
+            ".($pl_has_src_type ? ", source_type" : "")."
+        ) VALUES (
+            :logement_id, :date, :nb_pers, :nb_jours, 'À Faire', :note
+            ".($pl_has_src_id ? ", :resa_id" : "")."
+            ".($pl_has_src_type ? ", 'AUTO_CHECKOUT'" : "")."
+        )
+    ");
+    $insertPlanningArrival = $conn->prepare("
+        INSERT INTO planning (
+            logement_id, date, nombre_de_personnes, nombre_de_jours_reservation, statut, note
+            ".($pl_has_src_id ? ", source_reservation_id" : "")."
+            ".($pl_has_src_type ? ", source_type" : "")."
+        ) VALUES (
+            :logement_id, :date, :nb_pers, :nb_jours, 'À Faire', :note
+            ".($pl_has_src_id ? ", :resa_id" : "")."
+            ".($pl_has_src_type ? ", 'AUTO_ARRIVAL'" : "")."
+        )
+    ");
+} catch (Throwable $e) {
+    jerr(500, 'Erreur préparation requêtes SQL.', $DEBUG?['ex'=>$e->getMessage()]:[]);
+}
 
 $report = [
   'date'      => $target,

@@ -1101,7 +1101,13 @@ $(document).on('click', '#sync_by_date_btn', function(e){
     })
     .fail(function(xhr){
       console.error('SYNC BY DATE fail:', xhr.status, xhr.responseText);
-      showToast(`Erreur ${xhr.status} pendant la synchro.`, 'error');
+      let msg = `Erreur ${xhr.status} pendant la synchro.`;
+      try {
+        const j = JSON.parse(xhr.responseText);
+        if (j && j.message) msg = j.message;
+        if (j && j.ex) console.error('SYNC exception:', j.ex);
+      } catch(e) {}
+      showToast(msg, 'error');
     });
 });
 </script>
