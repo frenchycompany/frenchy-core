@@ -101,8 +101,7 @@ $query = "
               + 3
             ) AS rentabilite
     FROM planning pl
-    -- on joint via la colonne pl.logement qui contient le nom
-    LEFT JOIN liste_logements ll ON pl.logement = ll.nom_du_logement
+    LEFT JOIN liste_logements ll ON pl.logement_id = ll.id
     LEFT JOIN role rc            ON rc.role = 'Conducteur'
     LEFT JOIN role rm            ON rm.role = 'Femme de ménage'
     LEFT JOIN role rl            ON rl.role = 'Laverie'
@@ -125,8 +124,8 @@ $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
 $totalRentabilite = array_sum(array_column($results, 'rentabilite'));
 
 // Pour les listes déroulantes
-$logements    = $conn->query("SELECT DISTINCT nom_du_logement FROM liste_logements")->fetchAll(PDO::FETCH_ASSOC);
-$intervenants = $conn->query("SELECT DISTINCT nom FROM intervenant")->fetchAll(PDO::FETCH_ASSOC);
+$logements    = $conn->query("SELECT DISTINCT nom_du_logement FROM liste_logements WHERE actif = 1 ORDER BY nom_du_logement")->fetchAll(PDO::FETCH_ASSOC);
+$intervenants = $conn->query("SELECT DISTINCT nom FROM intervenant WHERE actif = 1 ORDER BY nom")->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -134,7 +133,6 @@ $intervenants = $conn->query("SELECT DISTINCT nom FROM intervenant")->fetchAll(P
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Statistiques de Rentabilité</title>
-  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
 </head>
 <body>
 <div class="container mt-4">
@@ -265,6 +263,5 @@ $intervenants = $conn->query("SELECT DISTINCT nom FROM intervenant")->fetchAll(P
 <!-- Bootstrap JS -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 </body>
 </html>

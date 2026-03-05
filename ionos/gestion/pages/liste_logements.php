@@ -5,7 +5,7 @@ include '../pages/menu.php'; // Inclut le menu de navigation
 
 try {
     // Récupération des logements
-    $query = $conn->query("SELECT id, nom_du_logement, adresse, code FROM liste_logements");
+    $query = $conn->query("SELECT id, nom_du_logement, adresse, code FROM liste_logements WHERE actif = 1 ORDER BY nom_du_logement");
     $logements = $query->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
     echo "Erreur : " . $e->getMessage();
@@ -20,7 +20,6 @@ try {
   <title>Éditer le planning</title>
   <link rel="stylesheet" href="<?= BASE_URL ?>css/style.css">
   <link
-    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
     rel="stylesheet"
     integrity="sha384-…"
     crossorigin="anonymous"
@@ -64,7 +63,6 @@ try {
 
 <!-- Bootstrap JS -->
   <script
-    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
     integrity="sha384-…"
     crossorigin="anonymous"
   ></script>

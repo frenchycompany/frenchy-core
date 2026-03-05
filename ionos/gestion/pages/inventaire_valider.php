@@ -1,10 +1,7 @@
 <?php
-require_once '../db/connection.php';
-require_once '../lib/phpqrcode/qrlib.php'; // Ajuste le chemin si besoin
-include 'inventaire_menu.php';
-
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
+include '../config.php';
+include '../pages/menu.php';
+require_once '../lib/phpqrcode/qrlib.php';
 
 // Vérifie que la session est bien spécifiée
 if (!isset($_GET['session_id'])) {
@@ -28,7 +25,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             if (empty($row['qr_code_path']) || !file_exists($row['qr_code_path'])) {
                 $qr_dir = __DIR__ . '/../uploads/qrcodes/';
-                if (!is_dir($qr_dir)) mkdir($qr_dir, 0777, true);
+                if (!is_dir($qr_dir)) mkdir($qr_dir, 0775, true);
+                if (!is_writable($qr_dir)) @chmod($qr_dir, 0775);
 
                 // Génère un QR code pointant sur la fiche OBJET (inventaire_objets)
                 $qr_url = "https://gestion.frenchyconciergerie.fr/pages/objet.php?id=" . $objet_id;

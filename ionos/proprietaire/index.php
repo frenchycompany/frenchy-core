@@ -35,65 +35,60 @@ $stmt = $conn->prepare("UPDATE FC_proprietaires SET derniere_connexion = NOW() W
 $stmt->execute([$proprietaire_id]);
 
 // Récupération des logements du propriétaire
-$stmt = $conn->prepare("SELECT * FROM FC_logements WHERE proprietaire_id = ? AND actif = 1 ORDER BY titre");
+$stmt = $conn->prepare("SELECT * FROM liste_logements WHERE proprietaire_id = ? ORDER BY nom_du_logement");
 $stmt->execute([$proprietaire_id]);
 $logements = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Statistiques globales
 $stats = [
     'total_logements' => count($logements),
-    'revenu_total' => 0,
-    'revenu_mois' => 0,
-    'reservations_mois' => 0,
-    'taux_occupation' => 0
+    'taches_en_attente' => 0,
+    'checkups_recents' => 0,
+    'inventaires' => 0
 ];
+
+$logement_ids = [];
+$placeholders = '';
 
 if (!empty($logements)) {
     $logement_ids = array_column($logements, 'id');
     $placeholders = str_repeat('?,', count($logement_ids) - 1) . '?';
 
-    // Revenus du mois en cours
-    $stmt = $conn->prepare("SELECT SUM(revenu_net) as total, SUM(nb_reservations) as reservations, AVG(taux_occupation) as occupation
-                            FROM FC_revenus
-                            WHERE logement_id IN ($placeholders)
-                            AND MONTH(mois) = MONTH(CURRENT_DATE)
-                            AND YEAR(mois) = YEAR(CURRENT_DATE)");
-    $stmt->execute($logement_ids);
-    $mois_stats = $stmt->fetch(PDO::FETCH_ASSOC);
+    // Tâches en attente
+    try {
+        $stmt = $conn->prepare("SELECT COUNT(*) FROM todo_list WHERE logement_id IN ($placeholders) AND statut != 'terminee'");
+        $stmt->execute($logement_ids);
+        $stats['taches_en_attente'] = (int)$stmt->fetchColumn();
+    } catch (PDOException $e) {}
 
-    $stats['revenu_mois'] = $mois_stats['total'] ?? 0;
-    $stats['reservations_mois'] = $mois_stats['reservations'] ?? 0;
-    $stats['taux_occupation'] = round($mois_stats['occupation'] ?? 0);
+    // Checkups récents (30 derniers jours)
+    try {
+        $stmt = $conn->prepare("SELECT COUNT(*) FROM checkup_sessions WHERE logement_id IN ($placeholders) AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)");
+        $stmt->execute($logement_ids);
+        $stats['checkups_recents'] = (int)$stmt->fetchColumn();
+    } catch (PDOException $e) {}
 
-    // Revenus totaux
-    $stmt = $conn->prepare("SELECT SUM(revenu_net) as total FROM FC_revenus WHERE logement_id IN ($placeholders)");
-    $stmt->execute($logement_ids);
-    $stats['revenu_total'] = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
+    // Sessions d'inventaire
+    try {
+        $stmt = $conn->prepare("SELECT COUNT(*) FROM sessions_inventaire WHERE logement_id IN ($placeholders)");
+        $stmt->execute($logement_ids);
+        $stats['inventaires'] = (int)$stmt->fetchColumn();
+    } catch (PDOException $e) {}
+}
 
-    // Graphique des 12 derniers mois
-    $stmt = $conn->prepare("SELECT DATE_FORMAT(mois, '%Y-%m') as mois, SUM(revenu_net) as revenu
-                            FROM FC_revenus
-                            WHERE logement_id IN ($placeholders)
-                            AND mois >= DATE_SUB(CURRENT_DATE, INTERVAL 12 MONTH)
-                            GROUP BY DATE_FORMAT(mois, '%Y-%m')
-                            ORDER BY mois");
-    $stmt->execute($logement_ids);
-    $revenus_mensuels = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    // Prochaines réservations
-    $stmt = $conn->prepare("SELECT r.*, l.titre as logement_titre
-                            FROM FC_reservations r
-                            JOIN FC_logements l ON r.logement_id = l.id
-                            WHERE r.logement_id IN ($placeholders)
-                            AND r.date_debut >= CURRENT_DATE
-                            AND r.statut = 'confirmee'
-                            ORDER BY r.date_debut
-                            LIMIT 5");
-    $stmt->execute($logement_ids);
-    $prochaines_reservations = $stmt->fetchAll(PDO::FETCH_ASSOC);
+// Sites vitrine liés aux logements
+$sites_vitrine = [];
+if (!empty($logement_ids)) {
+    try {
+        $stmt = $conn->prepare("SELECT fi.*, l.nom_du_logement FROM frenchysite_instances fi JOIN liste_logements l ON fi.logement_id = l.id WHERE fi.logement_id IN ($placeholders) AND fi.actif = 1");
+        $stmt->execute($logement_ids);
+        $sites_vitrine = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {}
 }
 
 $security->trackVisit('/proprietaire/dashboard');
+
+$currentPage = basename($_SERVER['PHP_SELF']);
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -101,8 +96,7 @@ $security->trackVisit('/proprietaire/dashboard');
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Espace Propriétaire - <?= e($settings['site_nom'] ?? 'Frenchy Conciergerie') ?></title>
-    <link rel="stylesheet" href="../assets/css/style.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
             --bleu-frenchy: #1E3A8A;
@@ -113,11 +107,7 @@ $security->trackVisit('/proprietaire/dashboard');
             --vert: #10B981;
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -125,12 +115,8 @@ $security->trackVisit('/proprietaire/dashboard');
             min-height: 100vh;
         }
 
-        .dashboard-container {
-            display: flex;
-            min-height: 100vh;
-        }
+        .dashboard-container { display: flex; min-height: 100vh; }
 
-        /* Sidebar */
         .sidebar {
             width: 260px;
             background: linear-gradient(180deg, var(--bleu-frenchy), #1e40af);
@@ -149,239 +135,115 @@ $security->trackVisit('/proprietaire/dashboard');
         }
 
         .sidebar-header img {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            background: white;
-            padding: 5px;
-            margin-bottom: 0.5rem;
+            width: 60px; height: 60px; border-radius: 50%;
+            background: white; padding: 5px; margin-bottom: 0.5rem;
         }
 
-        .sidebar-header h2 {
-            font-size: 1.1rem;
-        }
-
-        .sidebar-header p {
-            font-size: 0.85rem;
-            opacity: 0.8;
-        }
+        .sidebar-header h2 { font-size: 1.1rem; }
+        .sidebar-header p { font-size: 0.85rem; opacity: 0.8; }
 
         .sidebar-nav a {
-            display: flex;
-            align-items: center;
-            gap: 0.8rem;
-            color: rgba(255,255,255,0.8);
-            text-decoration: none;
-            padding: 0.8rem 1rem;
-            border-radius: 8px;
-            margin-bottom: 0.3rem;
+            display: flex; align-items: center; gap: 0.8rem;
+            color: rgba(255,255,255,0.8); text-decoration: none;
+            padding: 0.8rem 1rem; border-radius: 8px; margin-bottom: 0.3rem;
             transition: all 0.2s;
         }
 
-        .sidebar-nav a:hover,
-        .sidebar-nav a.active {
-            background: rgba(255,255,255,0.15);
-            color: white;
+        .sidebar-nav a:hover, .sidebar-nav a.active {
+            background: rgba(255,255,255,0.15); color: white;
         }
 
-        .sidebar-nav .icon {
-            width: 20px;
-            text-align: center;
+        .sidebar-nav .icon { width: 20px; text-align: center; }
+        .sidebar-nav .nav-separator {
+            border-top: 1px solid rgba(255,255,255,0.1);
+            margin: 0.8rem 0;
         }
 
-        /* Main content */
-        .main-content {
-            flex: 1;
-            margin-left: 260px;
-            padding: 2rem;
-        }
+        .main-content { flex: 1; margin-left: 260px; padding: 2rem; }
 
         .page-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            display: flex; justify-content: space-between; align-items: center;
             margin-bottom: 2rem;
         }
 
-        .page-header h1 {
-            color: var(--gris-fonce);
-            font-size: 1.8rem;
-        }
+        .page-header h1 { color: var(--gris-fonce); font-size: 1.8rem; }
+        .date-info { color: #6B7280; }
 
-        .date-info {
-            color: #6B7280;
-        }
-
-        /* Stats cards */
         .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.5rem; margin-bottom: 2rem;
         }
 
         .stat-card {
-            background: white;
-            padding: 1.5rem;
-            border-radius: 12px;
+            background: white; padding: 1.5rem; border-radius: 12px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            display: flex;
-            align-items: center;
-            gap: 1rem;
+            display: flex; align-items: center; gap: 1rem;
         }
 
         .stat-icon {
-            width: 50px;
-            height: 50px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
+            width: 50px; height: 50px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center; font-size: 1.3rem;
         }
 
-        .stat-icon.blue { background: rgba(59, 130, 246, 0.1); }
-        .stat-icon.green { background: rgba(16, 185, 129, 0.1); }
-        .stat-icon.orange { background: rgba(245, 158, 11, 0.1); }
-        .stat-icon.purple { background: rgba(139, 92, 246, 0.1); }
+        .stat-icon.blue { background: rgba(59, 130, 246, 0.1); color: #3B82F6; }
+        .stat-icon.green { background: rgba(16, 185, 129, 0.1); color: #10B981; }
+        .stat-icon.orange { background: rgba(245, 158, 11, 0.1); color: #F59E0B; }
+        .stat-icon.purple { background: rgba(139, 92, 246, 0.1); color: #8B5CF6; }
 
-        .stat-content h3 {
-            font-size: 1.8rem;
-            color: var(--gris-fonce);
-            margin-bottom: 0.2rem;
-        }
+        .stat-content h3 { font-size: 1.8rem; color: var(--gris-fonce); margin-bottom: 0.2rem; }
+        .stat-content p { color: #6B7280; font-size: 0.9rem; }
 
-        .stat-content p {
-            color: #6B7280;
-            font-size: 0.9rem;
-        }
-
-        /* Content grid */
         .content-grid {
-            display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 1.5rem;
+            display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;
         }
 
-        @media (max-width: 1200px) {
-            .content-grid {
-                grid-template-columns: 1fr;
-            }
-        }
+        @media (max-width: 1200px) { .content-grid { grid-template-columns: 1fr; } }
 
         .card {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            padding: 1.5rem;
+            background: white; border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05); padding: 1.5rem;
         }
 
         .card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            display: flex; justify-content: space-between; align-items: center;
             margin-bottom: 1.5rem;
         }
 
-        .card-header h2 {
-            font-size: 1.2rem;
-            color: var(--gris-fonce);
-        }
+        .card-header h2 { font-size: 1.2rem; color: var(--gris-fonce); }
+        .card-header a { color: var(--bleu-clair); text-decoration: none; font-size: 0.9rem; }
 
-        .card-header a {
-            color: var(--bleu-clair);
-            text-decoration: none;
-            font-size: 0.9rem;
+        .list-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0.8rem 0; border-bottom: 1px solid var(--gris-clair);
         }
+        .list-item:last-child { border-bottom: none; }
+        .list-item h4 { color: var(--gris-fonce); font-size: 0.95rem; }
+        .list-item p, .list-item small { color: #6B7280; font-size: 0.85rem; }
 
-        /* Chart */
-        .chart-container {
-            height: 300px;
+        .badge {
+            display: inline-block; padding: 3px 10px; border-radius: 20px;
+            font-size: 0.78rem; font-weight: 600;
         }
+        .badge-warning { background: #FEF3C7; color: #92400E; }
+        .badge-success { background: #D1FAE5; color: #065F46; }
+        .badge-info { background: #DBEAFE; color: #1E40AF; }
+        .badge-danger { background: #FEE2E2; color: #991B1B; }
 
-        /* Reservations list */
-        .reservation-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1rem 0;
-            border-bottom: 1px solid var(--gris-clair);
+        .site-link {
+            display: flex; align-items: center; gap: 0.8rem;
+            padding: 0.8rem; border: 1px solid #E5E7EB; border-radius: 10px;
+            text-decoration: none; color: var(--gris-fonce); margin-bottom: 0.5rem;
+            transition: box-shadow 0.2s;
         }
+        .site-link:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .site-link i { font-size: 1.2rem; color: var(--bleu-clair); }
 
-        .reservation-item:last-child {
-            border-bottom: none;
-        }
+        .empty-state { color: #9CA3AF; text-align: center; padding: 2rem; font-size: 0.9rem; }
 
-        .reservation-info h4 {
-            color: var(--gris-fonce);
-            margin-bottom: 0.3rem;
-        }
-
-        .reservation-info p {
-            color: #6B7280;
-            font-size: 0.85rem;
-        }
-
-        .reservation-dates {
-            text-align: right;
-        }
-
-        .reservation-dates .date {
-            font-weight: 600;
-            color: var(--bleu-frenchy);
-        }
-
-        .reservation-dates .nights {
-            font-size: 0.85rem;
-            color: #6B7280;
-        }
-
-        /* Logements list */
-        .logement-item {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            padding: 1rem 0;
-            border-bottom: 1px solid var(--gris-clair);
-        }
-
-        .logement-item:last-child {
-            border-bottom: none;
-        }
-
-        .logement-thumb {
-            width: 60px;
-            height: 45px;
-            border-radius: 6px;
-            object-fit: cover;
-            background: var(--gris-clair);
-        }
-
-        .logement-info h4 {
-            color: var(--gris-fonce);
-            font-size: 0.95rem;
-        }
-
-        .logement-info p {
-            color: #6B7280;
-            font-size: 0.85rem;
-        }
-
-        /* Responsive */
         @media (max-width: 768px) {
-            .sidebar {
-                width: 100%;
-                height: auto;
-                position: relative;
-            }
-
-            .main-content {
-                margin-left: 0;
-            }
-
-            .dashboard-container {
-                flex-direction: column;
-            }
+            .sidebar { width: 100%; height: auto; position: relative; }
+            .main-content { margin-left: 0; }
+            .dashboard-container { flex-direction: column; }
         }
     </style>
 </head>
@@ -390,32 +252,38 @@ $security->trackVisit('/proprietaire/dashboard');
         <!-- Sidebar -->
         <aside class="sidebar">
             <div class="sidebar-header">
-                <img src="../frenchyconciergerie.png.png" alt="Logo">
+                <img src="../frenchyconciergerie.png.png" alt="Logo" onerror="this.style.display='none'">
                 <h2><?= e($proprietaire['prenom'] ?? '') ?> <?= e($proprietaire['nom']) ?></h2>
                 <p>Propriétaire</p>
             </div>
 
             <nav class="sidebar-nav">
-                <a href="index.php" class="active">
-                    <span class="icon">📊</span> Tableau de bord
+                <a href="index.php" class="<?= $currentPage === 'index.php' ? 'active' : '' ?>">
+                    <span class="icon"><i class="fas fa-tachometer-alt"></i></span> Tableau de bord
                 </a>
-                <a href="logements.php">
-                    <span class="icon">🏠</span> Mes logements
+                <a href="taches.php" class="<?= $currentPage === 'taches.php' ? 'active' : '' ?>">
+                    <span class="icon"><i class="fas fa-tasks"></i></span> Taches
                 </a>
-                <a href="reservations.php">
-                    <span class="icon">📅</span> Réservations
+                <a href="calendrier.php" class="<?= $currentPage === 'calendrier.php' ? 'active' : '' ?>">
+                    <span class="icon"><i class="fas fa-calendar-alt"></i></span> Calendrier
                 </a>
-                <a href="revenus.php">
-                    <span class="icon">💰</span> Revenus
+                <a href="checkups.php" class="<?= $currentPage === 'checkups.php' ? 'active' : '' ?>">
+                    <span class="icon"><i class="fas fa-clipboard-check"></i></span> Checkups
                 </a>
-                <a href="documents.php">
-                    <span class="icon">📄</span> Documents
+                <a href="inventaires.php" class="<?= $currentPage === 'inventaires.php' ? 'active' : '' ?>">
+                    <span class="icon"><i class="fas fa-boxes-stacked"></i></span> Inventaires
                 </a>
-                <a href="profil.php">
-                    <span class="icon">👤</span> Mon profil
+                <?php if (!empty($sites_vitrine)): ?>
+                <a href="sites.php" class="<?= $currentPage === 'sites.php' ? 'active' : '' ?>">
+                    <span class="icon"><i class="fas fa-globe"></i></span> Sites vitrine
+                </a>
+                <?php endif; ?>
+                <div class="nav-separator"></div>
+                <a href="profil.php" class="<?= $currentPage === 'profil.php' ? 'active' : '' ?>">
+                    <span class="icon"><i class="fas fa-user"></i></span> Mon profil
                 </a>
                 <a href="logout.php">
-                    <span class="icon">🚪</span> Déconnexion
+                    <span class="icon"><i class="fas fa-sign-out-alt"></i></span> Deconnexion
                 </a>
             </nav>
         </aside>
@@ -424,154 +292,150 @@ $security->trackVisit('/proprietaire/dashboard');
         <main class="main-content">
             <div class="page-header">
                 <h1>Bonjour, <?= e($proprietaire['prenom'] ?? $proprietaire['nom']) ?> !</h1>
-                <span class="date-info"><?= strftime('%A %d %B %Y') ?></span>
+                <span class="date-info"><?= date('d/m/Y') ?></span>
             </div>
 
             <!-- Stats -->
             <div class="stats-grid">
                 <div class="stat-card">
-                    <div class="stat-icon blue">🏠</div>
+                    <div class="stat-icon blue"><i class="fas fa-home"></i></div>
                     <div class="stat-content">
                         <h3><?= $stats['total_logements'] ?></h3>
-                        <p>Logements gérés</p>
+                        <p>Logements</p>
                     </div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-icon green">💰</div>
+                    <div class="stat-icon orange"><i class="fas fa-tasks"></i></div>
                     <div class="stat-content">
-                        <h3><?= number_format($stats['revenu_mois'], 0, ',', ' ') ?> €</h3>
-                        <p>Revenus ce mois</p>
+                        <h3><?= $stats['taches_en_attente'] ?></h3>
+                        <p>Taches en attente</p>
                     </div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-icon orange">📅</div>
+                    <div class="stat-icon green"><i class="fas fa-clipboard-check"></i></div>
                     <div class="stat-content">
-                        <h3><?= $stats['reservations_mois'] ?></h3>
-                        <p>Réservations ce mois</p>
+                        <h3><?= $stats['checkups_recents'] ?></h3>
+                        <p>Checkups (30j)</p>
                     </div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-icon purple">📈</div>
+                    <div class="stat-icon purple"><i class="fas fa-boxes-stacked"></i></div>
                     <div class="stat-content">
-                        <h3><?= $stats['taux_occupation'] ?>%</h3>
-                        <p>Taux d'occupation</p>
+                        <h3><?= $stats['inventaires'] ?></h3>
+                        <p>Inventaires</p>
                     </div>
                 </div>
             </div>
 
-            <!-- Content grid -->
             <div class="content-grid">
-                <!-- Graphique revenus -->
+                <!-- Tâches récentes -->
                 <div class="card">
                     <div class="card-header">
-                        <h2>Évolution des revenus</h2>
-                        <a href="revenus.php">Voir détails →</a>
+                        <h2><i class="fas fa-tasks"></i> Taches en cours</h2>
+                        <a href="taches.php">Voir tout &rarr;</a>
                     </div>
-                    <div class="chart-container">
-                        <canvas id="revenusChart"></canvas>
-                    </div>
+                    <?php
+                    $taches_recentes = [];
+                    if (!empty($logement_ids)) {
+                        try {
+                            $stmt = $conn->prepare("SELECT t.*, l.nom_du_logement FROM todo_list t JOIN liste_logements l ON t.logement_id = l.id WHERE t.logement_id IN ($placeholders) AND t.statut != 'terminee' ORDER BY t.date_limite ASC LIMIT 5");
+                            $stmt->execute($logement_ids);
+                            $taches_recentes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                        } catch (PDOException $e) {}
+                    }
+                    ?>
+                    <?php if (empty($taches_recentes)): ?>
+                        <p class="empty-state">Aucune tache en attente</p>
+                    <?php else: ?>
+                        <?php foreach ($taches_recentes as $t): ?>
+                        <div class="list-item">
+                            <div>
+                                <h4><?= e($t['description']) ?></h4>
+                                <small><?= e($t['nom_du_logement']) ?><?= $t['date_limite'] ? ' &middot; ' . date('d/m/Y', strtotime($t['date_limite'])) : '' ?></small>
+                            </div>
+                            <span class="badge <?= $t['statut'] === 'en cours' ? 'badge-info' : 'badge-warning' ?>">
+                                <?= e($t['statut']) ?>
+                            </span>
+                        </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
                 </div>
 
-                <!-- Prochaines réservations -->
+                <!-- Derniers checkups -->
                 <div class="card">
                     <div class="card-header">
-                        <h2>Prochaines réservations</h2>
-                        <a href="reservations.php">Voir tout →</a>
+                        <h2><i class="fas fa-clipboard-check"></i> Derniers checkups</h2>
+                        <a href="checkups.php">Voir tout &rarr;</a>
                     </div>
-
-                    <?php if (empty($prochaines_reservations ?? [])): ?>
-                    <p style="color: #6B7280; text-align: center; padding: 2rem;">Aucune réservation à venir</p>
+                    <?php
+                    $checkups_recents = [];
+                    if (!empty($logement_ids)) {
+                        try {
+                            $stmt = $conn->prepare("SELECT cs.*, l.nom_du_logement FROM checkup_sessions cs JOIN liste_logements l ON cs.logement_id = l.id WHERE cs.logement_id IN ($placeholders) ORDER BY cs.created_at DESC LIMIT 5");
+                            $stmt->execute($logement_ids);
+                            $checkups_recents = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                        } catch (PDOException $e) {}
+                    }
+                    ?>
+                    <?php if (empty($checkups_recents)): ?>
+                        <p class="empty-state">Aucun checkup enregistre</p>
                     <?php else: ?>
-                    <?php foreach ($prochaines_reservations as $resa): ?>
-                    <div class="reservation-item">
-                        <div class="reservation-info">
-                            <h4><?= e($resa['logement_titre']) ?></h4>
-                            <p><?= e($resa['nom_voyageur'] ?? 'Voyageur') ?> • <?= $resa['nb_voyageurs'] ?> pers.</p>
+                        <?php foreach ($checkups_recents as $c): ?>
+                        <div class="list-item">
+                            <div>
+                                <h4><?= e($c['nom_du_logement']) ?></h4>
+                                <small><?= date('d/m/Y H:i', strtotime($c['created_at'])) ?></small>
+                            </div>
+                            <div>
+                                <?php if ($c['nb_problemes'] > 0): ?>
+                                    <span class="badge badge-danger"><?= (int)$c['nb_problemes'] ?> pb</span>
+                                <?php endif; ?>
+                                <span class="badge badge-success"><?= (int)$c['nb_ok'] ?> OK</span>
+                            </div>
                         </div>
-                        <div class="reservation-dates">
-                            <div class="date"><?= date('d/m', strtotime($resa['date_debut'])) ?></div>
-                            <div class="nights"><?= (strtotime($resa['date_fin']) - strtotime($resa['date_debut'])) / 86400 ?> nuits</div>
-                        </div>
-                    </div>
-                    <?php endforeach; ?>
+                        <?php endforeach; ?>
                     <?php endif; ?>
                 </div>
             </div>
 
-            <!-- Mes logements -->
-            <div class="card" style="margin-top: 1.5rem;">
-                <div class="card-header">
-                    <h2>Mes logements</h2>
-                    <a href="logements.php">Gérer →</a>
+            <!-- Logements + Sites vitrine -->
+            <div class="content-grid" style="margin-top: 1.5rem;">
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-home"></i> Mes logements</h2>
+                    </div>
+                    <?php if (empty($logements)): ?>
+                        <p class="empty-state">Aucun logement associe a votre compte</p>
+                    <?php else: ?>
+                        <?php foreach ($logements as $logement): ?>
+                        <div class="list-item">
+                            <div>
+                                <h4><?= e($logement['nom_du_logement']) ?></h4>
+                                <small><?= e($logement['adresse'] ?? '') ?></small>
+                            </div>
+                        </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
                 </div>
 
-                <?php if (empty($logements)): ?>
-                <p style="color: #6B7280; text-align: center; padding: 2rem;">Aucun logement associé à votre compte</p>
-                <?php else: ?>
-                <?php foreach ($logements as $logement): ?>
-                <div class="logement-item">
-                    <img src="../<?= e($logement['image']) ?>" alt="<?= e($logement['titre']) ?>" class="logement-thumb" onerror="this.src='../assets/img/placeholder.jpg'">
-                    <div class="logement-info">
-                        <h4><?= e($logement['titre']) ?></h4>
-                        <p><?= e($logement['localisation']) ?> • <?= e($logement['type_bien']) ?></p>
+                <?php if (!empty($sites_vitrine)): ?>
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-globe"></i> Sites vitrine</h2>
                     </div>
+                    <?php foreach ($sites_vitrine as $site): ?>
+                    <a class="site-link" href="<?= e($site['site_url'] ?: '#') ?>" target="_blank" rel="noopener">
+                        <i class="fas fa-external-link-alt"></i>
+                        <div>
+                            <h4><?= e($site['site_name']) ?></h4>
+                            <small><?= e($site['nom_du_logement']) ?></small>
+                        </div>
+                    </a>
+                    <?php endforeach; ?>
                 </div>
-                <?php endforeach; ?>
                 <?php endif; ?>
             </div>
         </main>
     </div>
-
-    <script>
-        // Graphique des revenus
-        const ctx = document.getElementById('revenusChart').getContext('2d');
-
-        <?php
-        $labels = [];
-        $data = [];
-        $mois_fr = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
-
-        if (!empty($revenus_mensuels)) {
-            foreach ($revenus_mensuels as $rm) {
-                $m = (int)substr($rm['mois'], 5, 2);
-                $labels[] = $mois_fr[$m - 1];
-                $data[] = $rm['revenu'];
-            }
-        } else {
-            $labels = $mois_fr;
-            $data = array_fill(0, 12, 0);
-        }
-        ?>
-
-        new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: <?= json_encode($labels) ?>,
-                datasets: [{
-                    label: 'Revenus (€)',
-                    data: <?= json_encode($data) ?>,
-                    backgroundColor: 'rgba(59, 130, 246, 0.8)',
-                    borderRadius: 6
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            callback: function(value) {
-                                return value + ' €';
-                            }
-                        }
-                    }
-                }
-            }
-        });
-    </script>
 </body>
 </html>

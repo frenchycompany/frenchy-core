@@ -4,16 +4,22 @@ import time
 import logging
 import configparser
 
+# Répertoire de base du projet (résolu dynamiquement)
+import os
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+LOG_DIR = os.path.join(BASE_DIR, "logs")
+os.makedirs(LOG_DIR, exist_ok=True)
+
 # Configuration des logs
 logging.basicConfig(
-    filename="/home/raphael/sms_project/logs/config_modem.log",
+    filename=os.path.join(LOG_DIR, "config_modem.log"),
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
 # Charger la configuration
 config = configparser.ConfigParser()
-config.read("/home/raphael/sms_project/config/config.ini")
+config.read(os.path.join(BASE_DIR, "config", "config.ini"))
 
 BAUDRATE = int(config["MODEMS"]["baudrate"])
 # Récupérer les ports définis pour les modems

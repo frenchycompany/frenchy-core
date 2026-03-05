@@ -18,7 +18,6 @@ try {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Description des Logements</title>
     <link rel="stylesheet" href="../css/style.css">
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
 </head>
 <body>
 <div class="container mt-4">

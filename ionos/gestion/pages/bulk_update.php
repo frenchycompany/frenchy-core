@@ -44,7 +44,7 @@ if (!is_array($ids) || empty($ids)) {
 }
 
 // Whitelist des statuts autorisés
-$allowedStatuses = ['À Faire', 'À Vérifier', 'Fait', 'Vérifier'];
+$allowedStatuses = ['À Faire', 'À Vérifier', 'Fait', 'Vérifier', 'Annulé'];
 if (!in_array($newStatus, $allowedStatuses, true)) {
     http_response_code(400);
     echo json_encode([

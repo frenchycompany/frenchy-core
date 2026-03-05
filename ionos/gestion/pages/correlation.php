@@ -10,18 +10,9 @@
 include '../config.php'; // fournit $conn (PDO) sur dbs13515816
 
 // 2) Connexion base distante (Raspberry Pi)
-$remoteHost = '109.219.194.30';
-$remotePort = 3306;
-$remoteDb   = 'sms_db';
-$remoteUser = 'remote';
-$remotePass = 'remoteionos25';
+require_once __DIR__ . '/../includes/rpi_db.php';
 try {
-    $pdoRemote = new PDO(
-        "mysql:host={$remoteHost};port={$remotePort};dbname={$remoteDb};charset=utf8mb4",
-        $remoteUser,
-        $remotePass,
-        [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
-    );
+    $pdoRemote = getRpiPdo();
 } catch (PDOException $e) {
     die("Erreur connexion distante : " . $e->getMessage());
 }

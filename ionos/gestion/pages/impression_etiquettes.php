@@ -1,6 +1,6 @@
 <?php
-require_once '../db/connection.php';
-include 'inventaire_menu.php';
+include '../config.php';
+include '../pages/menu.php';
 $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
 // Sélection du logement

@@ -71,14 +71,15 @@
         });
     }
 
-    /* ── Save Settings (identity + integrations) ── */
+    /* ── Save Settings (tous les paramètres dans un seul formulaire) ── */
     var formSettings = document.getElementById('form-settings');
     if (formSettings) {
         formSettings.addEventListener('submit', function (e) {
             e.preventDefault();
             var data = {};
-            formSettings.querySelectorAll('input[name]').forEach(function (input) {
-                data[input.name] = input.value;
+            // Collecter inputs (text, color) et textareas avec un name
+            formSettings.querySelectorAll('input[name], textarea[name]').forEach(function (el) {
+                if (el.name) data[el.name] = el.value;
             });
 
             var fd = new FormData();
@@ -95,46 +96,17 @@
                 })
                 .catch(function () { toast('Erreur réseau', 'error'); });
         });
-    }
-
-    /* ── Save Colors + Typography ── */
-    var formColors = document.getElementById('form-colors');
-    if (formColors) {
-        formColors.addEventListener('submit', function (e) {
-            e.preventDefault();
-            var data = {};
-            formColors.querySelectorAll('input[name]').forEach(function (input) {
-                if (input.type === 'color' || input.type === 'text') {
-                    // Only get named inputs (not .adm-color-hex which has no name)
-                    if (input.name) data[input.name] = input.value;
-                }
-            });
-
-            var fd = new FormData();
-            fd.append('ajax', '1');
-            fd.append('action', 'save_settings');
-            fd.append('data', JSON.stringify(data));
-            csrfAppend(fd);
-
-            fetch('admin.php', { method: 'POST', body: fd })
-                .then(function (r) { return r.json(); })
-                .then(function (r) {
-                    if (r.success) toast('Couleurs & typographie enregistrées');
-                    else toast(r.error || 'Erreur', 'error');
-                })
-                .catch(function () { toast('Erreur réseau', 'error'); });
-        });
 
         /* Sync color picker ↔ hex input */
-        formColors.querySelectorAll('.adm-color-picker').forEach(function (picker) {
+        formSettings.querySelectorAll('.adm-color-picker').forEach(function (picker) {
             picker.addEventListener('input', function () {
-                var hex = formColors.querySelector('.adm-color-hex[data-for="' + picker.id + '"]');
+                var hex = formSettings.querySelector('.adm-color-hex[data-for="' + picker.id + '"]');
                 if (hex) hex.value = picker.value;
                 updatePreview();
             });
         });
 
-        formColors.querySelectorAll('.adm-color-hex').forEach(function (hex) {
+        formSettings.querySelectorAll('.adm-color-hex').forEach(function (hex) {
             hex.addEventListener('input', function () {
                 var picker = document.getElementById(hex.dataset.for);
                 if (picker && /^#[0-9a-fA-F]{6}$/.test(hex.value)) {
@@ -152,10 +124,8 @@
             };
 
             var green    = get('color_green');
-            var greenDk  = get('color_green_dk');
             var beige    = get('color_beige');
             var offwhite = get('color_offwhite');
-            var brown    = get('color_brown');
             var dark     = get('color_dark');
 
             var bar     = document.getElementById('prev-bar');

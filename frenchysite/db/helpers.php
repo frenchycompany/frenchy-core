@@ -105,11 +105,13 @@ function vf_build_site_config($settings) {
         'name'       => vf_get($settings, 'site_name',     $p['name']          ?? 'Mon Logement'),
         'tagline'    => vf_get($settings, 'site_tagline',  $p['tagline']       ?? 'Bienvenue'),
         'location'   => vf_get($settings, 'site_location', $p['location']      ?? ''),
-        'phone'      => vf_get($settings, 'phone',         $p['phone']         ?? ''),
-        'phone_raw'  => vf_get($settings, 'phone_raw',     $p['phone_raw']     ?? ''),
-        'email'      => vf_get($settings, 'email',         $p['email']         ?? ''),
+        'phone'      => vf_get($settings, 'phone',         $p['phone']         ?? '+33 6 47 55 46 78'),
+        'phone_raw'  => vf_get($settings, 'phone_raw',     $p['phone_raw']     ?? '+33647554678'),
+        'email'      => vf_get($settings, 'email',         $p['email']         ?? 'contact@frenchyconciergerie.fr'),
         'address'    => vf_get($settings, 'address',       $p['address']       ?? ''),
         'airbnb_id'  => vf_get($settings, 'airbnb_id',    $p['airbnb_id']     ?? ''),
+        'airbnb_url' => vf_get($settings, 'airbnb_url',   $p['airbnb_url']    ?? ''),
+        'ics_url'    => vf_get($settings, 'ics_url',      $p['ics_url']       ?? ''),
         'matterport' => vf_get($settings, 'matterport_id',$p['matterport_id'] ?? ''),
         'monogram'   => $p['monogram'] ?? 'FC',
         'year'       => date('Y'),
@@ -276,6 +278,8 @@ function vf_seed_from_config($conn) {
 
     // Integrations
     if (!empty($p['airbnb_id']))     $stmt->execute([$p['airbnb_id'], 'airbnb_id']);
+    if (!empty($p['airbnb_url']))    $stmt->execute([$p['airbnb_url'], 'airbnb_url']);
+    if (!empty($p['ics_url']))       $stmt->execute([$p['ics_url'], 'ics_url']);
     if (!empty($p['matterport_id'])) $stmt->execute([$p['matterport_id'], 'matterport_id']);
 
     // Colors
