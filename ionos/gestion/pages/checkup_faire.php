@@ -88,6 +88,23 @@ if (!$session) {
     exit;
 }
 
+// Traitement AJAX : changer l'intervenant du checkup
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_change_intervenant'])) {
+    header('Content-Type: application/json');
+    $newIntervenantId = intval($_POST['intervenant_id'] ?? 0);
+    $stmt = $conn->prepare("UPDATE checkup_sessions SET intervenant_id = ? WHERE id = ?");
+    $stmt->execute([$newIntervenantId ?: null, $session_id]);
+    // Recuperer le nom pour confirmation
+    $nom = 'Non attribue';
+    if ($newIntervenantId) {
+        $nStmt = $conn->prepare("SELECT nom FROM intervenant WHERE id = ?");
+        $nStmt->execute([$newIntervenantId]);
+        $nom = $nStmt->fetchColumn() ?: 'Inconnu';
+    }
+    echo json_encode(['success' => true, 'nom' => $nom]);
+    exit;
+}
+
 // Traitement AJAX : mise a jour d'un item
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
     header('Content-Type: application/json');
@@ -227,6 +244,18 @@ $allItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
 $categories = [];
 foreach ($allItems as $item) {
     $categories[$item['categorie']][] = $item;
+}
+
+// Charger les intervenants pour le selecteur
+$intervenants = $conn->query("SELECT id, nom FROM intervenant WHERE actif = 1 ORDER BY nom")->fetchAll(PDO::FETCH_ASSOC);
+$currentIntervenantNom = 'Non attribue';
+if ($session['intervenant_id']) {
+    foreach ($intervenants as $int) {
+        if ($int['id'] == $session['intervenant_id']) {
+            $currentIntervenantNom = $int['nom'];
+            break;
+        }
+    }
 }
 
 // Stats en temps reel
@@ -489,6 +518,22 @@ $progress = $total > 0 ? round(($done / $total) * 100) : 0;
             <div class="progress-bar" id="progressBar" style="width: <?= $progress ?>%; background: <?= $progress === 100 ? '#43a047' : '#1976d2' ?>"></div>
         </div>
         <div class="progress-text" id="progressText"><?= $done ?> / <?= $total ?> verifies (<?= $progress ?>%)</div>
+        <!-- Intervenant -->
+        <div style="display:flex; align-items:center; gap:8px; margin-top:6px;">
+            <i class="fas fa-user" style="color:#666;font-size:0.85em;"></i>
+            <span id="intervenantLabel" style="font-size:0.88em; color:#555; font-weight:600;"><?= htmlspecialchars($currentIntervenantNom) ?></span>
+            <button type="button" onclick="toggleIntervenantSelect()" style="background:none;border:1px solid #ccc;border-radius:6px;padding:2px 8px;font-size:0.8em;color:#1976d2;cursor:pointer;">
+                <i class="fas fa-pen"></i> Changer
+            </button>
+        </div>
+        <div id="intervenantSelect" style="display:none; margin-top:6px;">
+            <select id="intervenantDropdown" onchange="changeIntervenant(this.value)" style="width:100%;padding:8px;border:1px solid #1976d2;border-radius:8px;font-size:0.95em;">
+                <option value="0">-- Non attribue --</option>
+                <?php foreach ($intervenants as $int): ?>
+                    <option value="<?= $int['id'] ?>" <?= $int['id'] == $session['intervenant_id'] ? 'selected' : '' ?>><?= htmlspecialchars($int['nom']) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
     </div>
 
     <!-- Raccourcis rapides -->
@@ -662,6 +707,25 @@ function updateProgress() {
     document.getElementById('progressBar').style.width = pct + '%';
     document.getElementById('progressBar').style.background = pct === 100 ? '#43a047' : '#1976d2';
     document.getElementById('progressText').textContent = doneItems + ' / ' + totalItems + ' verifies (' + pct + '%)';
+}
+
+function toggleIntervenantSelect() {
+    var sel = document.getElementById('intervenantSelect');
+    sel.style.display = sel.style.display === 'none' ? 'block' : 'none';
+}
+
+function changeIntervenant(id) {
+    var fd = new FormData();
+    fd.append('ajax_change_intervenant', '1');
+    fd.append('intervenant_id', id);
+    fetch('checkup_faire.php?session_id=' + sessionId, { method: 'POST', body: fd })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.success) {
+                document.getElementById('intervenantLabel').textContent = data.nom;
+                document.getElementById('intervenantSelect').style.display = 'none';
+            }
+        });
 }
 
 function setStatus(itemId, statut) {

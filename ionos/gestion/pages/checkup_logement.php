@@ -111,6 +111,23 @@ if (isset($_GET['ajax_preview']) && isset($_GET['logement_id'])) {
     exit;
 }
 
+// AJAX : changer l'intervenant d'un checkup
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_change_intervenant'])) {
+    header('Content-Type: application/json');
+    $ckId = intval($_POST['session_id'] ?? 0);
+    $newId = intval($_POST['intervenant_id'] ?? 0);
+    $stmt = $conn->prepare("UPDATE checkup_sessions SET intervenant_id = ? WHERE id = ?");
+    $stmt->execute([$newId ?: null, $ckId]);
+    $nom = 'Non attribue';
+    if ($newId) {
+        $nStmt = $conn->prepare("SELECT nom FROM intervenant WHERE id = ?");
+        $nStmt->execute([$newId]);
+        $nom = $nStmt->fetchColumn() ?: 'Inconnu';
+    }
+    echo json_encode(['success' => true, 'nom' => $nom]);
+    exit;
+}
+
 // Charger la fonction createCheckupSession() depuis le fichier partage
 require_once __DIR__ . '/../includes/checkup_create.php';
 
@@ -162,6 +179,9 @@ try {
 } catch (PDOException $e) {
     $recents = [];
 }
+
+// Charger les intervenants pour le selecteur de reassignation
+$intervenants = $conn->query("SELECT id, nom FROM intervenant WHERE actif = 1 ORDER BY nom")->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -298,27 +318,55 @@ try {
     <?php if (!empty($recents)): ?>
     <div class="history-title"><i class="fas fa-history"></i> Checkups recents</div>
     <?php foreach ($recents as $r): ?>
-        <a class="history-card" href="<?= $r['statut'] === 'en_cours' ? 'checkup_faire.php?session_id=' . $r['id'] : 'checkup_rapport.php?session_id=' . $r['id'] ?>">
-            <div class="history-info">
-                <h4><?= htmlspecialchars($r['nom_du_logement']) ?></h4>
-                <small><?= date('d/m/Y H:i', strtotime($r['created_at'])) ?> — <?= htmlspecialchars($r['nom_intervenant']) ?></small>
+        <div class="history-card" style="display:block; cursor:default;">
+            <a href="<?= $r['statut'] === 'en_cours' ? 'checkup_faire.php?session_id=' . $r['id'] : 'checkup_rapport.php?session_id=' . $r['id'] ?>" style="display:flex;justify-content:space-between;align-items:center;text-decoration:none;color:inherit;">
+                <div class="history-info">
+                    <h4><?= htmlspecialchars($r['nom_du_logement']) ?></h4>
+                    <small><?= date('d/m/Y H:i', strtotime($r['created_at'])) ?> — <span id="intName-<?= $r['id'] ?>"><?= htmlspecialchars($r['nom_intervenant']) ?></span></small>
+                </div>
+                <div class="history-stats">
+                    <?php if ($r['statut'] === 'en_cours'): ?>
+                        <span class="stat-badge stat-encours">En cours</span>
+                    <?php else: ?>
+                        <?php if ($r['nb_ok'] > 0): ?><span class="stat-badge stat-ok"><?= $r['nb_ok'] ?> OK</span><?php endif; ?>
+                        <?php if ($r['nb_problemes'] > 0): ?><span class="stat-badge stat-problem"><?= $r['nb_problemes'] ?> pb</span><?php endif; ?>
+                        <?php if ($r['nb_absents'] > 0): ?><span class="stat-badge stat-absent"><?= $r['nb_absents'] ?> abs</span><?php endif; ?>
+                        <?php if ($r['nb_taches_faites'] > 0): ?><span class="stat-badge stat-taches"><?= $r['nb_taches_faites'] ?> taches</span><?php endif; ?>
+                    <?php endif; ?>
+                </div>
+            </a>
+            <?php if ($r['statut'] === 'en_cours'): ?>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:8px;padding-top:8px;border-top:1px solid #eee;">
+                <i class="fas fa-user-edit" style="color:#666;font-size:0.85em;"></i>
+                <select onchange="changeIntervenantList(<?= $r['id'] ?>, this.value)" style="flex:1;padding:6px 8px;border:1px solid #ddd;border-radius:8px;font-size:0.88em;">
+                    <option value="0" <?= empty($r['intervenant_id']) ? 'selected' : '' ?>>-- Non attribue --</option>
+                    <?php foreach ($intervenants as $int): ?>
+                        <option value="<?= $int['id'] ?>" <?= $int['id'] == $r['intervenant_id'] ? 'selected' : '' ?>><?= htmlspecialchars($int['nom']) ?></option>
+                    <?php endforeach; ?>
+                </select>
             </div>
-            <div class="history-stats">
-                <?php if ($r['statut'] === 'en_cours'): ?>
-                    <span class="stat-badge stat-encours">En cours</span>
-                <?php else: ?>
-                    <?php if ($r['nb_ok'] > 0): ?><span class="stat-badge stat-ok"><?= $r['nb_ok'] ?> OK</span><?php endif; ?>
-                    <?php if ($r['nb_problemes'] > 0): ?><span class="stat-badge stat-problem"><?= $r['nb_problemes'] ?> pb</span><?php endif; ?>
-                    <?php if ($r['nb_absents'] > 0): ?><span class="stat-badge stat-absent"><?= $r['nb_absents'] ?> abs</span><?php endif; ?>
-                    <?php if ($r['nb_taches_faites'] > 0): ?><span class="stat-badge stat-taches"><?= $r['nb_taches_faites'] ?> taches</span><?php endif; ?>
-                <?php endif; ?>
-            </div>
-        </a>
+            <?php endif; ?>
+        </div>
     <?php endforeach; ?>
     <?php endif; ?>
 </div>
 
 <script>
+function changeIntervenantList(sessionId, intervenantId) {
+    var fd = new FormData();
+    fd.append('ajax_change_intervenant', '1');
+    fd.append('session_id', sessionId);
+    fd.append('intervenant_id', intervenantId);
+    fetch('checkup_logement.php', { method: 'POST', body: fd })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.success) {
+                var el = document.getElementById('intName-' + sessionId);
+                if (el) el.textContent = data.nom;
+            }
+        });
+}
+
 // Auto-select du logement si on vient d'un QR code
 document.addEventListener('DOMContentLoaded', function() {
     var params = new URLSearchParams(window.location.search);
