@@ -1089,7 +1089,7 @@ $(document).on('click', '#sync_by_date_btn', function(e){
   const d = $('#sync_target_date').val();
   if(!d){ showToast("Choisis une date.", 'error'); return; }
 
-  $.getJSON('sync_reservations_by_date.php', { date: d })
+  $.getJSON('sync_reservations_by_date.php', { date: d, debug: '1' })
     .done(function(resp){
       if(resp.status === 'success'){
         showToast(`Synchro ${resp.day} OK : ${resp.inserted} créées, ${resp.skipped} ignorées.`);

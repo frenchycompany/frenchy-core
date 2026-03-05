@@ -276,11 +276,13 @@ try {
         if ($findBySourceCheckout) {
             $findBySourceCheckout->execute([$resaId]);
             $existing = $findBySourceCheckout->fetch(PDO::FETCH_ASSOC) ?: null;
+            $findBySourceCheckout->closeCursor();
         }
         if (!$existing) {
             $like = "Auto: ménage de sortie (resa #{$resaId})%";
             $findByHeuristic->execute([$logId, $depart, $like]);
             $existing = $findByHeuristic->fetch(PDO::FETCH_ASSOC) ?: null;
+            $findByHeuristic->closeCursor();
         }
 
         $hadBefore = (bool)$existing;
@@ -328,7 +330,9 @@ try {
 
         // si une intervention existe déjà ce jour → ne rien créer
         $findAnyOnDate->execute([$logId, $target]);
-        if ($findAnyOnDate->fetch()) {
+        $alreadyExists = $findAnyOnDate->fetch();
+        $findAnyOnDate->closeCursor();
+        if ($alreadyExists) {
             $skipped++;
             $report['arrivals'][] = [
                 'reservation_id'  => $resaId,
@@ -345,11 +349,13 @@ try {
         if ($findBySourceArrival) {
             $findBySourceArrival->execute([$resaId]);
             $existing = $findBySourceArrival->fetch(PDO::FETCH_ASSOC) ?: null;
+            $findBySourceArrival->closeCursor();
         }
         if (!$existing) {
             $like = "Auto: ménage avant arrivée (resa #{$resaId})%";
             $findByHeuristic->execute([$logId, $target, $like]);
             $existing = $findByHeuristic->fetch(PDO::FETCH_ASSOC) ?: null;
+            $findByHeuristic->closeCursor();
         }
 
         $hadBefore = (bool)$existing;
