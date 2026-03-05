@@ -3,20 +3,23 @@ include '../config.php'; // Connexion à la base de données
 include '../pages/menu.php'; // Inclusion du menu
 
 // Récupération de la liste des intervenants pour le <select>
-$intervStmt = $conn->prepare("SELECT id, nom FROM intervenant ORDER BY nom");
+// Auto-migration : colonne actif pour intervenant
+try { $conn->exec("ALTER TABLE intervenant ADD COLUMN actif TINYINT(1) NOT NULL DEFAULT 1"); } catch (PDOException $e) {}
+
+$intervStmt = $conn->prepare("SELECT id, nom FROM intervenant WHERE actif = 1 ORDER BY nom");
 $intervStmt->execute();
 $intervenantsList = $intervStmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Récupération des paramètres GET
-$date = filter_input(INPUT_GET, 'date', FILTER_SANITIZE_STRING) ?? date('Y-m-d');
+$date = filter_input(INPUT_GET, 'date') ?? date('Y-m-d');
+$date = trim($date);
 $selectedIntervenant = filter_input(INPUT_GET, 'intervenant', FILTER_VALIDATE_INT);
 if ($selectedIntervenant === false || $selectedIntervenant === null) {
     $selectedIntervenant = 0; // 0 = Tout le monde
 }
 
-// Détermination du domaine pour générer les liens
-$scheme = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https' : 'http';
-$domain = $scheme . '://' . $_SERVER['HTTP_HOST'];
+// Domaine pour les liens WhatsApp (toujours le vrai domaine, jamais une IP)
+$domain = 'https://gestion.frenchyconciergerie.fr';
 
 try {
     // Construction dynamique de la requête pour filtrer par intervenant si besoin
@@ -52,13 +55,17 @@ try {
 
     if ($selectedIntervenant > 0) {
         // Filtrer si l'intervenant est dans l'une des colonnes de Planning
+        // Note : chaque occurrence doit avoir un nom de paramètre unique pour PDO
         $sql .= " AND (
-            p.conducteur = :interv
-            OR p.femme_de_menage_1 = :interv
-            OR p.femme_de_menage_2 = :interv
-            OR p.laverie = :interv
+            p.conducteur = :interv1
+            OR p.femme_de_menage_1 = :interv2
+            OR p.femme_de_menage_2 = :interv3
+            OR p.laverie = :interv4
         )";
-        $params[':interv'] = $selectedIntervenant;
+        $params[':interv1'] = $selectedIntervenant;
+        $params[':interv2'] = $selectedIntervenant;
+        $params[':interv3'] = $selectedIntervenant;
+        $params[':interv4'] = $selectedIntervenant;
     }
 
     $stmt = $conn->prepare($sql);
@@ -76,14 +83,14 @@ try {
         LIMIT 1
     ");
 
-    // Génération du texte formaté pour WhatsApp
-    $texte_combined = "📅 *Planning des interventions - " . htmlspecialchars(date('d/m/Y', strtotime($date))) . "*\n\n";
+    // Génération du texte formaté pour WhatsApp (texte brut, pas de htmlspecialchars)
+    $texte_combined = "📅 *Planning des interventions - " . date('d/m/Y', strtotime($date)) . "*\n\n";
 
     foreach ($interventions as $intervention) {
-        $texte_combined .= "🏠 *Logement* : " . htmlspecialchars($intervention['nom_du_logement']) . "\n";
-        $texte_combined .= "👥 *Personnes* : " . htmlspecialchars($intervention['nombre_de_personnes']) . "\n";
-        $texte_combined .= "📍 *Adresse* : " . htmlspecialchars($intervention['adresse']) . "\n";
-        $texte_combined .= "🔑 *Code* : " . htmlspecialchars($intervention['code']) . "\n";
+        $texte_combined .= "🏠 *Logement* : " . $intervention['nom_du_logement'] . "\n";
+        $texte_combined .= "👥 *Personnes* : " . $intervention['nombre_de_personnes'] . "\n";
+        $texte_combined .= "📍 *Adresse* : " . $intervention['adresse'] . "\n";
+        $texte_combined .= "🔑 *Code* : " . $intervention['code'] . "\n";
 
         // Particularités
         $extras = [];
@@ -104,7 +111,7 @@ try {
         }
 
         if (!empty($intervention['note'])) {
-            $texte_combined .= "📝 *Note* : " . htmlspecialchars($intervention['note']) . "\n";
+            $texte_combined .= "📝 *Note* : " . $intervention['note'] . "\n";
         }
 
         // (La section Intervenants a été retirée)
@@ -113,8 +120,8 @@ try {
         $tokenStmt->execute([$intervention['intervention_id']]);
         $tokRow = $tokenStmt->fetch(PDO::FETCH_ASSOC);
         if ($tokRow) {
-            $validationLink = $domain . '/pages/validate?token=' . $tokRow['token'];
-            $texte_combined .= "🔗 *Valider* : " . $validationLink . "\n";
+            $validationLink = $domain . '/pages/validate.php?token=' . $tokRow['token'];
+            $texte_combined .= "🔗 *Valider* :\n" . $validationLink . "\n";
         } else {
             $texte_combined .= "🔗 *Valider* : (lien non généré)\n";
         }
@@ -143,7 +150,6 @@ try {
 
   <!-- Bootstrap 5 -->
   <link
-    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
     rel="stylesheet"
     integrity="sha384-…"
     crossorigin="anonymous"
@@ -260,7 +266,6 @@ try {
     </div>
 
  <script
-    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
     integrity="sha384-…"
     crossorigin="anonymous"
   ></script>

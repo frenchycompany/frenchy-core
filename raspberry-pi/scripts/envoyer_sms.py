@@ -19,16 +19,22 @@ def signal_handler(signum, frame):
 signal.signal(signal.SIGINT, signal_handler)
 signal.signal(signal.SIGTERM, signal_handler)
 
+# Répertoire de base du projet (résolu dynamiquement)
+import os
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+LOG_DIR = os.path.join(BASE_DIR, "logs")
+os.makedirs(LOG_DIR, exist_ok=True)
+
 # Configuration des logs
 logging.basicConfig(
-    filename="/home/raphael/sms_project/logs/envoyer_sms.log",
+    filename=os.path.join(LOG_DIR, "envoyer_sms.log"),
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
 # Charger la configuration
 config = configparser.ConfigParser()
-config.read("/home/raphael/sms_project/config/config.ini")
+config.read(os.path.join(BASE_DIR, "config", "config.ini"))
 
 DB_HOST = config["DATABASE"]["host"]
 DB_USER = config["DATABASE"]["user"]

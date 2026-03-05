@@ -30,6 +30,8 @@ return [
 
     // ══════════ Intégrations ══════════
     'airbnb_id'     => '1548326807445898842',
+    'airbnb_url'    => 'https://www.airbnb.fr/rooms/1548326807445898842',
+    'ics_url'       => '',
     'matterport_id' => 'f7mKg4iHxJ5',
 
     // ══════════ Couleurs par défaut ══════════

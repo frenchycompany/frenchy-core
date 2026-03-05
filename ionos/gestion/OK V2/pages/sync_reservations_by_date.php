@@ -228,14 +228,15 @@ try {
 
         if (!$hadBefore) {
             if (!$DRY_RUN) {
-                $insertPlanningCheckout->execute([
+                $params = [
                     ':logement_id'=>$logId,
                     ':date'=>$depart,
                     ':nb_pers'=>$nbPers,
                     ':nb_jours'=>$nbJours,
                     ':note'=>$note,
-                    ...($pl_has_src_id ? [':resa_id'=>$resaId] : []),
-                ]);
+                ];
+                if ($pl_has_src_id) $params[':resa_id'] = $resaId;
+                $insertPlanningCheckout->execute($params);
                 $interventionId = (int)$conn->lastInsertId();
                 ensure_token_if_possible($conn, $interventionId, $tokens_table);
             }
@@ -295,14 +296,15 @@ try {
 
         if (!$hadBefore) {
             if (!$DRY_RUN) {
-                $insertPlanningArrival->execute([
+                $params = [
                     ':logement_id'=>$logId,
                     ':date'=>$target,
                     ':nb_pers'=>$nbPers,
                     ':nb_jours'=>$nbJours,
                     ':note'=>$note,
-                    ...($pl_has_src_id ? [':resa_id'=>$resaId] : []),
-                ]);
+                ];
+                if ($pl_has_src_id) $params[':resa_id'] = $resaId;
+                $insertPlanningArrival->execute($params);
                 $interventionId = (int)$conn->lastInsertId();
                 ensure_token_if_possible($conn, $interventionId, $tokens_table);
             }

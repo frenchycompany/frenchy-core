@@ -19,7 +19,6 @@ try {
     echo '<meta name="viewport" content="width=device-width, initial-scale=1.0">';
     echo '<title>Créer un Contrat</title>';
     echo '<link rel="stylesheet" href="../css/style.css">';
-    echo '<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">';
     echo '<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>'; // Inclure jQuery pour le chargement dynamique
     echo '</head>';
     echo '<body>';

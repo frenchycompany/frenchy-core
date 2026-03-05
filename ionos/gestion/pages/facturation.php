@@ -76,7 +76,6 @@ if ($intervenantId && $mois && $annee) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Édition de Facture</title>
     <link rel="stylesheet" href="../css/style.css">
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <style>
         @media print {
             body {
@@ -195,7 +194,6 @@ if ($intervenantId && $mois && $annee) {
             <head>
                 <title>Facture</title>
                 <link rel="stylesheet" href="../css/style.css">
-                <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
             </head>
             <body>${facture.outerHTML}</body>
             </html>

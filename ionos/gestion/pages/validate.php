@@ -17,18 +17,9 @@ session_start();
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 0) Connexion à la base SMS distante (réservations & sms_outbox)
-$hostSms   = '109.219.194.30';
-$portSms   = 3306;
-$dbSms     = 'sms_db';
-$userSms   = 'remote';
-$passSms   = 'remoteionos25';
+require_once __DIR__ . '/../includes/rpi_db.php';
 try {
-    $pdoSms = new PDO(
-        "mysql:host={$hostSms};port={$portSms};dbname={$dbSms};charset=utf8mb4",
-        $userSms,
-        $passSms,
-        [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
-    );
+    $pdoSms = getRpiPdo();
 } catch (PDOException $e) {
     http_response_code(500);
     die("Erreur connexion SMS-DB : " . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8'));
@@ -167,9 +158,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (empty($errors)) {
         $uploadDir = __DIR__ . '/../uploads/';
-        if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0775, true);
+        }
+        if (!is_writable($uploadDir)) {
+            @chmod($uploadDir, 0775);
+        }
         $filename = $rec['intervention_id'] . '_' . time() . '.' . $ext;
-        if (move_uploaded_file($_FILES['video']['tmp_name'], $uploadDir . $filename)) {
+        if (is_writable($uploadDir) && move_uploaded_file($_FILES['video']['tmp_name'], $uploadDir . $filename)) {
 
             // Marque le token utilisé et met à jour le planning
             $conn->prepare("UPDATE intervention_tokens SET used=1 WHERE id=?")
@@ -191,6 +187,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ]);
             }
 
+            // Si requête AJAX (XHR), renvoyer du JSON au lieu d'un redirect
+            // (XHR suit les 303 automatiquement, ce qui casse le flux PRG)
+            $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH'])
+                   && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
+
+            if ($isAjax) {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => true]);
+                exit;
+            }
+
             // PRG : redirection pour casser tout cache et empêcher le repost
             // On passe par 303 See Other vers la même page avec done=1
             header('Location: ' . sprintf('%s?token=%s&done=1&cb=%d',
@@ -201,7 +208,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
 
         } else {
-            $errors[] = "Impossible de sauvegarder la vidéo. Vérifiez les permissions.";
+            $errors[] = "Impossible de sauvegarder la vidéo. Le dossier uploads/ n'est pas accessible en écriture (permissions). Contactez l'administrateur serveur.";
         }
     }
 }
@@ -332,7 +339,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           var formData = new FormData(form);
           var xhr = new XMLHttpRequest();
           xhr.open('POST', window.location.href, true);
-          xhr.setRequestHeader('Cache-Control', 'no-store'); // hint
+          xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+          xhr.setRequestHeader('Cache-Control', 'no-store');
           xhr.upload.addEventListener('loadstart', function() {
             document.getElementById('uploadProgress').style.display = 'block';
           });
@@ -343,10 +351,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
           });
           xhr.onload = function() {
-            if (xhr.status === 200 || xhr.status === 303) {
-              // Si le serveur a fait un PRG (303), le navigateur suit la redirection
-              // Pour XHR, on force un refresh pour afficher l'état final
-              window.location.reload();
+            if (xhr.status === 200) {
+              try {
+                var resp = JSON.parse(xhr.responseText);
+                if (resp.success) {
+                  window.location.href = 'validate.php?token=<?= urlencode($token) ?>&done=1&cb=' + Date.now();
+                  return;
+                }
+              } catch(e) {}
+              // Fallback : si la réponse n'est pas du JSON, c'est la page HTML (erreurs de validation)
+              document.open();
+              document.write(xhr.responseText);
+              document.close();
             } else {
               alert('Erreur lors de l\'upload (' + xhr.status + ')');
             }

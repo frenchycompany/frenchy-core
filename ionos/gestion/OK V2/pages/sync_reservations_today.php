@@ -5,8 +5,7 @@ declare(strict_types=1);
 header('Content-Type: application/json; charset=utf-8');
 date_default_timezone_set('Europe/Paris');
 
-require_once '../config.php'; // $conn = LOCAL (Ionos)
-session_start();
+require_once '../config.php'; // $conn = LOCAL (Ionos) — démarre déjà la session
 
 $DEBUG   = isset($_GET['debug'])   && $_GET['debug'] === '1';
 $DRY_RUN = isset($_GET['dry_run']) && $_GET['dry_run'] === '1';
@@ -224,14 +223,15 @@ try {
 
         if (!$hadBefore) {
             if (!$DRY_RUN) {
-                $insertPlanningCheckout->execute([
+                $params = [
                     ':logement_id'=>$logId,
                     ':date'=>$depart,
                     ':nb_pers'=>$nbPers,
                     ':nb_jours'=>$nbJours,
                     ':note'=>$note,
-                    ...($pl_has_src_id ? [':resa_id'=>$resaId] : []),
-                ]);
+                ];
+                if ($pl_has_src_id) $params[':resa_id'] = $resaId;
+                $insertPlanningCheckout->execute($params);
                 $interventionId = (int)$conn->lastInsertId();
                 ensure_token_if_possible($conn, $interventionId, $tokens_table);
             }
@@ -262,7 +262,9 @@ try {
 
         // 0) si une intervention existe déjà aujourd'hui pour ce logement (créée manuellement ou via départ), on NE crée PAS.
         $findAnyToday->execute([$logId, $today]);
-        if ($findAnyToday->fetch()) {
+        $alreadyExists = $findAnyToday->fetch();
+        $findAnyToday->closeCursor();
+        if ($alreadyExists) {
             $skipped++;
             $report['arrivals'][] = [
                 'reservation_id'  => $resaId,
@@ -280,13 +282,15 @@ try {
         if ($findBySourceArrival) {
             $findBySourceArrival->execute([$resaId]);
             $existing = $findBySourceArrival->fetch(PDO::FETCH_ASSOC) ?: null;
+            $findBySourceArrival->closeCursor();
         }
 
         // 2) fallback heuristique “avant arrivée”
         if (!$existing) {
-            $like = "Auto: ménage avant arrivée (resa #{$resaId})%";
+            $like = “Auto: ménage avant arrivée (resa #{$resaId})%”;
             $findByHeuristic->execute([$logId, $today, $like]);
             $existing = $findByHeuristic->fetch(PDO::FETCH_ASSOC) ?: null;
+            $findByHeuristic->closeCursor();
         }
 
         $hadBefore = (bool)$existing;
@@ -295,14 +299,15 @@ try {
 
         if (!$hadBefore) {
             if (!$DRY_RUN) {
-                $insertPlanningArrival->execute([
-                    ':logement_id'=>$logId,
-                    ':date'=>$today,   // on planifie pour AUJOURD’HUI
-                    ':nb_pers'=>$nbPers,
-                    ':nb_jours'=>$nbJours,
-                    ':note'=>$note,
-                    ...($pl_has_src_id ? [':resa_id'=>$resaId] : []),
-                ]);
+                $params = [
+                    ‘:logement_id’=>$logId,
+                    ‘:date’=>$today,   // on planifie pour AUJOURD’HUI
+                    ‘:nb_pers’=>$nbPers,
+                    ‘:nb_jours’=>$nbJours,
+                    ‘:note’=>$note,
+                ];
+                if ($pl_has_src_id) $params[‘:resa_id’] = $resaId;
+                $insertPlanningArrival->execute($params);
                 $interventionId = (int)$conn->lastInsertId();
                 ensure_token_if_possible($conn, $interventionId, $tokens_table);
             }

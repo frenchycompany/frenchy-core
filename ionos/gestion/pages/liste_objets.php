@@ -1,9 +1,6 @@
 <?php
-require_once '../db/connection.php';
-$conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
-// Inclure le menu général d'inventaire
-include 'inventaire_menu.php';
+include '../config.php';
+include '../pages/menu.php';
 
 // Récupérer la DERNIÈRE session validée par logement
 $sessions = $conn->query("

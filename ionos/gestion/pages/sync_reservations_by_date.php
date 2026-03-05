@@ -5,8 +5,7 @@ declare(strict_types=1);
 header('Content-Type: application/json; charset=utf-8');
 date_default_timezone_set('Europe/Paris');
 
-require_once '../config.php'; // $conn = LOCAL (Ionos)
-session_start();
+require_once '../config.php'; // $conn = LOCAL (Ionos) — démarre déjà la session
 
 $DEBUG   = isset($_GET['debug'])   && $_GET['debug'] === '1';
 $DRY_RUN = isset($_GET['dry_run']) && $_GET['dry_run'] === '1';
@@ -48,19 +47,10 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
     jerr(403, 'Accès refusé (admin requis).');
 }
 
-// Connexion REMOTE (Raspberry), mêmes creds que ton test corrélation
-$remoteHost = '109.219.194.30';
-$remotePort = 3306;
-$remoteDb   = 'sms_db';
-$remoteUser = 'remote';
-$remotePass = 'remoteionos25';
+// Connexion REMOTE (Raspberry) via helper centralisé
+require_once __DIR__ . '/../includes/rpi_db.php';
 try {
-    $pdoRemote = new PDO(
-        "mysql:host={$remoteHost};port={$remotePort};dbname={$remoteDb};charset=utf8mb4",
-        $remoteUser,
-        $remotePass,
-        [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
-    );
+    $pdoRemote = getRpiPdo();
 } catch (Throwable $e) {
     jerr(500, 'Connexion distante impossible.', $DEBUG?['ex'=>$e->getMessage()]:[]);
 }
@@ -90,6 +80,18 @@ $pl_has_src_id    = column_exists($conn,'planning','source_reservation_id');
 $pl_has_src_type  = column_exists($conn,'planning','source_type');
 $tokens_table     = table_exists($conn,'intervention_tokens');
 
+// Vérifier si la base locale a aussi une table reservation (réservations importées via iCal)
+$localHasReservation = table_exists($conn, 'reservation');
+$localNbPersExpr = '0';
+if ($localHasReservation) {
+    $hasNb = column_exists($conn, 'reservation', 'nb_adultes')
+          && column_exists($conn, 'reservation', 'nb_enfants')
+          && column_exists($conn, 'reservation', 'nb_bebes');
+    if ($hasNb) {
+        $localNbPersExpr = '(COALESCE(r.nb_adultes,0) + COALESCE(r.nb_enfants,0) + COALESCE(r.nb_bebes,0))';
+    }
+}
+
 // Lire les DEPARTS = $target
 try {
     $sqlDeps = "
@@ -112,6 +114,35 @@ try {
     jerr(500, 'Erreur SQL lecture départs (REMOTE)', $DEBUG?['ex'=>$e->getMessage()]:[]);
 }
 
+// Fusionner avec les départs de la base LOCALE (réservations importées via iCal)
+if ($localHasReservation) {
+    try {
+        $sqlLocalDeps = "
+            SELECT
+                r.id AS resa_id,
+                r.logement_id AS logement_id,
+                DATE(r.date_arrivee) AS date_arrivee,
+                DATE(r.date_depart)  AS date_depart,
+                {$localNbPersExpr} AS nb_pers,
+                GREATEST(DATEDIFF(r.date_depart, r.date_arrivee), 0) AS nb_jours
+            FROM reservation r
+            WHERE r.statut = 'confirmée'
+              AND DATE(r.date_depart) = :d
+            ORDER BY r.date_depart ASC
+        ";
+        $stLD = $conn->prepare($sqlLocalDeps);
+        $stLD->execute([':d' => $target]);
+        $localDeps = $stLD->fetchAll(PDO::FETCH_ASSOC);
+        $remoteKeys = array_map(fn($d) => $d['logement_id'] . '_' . $d['date_depart'], $deps);
+        foreach ($localDeps as $ld) {
+            if (!in_array($ld['logement_id'] . '_' . $ld['date_depart'], $remoteKeys)) {
+                $ld['_source'] = 'LOCAL';
+                $deps[] = $ld;
+            }
+        }
+    } catch (Throwable $e) { /* table locale incompatible, on ignore */ }
+}
+
 // Lire les ARRIVÉES = $target
 try {
     $sqlArrs = "
@@ -132,6 +163,35 @@ try {
     $arrs = $stArrs->fetchAll(PDO::FETCH_ASSOC);
 } catch (Throwable $e) {
     jerr(500, 'Erreur SQL lecture arrivées (REMOTE)', $DEBUG?['ex'=>$e->getMessage()]:[]);
+}
+
+// Fusionner avec les arrivées de la base LOCALE (réservations importées via iCal)
+if ($localHasReservation) {
+    try {
+        $sqlLocalArrs = "
+            SELECT
+                r.id AS resa_id,
+                r.logement_id AS logement_id,
+                DATE(r.date_arrivee) AS date_arrivee,
+                DATE(r.date_depart)  AS date_depart,
+                {$localNbPersExpr} AS nb_pers,
+                GREATEST(DATEDIFF(r.date_depart, r.date_arrivee), 0) AS nb_jours
+            FROM reservation r
+            WHERE r.statut = 'confirmée'
+              AND DATE(r.date_arrivee) = :d
+            ORDER BY r.date_arrivee ASC
+        ";
+        $stLA = $conn->prepare($sqlLocalArrs);
+        $stLA->execute([':d' => $target]);
+        $localArrs = $stLA->fetchAll(PDO::FETCH_ASSOC);
+        $remoteArrKeys = array_map(fn($a) => $a['logement_id'] . '_' . $a['date_arrivee'], $arrs);
+        foreach ($localArrs as $la) {
+            if (!in_array($la['logement_id'] . '_' . $la['date_arrivee'], $remoteArrKeys)) {
+                $la['_source'] = 'LOCAL';
+                $arrs[] = $la;
+            }
+        }
+    } catch (Throwable $e) { /* table locale incompatible, on ignore */ }
 }
 
 // helper : token si possible
@@ -209,7 +269,8 @@ try {
         $depart  = $r['date_depart']; // = $target
         $nbPers  = max(0, (int)$r['nb_pers']);
         $nbJours = max(0, (int)$r['nb_jours']);
-        $note    = "Auto: ménage de sortie (resa #{$resaId}) [REMOTE]";
+        $srcLabel = $r['_source'] ?? 'REMOTE';
+        $note    = "Auto: ménage de sortie (resa #{$resaId}) [{$srcLabel}]";
 
         $existing = null;
         if ($findBySourceCheckout) {
@@ -228,14 +289,15 @@ try {
 
         if (!$hadBefore) {
             if (!$DRY_RUN) {
-                $insertPlanningCheckout->execute([
+                $params = [
                     ':logement_id'=>$logId,
                     ':date'=>$depart,
                     ':nb_pers'=>$nbPers,
                     ':nb_jours'=>$nbJours,
                     ':note'=>$note,
-                    ...($pl_has_src_id ? [':resa_id'=>$resaId] : []),
-                ]);
+                ];
+                if ($pl_has_src_id) $params[':resa_id'] = $resaId;
+                $insertPlanningCheckout->execute($params);
                 $interventionId = (int)$conn->lastInsertId();
                 ensure_token_if_possible($conn, $interventionId, $tokens_table);
             }
@@ -261,7 +323,8 @@ try {
         $logId   = (int)$r['logement_id'];
         $nbPers  = max(0, (int)$r['nb_pers']);
         $nbJours = max(0, (int)$r['nb_jours']);
-        $note    = "Auto: ménage avant arrivée (resa #{$resaId}) [REMOTE]";
+        $srcLabel = $r['_source'] ?? 'REMOTE';
+        $note    = "Auto: ménage avant arrivée (resa #{$resaId}) [{$srcLabel}]";
 
         // si une intervention existe déjà ce jour → ne rien créer
         $findAnyOnDate->execute([$logId, $target]);
@@ -295,14 +358,15 @@ try {
 
         if (!$hadBefore) {
             if (!$DRY_RUN) {
-                $insertPlanningArrival->execute([
+                $params = [
                     ':logement_id'=>$logId,
                     ':date'=>$target,
                     ':nb_pers'=>$nbPers,
                     ':nb_jours'=>$nbJours,
                     ':note'=>$note,
-                    ...($pl_has_src_id ? [':resa_id'=>$resaId] : []),
-                ]);
+                ];
+                if ($pl_has_src_id) $params[':resa_id'] = $resaId;
+                $insertPlanningArrival->execute($params);
                 $interventionId = (int)$conn->lastInsertId();
                 ensure_token_if_possible($conn, $interventionId, $tokens_table);
             }
@@ -333,7 +397,7 @@ try {
         'details'   => $report,
         'mode'      => ($pl_has_src_id && $pl_has_src_type) ? 'with_source_keys' : 'compat',
         'tokens'    => $tokens_table ? 'used' : 'skipped_no_table',
-        'source'    => 'REMOTE:sms_db.reservation',
+        'source'    => 'REMOTE:sms_db.reservation + LOCAL:frenchyconciergerie.reservation',
         'target'    => 'LOCAL:planning'
     ]);
 } catch (Throwable $e) {
