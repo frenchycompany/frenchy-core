@@ -76,6 +76,34 @@ if (!empty($logements)) {
     } catch (PDOException $e) {}
 }
 
+// Taux d'occupation du mois en cours
+$taux_occupation = 0;
+$jours_occupes = 0;
+$nb_jours_mois = (int)date('t');
+if (!empty($logement_ids)) {
+    try {
+        $mois_debut = date('Y-m-01');
+        $mois_fin = date('Y-m-t');
+        $stmt = $conn->prepare("SELECT r.logement_id, r.date_arrivee, r.date_depart
+            FROM reservation r
+            WHERE r.logement_id IN ($placeholders) AND r.date_arrivee <= ? AND r.date_depart >= ? AND r.statut != 'annulée'");
+        $stmt->execute(array_merge($logement_ids, [$mois_fin, $mois_debut]));
+        $resa_par_logement = [];
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $r) {
+            $resa_par_logement[$r['logement_id']][] = $r;
+        }
+        foreach ($logement_ids as $lid) {
+            foreach (($resa_par_logement[$lid] ?? []) as $r) {
+                $start = max(strtotime($r['date_arrivee']), strtotime($mois_debut));
+                $end = min(strtotime($r['date_depart']), strtotime($mois_fin) + 86400);
+                $jours_occupes += max(0, ($end - $start) / 86400);
+            }
+        }
+        $total_possible = count($logement_ids) * $nb_jours_mois;
+        $taux_occupation = $total_possible > 0 ? round(($jours_occupes / $total_possible) * 100) : 0;
+    } catch (PDOException $e) {}
+}
+
 // Sites vitrine liés aux logements
 $sites_vitrine = [];
 if (!empty($logement_ids)) {
@@ -323,6 +351,14 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                     <div class="stat-content">
                         <h3><?= $stats['inventaires'] ?></h3>
                         <p>Inventaires</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background:rgba(99,102,241,0.1);color:#6366F1;"><i class="fas fa-chart-pie"></i></div>
+                    <div class="stat-content">
+                        <h3><?= $taux_occupation ?>%</h3>
+                        <?php $moisFr = ['','Janvier','Fevrier','Mars','Avril','Mai','Juin','Juillet','Aout','Septembre','Octobre','Novembre','Decembre']; ?>
+                        <p>Occupation <?= $moisFr[(int)date('m')] ?></p>
                     </div>
                 </div>
             </div>

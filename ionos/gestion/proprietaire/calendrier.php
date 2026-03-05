@@ -46,6 +46,32 @@ if (!empty($logement_ids)) {
             $events[$d][] = $row;
         }
     } catch (PDOException $e) {}
+
+    // Réservations
+    try {
+        $stmt = $conn->prepare("SELECT r.date_arrivee, r.date_depart, r.prenom, r.nom, r.plateforme, l.nom_du_logement
+            FROM reservation r JOIN liste_logements l ON r.logement_id = l.id
+            WHERE r.logement_id IN ($placeholders) AND r.date_arrivee <= ? AND r.date_depart >= ? AND r.statut != 'annulée'");
+        $params = array_merge($logement_ids, [$monthEnd, $monthStart]);
+        $stmt->execute($params);
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $start = max((int)date('j', strtotime($row['date_arrivee'])), 1);
+            $end = min((int)date('j', strtotime($row['date_depart'])), $daysInMonth);
+            // Adjust if reservation starts before this month
+            if (strtotime($row['date_arrivee']) < strtotime($monthStart)) $start = 1;
+            if (strtotime($row['date_depart']) > strtotime($monthEnd)) $end = $daysInMonth;
+            for ($d = $start; $d <= $end; $d++) {
+                $events[$d][] = [
+                    'type' => 'reservation',
+                    'nom_du_logement' => $row['nom_du_logement'],
+                    'prenom' => $row['prenom'],
+                    'plateforme' => $row['plateforme'],
+                    'is_checkin' => ($d === (int)date('j', strtotime($row['date_arrivee'])) && strtotime($row['date_arrivee']) >= strtotime($monthStart)),
+                    'is_checkout' => ($d === (int)date('j', strtotime($row['date_depart'])) && strtotime($row['date_depart']) <= strtotime($monthEnd)),
+                ];
+            }
+        }
+    } catch (PDOException $e) {}
 }
 
 $prevMonth = $month - 1; $prevYear = $year;
@@ -71,6 +97,9 @@ if ($nextMonth > 12) { $nextMonth = 1; $nextYear++; }
         .cal-event { font-size: 0.72rem; padding: 2px 5px; border-radius: 4px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .cal-event.tache { background: #FEF3C7; color: #92400E; }
         .cal-event.checkup { background: #D1FAE5; color: #065F46; }
+        .cal-event.reservation { background: #DBEAFE; color: #1E40AF; }
+        .cal-event.reservation.checkin { background: #3B82F6; color: white; }
+        .cal-event.reservation.checkout { background: #93C5FD; color: #1E3A8A; }
         .cal-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
         .cal-nav a { text-decoration: none; color: #3B82F6; font-weight: 600; padding: 8px 16px; border-radius: 8px; transition: background 0.2s; }
         .cal-nav a:hover { background: #EFF6FF; }
@@ -117,13 +146,22 @@ if ($nextMonth > 12) { $nextMonth = 1; $nextYear++; }
                     echo "<td class=\"$isToday\">";
                     echo "<div class=\"day-num\">$day</div>";
                     if (!empty($events[$day])) {
+                        // Deduplicate reservations per logement for this day
+                        $shown_resa = [];
                         foreach ($events[$day] as $evt) {
-                            $cls = $evt['type'];
                             if ($evt['type'] === 'tache') {
                                 echo '<div class="cal-event tache" title="' . e($evt['description']) . '">' . e($evt['nom_du_logement']) . ' - ' . e(mb_substr($evt['description'], 0, 20)) . '</div>';
-                            } else {
+                            } elseif ($evt['type'] === 'checkup') {
                                 $label = $evt['nb_problemes'] > 0 ? $evt['nb_problemes'] . ' pb' : 'OK';
                                 echo '<div class="cal-event checkup" title="Checkup ' . e($evt['nom_du_logement']) . '">Checkup ' . e($evt['nom_du_logement']) . ' (' . $label . ')</div>';
+                            } elseif ($evt['type'] === 'reservation') {
+                                $key = $evt['nom_du_logement'] . '|' . ($evt['prenom'] ?? '');
+                                if (isset($shown_resa[$key])) continue;
+                                $shown_resa[$key] = true;
+                                $subCls = $evt['is_checkin'] ? ' checkin' : ($evt['is_checkout'] ? ' checkout' : '');
+                                $icon = $evt['is_checkin'] ? '&#x2192; ' : ($evt['is_checkout'] ? '&#x2190; ' : '');
+                                $guest = $evt['prenom'] ? e($evt['prenom']) : e($evt['plateforme'] ?? '');
+                                echo '<div class="cal-event reservation' . $subCls . '" title="' . e($evt['nom_du_logement']) . ' - ' . $guest . '">' . $icon . e(mb_substr($evt['nom_du_logement'], 0, 12)) . ' ' . $guest . '</div>';
                             }
                         }
                     }
