@@ -18,8 +18,11 @@ try {
     if (!in_array('airbnb_url', $cols)) {
         $conn->exec("ALTER TABLE liste_logements ADD COLUMN `airbnb_url` VARCHAR(500) DEFAULT NULL AFTER `ics_url_2`");
     }
+    if (!in_array('proprietaire_id', $cols)) {
+        $conn->exec("ALTER TABLE liste_logements ADD COLUMN `proprietaire_id` INT DEFAULT NULL");
+    }
 } catch (PDOException $e) {
-    error_log('Migration logements airbnb_url : ' . $e->getMessage());
+    error_log('Migration logements : ' . $e->getMessage());
 }
 
 // ============================================================
@@ -44,6 +47,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $ics_url = trim($_POST['ics_url'] ?? '');
         $ics_url_2 = trim($_POST['ics_url_2'] ?? '');
         $airbnb_url = trim($_POST['airbnb_url'] ?? '');
+        $proprietaire_id = (int) ($_POST['proprietaire_id'] ?? 0) ?: null;
 
         if (empty($nom)) {
             $feedback = '<div class="alert alert-danger">Le nom du logement est obligatoire.</div>';
@@ -52,12 +56,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt = $conn->prepare("
                     INSERT INTO liste_logements
                     (nom_du_logement, adresse, description, m2, nombre_de_personnes, poid_menage,
-                     prix_vente_menage, valeur_locative, valeur_fonciere, code, ics_url, ics_url_2, airbnb_url, actif)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+                     prix_vente_menage, valeur_locative, valeur_fonciere, code, ics_url, ics_url_2, airbnb_url, proprietaire_id, actif)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
                 ");
                 $stmt->execute([$nom, $adresse ?: null, $description ?: null, $m2, $nombre_de_personnes,
                     $poid_menage, $prix_vente_menage, $valeur_locative, $valeur_fonciere,
-                    $code, $ics_url ?: null, $ics_url_2 ?: null, $airbnb_url ?: null]);
+                    $code, $ics_url ?: null, $ics_url_2 ?: null, $airbnb_url ?: null, $proprietaire_id]);
                 $feedback = '<div class="alert alert-success">Logement ajouté avec succès.</div>';
             } catch (PDOException $e) {
                 $feedback = '<div class="alert alert-danger">Erreur : ' . htmlspecialchars($e->getMessage()) . '</div>';
@@ -81,6 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $ics_url = trim($_POST['ics_url'] ?? '');
         $ics_url_2 = trim($_POST['ics_url_2'] ?? '');
         $airbnb_url = trim($_POST['airbnb_url'] ?? '');
+        $proprietaire_id = (int) ($_POST['proprietaire_id'] ?? 0) ?: null;
 
         if (empty($nom)) {
             $feedback = '<div class="alert alert-danger">Le nom du logement est obligatoire.</div>';
@@ -91,12 +96,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         nom_du_logement = ?, adresse = ?, description = ?,
                         m2 = ?, nombre_de_personnes = ?, poid_menage = ?,
                         prix_vente_menage = ?, valeur_locative = ?, valeur_fonciere = ?,
-                        code = ?, ics_url = ?, ics_url_2 = ?, airbnb_url = ?
+                        code = ?, ics_url = ?, ics_url_2 = ?, airbnb_url = ?, proprietaire_id = ?
                     WHERE id = ?
                 ");
                 $stmt->execute([$nom, $adresse ?: null, $description ?: null, $m2, $nombre_de_personnes,
                     $poid_menage, $prix_vente_menage, $valeur_locative, $valeur_fonciere,
-                    $code, $ics_url ?: null, $ics_url_2 ?: null, $airbnb_url ?: null, $id]);
+                    $code, $ics_url ?: null, $ics_url_2 ?: null, $airbnb_url ?: null, $proprietaire_id, $id]);
                 $feedback = '<div class="alert alert-success">Logement mis à jour.</div>';
             } catch (PDOException $e) {
                 $feedback = '<div class="alert alert-danger">Erreur : ' . htmlspecialchars($e->getMessage()) . '</div>';
@@ -175,6 +180,16 @@ try {
 
 $nb_actifs = count(array_filter($logements, fn($l) => !empty($l['actif'])));
 $nb_inactifs = count($logements) - $nb_actifs;
+
+// Charger les propriétaires
+$proprietaires_list = [];
+try {
+    $proprietaires_list = $conn->query("SELECT id, nom, prenom FROM FC_proprietaires WHERE actif = 1 ORDER BY nom")->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) { /* table n'existe pas encore */ }
+$proprietaires_index = [];
+foreach ($proprietaires_list as $pr) {
+    $proprietaires_index[$pr['id']] = trim($pr['nom'] . ' ' . ($pr['prenom'] ?? ''));
+}
 ?>
 
 <!DOCTYPE html>
@@ -229,6 +244,7 @@ $nb_inactifs = count($logements) - $nb_actifs;
                             <th>Prix ménage</th>
                             <th>iCal</th>
                             <th>Airbnb</th>
+                            <th>Proprio.</th>
                             <th>Résa.</th>
                             <th>Interv.</th>
                             <th>Statut</th>
@@ -271,6 +287,13 @@ $nb_inactifs = count($logements) - $nb_actifs;
                                     <span class="badge bg-secondary badge-ics"><i class="fas fa-times"></i></span>
                                 <?php endif; ?>
                             </td>
+                            <td>
+                                <?php if (!empty($l['proprietaire_id']) && isset($proprietaires_index[$l['proprietaire_id']])): ?>
+                                    <span class="badge bg-success"><?= htmlspecialchars($proprietaires_index[$l['proprietaire_id']]) ?></span>
+                                <?php else: ?>
+                                    <span class="text-muted">—</span>
+                                <?php endif; ?>
+                            </td>
                             <td><span class="badge bg-info"><?= $l['nb_reservations'] ?></span></td>
                             <td><span class="badge bg-primary"><?= $l['nb_interventions'] ?></span></td>
                             <td>
@@ -306,7 +329,7 @@ $nb_inactifs = count($logements) - $nb_actifs;
                         </tr>
                     <?php endforeach; ?>
                     <?php if (empty($logements)): ?>
-                        <tr><td colspan="13" class="text-center text-muted py-4">Aucun logement enregistré.</td></tr>
+                        <tr><td colspan="14" class="text-center text-muted py-4">Aucun logement enregistré.</td></tr>
                     <?php endif; ?>
                     </tbody>
                 </table>
@@ -398,6 +421,16 @@ $nb_inactifs = count($logements) - $nb_actifs;
                             <div class="mb-3">
                                 <label class="form-label">URL annonce Airbnb</label>
                                 <input type="url" class="form-control" name="airbnb_url" placeholder="https://www.airbnb.fr/rooms/...">
+                            </div>
+
+                            <h6 class="text-muted mb-3 mt-3">Propriétaire</h6>
+                            <div class="mb-3">
+                                <select class="form-select" name="proprietaire_id">
+                                    <option value="0">— Aucun —</option>
+                                    <?php foreach ($proprietaires_list as $pr): ?>
+                                        <option value="<?= $pr['id'] ?>"><?= htmlspecialchars(trim($pr['nom'] . ' ' . ($pr['prenom'] ?? ''))) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
                             </div>
                         </div>
                     </div>
@@ -495,6 +528,16 @@ $nb_inactifs = count($logements) - $nb_actifs;
                                 <label class="form-label">URL annonce Airbnb</label>
                                 <input type="url" class="form-control" name="airbnb_url" id="edit_airbnb">
                             </div>
+
+                            <h6 class="text-muted mb-3 mt-3">Propriétaire</h6>
+                            <div class="mb-3">
+                                <select class="form-select" name="proprietaire_id" id="edit_proprietaire">
+                                    <option value="0">— Aucun —</option>
+                                    <?php foreach ($proprietaires_list as $pr): ?>
+                                        <option value="<?= $pr['id'] ?>"><?= htmlspecialchars(trim($pr['nom'] . ' ' . ($pr['prenom'] ?? ''))) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -525,6 +568,7 @@ function editLogement(l) {
     document.getElementById('edit_ics').value       = l.ics_url || '';
     document.getElementById('edit_ics2').value      = l.ics_url_2 || '';
     document.getElementById('edit_airbnb').value    = l.airbnb_url || '';
+    document.getElementById('edit_proprietaire').value = l.proprietaire_id || '0';
 
     new bootstrap.Modal(document.getElementById('editModal')).show();
 }

@@ -11,6 +11,7 @@ if (!isset($menu_categories)) {
             'items' => [
                 ['nom' => 'Planning',      'chemin' => 'pages/planning.php',              'icon' => 'fa-calendar-alt'],
                 ['nom' => 'Logements',     'chemin' => 'pages/logements.php',             'icon' => 'fa-building'],
+                ['nom' => 'Propriétaires','chemin' => 'pages/proprietaires.php',        'icon' => 'fa-user-tie'],
                 ['nom' => 'Équipements',   'chemin' => 'pages/logement_equipements.php',  'icon' => 'fa-couch'],
                 ['nom' => 'Descriptions',  'chemin' => 'pages/description_logements.php', 'icon' => 'fa-file-alt'],
                 ['nom' => 'Sites vitrine', 'chemin' => 'pages/sites.php',                 'icon' => 'fa-globe'],
