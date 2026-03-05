@@ -3,11 +3,10 @@
  * Liste des sessions d'inventaire — en cours + terminees
  */
 include '../config.php';
-include '../pages/menu.php';
 
 $is_admin = (($_SESSION['role'] ?? '') === 'admin');
 
-// AJAX : suppression d'une session (admin uniquement)
+// AJAX : suppression d'une session (admin uniquement) — avant le menu pour éviter le HTML dans la réponse JSON
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_delete_session'])) {
     header('Content-Type: application/json');
     if (!$is_admin) {
@@ -37,6 +36,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_delete_session']
     echo json_encode(['success' => true]);
     exit;
 }
+
+include '../pages/menu.php';
 
 // Sessions en cours
 $enCours = $conn->query("

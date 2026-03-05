@@ -58,19 +58,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $email     = trim($_POST['email'] ?? '');
         $telephone = trim($_POST['telephone'] ?? '');
         $adresse   = trim($_POST['adresse'] ?? '');
+        $password  = $_POST['password'] ?? '';
         $logements = $_POST['logements'] ?? [];
 
         if (empty($nom)) {
             $feedback = '<div class="alert alert-danger">Le nom est obligatoire.</div>';
+        } elseif (empty($email)) {
+            $feedback = '<div class="alert alert-danger">L\'email est obligatoire (utilisé pour la connexion).</div>';
+        } elseif ($prop_id === 0 && empty($password)) {
+            $feedback = '<div class="alert alert-danger">Le mot de passe est obligatoire pour un nouveau propriétaire.</div>';
         } else {
             try {
                 if ($prop_id > 0) {
-                    $stmt = $conn->prepare("UPDATE FC_proprietaires SET nom = ?, prenom = ?, email = ?, telephone = ?, adresse = ? WHERE id = ?");
-                    $stmt->execute([$nom, $prenom ?: null, $email ?: null, $telephone ?: null, $adresse ?: null, $prop_id]);
+                    // Mise à jour — mot de passe optionnel
+                    if (!empty($password)) {
+                        $stmt = $conn->prepare("UPDATE FC_proprietaires SET nom = ?, prenom = ?, email = ?, telephone = ?, adresse = ?, password_hash = ? WHERE id = ?");
+                        $stmt->execute([$nom, $prenom ?: null, $email, $telephone ?: null, $adresse ?: null, password_hash($password, PASSWORD_DEFAULT), $prop_id]);
+                    } else {
+                        $stmt = $conn->prepare("UPDATE FC_proprietaires SET nom = ?, prenom = ?, email = ?, telephone = ?, adresse = ? WHERE id = ?");
+                        $stmt->execute([$nom, $prenom ?: null, $email, $telephone ?: null, $adresse ?: null, $prop_id]);
+                    }
                     $feedback = '<div class="alert alert-success">Propriétaire mis à jour.</div>';
                 } else {
-                    $stmt = $conn->prepare("INSERT INTO FC_proprietaires (nom, prenom, email, telephone, adresse) VALUES (?, ?, ?, ?, ?)");
-                    $stmt->execute([$nom, $prenom ?: null, $email ?: null, $telephone ?: null, $adresse ?: null]);
+                    $stmt = $conn->prepare("INSERT INTO FC_proprietaires (nom, prenom, email, telephone, adresse, password_hash) VALUES (?, ?, ?, ?, ?, ?)");
+                    $stmt->execute([$nom, $prenom ?: null, $email, $telephone ?: null, $adresse ?: null, password_hash($password, PASSWORD_DEFAULT)]);
                     $prop_id = $conn->lastInsertId();
                     $feedback = '<div class="alert alert-success">Propriétaire créé.</div>';
                 }
@@ -284,8 +295,13 @@ $nb_inactifs = count($proprietaires) - $nb_actifs;
                                 <input type="text" class="form-control" name="prenom" id="m_prenom">
                             </div>
                             <div class="mb-3">
-                                <label class="form-label">Email</label>
-                                <input type="email" class="form-control" name="email" id="m_email">
+                                <label class="form-label">Email * <small class="text-muted">(connexion espace propriétaire)</small></label>
+                                <input type="email" class="form-control" name="email" id="m_email" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Mot de passe <span id="pwd_required">*</span></label>
+                                <input type="password" class="form-control" name="password" id="m_password" autocomplete="new-password">
+                                <small class="text-muted" id="pwd_hint">Obligatoire à la création. Laisser vide pour ne pas modifier.</small>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Téléphone</label>
@@ -335,6 +351,7 @@ function resetModal() {
     document.getElementById('m_nom').value = '';
     document.getElementById('m_prenom').value = '';
     document.getElementById('m_email').value = '';
+    document.getElementById('m_password').value = '';
     document.getElementById('m_telephone').value = '';
     document.getElementById('m_adresse').value = '';
     document.querySelectorAll('.logement-check').forEach(c => c.checked = false);
@@ -342,6 +359,9 @@ function resetModal() {
     document.getElementById('modal-header').className = 'modal-header bg-success text-white';
     document.getElementById('m_submit').innerHTML = '<i class="fas fa-plus"></i> Créer';
     document.getElementById('m_submit').className = 'btn btn-success';
+    document.getElementById('pwd_required').style.display = '';
+    document.getElementById('pwd_hint').textContent = 'Obligatoire à la création.';
+    document.getElementById('m_password').required = true;
 }
 
 function editProprio(p) {
@@ -349,8 +369,12 @@ function editProprio(p) {
     document.getElementById('m_nom').value = p.nom || '';
     document.getElementById('m_prenom').value = p.prenom || '';
     document.getElementById('m_email').value = p.email || '';
+    document.getElementById('m_password').value = '';
     document.getElementById('m_telephone').value = p.telephone || '';
     document.getElementById('m_adresse').value = p.adresse || '';
+    document.getElementById('pwd_required').style.display = 'none';
+    document.getElementById('pwd_hint').textContent = 'Laisser vide pour ne pas modifier le mot de passe.';
+    document.getElementById('m_password').required = false;
 
     document.querySelectorAll('.logement-check').forEach(c => {
         c.checked = (p.logements || []).includes(parseInt(c.value));
