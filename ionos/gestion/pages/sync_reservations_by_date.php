@@ -2,6 +2,10 @@
 // pages/sync_reservations_by_date.php
 declare(strict_types=1);
 
+// Forcer affichage erreurs AVANT tout include pour diagnostiquer les 500 vides
+ini_set('display_errors', '1');
+error_reporting(E_ALL);
+
 header('Content-Type: application/json; charset=utf-8');
 date_default_timezone_set('Europe/Paris');
 
@@ -28,8 +32,8 @@ register_shutdown_function(function() use ($DEBUG) {
         echo json_encode($payload);
     }
 });
+// En production, remettre display_errors à 0 après le shutdown handler
 ini_set('display_errors', '0');
-error_reporting(E_ALL);
 
 // helpers JSON
 function jerr(int $code, string $msg, array $extra = []) {
@@ -172,6 +176,7 @@ if ($localHasReservation) {
         $stLD = $conn->prepare($sqlLocalDeps);
         $stLD->execute([':d' => $target]);
         $localDeps = $stLD->fetchAll(PDO::FETCH_ASSOC);
+        $stLD->closeCursor();
         $remoteKeys = array_map(fn($d) => $d['logement_id'] . '_' . $d['date_depart'], $deps);
         foreach ($localDeps as $ld) {
             if (!in_array($ld['logement_id'] . '_' . $ld['date_depart'], $remoteKeys)) {
@@ -193,6 +198,7 @@ if ($localHasReservation) {
         $stLA = $conn->prepare($sqlLocalArrs);
         $stLA->execute([':d' => $target]);
         $localArrs = $stLA->fetchAll(PDO::FETCH_ASSOC);
+        $stLA->closeCursor();
         $remoteArrKeys = array_map(fn($a) => $a['logement_id'] . '_' . $a['date_arrivee'], $arrs);
         foreach ($localArrs as $la) {
             if (!in_array($la['logement_id'] . '_' . $la['date_arrivee'], $remoteArrKeys)) {

@@ -170,6 +170,7 @@ if ($localHasReservation) {
         $stLD = $conn->prepare($sqlLocalDeps);
         $stLD->execute([':today' => $today]);
         $localDeps = $stLD->fetchAll(PDO::FETCH_ASSOC);
+        $stLD->closeCursor();
         $remoteKeys = array_map(fn($d) => $d['logement_id'] . '_' . $d['date_depart'], $deps);
         foreach ($localDeps as $ld) {
             if (!in_array($ld['logement_id'] . '_' . $ld['date_depart'], $remoteKeys)) {
@@ -191,6 +192,7 @@ if ($localHasReservation) {
         $stLA = $conn->prepare($sqlLocalArrs);
         $stLA->execute([':today' => $today]);
         $localArrs = $stLA->fetchAll(PDO::FETCH_ASSOC);
+        $stLA->closeCursor();
         $remoteArrKeys = array_map(fn($a) => $a['logement_id'] . '_' . $a['date_arrivee'], $arrs);
         foreach ($localArrs as $la) {
             if (!in_array($la['logement_id'] . '_' . $la['date_arrivee'], $remoteArrKeys)) {
