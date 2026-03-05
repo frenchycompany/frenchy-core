@@ -62,6 +62,7 @@ try {
     try { $conn->exec("ALTER TABLE checkup_items ADD COLUMN todo_task_id INT DEFAULT NULL AFTER photo_path"); } catch (PDOException $e) {}
     try { $conn->exec("ALTER TABLE checkup_sessions ADD COLUMN nb_taches_faites INT DEFAULT 0 AFTER nb_absents"); } catch (PDOException $e) {}
     try { $conn->exec("ALTER TABLE checkup_sessions ADD COLUMN signature_path VARCHAR(500) DEFAULT NULL AFTER commentaire_general"); } catch (PDOException $e) {}
+    try { $conn->exec("ALTER TABLE checkup_sessions ADD COLUMN video_path VARCHAR(500) DEFAULT NULL AFTER signature_path"); } catch (PDOException $e) {}
 } catch (PDOException $e) {
     // Tables existent deja
 }
@@ -124,7 +125,82 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['logement_id'])) {
         "INSERT INTO checkup_items (session_id, categorie, nom_item, todo_task_id) VALUES (?, ?, ?, ?)"
     );
 
-    // === 1. EQUIPEMENTS ===
+    // === 1. ENTREE / ACCES ===
+    $entree = [
+        'Porte d\'entree — etat et fermeture',
+        'Serrure / digicode — fonctionne correctement',
+        'Boite a cles / key box — verifier',
+        'Paillasson — propre et en bon etat',
+        'Couloir d\'entree — proprete',
+        'Interrupteurs entree — fonctionnent',
+        'Patere / porte-manteaux — etat',
+        'Rangement chaussures — propre',
+    ];
+    foreach ($entree as $item) {
+        $insertStmt->execute([$session_id, 'Entree / Acces', $item, null]);
+    }
+
+    // === 2. SALON / SEJOUR ===
+    $salon = [
+        'Sol du salon — propre (aspire/lave)',
+        'Sous le canape — propre, rien oublie',
+        'Canape — etat des coussins et assise',
+        'Coussins decoratifs — propres et en place',
+        'Plaids / couvertures — propres et plies',
+        'Table basse — propre, sans traces',
+        'Meuble TV — propre, cables ranges',
+        'Television — fonctionne + telecommande',
+        'Etageres / bibliotheque — propre, bien rangees',
+        'Rideaux / voilages — propres, fonctionnent',
+        'Fenetres salon — propres (interieur)',
+        'Rebords de fenetres — sans poussiere',
+        'Radiateur / chauffage salon — propre et fonctionne',
+        'Climatisation salon — fonctionne (si present)',
+        'Prises electriques salon — fonctionnent',
+        'Lumieres / lampes salon — fonctionnent',
+        'Interrupteurs salon — fonctionnent',
+        'Murs salon — pas de taches / trous',
+        'Plafond salon — pas de taches / fissures',
+        'Plinthes salon — propres',
+        'Decoration murale — en place, pas abimee',
+    ];
+    foreach ($salon as $item) {
+        $insertStmt->execute([$session_id, 'Salon / Sejour', $item, null]);
+    }
+
+    // === 3. CUISINE (items fixes + equipements dynamiques) ===
+    $cuisineItems = [
+        'Sol cuisine — propre (lave)',
+        'Plan de travail — propre, sans traces',
+        'Evier — propre, pas bouche',
+        'Robinet cuisine — fonctionne, pas de fuite',
+        'Sous l\'evier — propre, pas de fuite',
+        'Poubelle cuisine — videe et propre',
+        'Poubelle tri selectif — videe',
+        'Interieur placards — propres et ranges',
+        'Vaisselle — propre et rangee',
+        'Verres — propres, pas ebrecbes',
+        'Couverts — complets et propres',
+        'Casseroles / poeles — propres',
+        'Planche a decouper — propre',
+        'Torchons — propres',
+        'Eponge — neuve ou propre',
+        'Produit vaisselle — disponible',
+        'Hotte aspirante — propre, filtre ok',
+        'Interieur du four — propre',
+        'Interieur micro-ondes — propre',
+        'Interieur refrigerateur — propre, pas de nourriture oubliee',
+        'Interieur congelateur — propre, pas de givre',
+        'Interrupteurs / prises cuisine — fonctionnent',
+        'Lumieres cuisine — fonctionnent',
+        'Fenetres cuisine — propres',
+        'Murs / credence — propres, sans eclaboussures',
+    ];
+    foreach ($cuisineItems as $item) {
+        $insertStmt->execute([$session_id, 'Cuisine', $item, null]);
+    }
+
+    // Equipements cuisine dynamiques
     $equip = null;
     try {
         $stmt = $conn->prepare("SELECT * FROM logement_equipements WHERE logement_id = ?");
@@ -133,71 +209,238 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['logement_id'])) {
     } catch (PDOException $e) { /* table n'existe pas encore */ }
 
     if ($equip) {
-        $cuisine = [
-            'bouilloire' => 'Bouilloire', 'grille_pain' => 'Grille-pain',
-            'micro_ondes' => 'Micro-ondes', 'four' => 'Four',
-            'plaque_cuisson' => 'Plaques de cuisson', 'lave_vaisselle' => 'Lave-vaisselle',
-            'refrigerateur' => 'Refrigerateur', 'congelateur' => 'Congelateur',
-            'ustensiles_cuisine' => 'Ustensiles de cuisine',
+        $equipCuisine = [
+            'bouilloire' => 'Bouilloire — fonctionne et propre',
+            'grille_pain' => 'Grille-pain — fonctionne et propre',
+            'lave_vaisselle' => 'Lave-vaisselle — fonctionne, interieur propre',
+            'ustensiles_cuisine' => 'Ustensiles de cuisine — complets',
         ];
         if ($equip['machine_cafe_type'] && $equip['machine_cafe_type'] !== 'aucune') {
-            $cuisine['machine_cafe_type'] = 'Machine a cafe (' . $equip['machine_cafe_type'] . ')';
+            $equipCuisine['machine_cafe_type'] = 'Machine a cafe (' . $equip['machine_cafe_type'] . ') — fonctionne, propre, capsules/dosettes';
         }
-
-        $sections = [
-            'Cuisine' => $cuisine,
-            'Entretien' => [
-                'machine_laver' => 'Machine a laver', 'seche_linge' => 'Seche-linge',
-                'fer_repasser' => 'Fer a repasser', 'table_repasser' => 'Table a repasser',
-                'aspirateur' => 'Aspirateur', 'produits_menage' => 'Produits menage',
-            ],
-            'Multimedia' => [
-                'tv' => 'Television', 'enceinte_bluetooth' => 'Enceinte Bluetooth',
-                'console_jeux' => 'Console de jeux',
-            ],
-            'Mobilier' => [
-                'canape' => 'Canape', 'canape_convertible' => 'Canape convertible',
-                'table_manger' => 'Table a manger', 'bureau' => 'Bureau',
-                'livres' => 'Livres', 'jeux_societe' => 'Jeux de societe',
-            ],
-            'Literie / Linge' => [
-                'linge_lit_fourni' => 'Linge de lit', 'serviettes_fournies' => 'Serviettes',
-                'oreillers_supplementaires' => 'Oreillers supplementaires',
-                'couvertures_supplementaires' => 'Couvertures supplementaires',
-            ],
-            'Salle de bain' => [
-                'baignoire' => 'Baignoire', 'douche' => 'Douche',
-                'seche_cheveux' => 'Seche-cheveux', 'produits_toilette' => 'Produits de toilette',
-            ],
-            'Confort' => [
-                'climatisation' => 'Climatisation', 'chauffage' => 'Chauffage',
-                'ventilateur' => 'Ventilateur',
-            ],
-            'Exterieur' => [
-                'balcon' => 'Balcon', 'terrasse' => 'Terrasse', 'jardin' => 'Jardin',
-                'parking' => 'Parking', 'barbecue' => 'Barbecue', 'salon_jardin' => 'Salon de jardin',
-            ],
-            'Securite' => [
-                'detecteur_fumee' => 'Detecteur de fumee', 'detecteur_co' => 'Detecteur CO',
-                'extincteur' => 'Extincteur', 'trousse_secours' => 'Trousse de secours',
-                'coffre_fort' => 'Coffre-fort',
-            ],
-            'Enfants' => [
-                'lit_bebe' => 'Lit bebe', 'chaise_haute' => 'Chaise haute',
-                'barriere_securite' => 'Barriere securite', 'jeux_enfants' => 'Jeux enfants',
-            ],
-        ];
-
-        foreach ($sections as $categorie => $items) {
-            foreach ($items as $field => $label) {
-                if (isset($equip[$field]) && $equip[$field]) {
-                    $insertStmt->execute([$session_id, $categorie, $label, null]);
-                }
+        foreach ($equipCuisine as $field => $label) {
+            if (isset($equip[$field]) && $equip[$field]) {
+                $insertStmt->execute([$session_id, 'Cuisine', $label, null]);
             }
         }
     }
 
-    // === 2. INVENTAIRE (dernier inventaire termine) ===
+    // === 4. CHAMBRES ===
+    // Determiner le nombre de chambres
+    $nbChambres = 1;
+    if ($equip && isset($equip['nombre_chambres']) && $equip['nombre_chambres'] > 0) {
+        $nbChambres = (int) $equip['nombre_chambres'];
+    }
+
+    for ($ch = 1; $ch <= $nbChambres; $ch++) {
+        $catName = $nbChambres > 1 ? "Chambre $ch" : 'Chambre';
+        $chambreItems = [
+            'Sol — propre (aspire/lave)',
+            'Lit — draps propres et bien faits',
+            'SOUS LE LIT — propre, rien oublie',
+            'Matelas — etat, pas de tache',
+            'Oreillers — propres, en bon etat',
+            'Couette / couverture — propre',
+            'Table de chevet — propre, sans poussiere',
+            'Lampe de chevet — fonctionne',
+            'Armoire / penderie — propre, cintres en place',
+            'Interieur tiroirs — propres et vides',
+            'Commode — propre, sans poussiere',
+            'Miroir — propre, sans traces',
+            'Rideaux / voilages — propres',
+            'Fenetres — propres, ferment bien',
+            'Volets / stores — fonctionnent',
+            'Rebords de fenetres — sans poussiere',
+            'Radiateur / chauffage — propre et fonctionne',
+            'Prises electriques — fonctionnent',
+            'Lumieres / plafonnier — fonctionnent',
+            'Interrupteurs — fonctionnent',
+            'Murs — pas de taches / trous',
+            'Plafond — pas de taches / fissures',
+            'Plinthes — propres',
+            'Derriere la porte — propre',
+        ];
+        foreach ($chambreItems as $item) {
+            $insertStmt->execute([$session_id, $catName, $item, null]);
+        }
+    }
+
+    // === 5. SALLE DE BAIN ===
+    $nbSdb = 1;
+    if ($equip && isset($equip['nombre_salles_bain']) && $equip['nombre_salles_bain'] > 0) {
+        $nbSdb = (int) $equip['nombre_salles_bain'];
+    }
+
+    for ($sb = 1; $sb <= $nbSdb; $sb++) {
+        $catName = $nbSdb > 1 ? "Salle de bain $sb" : 'Salle de bain';
+        $sdbItems = [
+            'Sol — propre et sec',
+            'Lavabo — propre, sans calcaire',
+            'Robinet lavabo — fonctionne, pas de fuite',
+            'Miroir — propre, sans traces',
+            'TOILETTES — cuvette propre et desinfectee',
+            'TOILETTES — lunette et abattant propres',
+            'TOILETTES — derriere la cuvette propre',
+            'TOILETTES — chasse d\'eau fonctionne',
+            'TOILETTES — brosse WC propre',
+            'TOILETTES — porte-rouleau avec papier neuf',
+            'Douche — paroi/rideau propre',
+            'Douche — pommeau et flexible en bon etat',
+            'Douche — bac propre, evacuation ok',
+            'Douche — joints propres (pas de moisissure)',
+            'Baignoire — propre, evacuation ok (si presente)',
+            'Carrelage mural — propre, joints ok',
+            'Serviettes — propres, bien pliees/suspendues',
+            'Tapis de bain — propre',
+            'Seche-cheveux — fonctionne (si present)',
+            'Produits de toilette — savon, shampoing, gel douche',
+            'Poubelle salle de bain — videe',
+            'Ventilation / VMC — fonctionne',
+            'Rangements / etageres — propres',
+            'Porte-serviettes — en bon etat',
+            'Lumieres — fonctionnent',
+            'Interrupteur — fonctionne',
+            'Prise electrique — fonctionne',
+        ];
+        foreach ($sdbItems as $item) {
+            $insertStmt->execute([$session_id, $catName, $item, null]);
+        }
+    }
+
+    // === 6. WC SEPARE (si different de salle de bain) ===
+    $wcSepare = [
+        'Sol — propre',
+        'Cuvette WC — propre et desinfectee',
+        'Lunette et abattant — propres',
+        'Derriere la cuvette — propre',
+        'Chasse d\'eau — fonctionne',
+        'Brosse WC — propre',
+        'Papier toilette — rouleau neuf',
+        'Lave-mains — propre (si present)',
+        'Miroir — propre (si present)',
+        'Poubelle — videe',
+        'Desodorisant — present',
+        'Lumiere — fonctionne',
+        'Ventilation — fonctionne',
+    ];
+    foreach ($wcSepare as $item) {
+        $insertStmt->execute([$session_id, 'WC separe', $item, null]);
+    }
+
+    // === 7. BUANDERIE / ENTRETIEN ===
+    $buanderieItems = [
+        'Sol — propre',
+        'Machine a laver — propre, joint ok',
+        'Seche-linge — propre, filtre nettoye (si present)',
+        'Fer a repasser — fonctionne (si present)',
+        'Table a repasser — en bon etat (si presente)',
+        'Aspirateur — fonctionne, sac/filtre ok',
+        'Balai / serpillere — propres',
+        'Produits menagers — en stock',
+        'Lessive — disponible',
+    ];
+    // N'ajouter que si certains equipements existent
+    if ($equip) {
+        $buanderieChecks = [
+            'machine_laver', 'seche_linge', 'fer_repasser', 'table_repasser',
+            'aspirateur', 'produits_menage'
+        ];
+        $hasBuanderie = false;
+        foreach ($buanderieChecks as $bc) {
+            if (isset($equip[$bc]) && $equip[$bc]) { $hasBuanderie = true; break; }
+        }
+        if ($hasBuanderie) {
+            foreach ($buanderieItems as $item) {
+                $insertStmt->execute([$session_id, 'Buanderie / Entretien', $item, null]);
+            }
+        }
+    } else {
+        // Pas d'equipements renseignes, on met les basiques
+        foreach ($buanderieItems as $item) {
+            $insertStmt->execute([$session_id, 'Buanderie / Entretien', $item, null]);
+        }
+    }
+
+    // === 8. MULTIMEDIA ===
+    if ($equip) {
+        $multiItems = [];
+        if (!empty($equip['tv'])) {
+            $multiItems[] = 'Television — fonctionne';
+            $multiItems[] = 'Telecommande TV — fonctionne, piles ok';
+        }
+        if (!empty($equip['netflix'])) $multiItems[] = 'Netflix — connexion ok';
+        if (!empty($equip['amazon_prime'])) $multiItems[] = 'Amazon Prime — connexion ok';
+        if (!empty($equip['disney_plus'])) $multiItems[] = 'Disney+ — connexion ok';
+        if (!empty($equip['molotov_tv'])) $multiItems[] = 'Molotov TV — connexion ok';
+        if (!empty($equip['enceinte_bluetooth'])) $multiItems[] = 'Enceinte Bluetooth — fonctionne, chargee';
+        if (!empty($equip['console_jeux'])) $multiItems[] = 'Console de jeux — fonctionne, manettes ok';
+
+        foreach ($multiItems as $item) {
+            $insertStmt->execute([$session_id, 'Multimedia', $item, null]);
+        }
+    }
+
+    // === 9. EXTERIEUR ===
+    if ($equip) {
+        $extItems = [];
+        if (!empty($equip['balcon'])) {
+            $extItems[] = 'Balcon — sol propre';
+            $extItems[] = 'Balcon — rambarde en bon etat';
+            $extItems[] = 'Balcon — mobilier propre';
+        }
+        if (!empty($equip['terrasse'])) {
+            $extItems[] = 'Terrasse — sol propre';
+            $extItems[] = 'Terrasse — mobilier propre et en place';
+        }
+        if (!empty($equip['jardin'])) {
+            $extItems[] = 'Jardin — pelouse / vegetation ok';
+            $extItems[] = 'Jardin — propre, pas de dechets';
+        }
+        if (!empty($equip['parking'])) {
+            $extItems[] = 'Parking — accessible, place libre';
+        }
+        if (!empty($equip['barbecue'])) {
+            $extItems[] = 'Barbecue — propre, pret a l\'emploi';
+        }
+        if (!empty($equip['salon_jardin'])) {
+            $extItems[] = 'Salon de jardin — propre, en bon etat';
+        }
+
+        foreach ($extItems as $item) {
+            $insertStmt->execute([$session_id, 'Exterieur', $item, null]);
+        }
+    }
+
+    // === 10. SECURITE ===
+    $securiteItems = [
+        'Detecteur de fumee — present et fonctionne',
+        'Detecteur CO — present et fonctionne (si requis)',
+        'Extincteur — present et accessible',
+        'Trousse de secours — presente et complete',
+        'Numero urgences — affiche',
+        'Issues de secours — degagees',
+    ];
+    if ($equip && !empty($equip['coffre_fort'])) {
+        $securiteItems[] = 'Coffre-fort — fonctionne';
+    }
+    foreach ($securiteItems as $item) {
+        $insertStmt->execute([$session_id, 'Securite', $item, null]);
+    }
+
+    // === 11. ENFANTS (si equipements enfants declares) ===
+    if ($equip) {
+        $enfantsItems = [];
+        if (!empty($equip['lit_bebe'])) $enfantsItems[] = 'Lit bebe — propre, en bon etat, drap';
+        if (!empty($equip['chaise_haute'])) $enfantsItems[] = 'Chaise haute — propre, sangles ok';
+        if (!empty($equip['barriere_securite'])) $enfantsItems[] = 'Barriere de securite — en place, fonctionne';
+        if (!empty($equip['jeux_enfants'])) $enfantsItems[] = 'Jeux enfants — propres, complets';
+
+        foreach ($enfantsItems as $item) {
+            $insertStmt->execute([$session_id, 'Enfants', $item, null]);
+        }
+    }
+
+    // === 12. INVENTAIRE (dernier inventaire termine) ===
     try {
         $stmt = $conn->prepare("
             SELECT io.nom_objet, io.quantite, io.piece
@@ -221,7 +464,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['logement_id'])) {
         }
     } catch (PDOException $e) { /* tables inventaire n'existent pas encore */ }
 
-    // === 3. TACHES (todo_list en attente ou en cours) ===
+    // === 13. TACHES A FAIRE (todo_list en attente ou en cours) ===
     try {
         $stmt = $conn->prepare("
             SELECT id, description, date_limite, statut
@@ -241,25 +484,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['logement_id'])) {
         }
     } catch (PDOException $e) { /* table todo_list n'existe pas encore */ }
 
-    // === 4. ETAT GENERAL ===
+    // === 14. ETAT GENERAL ===
     $etatGeneral = [
         'Proprete generale du logement',
-        'Odeurs (pas de mauvaises odeurs)',
-        'Sols propres',
-        'Vitres / fenetres propres',
-        'Poubelles videes',
-        'Etat des murs (pas de taches/trous)',
-        'Etat des portes',
-        'Fonctionnement des lumieres',
-        'Fonctionnement des prises electriques',
-        'Fonctionnement du WiFi',
-        'Etat des cles / codes d\'acces',
+        'Odeurs — pas de mauvaises odeurs',
+        'Sols — tous propres dans chaque piece',
+        'Vitres / fenetres — propres (interieur)',
+        'Volets / stores — tous fonctionnent',
+        'Poubelles — toutes videes',
+        'Etat des murs — pas de taches / trous',
+        'Etat des plafonds — pas de taches / fissures',
+        'Etat des portes interieures — ferment bien',
+        'Poignees de porte — toutes en bon etat',
+        'Fonctionnement de TOUTES les lumieres',
+        'Fonctionnement de TOUTES les prises electriques',
+        'Fonctionnement du WiFi — connexion ok',
+        'Mot de passe WiFi — affiche / accessible',
+        'Cles / codes d\'acces — complets et fonctionnels',
+        'Thermostat / chauffage — regle correctement',
+        'Livret d\'accueil — present et a jour',
+        'Guide de la maison — present',
+        'Compteurs (eau, elec) — releves',
     ];
     foreach ($etatGeneral as $item) {
         $insertStmt->execute([$session_id, 'Etat general', $item, null]);
     }
 
-    // === 5. TEMPLATES PERSONNALISES ===
+    // === 15. FOURNITURES / CONSOMMABLES ===
+    $fournitures = [
+        'Papier toilette — stock suffisant',
+        'Savon mains — dans chaque point d\'eau',
+        'Liquide vaisselle — disponible',
+        'Eponges — neuves',
+        'Sacs poubelle — stock suffisant',
+        'Essuie-tout — disponible',
+        'Sel, poivre, huile — basiques cuisine',
+        'Capsules / dosettes cafe (si machine)',
+        'The / tisane — disponible',
+        'Sucre — disponible',
+    ];
+    foreach ($fournitures as $item) {
+        $insertStmt->execute([$session_id, 'Fournitures', $item, null]);
+    }
+
+    // === 16. TEMPLATES PERSONNALISES ===
     try {
         $stmt = $conn->prepare("
             SELECT categorie, nom_item FROM checkup_templates

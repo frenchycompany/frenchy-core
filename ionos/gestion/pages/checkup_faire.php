@@ -63,6 +63,9 @@ try {
     ");
 } catch (PDOException $e) { /* tables existent déjà */ }
 
+// Ajouter colonne video_path si elle n'existe pas
+try { $conn->exec("ALTER TABLE checkup_sessions ADD COLUMN video_path VARCHAR(500) DEFAULT NULL AFTER signature_path"); } catch (PDOException $e) {}
+
 $session_id = isset($_GET['session_id']) ? intval($_GET['session_id']) : 0;
 
 // Charger la session
@@ -148,6 +151,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['terminer'])) {
         }
     }
 
+    // Sauvegarder la video de fin si fournie
+    $videoPath = null;
+    if (!empty($_FILES['video_fin']) && $_FILES['video_fin']['error'] === UPLOAD_ERR_OK) {
+        $videoFile = $_FILES['video_fin'];
+        $videoExt = strtolower(pathinfo($videoFile['name'], PATHINFO_EXTENSION));
+        $allowedVideoExt = ['mp4', 'mov', 'webm', 'avi', 'mkv'];
+        $maxVideoSize = 100 * 1024 * 1024; // 100 Mo
+
+        if (in_array($videoExt, $allowedVideoExt) && $videoFile['size'] <= $maxVideoSize) {
+            $videoDir = __DIR__ . '/../uploads/checkup/';
+            if (!is_dir($videoDir)) mkdir($videoDir, 0755, true);
+            $videoFileName = 'video_' . $session_id . '_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $videoExt;
+            if (move_uploaded_file($videoFile['tmp_name'], $videoDir . $videoFileName)) {
+                $videoPath = 'uploads/checkup/' . $videoFileName;
+            }
+        }
+    }
+
     // Compter les stats
     $stmt = $conn->prepare("SELECT statut, COUNT(*) as nb FROM checkup_items WHERE session_id = ? GROUP BY statut");
     $stmt->execute([$session_id]);
@@ -173,10 +194,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['terminer'])) {
             nb_absents = ?,
             nb_taches_faites = ?,
             commentaire_general = ?,
-            signature_path = COALESCE(?, signature_path)
+            signature_path = COALESCE(?, signature_path),
+            video_path = COALESCE(?, video_path)
         WHERE id = ?
     ");
-    $stmt->execute([$nbOk, $nbPb, $nbAbs, $nbTachesFaites, $commentaire_general, $signaturePath, $session_id]);
+    $stmt->execute([$nbOk, $nbPb, $nbAbs, $nbTachesFaites, $commentaire_general, $signaturePath, $videoPath, $session_id]);
 
     // Envoyer une notification si des problemes sont signales
     if ($nbPb > 0 || $nbAbs > 0) {
@@ -491,13 +513,30 @@ $progress = $total > 0 ? round(($done / $total) * 100) : 0;
         $catDone = 0;
         foreach ($items as $it) { if ($it['statut'] !== 'non_verifie') $catDone++; }
         $catIcons = [
-            'Cuisine' => 'fa-utensils', 'Entretien' => 'fa-broom', 'Multimedia' => 'fa-tv',
-            'Mobilier' => 'fa-couch', 'Literie / Linge' => 'fa-bed', 'Salle de bain' => 'fa-bath',
-            'Confort' => 'fa-temperature-high', 'Exterieur' => 'fa-tree', 'Securite' => 'fa-shield-alt',
-            'Enfants' => 'fa-baby', 'Inventaire' => 'fa-boxes-stacked', 'Taches a faire' => 'fa-tasks',
-            'Etat general' => 'fa-search',
+            'Entree / Acces' => 'fa-door-open',
+            'Salon / Sejour' => 'fa-couch',
+            'Cuisine' => 'fa-utensils',
+            'Buanderie / Entretien' => 'fa-broom',
+            'Multimedia' => 'fa-tv',
+            'Exterieur' => 'fa-tree',
+            'Securite' => 'fa-shield-alt',
+            'Enfants' => 'fa-baby',
+            'Inventaire' => 'fa-boxes-stacked',
+            'Taches a faire' => 'fa-tasks',
+            'Etat general' => 'fa-clipboard-list',
+            'Fournitures' => 'fa-box-open',
+            'WC separe' => 'fa-toilet',
         ];
-        $catIcon = $catIcons[$catName] ?? 'fa-check-circle';
+        // Chambres et SDB dynamiques (Chambre 1, Chambre 2, Salle de bain 1, etc.)
+        if (isset($catIcons[$catName])) {
+            $catIcon = $catIcons[$catName];
+        } elseif (preg_match('/^Chambre/', $catName)) {
+            $catIcon = 'fa-bed';
+        } elseif (preg_match('/^Salle de bain/', $catName)) {
+            $catIcon = 'fa-bath';
+        } else {
+            $catIcon = 'fa-check-circle';
+        }
     ?>
     <div class="ck-categorie">
         <div class="ck-categorie-title" onclick="toggleCategory(this)">
@@ -560,9 +599,32 @@ $progress = $total > 0 ? round(($done / $total) * 100) : 0;
     </div>
     <?php endforeach; ?>
 
-    <form method="POST" class="ck-general-comment" id="finishForm">
+    <form method="POST" class="ck-general-comment" id="finishForm" enctype="multipart/form-data">
         <label><i class="fas fa-comment-dots"></i> Commentaire general</label>
         <textarea name="commentaire_general" placeholder="Remarques generales sur l'etat du logement..."><?= htmlspecialchars($session['commentaire_general'] ?? '') ?></textarea>
+
+        <!-- Video de fin -->
+        <label style="margin-top:15px"><i class="fas fa-video"></i> Video de fin — Visite du logement</label>
+        <p style="font-size:0.85em;color:#888;margin:0 0 10px;">Filmez une visite rapide du logement pour confirmer l'etat de sortie.</p>
+        <div style="position:relative;">
+            <input type="file" name="video_fin" id="videoFin" accept="video/*" capture="environment"
+                   style="display:none" onchange="previewVideo(this)">
+            <button type="button" class="photo-btn" style="width:100%;padding:14px;font-size:1em;margin-bottom:8px;background:linear-gradient(135deg,#e53935,#c62828);border-radius:10px;"
+                    onclick="document.getElementById('videoFin').click()">
+                <i class="fas fa-video"></i> Enregistrer la video de fin
+            </button>
+            <div id="videoPreviewWrap" style="display:none;margin-bottom:10px;">
+                <video id="videoPreview" controls style="width:100%;border-radius:10px;max-height:250px;background:#000;"></video>
+                <div style="display:flex;align-items:center;gap:8px;margin-top:6px;">
+                    <span style="color:#43a047;font-weight:600;font-size:0.9em;" id="videoInfo">
+                        <i class="fas fa-check-circle"></i> Video prete
+                    </span>
+                    <button type="button" onclick="removeVideo()" style="margin-left:auto;background:#f5f5f5;border:1px solid #ddd;border-radius:6px;padding:4px 10px;font-size:0.82em;cursor:pointer;">
+                        <i class="fas fa-trash"></i> Supprimer
+                    </button>
+                </div>
+            </div>
+        </div>
 
         <!-- Signature -->
         <label style="margin-top:15px"><i class="fas fa-signature"></i> Signature de l'intervenant</label>
@@ -766,6 +828,25 @@ function prepareSignature() {
     if (sigHasContent && sigCanvas) {
         document.getElementById('signatureData').value = sigCanvas.toDataURL('image/png');
     }
+}
+
+// Video de fin
+function previewVideo(input) {
+    if (!input.files || !input.files[0]) return;
+    var file = input.files[0];
+    var sizeMo = (file.size / 1024 / 1024).toFixed(1);
+    var preview = document.getElementById('videoPreview');
+    var wrap = document.getElementById('videoPreviewWrap');
+    preview.src = URL.createObjectURL(file);
+    wrap.style.display = 'block';
+    document.getElementById('videoInfo').innerHTML = '<i class="fas fa-check-circle"></i> Video prete (' + sizeMo + ' Mo)';
+}
+
+function removeVideo() {
+    var input = document.getElementById('videoFin');
+    input.value = '';
+    document.getElementById('videoPreviewWrap').style.display = 'none';
+    document.getElementById('videoPreview').src = '';
 }
 </script>
 </body>

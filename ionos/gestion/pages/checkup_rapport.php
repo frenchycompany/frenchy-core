@@ -94,14 +94,18 @@ $tachesNonFaites = array_filter($allItems, fn($i) => $i['categorie'] === 'Taches
 $total = count($allItems);
 $score = $total > 0 ? round((count($oks) / $total) * 100) : 0;
 
-// Signature
+// Signature et video
 $signaturePath = null;
+$videoPath = null;
 try {
-    $stmt = $conn->prepare("SELECT signature_path FROM checkup_sessions WHERE id = ?");
+    $stmt = $conn->prepare("SELECT signature_path, video_path FROM checkup_sessions WHERE id = ?");
     $stmt->execute([$session_id]);
     $sigRow = $stmt->fetch(PDO::FETCH_ASSOC);
     if ($sigRow && !empty($sigRow['signature_path'])) {
         $signaturePath = $sigRow['signature_path'];
+    }
+    if ($sigRow && !empty($sigRow['video_path'])) {
+        $videoPath = $sigRow['video_path'];
     }
 } catch (PDOException $e) {}
 ?>
@@ -533,6 +537,17 @@ try {
         </div>
     </div>
     <?php endforeach; ?>
+
+    <!-- Video de fin -->
+    <?php if ($videoPath): ?>
+    <div style="background:#fff;border-radius:12px;padding:18px;margin-bottom:15px;box-shadow:0 1px 5px rgba(0,0,0,0.06);">
+        <h4 style="margin:0 0 10px;font-size:1em;color:#333;text-align:center;"><i class="fas fa-video" style="color:#e53935;"></i> Video de fin — Visite du logement</h4>
+        <video controls style="width:100%;border-radius:10px;max-height:350px;background:#000;">
+            <source src="../<?= htmlspecialchars($videoPath) ?>">
+            Votre navigateur ne supporte pas la lecture video.
+        </video>
+    </div>
+    <?php endif; ?>
 
     <!-- Signature -->
     <?php if ($signaturePath): ?>
