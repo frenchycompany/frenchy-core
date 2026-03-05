@@ -99,6 +99,8 @@ if (!empty($logement_ids)) {
                         <button class="btn-video" onclick="openVideo('<?= e($int['video']) ?>')">
                             <i class="fas fa-play-circle"></i> Video
                         </button>
+                    <?php else: ?>
+                        <span class="text-muted" style="font-size:0.82rem; color:#9CA3AF;">Pas de video</span>
                     <?php endif; ?>
                     <span class="badge <?= $statutClass ?>"><?= e($s ?: 'inconnu') ?></span>
                 </div>
