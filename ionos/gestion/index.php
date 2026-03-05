@@ -111,6 +111,22 @@ try {
     $checkups_en_cours = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {}
 
+// Inventaires en cours
+$inventaires_en_cours = [];
+try {
+    $stmt = $conn->prepare("
+        SELECT s.id, s.date_creation, l.nom_du_logement,
+               (SELECT COUNT(*) FROM inventaire_objets o WHERE o.session_id = s.id) AS nb_objets
+        FROM sessions_inventaire s
+        JOIN liste_logements l ON s.logement_id = l.id
+        WHERE s.statut = 'en_cours'
+        " . ($is_admin ? '' : "AND s.intervenant_id = ?") . "
+        ORDER BY s.date_creation DESC LIMIT 5
+    ");
+    if ($is_admin) { $stmt->execute([]); } else { $stmt->execute([$intervenant_id]); }
+    $inventaires_en_cours = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {}
+
 // Notifications
 $notifications = [];
 try {
@@ -334,6 +350,20 @@ if ($is_admin) {
                 <div style="font-size:0.8em;color:#999;">Commence le <?= date('d/m H:i', strtotime($ck['created_at'])) ?></div>
             </div>
             <a href="pages/checkup_faire.php?session_id=<?= $ck['id'] ?>"><i class="fas fa-play"></i> Reprendre</a>
+        </div>
+    <?php endforeach; ?>
+    <?php endif; ?>
+
+    <!-- Inventaires en cours -->
+    <?php if (!empty($inventaires_en_cours)): ?>
+    <div class="section-title"><i class="fas fa-boxes-stacked" style="color:#43a047;"></i> Inventaires en cours</div>
+    <?php foreach ($inventaires_en_cours as $inv): ?>
+        <div class="checkup-card" style="background:#e8f5e9;">
+            <div>
+                <strong><?= htmlspecialchars($inv['nom_du_logement']) ?></strong>
+                <div style="font-size:0.8em;color:#999;"><?= date('d/m H:i', strtotime($inv['date_creation'])) ?> — <?= (int)$inv['nb_objets'] ?> objet<?= $inv['nb_objets'] > 1 ? 's' : '' ?></div>
+            </div>
+            <a href="pages/inventaire_saisie.php?session_id=<?= htmlspecialchars($inv['id']) ?>" style="background:#43a047;"><i class="fas fa-play"></i> Reprendre</a>
         </div>
     <?php endforeach; ?>
     <?php endif; ?>

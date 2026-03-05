@@ -6,12 +6,9 @@
 include '../config.php';
 include '../pages/menu.php';
 
-// Ajouter la colonne piece si elle n'existe pas
-try {
-    $conn->exec("ALTER TABLE inventaire_objets ADD COLUMN piece VARCHAR(50) DEFAULT NULL AFTER logement_id");
-} catch (PDOException $e) {
-    // Colonne existe deja
-}
+// Auto-migrations
+try { $conn->exec("ALTER TABLE inventaire_objets ADD COLUMN piece VARCHAR(50) DEFAULT NULL AFTER logement_id"); } catch (PDOException $e) {}
+try { $conn->exec("ALTER TABLE sessions_inventaire ADD COLUMN intervenant_id INT DEFAULT NULL AFTER logement_id"); } catch (PDOException $e) {}
 
 // Verifier la session
 if (!isset($_GET['session_id'])) {
@@ -36,6 +33,22 @@ if (!$session) {
 
 $logement_id = $session['logement_id'];
 $isTerminee = ($session['statut'] === 'terminee');
+
+// AJAX : changer l'intervenant
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_change_intervenant'])) {
+    header('Content-Type: application/json');
+    $newId = intval($_POST['intervenant_id'] ?? 0);
+    $stmt = $conn->prepare("UPDATE sessions_inventaire SET intervenant_id = ? WHERE id = ?");
+    $stmt->execute([$newId ?: null, $session_id]);
+    $nom = 'Non attribue';
+    if ($newId) {
+        $nStmt = $conn->prepare("SELECT nom FROM intervenant WHERE id = ?");
+        $nStmt->execute([$newId]);
+        $nom = $nStmt->fetchColumn() ?: 'Inconnu';
+    }
+    echo json_encode(['success' => true, 'nom' => $nom]);
+    exit;
+}
 
 // Traitement AJAX : ajout d'objet
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
@@ -129,6 +142,18 @@ foreach ($objets as $obj) {
 }
 
 $nbObjets = count($objets);
+
+// Charger les intervenants pour le selecteur
+$intervenants = $conn->query("SELECT id, nom FROM intervenant WHERE actif = 1 ORDER BY nom")->fetchAll(PDO::FETCH_ASSOC);
+$currentIntervenantNom = 'Non attribue';
+if (!empty($session['intervenant_id'])) {
+    foreach ($intervenants as $int) {
+        if ($int['id'] == $session['intervenant_id']) {
+            $currentIntervenantNom = $int['nom'];
+            break;
+        }
+    }
+}
 
 // Liste des pieces possibles
 $pieces = [
@@ -409,6 +434,21 @@ $pieces = [
             <span class="inv-status-badge status-<?= $session['statut'] ?>"><?= $session['statut'] === 'en_cours' ? 'En cours' : 'Terminee' ?></span>
         </h3>
         <small>Session #<?= htmlspecialchars($session_id) ?> — <?= date('d/m/Y H:i', strtotime($session['date_creation'])) ?></small>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:6px;">
+            <i class="fas fa-user" style="color:#666;font-size:0.85em;"></i>
+            <span id="intervenantLabel" style="font-size:0.88em;color:#555;font-weight:600;"><?= htmlspecialchars($currentIntervenantNom) ?></span>
+            <button type="button" onclick="document.getElementById('invIntervenantSelect').style.display=document.getElementById('invIntervenantSelect').style.display==='none'?'block':'none'" style="background:none;border:1px solid #ccc;border-radius:6px;padding:2px 8px;font-size:0.8em;color:#43a047;cursor:pointer;">
+                <i class="fas fa-pen"></i> Changer
+            </button>
+        </div>
+        <div id="invIntervenantSelect" style="display:none;margin-top:6px;">
+            <select onchange="changeInvIntervenant(this.value)" style="width:100%;padding:8px;border:1px solid #43a047;border-radius:8px;font-size:0.95em;">
+                <option value="0">-- Non attribue --</option>
+                <?php foreach ($intervenants as $int): ?>
+                    <option value="<?= $int['id'] ?>" <?= $int['id'] == ($session['intervenant_id'] ?? 0) ? 'selected' : '' ?>><?= htmlspecialchars($int['nom']) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
     </div>
 
     <?php if (!$isTerminee): ?>
@@ -547,6 +587,20 @@ $pieces = [
 <script>
 const sessionId = '<?= htmlspecialchars($session_id, ENT_QUOTES) ?>';
 let totalObjets = <?= $nbObjets ?>;
+
+function changeInvIntervenant(id) {
+    var fd = new FormData();
+    fd.append('ajax_change_intervenant', '1');
+    fd.append('intervenant_id', id);
+    fetch('inventaire_saisie.php?session_id=' + sessionId, { method: 'POST', body: fd })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.success) {
+                document.getElementById('intervenantLabel').textContent = data.nom;
+                document.getElementById('invIntervenantSelect').style.display = 'none';
+            }
+        });
+}
 
 function updateCount() {
     const el = document.getElementById('totalCount');

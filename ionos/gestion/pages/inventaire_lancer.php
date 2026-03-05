@@ -5,6 +5,11 @@
 include '../config.php';
 include '../pages/menu.php';
 
+// Auto-migration : ajouter intervenant_id si absent
+try { $conn->exec("ALTER TABLE sessions_inventaire ADD COLUMN intervenant_id INT DEFAULT NULL AFTER logement_id"); } catch (PDOException $e) {}
+
+$intervenants = $conn->query("SELECT id, nom FROM intervenant WHERE actif = 1 ORDER BY nom")->fetchAll(PDO::FETCH_ASSOC);
+
 $logements = $conn->query("
     SELECT l.id, l.nom_du_logement,
            (SELECT COUNT(*) FROM sessions_inventaire s WHERE s.logement_id = l.id AND s.statut = 'en_cours') AS sessions_en_cours
@@ -117,6 +122,14 @@ $logements = $conn->query("
                 Ce logement a deja une session d'inventaire en cours.
                 Vous pouvez quand meme en lancer une nouvelle.
             </div>
+
+            <label for="intervenant_id"><i class="fas fa-user"></i> Attribuer a (optionnel)</label>
+            <select name="intervenant_id" id="intervenant_id" style="width:100%;padding:14px 12px;font-size:1.1em;border:2px solid #e0e0e0;border-radius:10px;background:#fafafa;margin-bottom:18px;appearance:auto;">
+                <option value="">-- Moi-meme --</option>
+                <?php foreach ($intervenants as $int): ?>
+                    <option value="<?= $int['id'] ?>"><?= htmlspecialchars($int['nom']) ?></option>
+                <?php endforeach; ?>
+            </select>
 
             <button type="submit" class="btn-launch">
                 <i class="fas fa-play-circle"></i> Lancer l'inventaire
