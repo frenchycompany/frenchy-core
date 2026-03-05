@@ -89,6 +89,19 @@ Ces fichiers permettent une configuration non-authentifiee de la BDD :
 
 **Action :** Passer a `'secure' => true` si le site utilise HTTPS (ce qui devrait etre le cas).
 
+### 1.6 Debug activable par URL
+
+`ionos/gestion/pages/sync_reservations_by_date.php:6` : `$DEBUG = isset($_GET['debug']) && $_GET['debug'] === '1'` permet d'activer le debug via un simple parametre GET en production.
+
+**Action :** Supprimer ou conditionner a `APP_DEBUG` dans `.env`.
+
+### 1.7 Adresses IP hardcodees
+
+- `ionos/gestion/pages/agent_dashboard.php:2-3` : IP Raspberry Pi `http://109.219.194.30` hardcodee
+- `ionos/gestion/pages/superhote.php:23` : meme IP
+
+**Action :** Migrer vers `RPI_BASE_URL` dans `.env`.
+
 ---
 
 ## 2. ARCHITECTURE ET QUALITE DU CODE
@@ -130,7 +143,32 @@ Ces fichiers permettent une configuration non-authentifiee de la BDD :
 
 **Action :** Ajouter au `.gitignore` et supprimer du depot.
 
-### 2.4 Pages monolithiques
+### 2.4 Auto-migrations dispersees dans les pages
+
+Du code `CREATE TABLE IF NOT EXISTS` et `ALTER TABLE` est execute a chaque chargement de page dans :
+- `pages/planning.php:18-25`
+- `pages/logements.php:16-26`
+- `pages/intervenants.php:16-21`
+- `pages/checkup_logement.php:30-67`
+- `pages/superhote.php:64-150`
+
+**Action :** Centraliser dans un systeme de migrations versionees.
+
+### 2.5 Catch blocks silencieux
+
+Plusieurs requetes DB echouent silencieusement :
+- `ionos/gestion/index.php:101-136` : 3 blocs try/catch avec `catch (PDOException $e) {}` vides
+- `pages/reservations.php:19-32` : erreurs ignorees
+
+**Action :** Logger les erreurs au minimum avec `error_log()`.
+
+### 2.6 Fonction PHP deprecated
+
+`ionos/gestion/index.php:242` : `strftime('%A %d %B %Y')` — deprecated depuis PHP 8.1, supprimee en PHP 9.0.
+
+**Action :** Remplacer par `IntlDateFormatter` ou `date()`.
+
+### 2.7 Pages monolithiques
 
 Chaque fichier dans `pages/` (148 fichiers) est autonome et melange :
 - Logique metier (requetes SQL)
@@ -141,7 +179,7 @@ Certaines pages font 1000+ lignes. Il n'y a pas de separation Model/View/Control
 
 **Action a terme :** Extraire la logique metier dans des fonctions reutilisables. Le fichier `ionos/gestion/src/Database.php` montre un debut de refactoring mais n'est utilise nulle part.
 
-### 2.5 Mot de passe reutilise
+### 2.8 Mot de passe reutilise
 
 Le mot de passe `**Baycpq25**` est utilise pour :
 - La base de donnees MySQL (IONOS)
@@ -237,14 +275,18 @@ openai>=1.0.0        # Inclus mais utilise en mode fallback uniquement
 
 ### Moyen terme (1-2 mois)
 11. Centraliser les connexions DB (un seul `connection.php`)
-12. Piner les dependances Python
-13. Remplacer les chemins `/home/raphael/` par des variables
-14. Extraire le CSS inline dans des fichiers separes
-15. Mettre en place un `.gitignore` complet
+12. Centraliser les auto-migrations dans un systeme versionne
+13. Piner les dependances Python
+14. Remplacer les chemins `/home/raphael/` par des variables
+15. Migrer les IPs hardcodees vers `.env` (`RPI_BASE_URL`)
+16. Extraire le CSS inline dans des fichiers separes
+17. Mettre en place un `.gitignore` complet
+18. Remplacer `strftime()` par `IntlDateFormatter`
+19. Corriger les catch blocks silencieux (ajouter `error_log`)
 
 ### Long terme
-16. Ajouter des tests automatises
-17. Mettre en place un CI/CD
-18. Refactoriser les pages monolithiques (separation MVC)
-19. Consolider les 2 bases de donnees (cf. MIGRATION_PLAN.md)
-20. Mettre en place des migrations versionees
+20. Ajouter des tests automatises
+21. Mettre en place un CI/CD
+22. Refactoriser les pages monolithiques (separation MVC)
+23. Consolider les 2 bases de donnees (cf. MIGRATION_PLAN.md)
+24. Mettre en place un systeme de logging structure (Monolog/PSR-3)
