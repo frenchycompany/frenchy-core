@@ -8,11 +8,11 @@
 function getRpiPdo() {
     static $pdoRpi = null;
     if ($pdoRpi === null) {
-        $host = env('RPI_DB_HOST', '109.219.194.30');
+        $host = env('RPI_DB_HOST', 'localhost');
         $port = env('RPI_DB_PORT', '3306');
         $name = env('RPI_DB_NAME', 'sms_db');
-        $user = env('RPI_DB_USER', 'remote');
-        $pass = env('RPI_DB_PASSWORD', 'remoteionos25');
+        $user = env('RPI_DB_USER', '');
+        $pass = env('RPI_DB_PASSWORD', '');
         $opts = [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_TIMEOUT => 5,
