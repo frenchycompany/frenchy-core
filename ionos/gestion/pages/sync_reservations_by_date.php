@@ -356,25 +356,25 @@ try {
     // Logique : PAS de ménage pour un check-in.
     // Si le logement a un check-out le même jour, le ménage de sortie suffit.
     // Si le logement est resté vide 2+ jours sans ménage → "À Vérifier" (vérif poussière).
-    $depLogIds = array_map(fn($d) => (int)$d[‘logement_id’], $deps);
+    $depLogIds = array_map(fn($d) => (int)$d['logement_id'], $deps);
 
     foreach ($arrs as $r) {
-        $resaId  = (int)$r[‘resa_id’];
-        $logId   = (int)$r[‘logement_id’];
-        $nbPers  = max(0, (int)$r[‘nb_pers’]);
-        $nbJours = max(0, (int)$r[‘nb_jours’]);
-        $srcLabel = $r[‘_source’] ?? ‘REMOTE’;
+        $resaId  = (int)$r['resa_id'];
+        $logId   = (int)$r['logement_id'];
+        $nbPers  = max(0, (int)$r['nb_pers']);
+        $nbJours = max(0, (int)$r['nb_jours']);
+        $srcLabel = $r['_source'] ?? 'REMOTE';
 
         // 0) Ce logement a un check-out le même jour → le ménage de sortie couvre, on skip
         if (in_array($logId, $depLogIds)) {
             $skipped++;
-            $report[‘arrivals’][] = [
-                ‘reservation_id’  => $resaId,
-                ‘logement_id’     => $logId,
-                ‘date’            => $target,
-                ‘reason’          => ‘checkout_same_day_covers_it’,
-                ‘created_now’     => false,
-                ‘intervention_id’ => null,
+            $report['arrivals'][] = [
+                'reservation_id'  => $resaId,
+                'logement_id'     => $logId,
+                'date'            => $target,
+                'reason'          => 'checkout_same_day_covers_it',
+                'created_now'     => false,
+                'intervention_id' => null,
             ];
             continue;
         }
@@ -385,39 +385,39 @@ try {
         $findAnyOnDate->closeCursor();
         if ($alreadyExists) {
             $skipped++;
-            $report[‘arrivals’][] = [
-                ‘reservation_id’  => $resaId,
-                ‘logement_id’     => $logId,
-                ‘date’            => $target,
-                ‘reason’          => ‘intervention_already_exists_on_date’,
-                ‘created_now’     => false,
-                ‘intervention_id’ => null,
+            $report['arrivals'][] = [
+                'reservation_id'  => $resaId,
+                'logement_id'     => $logId,
+                'date'            => $target,
+                'reason'          => 'intervention_already_exists_on_date',
+                'created_now'     => false,
+                'intervention_id' => null,
             ];
             continue;
         }
 
-        // 2) Vérifier depuis combien de jours le logement n’a pas eu d’intervention
+        // 2) Vérifier depuis combien de jours le logement n'a pas eu d'intervention
         $findLastIntervention->execute([$logId, $target]);
         $lastRow = $findLastIntervention->fetch(PDO::FETCH_ASSOC);
         $findLastIntervention->closeCursor();
-        $lastDate = $lastRow[‘last_date’] ?? null;
+        $lastDate = $lastRow['last_date'] ?? null;
 
         if ($lastDate) {
             $gapDays = (int)((strtotime($target) - strtotime($lastDate)) / 86400);
         } else {
-            $gapDays = 999; // jamais eu d’intervention → considéré comme longtemps
+            $gapDays = 999; // jamais eu d'intervention → considéré comme longtemps
         }
 
         // Si le logement a été vérifié/nettoyé il y a moins de 2 jours → pas besoin
         if ($gapDays < 2) {
             $skipped++;
-            $report[‘arrivals’][] = [
-                ‘reservation_id’  => $resaId,
-                ‘logement_id’     => $logId,
-                ‘date’            => $target,
-                ‘reason’          => ‘recently_cleaned_’ . $gapDays . ‘d_ago’,
-                ‘created_now’     => false,
-                ‘intervention_id’ => null,
+            $report['arrivals'][] = [
+                'reservation_id'  => $resaId,
+                'logement_id'     => $logId,
+                'date'            => $target,
+                'reason'          => 'recently_cleaned_' . $gapDays . 'd_ago',
+                'created_now'     => false,
+                'intervention_id' => null,
             ];
             continue;
         }
@@ -437,19 +437,19 @@ try {
         $findByHeuristic->closeCursor();
 
         $hadBefore = (bool)$existing;
-        $interventionId = $existing[‘id’] ?? null;
+        $interventionId = $existing['id'] ?? null;
         $createdNow = false;
 
         if (!$hadBefore) {
             if (!$DRY_RUN) {
                 $params = [
-                    ‘:logement_id’=>$logId,
-                    ‘:date’=>$target,
-                    ‘:nb_pers’=>$nbPers,
-                    ‘:nb_jours’=>$nbJours,
-                    ‘:note’=>$note,
+                    ':logement_id'=>$logId,
+                    ':date'=>$target,
+                    ':nb_pers'=>$nbPers,
+                    ':nb_jours'=>$nbJours,
+                    ':note'=>$note,
                 ];
-                if ($pl_has_src_id) $params[‘:resa_id’] = $resaId;
+                if ($pl_has_src_id) $params[':resa_id'] = $resaId;
                 $insertPlanningVerif->execute($params);
                 $interventionId = (int)$conn->lastInsertId();
                 ensure_token_if_possible($conn, $interventionId, $tokens_table);
@@ -460,15 +460,15 @@ try {
             $skipped++;
         }
 
-        $report[‘arrivals’][] = [
-            ‘reservation_id’         => $resaId,
-            ‘logement_id’            => $logId,
-            ‘date’                   => $target,
-            ‘gap_days’               => $gapDays,
-            ‘type’                   => ‘a_verifier’,
-            ‘had_intervention_before’=> $hadBefore,
-            ‘created_now’            => $createdNow && !$DRY_RUN,
-            ‘intervention_id’        => $interventionId,
+        $report['arrivals'][] = [
+            'reservation_id'         => $resaId,
+            'logement_id'            => $logId,
+            'date'                   => $target,
+            'gap_days'               => $gapDays,
+            'type'                   => 'a_verifier',
+            'had_intervention_before'=> $hadBefore,
+            'created_now'            => $createdNow && !$DRY_RUN,
+            'intervention_id'        => $interventionId,
         ];
     }
 
