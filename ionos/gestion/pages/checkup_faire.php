@@ -576,7 +576,7 @@ $progress = $total > 0 ? round(($done / $total) * 100) : 0;
                         <i class="fas fa-times"></i> Absent
                     </button>
                 </div>
-                <div class="ck-details <?= ($item['statut'] === 'probleme' || $item['statut'] === 'absent' || $item['commentaire']) ? 'open' : '' ?>" id="details-<?= $item['id'] ?>">
+                <div class="ck-details open" id="details-<?= $item['id'] ?>">
                     <textarea placeholder="Commentaire (optionnel)..." id="comment-<?= $item['id'] ?>"
                               onblur="saveComment(<?= $item['id'] ?>)"><?= htmlspecialchars($item['commentaire'] ?? '') ?></textarea>
                     <div class="photo-row">

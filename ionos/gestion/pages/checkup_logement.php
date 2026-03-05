@@ -148,14 +148,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['logement_id'])) {
         'Coussins decoratifs — propres et en place',
         'Plaids / couvertures — propres et plies',
         'Table basse — propre, sans traces',
-        'Meuble TV — propre, cables ranges',
-        'Television — fonctionne + telecommande',
         'Etageres / bibliotheque — propre, bien rangees',
         'Rideaux / voilages — propres, fonctionnent',
         'Fenetres salon — propres (interieur)',
         'Rebords de fenetres — sans poussiere',
-        'Radiateur / chauffage salon — propre et fonctionne',
-        'Climatisation salon — fonctionne (si present)',
         'Prises electriques salon — fonctionnent',
         'Lumieres / lampes salon — fonctionnent',
         'Interrupteurs salon — fonctionnent',
@@ -168,8 +164,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['logement_id'])) {
         $insertStmt->execute([$session_id, 'Salon / Sejour', $item, null]);
     }
 
-    // === 3. CUISINE (items fixes + equipements dynamiques) ===
-    $cuisineItems = [
+    // === 3. CUISINE ===
+    // Charger les equipements du logement
+    $equip = null;
+    try {
+        $stmt = $conn->prepare("SELECT * FROM logement_equipements WHERE logement_id = ?");
+        $stmt->execute([$logement_id]);
+        $equip = $stmt->fetch(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) { /* table n'existe pas encore */ }
+
+    // Items cuisine toujours presents
+    $cuisineBase = [
         'Sol cuisine — propre (lave)',
         'Plan de travail — propre, sans traces',
         'Evier — propre, pas bouche',
@@ -179,49 +184,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['logement_id'])) {
         'Poubelle tri selectif — videe',
         'Interieur placards — propres et ranges',
         'Vaisselle — propre et rangee',
-        'Verres — propres, pas ebrecbes',
+        'Verres — propres, pas ebreches',
         'Couverts — complets et propres',
         'Casseroles / poeles — propres',
         'Planche a decouper — propre',
         'Torchons — propres',
         'Eponge — neuve ou propre',
         'Produit vaisselle — disponible',
-        'Hotte aspirante — propre, filtre ok',
-        'Interieur du four — propre',
-        'Interieur micro-ondes — propre',
-        'Interieur refrigerateur — propre, pas de nourriture oubliee',
-        'Interieur congelateur — propre, pas de givre',
         'Interrupteurs / prises cuisine — fonctionnent',
         'Lumieres cuisine — fonctionnent',
         'Fenetres cuisine — propres',
         'Murs / credence — propres, sans eclaboussures',
     ];
-    foreach ($cuisineItems as $item) {
+    foreach ($cuisineBase as $item) {
         $insertStmt->execute([$session_id, 'Cuisine', $item, null]);
     }
 
-    // Equipements cuisine dynamiques
-    $equip = null;
-    try {
-        $stmt = $conn->prepare("SELECT * FROM logement_equipements WHERE logement_id = ?");
-        $stmt->execute([$logement_id]);
-        $equip = $stmt->fetch(PDO::FETCH_ASSOC);
-    } catch (PDOException $e) { /* table n'existe pas encore */ }
-
+    // Items cuisine conditionnels (selon equipements)
     if ($equip) {
-        $equipCuisine = [
+        $cuisineEquip = [
+            'four' => 'Four — fonctionne, interieur propre',
+            'micro_ondes' => 'Micro-ondes — fonctionne, interieur propre',
+            'plaque_cuisson' => 'Plaques de cuisson — propres, fonctionnent',
+            'refrigerateur' => 'Refrigerateur — fonctionne, interieur propre, pas de nourriture oubliee',
+            'congelateur' => 'Congelateur — fonctionne, interieur propre, pas de givre',
+            'lave_vaisselle' => 'Lave-vaisselle — fonctionne, interieur propre',
             'bouilloire' => 'Bouilloire — fonctionne et propre',
             'grille_pain' => 'Grille-pain — fonctionne et propre',
-            'lave_vaisselle' => 'Lave-vaisselle — fonctionne, interieur propre',
             'ustensiles_cuisine' => 'Ustensiles de cuisine — complets',
         ];
-        if ($equip['machine_cafe_type'] && $equip['machine_cafe_type'] !== 'aucune') {
-            $equipCuisine['machine_cafe_type'] = 'Machine a cafe (' . $equip['machine_cafe_type'] . ') — fonctionne, propre, capsules/dosettes';
+        if (!empty($equip['machine_cafe_type']) && $equip['machine_cafe_type'] !== 'aucune') {
+            $cuisineEquip['machine_cafe_type'] = 'Machine a cafe (' . $equip['machine_cafe_type'] . ') — fonctionne, propre, capsules/dosettes';
         }
-        foreach ($equipCuisine as $field => $label) {
-            if (isset($equip[$field]) && $equip[$field]) {
+        foreach ($cuisineEquip as $field => $label) {
+            if (!empty($equip[$field])) {
                 $insertStmt->execute([$session_id, 'Cuisine', $label, null]);
             }
+        }
+        // Hotte (pas de champ dedie, on l'ajoute toujours si la cuisine a des plaques)
+        if (!empty($equip['plaque_cuisson'])) {
+            $insertStmt->execute([$session_id, 'Cuisine', 'Hotte aspirante — propre, filtre ok', null]);
         }
     }
 
@@ -273,7 +275,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['logement_id'])) {
 
     for ($sb = 1; $sb <= $nbSdb; $sb++) {
         $catName = $nbSdb > 1 ? "Salle de bain $sb" : 'Salle de bain';
-        $sdbItems = [
+
+        // Items toujours presents
+        $sdbBase = [
             'Sol — propre et sec',
             'Lavabo — propre, sans calcaire',
             'Robinet lavabo — fonctionne, pas de fuite',
@@ -284,15 +288,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['logement_id'])) {
             'TOILETTES — chasse d\'eau fonctionne',
             'TOILETTES — brosse WC propre',
             'TOILETTES — porte-rouleau avec papier neuf',
-            'Douche — paroi/rideau propre',
-            'Douche — pommeau et flexible en bon etat',
-            'Douche — bac propre, evacuation ok',
-            'Douche — joints propres (pas de moisissure)',
-            'Baignoire — propre, evacuation ok (si presente)',
             'Carrelage mural — propre, joints ok',
             'Serviettes — propres, bien pliees/suspendues',
             'Tapis de bain — propre',
-            'Seche-cheveux — fonctionne (si present)',
             'Produits de toilette — savon, shampoing, gel douche',
             'Poubelle salle de bain — videe',
             'Ventilation / VMC — fonctionne',
@@ -302,8 +300,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['logement_id'])) {
             'Interrupteur — fonctionne',
             'Prise electrique — fonctionne',
         ];
-        foreach ($sdbItems as $item) {
+        foreach ($sdbBase as $item) {
             $insertStmt->execute([$session_id, $catName, $item, null]);
+        }
+
+        // Items conditionnels selon equipements
+        if ($equip) {
+            if (!empty($equip['douche'])) {
+                $insertStmt->execute([$session_id, $catName, 'Douche — paroi/rideau propre', null]);
+                $insertStmt->execute([$session_id, $catName, 'Douche — pommeau et flexible en bon etat', null]);
+                $insertStmt->execute([$session_id, $catName, 'Douche — bac propre, evacuation ok', null]);
+                $insertStmt->execute([$session_id, $catName, 'Douche — joints propres (pas de moisissure)', null]);
+            }
+            if (!empty($equip['baignoire'])) {
+                $insertStmt->execute([$session_id, $catName, 'Baignoire — propre, evacuation ok', null]);
+            }
+            if (!empty($equip['seche_cheveux'])) {
+                $insertStmt->execute([$session_id, $catName, 'Seche-cheveux — fonctionne', null]);
+            }
         }
     }
 
@@ -327,37 +341,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['logement_id'])) {
         $insertStmt->execute([$session_id, 'WC separe', $item, null]);
     }
 
-    // === 7. BUANDERIE / ENTRETIEN ===
-    $buanderieItems = [
-        'Sol — propre',
-        'Machine a laver — propre, joint ok',
-        'Seche-linge — propre, filtre nettoye (si present)',
-        'Fer a repasser — fonctionne (si present)',
-        'Table a repasser — en bon etat (si presente)',
-        'Aspirateur — fonctionne, sac/filtre ok',
-        'Balai / serpillere — propres',
-        'Produits menagers — en stock',
-        'Lessive — disponible',
-    ];
-    // N'ajouter que si certains equipements existent
+    // === 7. BUANDERIE / ENTRETIEN (uniquement les equipements presents) ===
     if ($equip) {
-        $buanderieChecks = [
-            'machine_laver', 'seche_linge', 'fer_repasser', 'table_repasser',
-            'aspirateur', 'produits_menage'
+        // Items de base toujours presents si au moins un equipement buanderie existe
+        $buanderieEquip = [
+            'machine_laver' => 'Machine a laver — propre, joint ok',
+            'seche_linge' => 'Seche-linge — propre, filtre nettoye',
+            'fer_repasser' => 'Fer a repasser — fonctionne',
+            'table_repasser' => 'Table a repasser — en bon etat',
+            'aspirateur' => 'Aspirateur — fonctionne, sac/filtre ok',
+            'produits_menage' => 'Produits menagers — en stock',
         ];
+
         $hasBuanderie = false;
-        foreach ($buanderieChecks as $bc) {
-            if (isset($equip[$bc]) && $equip[$bc]) { $hasBuanderie = true; break; }
-        }
-        if ($hasBuanderie) {
-            foreach ($buanderieItems as $item) {
-                $insertStmt->execute([$session_id, 'Buanderie / Entretien', $item, null]);
+        foreach ($buanderieEquip as $field => $label) {
+            if (!empty($equip[$field])) {
+                $insertStmt->execute([$session_id, 'Buanderie / Entretien', $label, null]);
+                $hasBuanderie = true;
             }
         }
-    } else {
-        // Pas d'equipements renseignes, on met les basiques
-        foreach ($buanderieItems as $item) {
-            $insertStmt->execute([$session_id, 'Buanderie / Entretien', $item, null]);
+
+        // Items generiques si au moins un equipement buanderie est present
+        if ($hasBuanderie) {
+            $insertStmt->execute([$session_id, 'Buanderie / Entretien', 'Sol — propre', null]);
+            $insertStmt->execute([$session_id, 'Buanderie / Entretien', 'Balai / serpillere — propres', null]);
+            $insertStmt->execute([$session_id, 'Buanderie / Entretien', 'Lessive — disponible', null]);
         }
     }
 
