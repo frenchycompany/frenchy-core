@@ -132,6 +132,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
 
 // Traitement : terminer le checkup
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['terminer'])) {
+    // Video obligatoire
+    if (empty($_FILES['video_fin']) || $_FILES['video_fin']['error'] !== UPLOAD_ERR_OK) {
+        echo '<script>alert("La video de fin est obligatoire pour terminer le checkup."); window.history.back();</script>';
+        exit;
+    }
+
     $commentaire_general = sanitizeString($_POST['commentaire_general'] ?? '');
 
     // Sauvegarder la signature si fournie
@@ -604,8 +610,11 @@ $progress = $total > 0 ? round(($done / $total) * 100) : 0;
         <textarea name="commentaire_general" placeholder="Remarques generales sur l'etat du logement..."><?= htmlspecialchars($session['commentaire_general'] ?? '') ?></textarea>
 
         <!-- Video de fin -->
-        <label style="margin-top:15px"><i class="fas fa-video"></i> Video de fin — Visite du logement</label>
+        <label style="margin-top:15px"><i class="fas fa-video"></i> Video de fin — Visite du logement <span style="color:#e53935;font-weight:700;">*obligatoire</span></label>
         <p style="font-size:0.85em;color:#888;margin:0 0 10px;">Filmez une visite rapide du logement pour confirmer l'etat de sortie.</p>
+        <div id="videoRequired" style="display:none;background:#fdd;color:#c00;padding:10px;border-radius:8px;margin-bottom:8px;font-weight:600;font-size:0.9em;">
+            <i class="fas fa-exclamation-circle"></i> La video de fin est obligatoire pour terminer le checkup.
+        </div>
         <div style="position:relative;">
             <input type="file" name="video_fin" id="videoFin" accept="video/*" capture="environment"
                    style="display:none" onchange="previewVideo(this)">
@@ -637,7 +646,7 @@ $progress = $total > 0 ? round(($done / $total) * 100) : 0;
         <input type="hidden" name="signature_data" id="signatureData">
 
         <input type="hidden" name="terminer" value="1">
-        <button type="submit" class="btn-finish" id="btnFinish" onclick="prepareSignature()">
+        <button type="submit" class="btn-finish" id="btnFinish" onclick="return prepareFinish()">
             <i class="fas fa-flag-checkered"></i> Terminer le checkup
         </button>
     </form>
@@ -824,10 +833,21 @@ function clearSignature() {
     }
 }
 
-function prepareSignature() {
+function prepareFinish() {
+    // Video obligatoire
+    var videoInput = document.getElementById('videoFin');
+    if (!videoInput.files || !videoInput.files[0]) {
+        document.getElementById('videoRequired').style.display = 'block';
+        document.getElementById('videoRequired').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return false;
+    }
+    document.getElementById('videoRequired').style.display = 'none';
+
+    // Signature
     if (sigHasContent && sigCanvas) {
         document.getElementById('signatureData').value = sigCanvas.toDataURL('image/png');
     }
+    return true;
 }
 
 // Video de fin

@@ -19,6 +19,11 @@ try {
     $conn->exec("ALTER TABLE intervenant ADD COLUMN actif TINYINT(1) NOT NULL DEFAULT 1");
 } catch (PDOException $e) { /* colonne existe déjà */ }
 
+// Auto-migration : colonnes checkup pour planning
+try { $conn->exec("ALTER TABLE planning ADD COLUMN checkup_planifie TINYINT(1) NOT NULL DEFAULT 0 AFTER bonus"); } catch (PDOException $e) {}
+try { $conn->exec("ALTER TABLE planning ADD COLUMN checkup_prix DECIMAL(10,2) DEFAULT 50.00 AFTER checkup_planifie"); } catch (PDOException $e) {}
+try { $conn->exec("ALTER TABLE planning ADD COLUMN checkup_intervenant_id INT DEFAULT NULL AFTER checkup_prix"); } catch (PDOException $e) {}
+
 // ---------------------------------------------------------------------
 // BONUS/COMPTA : enregistre le bonus fixe 10€ (5€ pour F1, 5€ pour F2)
 // - supprime d'abord les anciens bonus liés à l'intervention
@@ -131,6 +136,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['bulk_update'])) {
             $early_check_in = isset($_POST['early_check_in']) ? 1 : 0;
             $late_check_out = isset($_POST['late_check_out']) ? 1 : 0;
             $bonus = isset($_POST['bonus']) ? 1 : 0; // <-- BONUS (checkbox)
+            $checkup_planifie = isset($_POST['checkup_planifie']) ? 1 : 0;
+            $checkup_prix = !empty($_POST['checkup_prix']) ? (float)$_POST['checkup_prix'] : 50.00;
+            $checkup_intervenant_id = !empty($_POST['checkup_intervenant_id']) ? (int)$_POST['checkup_intervenant_id'] : null;
             $note = $_POST['note'] ?? '';
 
             if ($nombre_de_jours_reservation < 0) {
@@ -138,18 +146,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['bulk_update'])) {
             }
 
             $stmt = $conn->prepare("
-                UPDATE planning 
-                SET date = ?, nombre_de_personnes = ?, nombre_de_jours_reservation = ?, statut = ?, 
+                UPDATE planning
+                SET date = ?, nombre_de_personnes = ?, nombre_de_jours_reservation = ?, statut = ?,
                     conducteur = ?, femme_de_menage_1 = ?, femme_de_menage_2 = ?, laverie = ?,
-                    lit_bebe = ?, nombre_lits_specifique = ?, early_check_in = ?, late_check_out = ?, 
-                    bonus = ?, note = ?
+                    lit_bebe = ?, nombre_lits_specifique = ?, early_check_in = ?, late_check_out = ?,
+                    bonus = ?, checkup_planifie = ?, checkup_prix = ?, checkup_intervenant_id = ?, note = ?
                 WHERE id = ?
             ");
             $stmt->execute([
                 $date, $nombre_de_personnes, $nombre_de_jours_reservation, $statut,
                 $conducteur_id, $femme_de_menage_1_id, $femme_de_menage_2_id, $laverie_id,
                 $lit_bebe, $nombre_lits_specifique, $early_check_in, $late_check_out,
-                $bonus, $note, $id
+                $bonus, $checkup_planifie, $checkup_prix, $checkup_intervenant_id, $note, $id
             ]);
 
             // BONUS/COMPTA
@@ -189,6 +197,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['bulk_update'])) {
         $early_check_in              = isset($_POST['early_check_in']) ? 1 : 0;
         $late_check_out              = isset($_POST['late_check_out']) ? 1 : 0;
         $bonus                       = isset($_POST['bonus']) ? 1 : 0; // <-- BONUS (checkbox)
+        $checkup_planifie            = isset($_POST['checkup_planifie']) ? 1 : 0;
+        $checkup_prix                = !empty($_POST['checkup_prix']) ? (float)$_POST['checkup_prix'] : 50.00;
+        $checkup_intervenant_id      = !empty($_POST['checkup_intervenant_id']) ? (int)$_POST['checkup_intervenant_id'] : null;
         $note                        = $_POST['note'] ?? '';
 
         if ($nombre_de_jours_reservation < 0) {
@@ -212,8 +223,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['bulk_update'])) {
                 early_check_in,
                 late_check_out,
                 bonus,
+                checkup_planifie,
+                checkup_prix,
+                checkup_intervenant_id,
                 note
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
         $stmt->execute([
             $logement_id,
@@ -230,6 +244,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['bulk_update'])) {
             $early_check_in,
             $late_check_out,
             $bonus,
+            $checkup_planifie,
+            $checkup_prix,
+            $checkup_intervenant_id,
             $note
         ]);
 
@@ -249,14 +266,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['bulk_update'])) {
         ");
         $tokStmt->execute([$intervention_id, $token, $expires_at]);
 
-        // 4) Lien de validation
-        // Domaine pour les liens WhatsApp (toujours le vrai domaine, jamais une IP)
+        // 4) Liens
         $domain = 'https://gestion.frenchyconciergerie.fr';
         $validation_link = $domain . '/pages/validate.php?token=' . $token;
 
+        // Recuperer nom du logement et intervenant checkup pour le message WhatsApp
+        $logNom = $conn->prepare("SELECT nom_du_logement FROM liste_logements WHERE id = ?");
+        $logNom->execute([$logement_id]);
+        $nomLogement = $logNom->fetchColumn() ?: 'Logement';
+
         echo '<div class="alert alert-info">';
-        echo 'Lien de validation généré : <a href="' . $validation_link . '" target="_blank">' . $validation_link . '</a>';
+        echo 'Lien de validation : <a href="' . htmlspecialchars($validation_link) . '" target="_blank">' . htmlspecialchars($validation_link) . '</a>';
         echo '</div>';
+
+        // Lien checkup + WhatsApp si checkup planifie
+        if ($checkup_planifie) {
+            $checkup_link = $domain . '/pages/checkup_logement.php?auto_logement=' . $logement_id;
+            $whatsMsg = "Bonjour ! Checkup planifie pour *" . $nomLogement . "* le " . date('d/m/Y', strtotime($date)) . ".\n";
+            $whatsMsg .= "Remuneration : " . number_format($checkup_prix, 2, ',', ' ') . " EUR\n\n";
+            $whatsMsg .= "Lancer le checkup :\n" . $checkup_link;
+            $whatsUrl = 'https://wa.me/';
+
+            // Recuperer le numero de l'intervenant checkup
+            if ($checkup_intervenant_id) {
+                $phoneStmt = $conn->prepare("SELECT numero FROM intervenant WHERE id = ?");
+                $phoneStmt->execute([$checkup_intervenant_id]);
+                $phone = $phoneStmt->fetchColumn();
+                if ($phone) {
+                    $phone = preg_replace('/[^0-9]/', '', $phone);
+                    if (substr($phone, 0, 1) === '0') $phone = '33' . substr($phone, 1);
+                    $whatsUrl .= $phone;
+                }
+            }
+            $whatsUrl .= '?text=' . rawurlencode($whatsMsg);
+
+            echo '<div class="alert alert-success">';
+            echo '<i class="fas fa-clipboard-check"></i> <strong>Checkup planifie</strong> (' . number_format($checkup_prix, 2, ',', ' ') . ' &euro;)<br>';
+            echo '<a href="' . htmlspecialchars($checkup_link) . '" target="_blank" class="btn btn-sm btn-success mt-1"><i class="fas fa-clipboard-check"></i> Lien Checkup</a> ';
+            echo '<a href="' . htmlspecialchars($whatsUrl) . '" target="_blank" class="btn btn-sm mt-1" style="background:#25D366;color:#fff;"><i class="fab fa-whatsapp"></i> Envoyer par WhatsApp</a>';
+            echo '</div>';
+        }
     }
 }
 
@@ -531,6 +580,23 @@ $charges = $chargeStmt->fetchAll(PDO::FETCH_ASSOC);
                                   <input class="form-check-input" type="checkbox" name="bonus" id="bonus_<?= $intervention['id'] ?>" <?= !empty($intervention['bonus']) ? 'checked' : '' ?> <?= $is_admin ? '' : 'disabled' ?>>
                                   <label class="form-check-label" for="bonus_<?= $intervention['id'] ?>">Bonus (10 €)</label>
                                 </div>
+                                <!-- CHECKUP -->
+                                <div class="form-check">
+                                  <input class="form-check-input" type="checkbox" name="checkup_planifie" id="checkup_<?= $intervention['id'] ?>" <?= !empty($intervention['checkup_planifie']) ? 'checked' : '' ?> <?= $is_admin ? '' : 'disabled' ?> onchange="document.getElementById('ck_opts_<?= $intervention['id'] ?>').style.display=this.checked?'block':'none'">
+                                  <label class="form-check-label" for="checkup_<?= $intervention['id'] ?>"><i class="fas fa-clipboard-check text-success"></i> Checkup</label>
+                                </div>
+                                <div id="ck_opts_<?= $intervention['id'] ?>" style="<?= !empty($intervention['checkup_planifie']) ? '' : 'display:none;' ?>font-size:0.82em;">
+                                  <input type="number" name="checkup_prix" value="<?= htmlspecialchars($intervention['checkup_prix'] ?? '50') ?>" class="form-control form-control-sm mt-1" placeholder="Prix €" step="0.01" min="0" <?= $is_admin ? '' : 'readonly' ?>>
+                                  <select name="checkup_intervenant_id" class="form-control form-control-sm mt-1" <?= $is_admin ? '' : 'disabled' ?>>
+                                    <option value="">-- Checkup --</option>
+                                    <?php foreach ($intervenants as $intv): ?>
+                                      <option value="<?= $intv['id'] ?>" <?= ($intervention['checkup_intervenant_id'] ?? null) == $intv['id'] ? 'selected' : '' ?>><?= htmlspecialchars($intv['nom']) ?></option>
+                                    <?php endforeach; ?>
+                                  </select>
+                                  <?php if (!empty($intervention['checkup_planifie'])): ?>
+                                  <a href="checkup_logement.php?auto_logement=<?= $intervention['logement_id'] ?>" class="btn btn-sm btn-success mt-1" style="font-size:0.8em;"><i class="fas fa-clipboard-check"></i> Lancer</a>
+                                  <?php endif; ?>
+                                </div>
 
                                 <select name="nombre_lits_specifique" class="form-control form-control-sm mt-1" <?= $is_admin ? '' : 'disabled' ?>>
                                     <option value="" <?= empty($intervention['nombre_lits_specifique']) ? 'selected' : '' ?>>Nb Lits...</option>
@@ -605,6 +671,9 @@ $charges = $chargeStmt->fetchAll(PDO::FETCH_ASSOC);
                         </td>
                         <td data-label="Actions">
                             <button type="submit" class="btn btn-primary btn-sm">Modifier</button>
+                            <a href="checkup_logement.php?auto_logement=<?= $intervention['logement_id'] ?>" class="btn btn-success btn-sm" title="Lancer un checkup">
+                                <i class="fas fa-clipboard-check"></i> Checkup
+                            </a>
                             <?php if ($is_admin): ?>
                             <button type="submit" name="action" value="supprimer" class="btn btn-danger btn-sm" onclick="return confirm('Confirmer la suppression ?')">Supprimer</button>
                             <?php endif; ?>
@@ -676,6 +745,26 @@ $charges = $chargeStmt->fetchAll(PDO::FETCH_ASSOC);
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" name="bonus" id="add_bonus">
                         <label class="form-check-label" for="add_bonus">Bonus (10 €)</label>
+                    </div>
+                    <!-- CHECKUP -->
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="checkup_planifie" id="add_checkup" onchange="document.getElementById('checkup_options').style.display=this.checked?'block':'none'">
+                        <label class="form-check-label" for="add_checkup"><i class="fas fa-clipboard-check text-success"></i> Checkup planifie</label>
+                    </div>
+                    <div id="checkup_options" style="display:none;margin-top:6px;padding:8px;background:#e8f5e9;border-radius:8px;">
+                        <div class="form-group mb-2">
+                            <label for="add_checkup_prix" class="form-label" style="font-size:0.85em;">Prix checkup (&euro;)</label>
+                            <input type="number" name="checkup_prix" id="add_checkup_prix" class="form-control form-control-sm" value="50" min="0" step="0.01">
+                        </div>
+                        <div class="form-group">
+                            <label for="add_checkup_intervenant" class="form-label" style="font-size:0.85em;">Attribuer le checkup a</label>
+                            <select name="checkup_intervenant_id" id="add_checkup_intervenant" class="form-control form-control-sm">
+                                <option value="">-- Meme conducteur --</option>
+                                <?php foreach ($intervenants as $intervenant): ?>
+                                    <option value="<?= $intervenant['id'] ?>"><?= htmlspecialchars($intervenant['nom']) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
                     </div>
                 </div>
                  <div class="form-group col-md-2">
