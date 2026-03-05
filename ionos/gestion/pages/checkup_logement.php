@@ -125,47 +125,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['logement_id'])) {
         "INSERT INTO checkup_items (session_id, categorie, nom_item, todo_task_id) VALUES (?, ?, ?, ?)"
     );
 
-    // === 1. ENTREE / ACCES ===
-    $entree = [
-        'Porte d\'entree — etat et fermeture',
-        'Serrure / digicode — fonctionne correctement',
-        'Boite a cles / key box — verifier',
-        'Paillasson — propre et en bon etat',
-        'Couloir d\'entree — proprete',
-        'Interrupteurs entree — fonctionnent',
-        'Patere / porte-manteaux — etat',
-        'Rangement chaussures — propre',
-    ];
-    foreach ($entree as $item) {
-        $insertStmt->execute([$session_id, 'Entree / Acces', $item, null]);
-    }
-
-    // === 2. SALON / SEJOUR ===
-    $salon = [
-        'Sol du salon — propre (aspire/lave)',
-        'Sous le canape — propre, rien oublie',
-        'Canape — etat des coussins et assise',
-        'Coussins decoratifs — propres et en place',
-        'Plaids / couvertures — propres et plies',
-        'Table basse — propre, sans traces',
-        'Etageres / bibliotheque — propre, bien rangees',
-        'Rideaux / voilages — propres, fonctionnent',
-        'Fenetres salon — propres (interieur)',
-        'Rebords de fenetres — sans poussiere',
-        'Prises electriques salon — fonctionnent',
-        'Lumieres / lampes salon — fonctionnent',
-        'Interrupteurs salon — fonctionnent',
-        'Murs salon — pas de taches / trous',
-        'Plafond salon — pas de taches / fissures',
-        'Plinthes salon — propres',
-        'Decoration murale — en place, pas abimee',
-    ];
-    foreach ($salon as $item) {
-        $insertStmt->execute([$session_id, 'Salon / Sejour', $item, null]);
-    }
-
-    // === 3. CUISINE ===
-    // Charger les equipements du logement
+    // Charger les equipements du logement EN PREMIER
     $equip = null;
     try {
         $stmt = $conn->prepare("SELECT * FROM logement_equipements WHERE logement_id = ?");
@@ -173,6 +133,91 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['logement_id'])) {
         $equip = $stmt->fetch(PDO::FETCH_ASSOC);
     } catch (PDOException $e) { /* table n'existe pas encore */ }
 
+    // === 1. ENTREE / ACCES ===
+    $entree = [
+        'Porte d\'entree — etat et fermeture',
+    ];
+    if ($equip && !empty($equip['code_porte'])) {
+        $entree[] = 'Serrure / digicode (' . $equip['code_porte'] . ') — fonctionne';
+    } else {
+        $entree[] = 'Serrure — fonctionne correctement';
+    }
+    if ($equip && !empty($equip['code_boite_cles'])) {
+        $entree[] = 'Boite a cles / key box (code: ' . $equip['code_boite_cles'] . ') — verifier';
+    }
+    $entree[] = 'Paillasson — propre et en bon etat';
+    $entree[] = 'Couloir d\'entree — proprete';
+    $entree[] = 'Interrupteurs entree — fonctionnent';
+    $entree[] = 'Patere / porte-manteaux — etat';
+    if ($equip && !empty($equip['ascenseur'])) {
+        $entree[] = 'Ascenseur — fonctionne';
+    }
+    if ($equip && !empty($equip['heure_checkin'])) {
+        $entree[] = 'Heure check-in (' . $equip['heure_checkin'] . ') — affichee';
+    }
+    if ($equip && !empty($equip['heure_checkout'])) {
+        $entree[] = 'Heure check-out (' . $equip['heure_checkout'] . ') — affichee';
+    }
+    foreach ($entree as $item) {
+        $insertStmt->execute([$session_id, 'Entree / Acces', $item, null]);
+    }
+
+    // === 2. SALON / SEJOUR ===
+    $salon = [
+        'Sol du salon — propre (aspire/lave)',
+    ];
+    if ($equip && !empty($equip['canape'])) {
+        $salon[] = 'Canape — etat des coussins et assise';
+        $salon[] = 'Sous le canape — propre, rien oublie';
+        $salon[] = 'Coussins decoratifs — propres et en place';
+        $salon[] = 'Plaids / couvertures — propres et plies';
+    }
+    if ($equip && !empty($equip['canape_convertible'])) {
+        $salon[] = 'Canape convertible — mecanisme fonctionne, matelas propre';
+    }
+    $salon[] = 'Table basse — propre, sans traces';
+    if ($equip && !empty($equip['tv'])) {
+        $salon[] = 'Meuble TV — propre, cables ranges';
+    }
+    if ($equip && !empty($equip['table_manger'])) {
+        $nbPlaces = (!empty($equip['table_manger_places'])) ? ' (' . $equip['table_manger_places'] . ' places)' : '';
+        $salon[] = 'Table a manger' . $nbPlaces . ' — propre';
+        $salon[] = 'Chaises — propres, en bon etat';
+    }
+    if ($equip && !empty($equip['bureau'])) {
+        $salon[] = 'Bureau — propre, chaise ok';
+    }
+    if ($equip && !empty($equip['livres'])) {
+        $salon[] = 'Livres / bibliotheque — en ordre';
+    }
+    if ($equip && !empty($equip['jeux_societe'])) {
+        $salon[] = 'Jeux de societe — complets, en bon etat';
+    }
+    $salon[] = 'Rideaux / voilages — propres, fonctionnent';
+    $salon[] = 'Fenetres salon — propres (interieur)';
+    $salon[] = 'Rebords de fenetres — sans poussiere';
+    if ($equip && !empty($equip['chauffage'])) {
+        $typeChauf = !empty($equip['chauffage_type']) ? ' (' . $equip['chauffage_type'] . ')' : '';
+        $salon[] = 'Chauffage' . $typeChauf . ' — fonctionne';
+    }
+    if ($equip && !empty($equip['climatisation'])) {
+        $salon[] = 'Climatisation — fonctionne';
+    }
+    if ($equip && !empty($equip['ventilateur'])) {
+        $salon[] = 'Ventilateur — fonctionne';
+    }
+    $salon[] = 'Prises electriques salon — fonctionnent';
+    $salon[] = 'Lumieres / lampes salon — fonctionnent';
+    $salon[] = 'Interrupteurs salon — fonctionnent';
+    $salon[] = 'Murs salon — pas de taches / trous';
+    $salon[] = 'Plafond salon — pas de taches / fissures';
+    $salon[] = 'Plinthes salon — propres';
+    $salon[] = 'Decoration murale — en place, pas abimee';
+    foreach ($salon as $item) {
+        $insertStmt->execute([$session_id, 'Salon / Sejour', $item, null]);
+    }
+
+    // === 3. CUISINE ===
     // Items cuisine toujours presents
     $cuisineBase = [
         'Sol cuisine — propre (lave)',
@@ -253,7 +298,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['logement_id'])) {
             'Fenetres — propres, ferment bien',
             'Volets / stores — fonctionnent',
             'Rebords de fenetres — sans poussiere',
-            'Radiateur / chauffage — propre et fonctionne',
             'Prises electriques — fonctionnent',
             'Lumieres / plafonnier — fonctionnent',
             'Interrupteurs — fonctionnent',
@@ -264,6 +308,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['logement_id'])) {
         ];
         foreach ($chambreItems as $item) {
             $insertStmt->execute([$session_id, $catName, $item, null]);
+        }
+        // Items conditionnels chambre
+        if ($equip && !empty($equip['chauffage'])) {
+            $insertStmt->execute([$session_id, $catName, 'Radiateur / chauffage — propre et fonctionne', null]);
         }
     }
 
@@ -419,20 +467,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['logement_id'])) {
         }
     }
 
-    // === 10. SECURITE ===
-    $securiteItems = [
-        'Detecteur de fumee — present et fonctionne',
-        'Detecteur CO — present et fonctionne (si requis)',
-        'Extincteur — present et accessible',
-        'Trousse de secours — presente et complete',
-        'Numero urgences — affiche',
-        'Issues de secours — degagees',
-    ];
-    if ($equip && !empty($equip['coffre_fort'])) {
-        $securiteItems[] = 'Coffre-fort — fonctionne';
-    }
-    foreach ($securiteItems as $item) {
-        $insertStmt->execute([$session_id, 'Securite', $item, null]);
+    // === 10. SECURITE (conditionnel selon equipements) ===
+    if ($equip) {
+        $securiteItems = [];
+        if (!empty($equip['detecteur_fumee'])) $securiteItems[] = 'Detecteur de fumee — present et fonctionne';
+        if (!empty($equip['detecteur_co'])) $securiteItems[] = 'Detecteur CO — present et fonctionne';
+        if (!empty($equip['extincteur'])) $securiteItems[] = 'Extincteur — present et accessible';
+        if (!empty($equip['trousse_secours'])) $securiteItems[] = 'Trousse de secours — presente et complete';
+        if (!empty($equip['coffre_fort'])) $securiteItems[] = 'Coffre-fort — fonctionne';
+        // Toujours verifier
+        $securiteItems[] = 'Issues de secours — degagees';
+        if (!empty($equip['numeros_urgence'])) {
+            $securiteItems[] = 'Numeros urgences — affiches';
+        }
+        foreach ($securiteItems as $item) {
+            $insertStmt->execute([$session_id, 'Securite', $item, null]);
+        }
     }
 
     // === 11. ENFANTS (si equipements enfants declares) ===
@@ -506,14 +556,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['logement_id'])) {
         'Poignees de porte — toutes en bon etat',
         'Fonctionnement de TOUTES les lumieres',
         'Fonctionnement de TOUTES les prises electriques',
-        'Fonctionnement du WiFi — connexion ok',
-        'Mot de passe WiFi — affiche / accessible',
         'Cles / codes d\'acces — complets et fonctionnels',
-        'Thermostat / chauffage — regle correctement',
         'Livret d\'accueil — present et a jour',
-        'Guide de la maison — present',
         'Compteurs (eau, elec) — releves',
     ];
+    if ($equip && !empty($equip['nom_wifi'])) {
+        $etatGeneral[] = 'WiFi (' . $equip['nom_wifi'] . ') — connexion ok';
+        $etatGeneral[] = 'Mot de passe WiFi — affiche / accessible';
+    }
+    if ($equip && !empty($equip['chauffage'])) {
+        $etatGeneral[] = 'Thermostat / chauffage — regle correctement';
+    }
     foreach ($etatGeneral as $item) {
         $insertStmt->execute([$session_id, 'Etat general', $item, null]);
     }
@@ -527,10 +580,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['logement_id'])) {
         'Sacs poubelle — stock suffisant',
         'Essuie-tout — disponible',
         'Sel, poivre, huile — basiques cuisine',
-        'Capsules / dosettes cafe (si machine)',
         'The / tisane — disponible',
         'Sucre — disponible',
     ];
+    if ($equip && !empty($equip['machine_cafe_type']) && $equip['machine_cafe_type'] !== 'aucune') {
+        $fournitures[] = 'Capsules / dosettes cafe (' . $equip['machine_cafe_type'] . ') — stock ok';
+    }
+    if ($equip && !empty($equip['linge_lit_fourni'])) {
+        $fournitures[] = 'Draps propres — en stock';
+    }
+    if ($equip && !empty($equip['serviettes_fournies'])) {
+        $fournitures[] = 'Serviettes propres — en stock';
+    }
     foreach ($fournitures as $item) {
         $insertStmt->execute([$session_id, 'Fournitures', $item, null]);
     }
