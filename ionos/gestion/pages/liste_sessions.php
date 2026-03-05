@@ -5,6 +5,39 @@
 include '../config.php';
 include '../pages/menu.php';
 
+$is_admin = (($_SESSION['role'] ?? '') === 'admin');
+
+// AJAX : suppression d'une session (admin uniquement)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_delete_session'])) {
+    header('Content-Type: application/json');
+    if (!$is_admin) {
+        echo json_encode(['error' => 'Accès refusé']);
+        exit;
+    }
+    $del_id = $_POST['session_id'] ?? '';
+    if (empty($del_id)) {
+        echo json_encode(['error' => 'Session non spécifiée']);
+        exit;
+    }
+    // Supprimer les fichiers photos et QR codes associés
+    $stmtFiles = $conn->prepare("SELECT photo_path, qr_code_path FROM inventaire_objets WHERE session_id = ?");
+    $stmtFiles->execute([$del_id]);
+    $files = $stmtFiles->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($files as $f) {
+        if (!empty($f['photo_path']) && file_exists(__DIR__ . '/../' . $f['photo_path'])) {
+            @unlink(__DIR__ . '/../' . $f['photo_path']);
+        }
+        if (!empty($f['qr_code_path']) && file_exists(__DIR__ . '/' . $f['qr_code_path'])) {
+            @unlink(__DIR__ . '/' . $f['qr_code_path']);
+        }
+    }
+    // Supprimer les objets puis la session
+    $conn->prepare("DELETE FROM inventaire_objets WHERE session_id = ?")->execute([$del_id]);
+    $conn->prepare("DELETE FROM sessions_inventaire WHERE id = ?")->execute([$del_id]);
+    echo json_encode(['success' => true]);
+    exit;
+}
+
 // Sessions en cours
 $enCours = $conn->query("
     SELECT s.id, s.date_creation, s.statut, l.nom_du_logement,
@@ -111,9 +144,28 @@ $terminees = $conn->query("
             font-size: 1em;
             margin-top: 15px;
         }
+        .session-card-wrap {
+            position: relative;
+        }
+        .btn-delete-session {
+            position: absolute;
+            top: 50%;
+            right: -40px;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #e53935;
+            font-size: 1.1em;
+            cursor: pointer;
+            padding: 8px;
+            opacity: 0.6;
+            transition: opacity 0.15s;
+        }
+        .btn-delete-session:hover { opacity: 1; }
         @media (max-width: 600px) {
             .sessions-container { padding: 0 6px 30px; }
             .session-card { flex-direction: column; align-items: flex-start; gap: 8px; }
+            .btn-delete-session { right: 5px; top: 5px; transform: none; }
         }
     </style>
 </head>
@@ -133,6 +185,7 @@ $terminees = $conn->query("
         <p class="empty-msg">Aucune session en cours.</p>
     <?php else: ?>
         <?php foreach ($enCours as $s): ?>
+        <div class="session-card-wrap" id="session-<?= htmlspecialchars($s['id']) ?>">
         <a class="session-card" href="inventaire_saisie.php?session_id=<?= urlencode($s['id']) ?>">
             <div class="session-info">
                 <h4><?= htmlspecialchars($s['nom_du_logement']) ?></h4>
@@ -143,6 +196,12 @@ $terminees = $conn->query("
                 <span class="stat-badge stat-encours">En cours</span>
             </div>
         </a>
+        <?php if ($is_admin): ?>
+            <button class="btn-delete-session" onclick="deleteSession('<?= htmlspecialchars($s['id'], ENT_QUOTES) ?>')" title="Supprimer cette session">
+                <i class="fas fa-trash-alt"></i>
+            </button>
+        <?php endif; ?>
+        </div>
         <?php endforeach; ?>
     <?php endif; ?>
 
@@ -156,6 +215,7 @@ $terminees = $conn->query("
         <p class="empty-msg">Aucune session terminee.</p>
     <?php else: ?>
         <?php foreach ($terminees as $s): ?>
+        <div class="session-card-wrap" id="session-<?= htmlspecialchars($s['id']) ?>">
         <a class="session-card" href="inventaire_saisie.php?session_id=<?= urlencode($s['id']) ?>">
             <div class="session-info">
                 <h4><?= htmlspecialchars($s['nom_du_logement']) ?></h4>
@@ -166,6 +226,12 @@ $terminees = $conn->query("
                 <span class="stat-badge stat-terminee">Terminee</span>
             </div>
         </a>
+        <?php if ($is_admin): ?>
+            <button class="btn-delete-session" onclick="deleteSession('<?= htmlspecialchars($s['id'], ENT_QUOTES) ?>')" title="Supprimer cette session">
+                <i class="fas fa-trash-alt"></i>
+            </button>
+        <?php endif; ?>
+        </div>
         <?php endforeach; ?>
     <?php endif; ?>
 
@@ -173,5 +239,26 @@ $terminees = $conn->query("
         <a href="inventaire_lancer.php" class="btn-new"><i class="fas fa-plus"></i> Nouveau inventaire</a>
     </div>
 </div>
+<?php if ($is_admin): ?>
+<script>
+function deleteSession(sessionId) {
+    if (!confirm('Supprimer cette session et tous ses objets ? Cette action est irréversible.')) return;
+    var fd = new FormData();
+    fd.append('ajax_delete_session', '1');
+    fd.append('session_id', sessionId);
+    fetch('liste_sessions.php', { method: 'POST', body: fd })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.success) {
+                var el = document.getElementById('session-' + sessionId);
+                if (el) el.remove();
+            } else {
+                alert(data.error || 'Erreur lors de la suppression');
+            }
+        })
+        .catch(function() { alert('Erreur de connexion'); });
+}
+</script>
+<?php endif; ?>
 </body>
 </html>

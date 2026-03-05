@@ -25,7 +25,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             if (empty($row['qr_code_path']) || !file_exists($row['qr_code_path'])) {
                 $qr_dir = __DIR__ . '/../uploads/qrcodes/';
-                if (!is_dir($qr_dir)) mkdir($qr_dir, 0777, true);
+                if (!is_dir($qr_dir)) mkdir($qr_dir, 0775, true);
+                if (!is_writable($qr_dir)) @chmod($qr_dir, 0775);
 
                 // Génère un QR code pointant sur la fiche OBJET (inventaire_objets)
                 $qr_url = "https://gestion.frenchyconciergerie.fr/pages/objet.php?id=" . $objet_id;

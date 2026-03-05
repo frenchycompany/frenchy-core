@@ -33,6 +33,32 @@ if (!$session) {
 
 $logement_id = $session['logement_id'];
 $isTerminee = ($session['statut'] === 'terminee');
+$is_admin = (($_SESSION['role'] ?? '') === 'admin');
+
+// AJAX : supprimer la session (admin uniquement)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_delete_session'])) {
+    header('Content-Type: application/json');
+    if (!$is_admin) {
+        echo json_encode(['error' => 'Accès refusé']);
+        exit;
+    }
+    // Supprimer les fichiers photos et QR codes
+    $stmtFiles = $conn->prepare("SELECT photo_path, qr_code_path FROM inventaire_objets WHERE session_id = ?");
+    $stmtFiles->execute([$session_id]);
+    $files = $stmtFiles->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($files as $f) {
+        if (!empty($f['photo_path']) && file_exists(__DIR__ . '/../' . $f['photo_path'])) {
+            @unlink(__DIR__ . '/../' . $f['photo_path']);
+        }
+        if (!empty($f['qr_code_path']) && file_exists(__DIR__ . '/' . $f['qr_code_path'])) {
+            @unlink(__DIR__ . '/' . $f['qr_code_path']);
+        }
+    }
+    $conn->prepare("DELETE FROM inventaire_objets WHERE session_id = ?")->execute([$session_id]);
+    $conn->prepare("DELETE FROM sessions_inventaire WHERE id = ?")->execute([$session_id]);
+    echo json_encode(['success' => true]);
+    exit;
+}
 
 // AJAX : changer l'intervenant
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_change_intervenant'])) {
@@ -73,7 +99,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
         $photo_path = null;
         if (!empty($_FILES['photo']['tmp_name']) && $_FILES['photo']['error'] === 0) {
             $upload_dir = '../uploads/inventaire/';
-            if (!is_dir($upload_dir)) mkdir($upload_dir, 0777, true);
+            if (!is_dir($upload_dir)) mkdir($upload_dir, 0775, true);
+            if (!is_writable($upload_dir)) @chmod($upload_dir, 0775);
             $ext = strtolower(pathinfo($_FILES['photo']['name'], PATHINFO_EXTENSION));
             $allowed = ['jpg', 'jpeg', 'png', 'webp', 'heic'];
             if (in_array($ext, $allowed)) {
@@ -418,6 +445,21 @@ $pieces = [
             background: #e3f2fd;
             color: #1976d2;
         }
+        .btn-delete-session-main {
+            background: #fff;
+            color: #e53935;
+            border: 2px solid #e53935;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 0.95em;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+        }
+        .btn-delete-session-main:hover {
+            background: #e53935;
+            color: #fff;
+        }
         @media (max-width: 600px) {
             .inv-container { padding: 0 6px 30px; }
             .form-row-half { flex-direction: column; gap: 0; }
@@ -582,6 +624,13 @@ $pieces = [
         </a>
         <?php endif; ?>
     </div>
+    <?php if ($is_admin): ?>
+    <div style="text-align:center;margin-top:20px;">
+        <button onclick="deleteSession()" class="btn-delete-session-main">
+            <i class="fas fa-trash-alt"></i> Supprimer cette session
+        </button>
+    </div>
+    <?php endif; ?>
 </div>
 
 <script>
@@ -742,6 +791,22 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+function deleteSession() {
+    if (!confirm('Supprimer cette session et tous ses objets ? Cette action est irréversible.')) return;
+    var fd = new FormData();
+    fd.append('ajax_delete_session', '1');
+    fetch('inventaire_saisie.php?session_id=' + sessionId, { method: 'POST', body: fd })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.success) {
+                window.location.href = 'liste_sessions.php';
+            } else {
+                alert(data.error || 'Erreur lors de la suppression');
+            }
+        })
+        .catch(function() { alert('Erreur de connexion'); });
 }
 </script>
 </body>

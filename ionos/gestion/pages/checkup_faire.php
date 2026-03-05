@@ -166,7 +166,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['terminer'])) {
             $sigBinary = base64_decode($sigData);
             if ($sigBinary !== false && strlen($sigBinary) < 500000) { // Max 500Ko
                 $sigDir = __DIR__ . '/../uploads/signatures/';
-                if (!is_dir($sigDir)) mkdir($sigDir, 0755, true);
+                if (!is_dir($sigDir)) mkdir($sigDir, 0775, true);
+                if (!is_writable($sigDir)) @chmod($sigDir, 0775);
                 $sigFile = 'sig_' . $session_id . '_' . time() . '.png';
                 file_put_contents($sigDir . $sigFile, $sigBinary);
                 $signaturePath = 'uploads/signatures/' . $sigFile;
@@ -184,7 +185,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['terminer'])) {
 
         if (in_array($videoExt, $allowedVideoExt) && $videoFile['size'] <= $maxVideoSize) {
             $videoDir = __DIR__ . '/../uploads/checkup/';
-            if (!is_dir($videoDir)) mkdir($videoDir, 0755, true);
+            if (!is_dir($videoDir)) mkdir($videoDir, 0775, true);
+            if (!is_writable($videoDir)) @chmod($videoDir, 0775);
             $videoFileName = 'video_' . $session_id . '_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $videoExt;
             if (move_uploaded_file($videoFile['tmp_name'], $videoDir . $videoFileName)) {
                 $videoPath = 'uploads/checkup/' . $videoFileName;

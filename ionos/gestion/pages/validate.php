@@ -158,9 +158,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (empty($errors)) {
         $uploadDir = __DIR__ . '/../uploads/';
-        if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0775, true);
+        }
+        if (!is_writable($uploadDir)) {
+            @chmod($uploadDir, 0775);
+        }
         $filename = $rec['intervention_id'] . '_' . time() . '.' . $ext;
-        if (move_uploaded_file($_FILES['video']['tmp_name'], $uploadDir . $filename)) {
+        if (is_writable($uploadDir) && move_uploaded_file($_FILES['video']['tmp_name'], $uploadDir . $filename)) {
 
             // Marque le token utilisé et met à jour le planning
             $conn->prepare("UPDATE intervention_tokens SET used=1 WHERE id=?")
@@ -203,7 +208,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
 
         } else {
-            $errors[] = "Impossible de sauvegarder la vidéo. Vérifiez les permissions.";
+            $errors[] = "Impossible de sauvegarder la vidéo. Le dossier uploads/ n'est pas accessible en écriture (permissions). Contactez l'administrateur serveur.";
         }
     }
 }
