@@ -12,6 +12,10 @@ header('Cache-Control: post-check=0, pre-check=0', false);
 header('Pragma: no-cache');
 header('Expires: 0');
 
+// Augmenter les limites runtime (memory + execution time)
+@ini_set('memory_limit', '512M');
+@ini_set('max_execution_time', '300');
+
 include '../config.php';   // $conn vers la base locale (planning, liste_logements)
 session_start();
 
@@ -154,7 +158,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
     if (empty($_FILES['video']) || $_FILES['video']['error'] !== UPLOAD_ERR_OK) {
-        $errors[] = "Erreur upload vidéo.";
+        $uploadErr = $_FILES['video']['error'] ?? UPLOAD_ERR_NO_FILE;
+        if ($uploadErr === UPLOAD_ERR_INI_SIZE || $uploadErr === UPLOAD_ERR_FORM_SIZE) {
+            $errors[] = "La vidéo dépasse la taille maximale autorisée (" . ini_get('upload_max_filesize') . ").";
+        } elseif ($uploadErr === UPLOAD_ERR_NO_FILE) {
+            $errors[] = "Aucune vidéo sélectionnée.";
+        } else {
+            $errors[] = "Erreur upload vidéo (code $uploadErr).";
+        }
     } else {
         $ext = strtolower(pathinfo($_FILES['video']['name'], PATHINFO_EXTENSION));
         if (!in_array($ext, ['mp4','mov','avi','webm'])) {
@@ -344,12 +355,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           });
           xhr.onload = function() {
             if (xhr.status === 200 || xhr.status === 303) {
-              // Si le serveur a fait un PRG (303), le navigateur suit la redirection
-              // Pour XHR, on force un refresh pour afficher l'état final
-              window.location.reload();
+              // XHR suit le 303 automatiquement — rediriger vers la page done
+              var url = new URL(window.location.href);
+              url.searchParams.set('done', '1');
+              url.searchParams.set('cb', Date.now().toString());
+              window.location.replace(url.toString());
             } else {
               alert('Erreur lors de l\'upload (' + xhr.status + ')');
             }
+          };
+          xhr.onerror = function() {
+            alert('Erreur réseau. Vérifiez votre connexion et réessayez.');
           };
           xhr.send(formData);
         });
