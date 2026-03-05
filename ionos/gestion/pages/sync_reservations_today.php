@@ -43,12 +43,13 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
     jerr(403, 'Accès refusé (admin requis).');
 }
 
-// Connexion REMOTE (Raspberry) via helper centralisé
+// Connexion REMOTE (Raspberry) — optionnelle : si indisponible, on utilise uniquement la base locale
 require_once __DIR__ . '/../includes/rpi_db.php';
+$pdoRemote = null;
 try {
     $pdoRemote = getRpiPdo();
 } catch (Throwable $e) {
-    jerr(500, 'Connexion distante impossible.', $DEBUG?['ex'=>$e->getMessage()]:[]);
+    // RPi indisponible, on continue avec la base locale uniquement
 }
 
 // introspection (closeCursor obligatoire avec EMULATE_PREPARES=false)
@@ -63,28 +64,29 @@ function column_exists(PDO $c, string $t, string $col): bool {
 
 $today = date('Y-m-d');
 
-// vérif REMOTE
-if (!table_exists($pdoRemote, 'reservation')) jerr(500, "Table 'reservation' introuvable sur la base distante.");
-
-$needRemote = [
-  'id'           => column_exists($pdoRemote,'reservation','id'),
-  'logement_id'  => column_exists($pdoRemote,'reservation','logement_id'),
-  'date_arrivee' => column_exists($pdoRemote,'reservation','date_arrivee'),
-  'date_depart'  => column_exists($pdoRemote,'reservation','date_depart'),
-  'statut'       => column_exists($pdoRemote,'reservation','statut'),
-  'nb_adultes'   => column_exists($pdoRemote,'reservation','nb_adultes'),
-  'nb_enfants'   => column_exists($pdoRemote,'reservation','nb_enfants'),
-  'nb_bebes'     => column_exists($pdoRemote,'reservation','nb_bebes'),
-];
-$missing = array_keys(array_filter($needRemote, fn($ok)=>!$ok));
-if ($missing) jerr(500, 'Colonnes manquantes (REMOTE reservation)', ['missing'=>$missing]);
+// vérif REMOTE (si disponible)
+$remoteOk = false;
+if ($pdoRemote && table_exists($pdoRemote, 'reservation')) {
+    $needRemote = [
+      'id'           => column_exists($pdoRemote,'reservation','id'),
+      'logement_id'  => column_exists($pdoRemote,'reservation','logement_id'),
+      'date_arrivee' => column_exists($pdoRemote,'reservation','date_arrivee'),
+      'date_depart'  => column_exists($pdoRemote,'reservation','date_depart'),
+      'statut'       => column_exists($pdoRemote,'reservation','statut'),
+      'nb_adultes'   => column_exists($pdoRemote,'reservation','nb_adultes'),
+      'nb_enfants'   => column_exists($pdoRemote,'reservation','nb_enfants'),
+      'nb_bebes'     => column_exists($pdoRemote,'reservation','nb_bebes'),
+    ];
+    $missing = array_keys(array_filter($needRemote, fn($ok)=>!$ok));
+    $remoteOk = empty($missing);
+}
 
 // côté LOCAL planning : colonnes optionnelles + tokens
 $pl_has_src_id    = column_exists($conn,'planning','source_reservation_id');
 $pl_has_src_type  = column_exists($conn,'planning','source_type');
 $tokens_table     = table_exists($conn,'intervention_tokens');
 
-// Vérifier si la base locale a aussi une table reservation (réservations importées via iCal)
+// Vérifier si la base locale a une table reservation
 $localHasReservation = table_exists($conn, 'reservation');
 $localNbPersExpr = '0';
 if ($localHasReservation) {
@@ -96,48 +98,64 @@ if ($localHasReservation) {
     }
 }
 
-// Lire les DEPARTS du jour (REMOTE)
-try {
-    $sqlDeps = "
-        SELECT 
-            r.id AS resa_id,
-            r.logement_id AS logement_id,
-            DATE(r.date_arrivee) AS date_arrivee,
-            DATE(r.date_depart)  AS date_depart,
-            (COALESCE(r.nb_adultes,0) + COALESCE(r.nb_enfants,0) + COALESCE(r.nb_bebes,0)) AS nb_pers,
-            GREATEST(DATEDIFF(r.date_depart, r.date_arrivee), 0) AS nb_jours
-        FROM reservation r
-        WHERE r.statut = 'confirmée'
-          AND DATE(r.date_depart) = :today
-        ORDER BY r.date_depart ASC
-    ";
-    $stDeps = $pdoRemote->prepare($sqlDeps);
-    $stDeps->execute([':today'=>$today]);
-    $deps = $stDeps->fetchAll(PDO::FETCH_ASSOC);
-} catch (Throwable $e) {
-    jerr(500, 'Erreur SQL lecture départs (REMOTE)', $DEBUG?['ex'=>$e->getMessage()]:[]);
+// Au moins une source de réservations doit être disponible
+if (!$remoteOk && !$localHasReservation) {
+    jerr(500, 'Aucune source de réservations disponible (ni RPi, ni table locale reservation).');
 }
 
-// Fusionner avec les départs de la base LOCALE (réservations importées via iCal)
+$deps = [];
+$arrs = [];
+$sourceLabel = '';
+
+// 1) Lire depuis le REMOTE (RPi) si disponible
+if ($remoteOk) {
+    try {
+        $sqlDeps = "
+            SELECT r.id AS resa_id, r.logement_id, DATE(r.date_arrivee) AS date_arrivee,
+                   DATE(r.date_depart) AS date_depart,
+                   (COALESCE(r.nb_adultes,0)+COALESCE(r.nb_enfants,0)+COALESCE(r.nb_bebes,0)) AS nb_pers,
+                   GREATEST(DATEDIFF(r.date_depart, r.date_arrivee), 0) AS nb_jours
+            FROM reservation r WHERE r.statut = 'confirmée' AND DATE(r.date_depart) = :today
+            ORDER BY r.date_depart ASC
+        ";
+        $stDeps = $pdoRemote->prepare($sqlDeps);
+        $stDeps->execute([':today'=>$today]);
+        $deps = $stDeps->fetchAll(PDO::FETCH_ASSOC);
+        $sourceLabel = 'REMOTE';
+    } catch (Throwable $e) {
+        if ($DEBUG) error_log('sync_today: remote deps error: '.$e->getMessage());
+    }
+
+    try {
+        $sqlArrs = "
+            SELECT r.id AS resa_id, r.logement_id, DATE(r.date_arrivee) AS date_arrivee,
+                   DATE(r.date_depart) AS date_depart,
+                   (COALESCE(r.nb_adultes,0)+COALESCE(r.nb_enfants,0)+COALESCE(r.nb_bebes,0)) AS nb_pers,
+                   GREATEST(DATEDIFF(r.date_depart, r.date_arrivee), 0) AS nb_jours
+            FROM reservation r WHERE r.statut = 'confirmée' AND DATE(r.date_arrivee) = :today
+            ORDER BY r.date_arrivee ASC
+        ";
+        $stArrs = $pdoRemote->prepare($sqlArrs);
+        $stArrs->execute([':today'=>$today]);
+        $arrs = $stArrs->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Throwable $e) {
+        if ($DEBUG) error_log('sync_today: remote arrs error: '.$e->getMessage());
+    }
+}
+
+// 2) Lire/fusionner depuis la base LOCALE
 if ($localHasReservation) {
     try {
         $sqlLocalDeps = "
-            SELECT
-                r.id AS resa_id,
-                r.logement_id AS logement_id,
-                DATE(r.date_arrivee) AS date_arrivee,
-                DATE(r.date_depart)  AS date_depart,
-                {$localNbPersExpr} AS nb_pers,
-                GREATEST(DATEDIFF(r.date_depart, r.date_arrivee), 0) AS nb_jours
-            FROM reservation r
-            WHERE r.statut = 'confirmée'
-              AND DATE(r.date_depart) = :today
+            SELECT r.id AS resa_id, r.logement_id, DATE(r.date_arrivee) AS date_arrivee,
+                   DATE(r.date_depart) AS date_depart, {$localNbPersExpr} AS nb_pers,
+                   GREATEST(DATEDIFF(r.date_depart, r.date_arrivee), 0) AS nb_jours
+            FROM reservation r WHERE r.statut = 'confirmée' AND DATE(r.date_depart) = :today
             ORDER BY r.date_depart ASC
         ";
         $stLD = $conn->prepare($sqlLocalDeps);
         $stLD->execute([':today' => $today]);
         $localDeps = $stLD->fetchAll(PDO::FETCH_ASSOC);
-        // Dédupliquer par logement_id + date (un logement ne peut avoir qu'un départ par jour)
         $remoteKeys = array_map(fn($d) => $d['logement_id'] . '_' . $d['date_depart'], $deps);
         foreach ($localDeps as $ld) {
             if (!in_array($ld['logement_id'] . '_' . $ld['date_depart'], $remoteKeys)) {
@@ -145,45 +163,15 @@ if ($localHasReservation) {
                 $deps[] = $ld;
             }
         }
+        $sourceLabel = $sourceLabel ? $sourceLabel.'+LOCAL' : 'LOCAL';
     } catch (Throwable $e) { /* table locale incompatible, on ignore */ }
-}
 
-// Lire les ARRIVÉES du jour (REMOTE)
-try {
-    $sqlArrs = "
-        SELECT 
-            r.id AS resa_id,
-            r.logement_id AS logement_id,
-            DATE(r.date_arrivee) AS date_arrivee,
-            DATE(r.date_depart)  AS date_depart,
-            (COALESCE(r.nb_adultes,0) + COALESCE(r.nb_enfants,0) + COALESCE(r.nb_bebes,0)) AS nb_pers,
-            GREATEST(DATEDIFF(r.date_depart, r.date_arrivee), 0) AS nb_jours
-        FROM reservation r
-        WHERE r.statut = 'confirmée'
-          AND DATE(r.date_arrivee) = :today
-        ORDER BY r.date_arrivee ASC
-    ";
-    $stArrs = $pdoRemote->prepare($sqlArrs);
-    $stArrs->execute([':today'=>$today]);
-    $arrs = $stArrs->fetchAll(PDO::FETCH_ASSOC);
-} catch (Throwable $e) {
-    jerr(500, 'Erreur SQL lecture arrivées (REMOTE)', $DEBUG?['ex'=>$e->getMessage()]:[]);
-}
-
-// Fusionner avec les arrivées de la base LOCALE (réservations importées via iCal)
-if ($localHasReservation) {
     try {
         $sqlLocalArrs = "
-            SELECT
-                r.id AS resa_id,
-                r.logement_id AS logement_id,
-                DATE(r.date_arrivee) AS date_arrivee,
-                DATE(r.date_depart)  AS date_depart,
-                {$localNbPersExpr} AS nb_pers,
-                GREATEST(DATEDIFF(r.date_depart, r.date_arrivee), 0) AS nb_jours
-            FROM reservation r
-            WHERE r.statut = 'confirmée'
-              AND DATE(r.date_arrivee) = :today
+            SELECT r.id AS resa_id, r.logement_id, DATE(r.date_arrivee) AS date_arrivee,
+                   DATE(r.date_depart) AS date_depart, {$localNbPersExpr} AS nb_pers,
+                   GREATEST(DATEDIFF(r.date_depart, r.date_arrivee), 0) AS nb_jours
+            FROM reservation r WHERE r.statut = 'confirmée' AND DATE(r.date_arrivee) = :today
             ORDER BY r.date_arrivee ASC
         ";
         $stLA = $conn->prepare($sqlLocalArrs);
@@ -420,7 +408,7 @@ try {
         'details'   => $report,
         'mode'      => ($pl_has_src_id && $pl_has_src_type) ? 'with_source_keys' : 'compat',
         'tokens'    => $tokens_table ? 'used' : 'skipped_no_table',
-        'source'    => 'REMOTE:sms_db.reservation + LOCAL:frenchyconciergerie.reservation',
+        'source'    => $sourceLabel ?: 'LOCAL',
         'target'    => 'LOCAL:planning'
     ]);
 } catch (Throwable $e) {
