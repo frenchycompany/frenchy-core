@@ -105,6 +105,18 @@ if (!$remoteOk && !$localHasReservation) {
     jerr(500, 'Aucune source de réservations disponible (ni RPi, ni table locale reservation).');
 }
 
+// Charger les noms et capacités des logements
+$logements = [];
+try {
+    $stLog = $conn->query("SELECT id, nom_du_logement, nombre_de_personnes FROM liste_logements");
+    foreach ($stLog->fetchAll(PDO::FETCH_ASSOC) as $lg) {
+        $logements[(int)$lg['id']] = [
+            'nom' => $lg['nom_du_logement'] ?? ('Logement #'.$lg['id']),
+            'capacite' => (int)($lg['nombre_de_personnes'] ?? 0),
+        ];
+    }
+} catch (Throwable $e) { /* ignore */ }
+
 $deps = [];
 $arrs = [];
 $sourceLabel = '';
@@ -272,8 +284,12 @@ try {
         $depart  = $r['date_depart']; // = $target
         $nbPers  = max(0, (int)$r['nb_pers']);
         $nbJours = max(0, (int)$r['nb_jours']);
-        $srcLabel = $r['_source'] ?? 'REMOTE';
-        $note    = "Auto: ménage de sortie (resa #{$resaId}) [{$srcLabel}]";
+        // Si nb_pers = 0, utiliser la capacité du logement
+        if ($nbPers === 0 && isset($logements[$logId])) {
+            $nbPers = $logements[$logId]['capacite'];
+        }
+        $logNom = $logements[$logId]['nom'] ?? '';
+        $note   = "Ménage de sortie" . ($logNom ? " — {$logNom}" : '');
 
         $existing = null;
         if ($findBySourceCheckout) {
@@ -282,8 +298,14 @@ try {
             $findBySourceCheckout->closeCursor();
         }
         if (!$existing) {
-            $like = "Auto: ménage de sortie (resa #{$resaId})%";
-            $findByHeuristic->execute([$logId, $depart, $like]);
+            // Chercher par nouveau format
+            $findByHeuristic->execute([$logId, $depart, 'Ménage de sortie%']);
+            $existing = $findByHeuristic->fetch(PDO::FETCH_ASSOC) ?: null;
+            $findByHeuristic->closeCursor();
+        }
+        if (!$existing) {
+            // Rétrocompat ancien format
+            $findByHeuristic->execute([$logId, $depart, "Auto: ménage de sortie (resa #{$resaId})%"]);
             $existing = $findByHeuristic->fetch(PDO::FETCH_ASSOC) ?: null;
             $findByHeuristic->closeCursor();
         }
@@ -393,12 +415,16 @@ try {
         }
 
         // 3) Logement vide 2+ jours → créer "À Vérifier" (vérif poussière, pas ménage complet)
-        $note = "Auto: à vérifier avant arrivée — vide depuis {$gapDays}j (resa #{$resaId}) [{$srcLabel}]";
+        // Si nb_pers = 0, utiliser la capacité du logement
+        if ($nbPers === 0 && isset($logements[$logId])) {
+            $nbPers = $logements[$logId]['capacite'];
+        }
+        $logNom = $logements[$logId]['nom'] ?? '';
+        $note = "À vérifier (vide {$gapDays}j)" . ($logNom ? " — {$logNom}" : '');
 
         // Vérifier si une telle intervention existe déjà
         $existing = null;
-        $like = "Auto: à vérifier avant arrivée%resa #{$resaId}%";
-        $findByHeuristic->execute([$logId, $target, $like]);
+        $findByHeuristic->execute([$logId, $target, 'À vérifier%']);
         $existing = $findByHeuristic->fetch(PDO::FETCH_ASSOC) ?: null;
         $findByHeuristic->closeCursor();
 
