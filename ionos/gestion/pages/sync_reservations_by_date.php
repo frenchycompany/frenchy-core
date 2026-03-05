@@ -246,7 +246,7 @@ try {
             ".($pl_has_src_id ? ", source_reservation_id" : "")."
             ".($pl_has_src_type ? ", source_type" : "")."
         ) VALUES (
-            :logement_id, :date, :nb_pers, :nb_jours, 'À Faire', :note
+            :logement_id, :date, :nb_pers, :nb_jours, 'A Faire', :note
             ".($pl_has_src_id ? ", :resa_id" : "")."
             ".($pl_has_src_type ? ", 'AUTO_CHECKOUT'" : "")."
         )
@@ -258,7 +258,7 @@ try {
             ".($pl_has_src_id ? ", source_reservation_id" : "")."
             ".($pl_has_src_type ? ", source_type" : "")."
         ) VALUES (
-            :logement_id, :date, :nb_pers, :nb_jours, 'À Vérifier', :note
+            :logement_id, :date, :nb_pers, :nb_jours, 'A Faire', :note
             ".($pl_has_src_id ? ", :resa_id" : "")."
             ".($pl_has_src_type ? ", 'AUTO_VERIF'" : "")."
         )
