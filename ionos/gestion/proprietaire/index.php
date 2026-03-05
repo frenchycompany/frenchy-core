@@ -434,6 +434,45 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                 </div>
             </div>
 
+            <!-- Dernières interventions -->
+            <div class="content-grid" style="margin-top: 1.5rem;">
+                <div class="card" style="grid-column: 1 / -1;">
+                    <div class="card-header">
+                        <h2><i class="fas fa-broom"></i> Dernieres interventions</h2>
+                        <a href="interventions.php">Voir tout &rarr;</a>
+                    </div>
+                    <?php
+                    $interventions_recentes = [];
+                    if (!empty($logement_ids)) {
+                        try {
+                            $stmt = $conn->prepare("SELECT p.id, p.date, p.statut, l.nom_du_logement FROM planning p JOIN liste_logements l ON p.logement_id = l.id WHERE p.logement_id IN ($placeholders) AND p.date >= DATE_SUB(CURDATE(), INTERVAL 15 DAY) ORDER BY p.date DESC LIMIT 5");
+                            $stmt->execute($logement_ids);
+                            $interventions_recentes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                        } catch (PDOException $e) {}
+                    }
+                    ?>
+                    <?php if (empty($interventions_recentes)): ?>
+                        <p class="empty-state">Aucune intervention recente</p>
+                    <?php else: ?>
+                        <?php foreach ($interventions_recentes as $ir):
+                            $sc = 'badge-info';
+                            $s = $ir['statut'] ?? '';
+                            if (in_array($s, ['termine', 'terminé', 'validé', 'valide'])) $sc = 'badge-success';
+                            elseif (in_array($s, ['en_cours', 'en cours', 'planifié', 'planifie'])) $sc = 'badge-warning';
+                            elseif (in_array($s, ['annulé', 'annule', 'probleme'])) $sc = 'badge-danger';
+                        ?>
+                        <div class="list-item">
+                            <div>
+                                <h4><?= e($ir['nom_du_logement']) ?></h4>
+                                <small><?= date('d/m/Y', strtotime($ir['date'])) ?></small>
+                            </div>
+                            <span class="badge <?= $sc ?>"><?= e($s ?: 'inconnu') ?></span>
+                        </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </div>
+            </div>
+
             <!-- Logements + Sites vitrine -->
             <div class="content-grid" style="margin-top: 1.5rem;">
                 <div class="card">
