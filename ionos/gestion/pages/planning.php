@@ -279,18 +279,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['bulk_update'])) {
         echo 'Lien de validation : <a href="' . htmlspecialchars($validation_link) . '" target="_blank">' . htmlspecialchars($validation_link) . '</a>';
         echo '</div>';
 
-        // Lien checkup + WhatsApp si checkup planifie
+        // Creer le checkup + WhatsApp si checkup planifie
         if ($checkup_planifie) {
-            $checkup_link = $domain . '/pages/checkup_logement.php?auto_logement=' . $logement_id;
-            $whatsMsg = "Bonjour ! Checkup planifie pour *" . $nomLogement . "* le " . date('d/m/Y', strtotime($date)) . ".\n";
+            // Determiner l'intervenant du checkup (si pas specifie, prendre le conducteur)
+            $ckIntervenantId = $checkup_intervenant_id ?: $conducteur_id;
+
+            // Creer automatiquement la session de checkup
+            require_once __DIR__ . '/../includes/checkup_create.php';
+            // On utilise une fonction dediee pour creer la session avec tous les items
+            $ckSessionId = createCheckupSession($conn, $logement_id, $ckIntervenantId);
+
+            $checkup_link = $domain . '/pages/checkup_faire.php?session_id=' . $ckSessionId;
+
+            // Recuperer le nom de l'intervenant checkup
+            $ckNomStmt = $conn->prepare("SELECT nom FROM intervenant WHERE id = ?");
+            $ckNomStmt->execute([$ckIntervenantId]);
+            $ckNom = $ckNomStmt->fetchColumn() ?: '';
+
+            $whatsMsg = "Bonjour" . ($ckNom ? " " . $ckNom : "") . " !\n\n";
+            $whatsMsg .= "Un checkup est planifie pour *" . $nomLogement . "* le " . date('d/m/Y', strtotime($date)) . ".\n";
             $whatsMsg .= "Remuneration : " . number_format($checkup_prix, 2, ',', ' ') . " EUR\n\n";
-            $whatsMsg .= "Lancer le checkup :\n" . $checkup_link;
+            $whatsMsg .= "Lancer le checkup ici :\n" . $checkup_link;
             $whatsUrl = 'https://wa.me/';
 
             // Recuperer le numero de l'intervenant checkup
-            if ($checkup_intervenant_id) {
+            if ($ckIntervenantId) {
                 $phoneStmt = $conn->prepare("SELECT numero FROM intervenant WHERE id = ?");
-                $phoneStmt->execute([$checkup_intervenant_id]);
+                $phoneStmt->execute([$ckIntervenantId]);
                 $phone = $phoneStmt->fetchColumn();
                 if ($phone) {
                     $phone = preg_replace('/[^0-9]/', '', $phone);
@@ -301,8 +316,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['bulk_update'])) {
             $whatsUrl .= '?text=' . rawurlencode($whatsMsg);
 
             echo '<div class="alert alert-success">';
-            echo '<i class="fas fa-clipboard-check"></i> <strong>Checkup planifie</strong> (' . number_format($checkup_prix, 2, ',', ' ') . ' &euro;)<br>';
-            echo '<a href="' . htmlspecialchars($checkup_link) . '" target="_blank" class="btn btn-sm btn-success mt-1"><i class="fas fa-clipboard-check"></i> Lien Checkup</a> ';
+            echo '<i class="fas fa-clipboard-check"></i> <strong>Checkup cree et attribue</strong>';
+            if ($ckNom) echo ' a <strong>' . htmlspecialchars($ckNom) . '</strong>';
+            echo ' (' . number_format($checkup_prix, 2, ',', ' ') . ' &euro;)<br>';
+            echo '<a href="' . htmlspecialchars($checkup_link) . '" target="_blank" class="btn btn-sm btn-success mt-1"><i class="fas fa-clipboard-check"></i> Voir le Checkup</a> ';
             echo '<a href="' . htmlspecialchars($whatsUrl) . '" target="_blank" class="btn btn-sm mt-1" style="background:#25D366;color:#fff;"><i class="fab fa-whatsapp"></i> Envoyer par WhatsApp</a>';
             echo '</div>';
         }
