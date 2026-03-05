@@ -107,7 +107,9 @@ if (!$remoteOk && !$localHasReservation) {
 $logements = [];
 try {
     $stLog = $conn->query("SELECT id, nom_du_logement, nombre_de_personnes FROM liste_logements");
-    foreach ($stLog->fetchAll(PDO::FETCH_ASSOC) as $lg) {
+    $rows = $stLog->fetchAll(PDO::FETCH_ASSOC);
+    $stLog->closeCursor();
+    foreach ($rows as $lg) {
         $logements[(int)$lg['id']] = [
             'nom' => $lg['nom_du_logement'] ?? ('Logement #'.$lg['id']),
             'capacite' => (int)($lg['nombre_de_personnes'] ?? 0),

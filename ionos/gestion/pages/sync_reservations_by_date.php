@@ -22,9 +22,9 @@ if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $target)) {
 register_shutdown_function(function() use ($DEBUG) {
     $e = error_get_last();
     if ($e && in_array($e['type'], [E_ERROR,E_PARSE,E_CORE_ERROR,E_COMPILE_ERROR,E_USER_ERROR])) {
-        http_response_code(500);
+        if (!headers_sent()) http_response_code(500);
         $payload = ['status'=>'error','message'=>'Fatal PHP'];
-        if ($DEBUG) $payload['ex'] = $e['message'].' in '.$e['file'].':'.$e['line'];
+        $payload['ex'] = $e['message'].' in '.$e['file'].':'.$e['line'];
         echo json_encode($payload);
     }
 });
@@ -109,7 +109,9 @@ if (!$remoteOk && !$localHasReservation) {
 $logements = [];
 try {
     $stLog = $conn->query("SELECT id, nom_du_logement, nombre_de_personnes FROM liste_logements");
-    foreach ($stLog->fetchAll(PDO::FETCH_ASSOC) as $lg) {
+    $rows = $stLog->fetchAll(PDO::FETCH_ASSOC);
+    $stLog->closeCursor();
+    foreach ($rows as $lg) {
         $logements[(int)$lg['id']] = [
             'nom' => $lg['nom_du_logement'] ?? ('Logement #'.$lg['id']),
             'capacite' => (int)($lg['nombre_de_personnes'] ?? 0),
@@ -480,5 +482,5 @@ try {
     ]);
 } catch (Throwable $e) {
     if (!$DRY_RUN && $conn->inTransaction()) $conn->rollBack();
-    jerr(500, 'Erreur serveur pendant la synchro.', $DEBUG?['ex'=>$e->getMessage()]:[]);
+    jerr(500, 'Erreur serveur pendant la synchro.', ['ex'=>$e->getMessage()]);
 }
