@@ -8,7 +8,7 @@ try {
     $templates = $templatesStmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Récupérer la liste des logements
-    $logementsStmt = $conn->query("SELECT id, nom_du_logement FROM liste_logements");
+    $logementsStmt = $conn->query("SELECT id, nom_du_logement FROM liste_logements WHERE actif = 1 ORDER BY nom_du_logement");
     $logements = $logementsStmt->fetchAll(PDO::FETCH_ASSOC);
 
     echo '<!DOCTYPE html>';

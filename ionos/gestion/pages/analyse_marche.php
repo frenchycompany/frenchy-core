@@ -73,7 +73,7 @@ $competitors = $pdo->query("
 ")->fetchAll(PDO::FETCH_ASSOC);
 
 // Recuperer nos logements pour le mapping
-$logements = $pdo->query("SELECT id, nom_du_logement FROM liste_logements ORDER BY nom_du_logement")->fetchAll(PDO::FETCH_ASSOC);
+$logements = $pdo->query("SELECT id, nom_du_logement FROM liste_logements WHERE actif = 1 ORDER BY nom_du_logement")->fetchAll(PDO::FETCH_ASSOC);
 
 // Recuperer les mappings existants
 $mappings = $pdo->query("

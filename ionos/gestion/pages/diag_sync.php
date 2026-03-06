@@ -48,7 +48,7 @@ try {
 
 // 3) Logements LOCAL (liste_logements)
 try {
-    $localLogements = $conn->query("SELECT id, nom_du_logement FROM liste_logements ORDER BY id")
+    $localLogements = $conn->query("SELECT id, nom_du_logement FROM liste_logements WHERE actif = 1 ORDER BY id")
         ->fetchAll(PDO::FETCH_ASSOC);
     $localIds = array_column($localLogements, 'id');
     $diag['local_logements'] = $localLogements;

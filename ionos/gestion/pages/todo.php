@@ -104,7 +104,7 @@ $status_filter   = isset($_GET['statut']) && $_GET['statut'] !== '' ? $_GET['sta
 // ============================================================
 // DONNÉES
 // ============================================================
-$logements = $conn->query("SELECT id, nom_du_logement FROM liste_logements ORDER BY nom_du_logement")->fetchAll(PDO::FETCH_ASSOC);
+$logements = $conn->query("SELECT id, nom_du_logement FROM liste_logements WHERE actif = 1 ORDER BY nom_du_logement")->fetchAll(PDO::FETCH_ASSOC);
 $intervenants = $conn->query("SELECT id, nom FROM intervenant WHERE actif = 1 ORDER BY nom")->fetchAll(PDO::FETCH_ASSOC);
 
 // Tâches avec filtres

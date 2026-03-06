@@ -90,26 +90,57 @@ if ($localHasReservation) {
     }
 }
 
-// Lire les DEPARTS du jour (REMOTE)
+// Charger logements actifs
 try {
-    $sqlDeps = "
-        SELECT 
-            r.id AS resa_id,
-            r.logement_id AS logement_id,
-            DATE(r.date_arrivee) AS date_arrivee,
-            DATE(r.date_depart)  AS date_depart,
-            (COALESCE(r.nb_adultes,0) + COALESCE(r.nb_enfants,0) + COALESCE(r.nb_bebes,0)) AS nb_pers,
-            GREATEST(DATEDIFF(r.date_depart, r.date_arrivee), 0) AS nb_jours
-        FROM reservation r
-        WHERE r.statut = 'confirmée'
-          AND DATE(r.date_depart) = :today
-        ORDER BY r.date_depart ASC
-    ";
-    $stDeps = $pdoRemote->prepare($sqlDeps);
-    $stDeps->execute([':today'=>$today]);
-    $deps = $stDeps->fetchAll(PDO::FETCH_ASSOC);
-} catch (Throwable $e) {
-    jerr(500, 'Erreur SQL lecture départs (REMOTE)', $DEBUG?['ex'=>$e->getMessage()]:[]);
+    $stLog = $conn->query("SELECT id, nom_du_logement, nombre_de_personnes FROM liste_logements WHERE actif = 1");
+    $rows = $stLog->fetchAll(PDO::FETCH_ASSOC);
+    $stLog->closeCursor();
+    foreach ($rows as $lg) {
+        $logements[(int)$lg['id']] = [
+            'nom' => $lg['nom_du_logement'] ?? ('Logement #'.$lg['id']),
+            'capacite' => (int)($lg['nombre_de_personnes'] ?? 0),
+        ];
+    }
+} catch (Throwable $e) { /* ignore */ }
+
+$deps = [];
+$arrs = [];
+$sourceLabel = '';
+
+// 1) Lire depuis le REMOTE (RPi) si disponible
+if ($remoteOk) {
+    try {
+        $sqlDeps = "
+            SELECT r.id AS resa_id, r.logement_id, DATE(r.date_arrivee) AS date_arrivee,
+                   DATE(r.date_depart) AS date_depart,
+                   (COALESCE(r.nb_adultes,0)+COALESCE(r.nb_enfants,0)+COALESCE(r.nb_bebes,0)) AS nb_pers,
+                   GREATEST(DATEDIFF(r.date_depart, r.date_arrivee), 0) AS nb_jours
+            FROM reservation r WHERE r.statut = 'confirmée' AND DATE(r.date_depart) = :today
+            ORDER BY r.date_depart ASC
+        ";
+        $stDeps = $pdoRemote->prepare($sqlDeps);
+        $stDeps->execute([':today'=>$today]);
+        $deps = $stDeps->fetchAll(PDO::FETCH_ASSOC);
+        $sourceLabel = 'REMOTE';
+    } catch (Throwable $e) {
+        if ($DEBUG) error_log('sync_today: remote deps error: '.$e->getMessage());
+    }
+
+    try {
+        $sqlArrs = "
+            SELECT r.id AS resa_id, r.logement_id, DATE(r.date_arrivee) AS date_arrivee,
+                   DATE(r.date_depart) AS date_depart,
+                   (COALESCE(r.nb_adultes,0)+COALESCE(r.nb_enfants,0)+COALESCE(r.nb_bebes,0)) AS nb_pers,
+                   GREATEST(DATEDIFF(r.date_depart, r.date_arrivee), 0) AS nb_jours
+            FROM reservation r WHERE r.statut = 'confirmée' AND DATE(r.date_arrivee) = :today
+            ORDER BY r.date_arrivee ASC
+        ";
+        $stArrs = $pdoRemote->prepare($sqlArrs);
+        $stArrs->execute([':today'=>$today]);
+        $arrs = $stArrs->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Throwable $e) {
+        if ($DEBUG) error_log('sync_today: remote arrs error: '.$e->getMessage());
+    }
 }
 
 // Fusionner avec les départs de la base LOCALE (réservations importées via iCal)

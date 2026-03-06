@@ -172,7 +172,7 @@ tr:last-child td {
     <select name="logement_id" required>
         <?php
         try {
-            $logements = $conn->query("SELECT id, nom_du_logement FROM liste_logements")->fetchAll(PDO::FETCH_ASSOC);
+            $logements = $conn->query("SELECT id, nom_du_logement FROM liste_logements WHERE actif = 1")->fetchAll(PDO::FETCH_ASSOC);
             foreach ($logements as $logement) {
                 echo "<option value='{$logement['id']}'>{$logement['nom_du_logement']}</option>";
             }

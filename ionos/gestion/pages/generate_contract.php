@@ -39,7 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             file_put_contents($file_name, $contract_content);
 
             // Sauvegarder les informations du contrat dans la table `generated_contracts`
-            $user_id = 1; // ID de l'utilisateur connecté (à adapter selon votre système)
+            $user_id = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 1;
             $stmt = $conn->prepare("
                 INSERT INTO generated_contracts (user_id, logement_id, file_path)
                 VALUES (:user_id, :logement_id, :file_path)

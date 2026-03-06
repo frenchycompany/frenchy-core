@@ -10,8 +10,18 @@ if (!$logement_id) {
 }
 
 try {
-    // Préparer la requête pour récupérer les données du logement
-    $stmt = $conn->prepare("SELECT * FROM liste_logements WHERE id = ?");
+    // Récupérer les données du logement avec les infos propriétaire si disponibles
+    $stmt = $conn->prepare("
+        SELECT l.*,
+               p.nom AS proprietaire_nom,
+               p.prenom AS proprietaire_prenom,
+               p.email AS proprietaire_email,
+               p.telephone AS proprietaire_telephone,
+               p.adresse AS proprietaire_adresse
+        FROM liste_logements l
+        LEFT JOIN FC_proprietaires p ON l.proprietaire_id = p.id
+        WHERE l.id = ?
+    ");
     $stmt->execute([$logement_id]);
     $logement_data = $stmt->fetch(PDO::FETCH_ASSOC);
 

@@ -4,7 +4,7 @@ include '../pages/menu.php'; // Inclut le menu de navigation
 
 // Récupérer la liste des logements
 try {
-    $stmt = $conn->query("SELECT id, nom_du_logement FROM liste_logements ORDER BY nom_du_logement ASC");
+    $stmt = $conn->query("SELECT id, nom_du_logement FROM liste_logements WHERE actif = 1 ORDER BY nom_du_logement ASC");
     $logements = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
     die("Erreur lors de la récupération des logements : " . $e->getMessage());
