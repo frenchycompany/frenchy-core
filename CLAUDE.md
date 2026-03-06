@@ -2,7 +2,7 @@
 
 ## Projet
 
-Plateforme de gestion pour conciergerie de locations courte duree (Airbnb, Booking). PHP/MySQL + Python. Deux serveurs : VPS IONOS (gestion) + Raspberry Pi (SMS).
+Plateforme de gestion pour conciergerie de locations courte duree (Airbnb, Booking). PHP/MySQL + Python. Base de donnees unifiee sur VPS IONOS. Raspberry Pi conserve uniquement le modem GSM (daemon SMS) et le scraping Chromium.
 
 ## Points d'entree principaux
 
@@ -23,15 +23,22 @@ Plateforme de gestion pour conciergerie de locations courte duree (Airbnb, Booki
 
 ## Base de donnees
 
-### DB IONOS (principale)
+### DB Unifiee (VPS IONOS)
 - Connexion : `ionos/gestion/db/connection.php`
 - Env vars : `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`
-- Tables cles : `liste_logements`, `planning_menages`, `comptabilite`, `intervenant`, `inventaire_sessions`, `proprietaires`, `gestion_pages`
+- Tables gestion : `liste_logements`, `planning`, `comptabilite`, `intervenant`, `inventaire_sessions`
+- Tables SMS : `sms_in`, `sms_out`, `sms_outbox`, `sms_templates`, `sms_conversations`, `sms_messages`
+- Tables reservations : `reservation`, `ical_reservations`, `ical_sync_log`, `travel_account_connections`
+- Tables clients : `client`, `contacts`, `conversations`, `conversation_messages`
 
-### DB Raspberry Pi (SMS)
-- Connexion : `ionos/gestion/includes/rpi_db.php`
-- Env vars : `RPI_DB_HOST`, `RPI_DB_NAME`, `RPI_DB_USER`, `RPI_DB_PASSWORD`
-- Tables cles : `reservations`, `sms_messages`, `sms_conversations`, `sms_templates`
+### getRpiPdo() — Alias historique
+- Fichier : `ionos/gestion/includes/rpi_db.php`
+- Retourne `$conn` (meme connexion VPS). Les variables `RPI_DB_*` ne sont plus necessaires.
+- Conserve pour compatibilite avec les 63 pages qui l'appellent.
+
+### Raspberry Pi (daemon SMS)
+- Le RPi n'a plus de base locale. Il se connecte au VPS via `config/config.ini`.
+- Scripts : `envoyer_sms.py` (lit `sms_outbox` du VPS), `satisfaction_bot.py`, scraping Chromium
 
 ### Chargement env
 - `ionos/gestion/includes/env_loader.php` — Charge `.env` depuis plusieurs chemins possibles
@@ -40,7 +47,7 @@ Plateforme de gestion pour conciergerie de locations courte duree (Airbnb, Booki
 ## Fichiers critiques
 
 - `ionos/gestion/includes/env_loader.php` — Chargement des variables d'environnement
-- `ionos/gestion/includes/rpi_db.php` — Connexion DB Raspberry Pi
+- `ionos/gestion/includes/rpi_db.php` — Alias getRpiPdo() → $conn (VPS local)
 - `ionos/gestion/includes/security.php` — CSRF, rate limiting, session
 - `ionos/gestion/includes/checkup_functions.php` — Fonctions partagees checkup
 - `ionos/gestion/db/connection.php` — Connexion DB principale
@@ -67,6 +74,6 @@ cd raspberry-pi && composer install
 - **Credentials hardcodes** : `ionos/admin/index.php` (admin password), `ionos/db/connection.php` (DB password fallback), `ionos/cdansmaville/` (Google API keys). A migrer vers .env
 - **Fichiers install.php** : Presents dans `frenchysite/`, `ionos/db/`, `ionos/install site/`. A supprimer apres deploiement
 - **Chemins hardcodes** : References a `/home/raphael/` dans certains scripts Python
-- **Dual-DB** : Le systeme utilise deux bases de donnees separees. Voir MIGRATION_PLAN.md pour la consolidation prevue
+- **Migration DB** : Base unifiee sur VPS. Voir `migration/GUIDE_MIGRATION_RPi_VERS_VPS.md` pour les etapes restantes
 - **Pas de tests automatises** : Aucun test unitaire ou d'integration
 - **Pas de CI/CD** : Aucun pipeline configure
