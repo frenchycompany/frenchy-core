@@ -524,6 +524,7 @@ $charges = $chargeStmt->fetchAll(PDO::FETCH_ASSOC);
                 <option value="Annulé">Annulé</option>
             </select>
             <button id="bulk_update_btn" type="button" class="btn btn-success">Appliquer aux sélectionnées</button>
+            <button id="bulk_delete_btn" type="button" class="btn btn-danger ml-2">Supprimer les sélectionnées</button>
         </div>
     </div>
     <?php endif; ?>
@@ -1039,6 +1040,43 @@ $charges = $chargeStmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     refreshSelectAllState();
+
+    const bulkDelBtn = document.getElementById("bulk_delete_btn");
+    if (bulkDelBtn) {
+      bulkDelBtn.addEventListener("click", function () {
+        const ids = Array.from(document.querySelectorAll("input.bulk_checkbox:checked")).map(cb => cb.value);
+        if (ids.length === 0) {
+          alert("Veuillez sélectionner au moins une intervention.");
+          return;
+        }
+        if (!confirm("Confirmer la suppression de " + ids.length + " intervention(s) ?")) return;
+
+        $.ajax({
+          url: 'bulk_delete.php',
+          type: 'POST',
+          contentType: 'application/json',
+          dataType: 'json',
+          data: JSON.stringify({ intervention_ids: ids }),
+          success: function (response) {
+            if (response.status === 'success') {
+              (response.deleted_ids || []).forEach(function (id) {
+                $("#row_" + id).fadeOut(300, function() { $(this).remove(); });
+              });
+              showToast("Suppression réussie (" + (response.deleted_count || 0) + " intervention(s)).");
+            } else {
+              showToast("Erreur : " + (response.message || "Échec de la suppression."), 'error');
+            }
+          },
+          error: function (xhr) {
+            let msg = "Erreur lors de la suppression.";
+            if (xhr && xhr.responseText) {
+              try { const j = JSON.parse(xhr.responseText); if (j.message) msg = j.message; } catch(e) {}
+            }
+            showToast(msg, 'error');
+          }
+        });
+      });
+    }
   });
 </script>
 <script>
