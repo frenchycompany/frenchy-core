@@ -2,19 +2,20 @@
 #
 # Script d'installation des crons pour l'automatisation SMS
 #
-# Ce script configure les taches cron suivantes :
-# - Synchronisation des reservations (toutes les heures)
-# - SMS check-out a 9h00
-# - SMS check-in a 20h00
-# - SMS preparation (J-4) a 10h00
-# - SMS mi-parcours a 12h00
-# - SMS automatisations personnalisees a 11h00
+# Les crons appellent le VPS via curl pour exécuter les scripts PHP.
+# Les scripts PHP vivent sur le VPS (source unique de vérité).
+# Le RPi ne fait que déclencher et envoyer les SMS via le modem.
+#
+# Prérequis:
+# - CRON_SECRET configuré dans le .env du VPS
+# - Le même CRON_SECRET dans /home/raphael/sms_project/.cron_secret sur le RPi
 #
 # Usage: sudo bash setup_crons.sh
 #
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+LOG_DIR="$PROJECT_DIR/logs"
 
 # Couleurs pour les messages
 RED='\033[0;31m'
@@ -23,26 +24,36 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 echo "==========================================="
-echo "Installation des crons SMS automatiques"
+echo "Installation des crons SMS (mode VPS API)"
 echo "==========================================="
 echo ""
 echo "Repertoire du projet: $PROJECT_DIR"
 echo ""
 
-# Verifier que les scripts existent
-if [ ! -f "$SCRIPT_DIR/auto_send_sms.php" ]; then
-    echo -e "${RED}Erreur: auto_send_sms.php non trouve${NC}"
-    exit 1
+# Vérifier/demander l'URL du VPS
+VPS_URL="${VPS_URL:-https://gestion.frenchyconciergerie.fr}"
+read -p "URL du VPS [$VPS_URL]: " input_url
+VPS_URL="${input_url:-$VPS_URL}"
+
+# Vérifier/créer le fichier de secret
+SECRET_FILE="$PROJECT_DIR/.cron_secret"
+if [ ! -f "$SECRET_FILE" ]; then
+    echo -e "${YELLOW}Fichier .cron_secret non trouvé.${NC}"
+    read -p "Entrez le CRON_SECRET (même valeur que dans le .env du VPS): " CRON_SECRET
+    if [ -z "$CRON_SECRET" ]; then
+        echo -e "${RED}CRON_SECRET requis${NC}"
+        exit 1
+    fi
+    echo "$CRON_SECRET" > "$SECRET_FILE"
+    chmod 600 "$SECRET_FILE"
+    echo -e "${GREEN}Secret enregistré dans $SECRET_FILE${NC}"
 fi
 
-if [ ! -f "$SCRIPT_DIR/sync_reservations.php" ]; then
-    echo -e "${RED}Erreur: sync_reservations.php non trouve${NC}"
-    exit 1
-fi
+# Créer le répertoire de logs si nécessaire
+mkdir -p "$LOG_DIR"
 
-# Detecter l'utilisateur (ne pas utiliser root pour les crons)
+# Détecter l'utilisateur
 if [ "$EUID" -eq 0 ]; then
-    # Si execute en root, demander l'utilisateur cible
     read -p "Utilisateur pour les crons (ex: raphael, www-data): " CRON_USER
     if [ -z "$CRON_USER" ]; then
         echo -e "${RED}Utilisateur requis${NC}"
@@ -55,26 +66,26 @@ fi
 echo "Utilisateur cron: $CRON_USER"
 echo ""
 
-# Definir les crons
-CRON_ENTRIES="# === SMS Project - Automatisation ===
+# Définir les crons (curl vers le VPS)
+CRON_ENTRIES="# === SMS Project - Automatisation (via VPS API) ===
 
-# Synchronisation des reservations depuis les calendriers ICS (toutes les heures)
-0 * * * * cd $SCRIPT_DIR && /usr/bin/php sync_reservations.php >> $PROJECT_DIR/logs/cron_sync.log 2>&1
+# Synchronisation des reservations ICS (toutes les heures)
+0 * * * * curl -sf -H \"Authorization: Bearer \$(cat $SECRET_FILE)\" \"$VPS_URL/api/cron_sync_reservations.php\" >> $LOG_DIR/cron_sync.log 2>&1
 
 # SMS Check-out du jour (9h00 le matin)
-0 9 * * * cd $SCRIPT_DIR && /usr/bin/php auto_send_sms.php --type=checkout >> $PROJECT_DIR/logs/cron_checkout.log 2>&1
+0 9 * * * curl -sf -H \"Authorization: Bearer \$(cat $SECRET_FILE)\" \"$VPS_URL/api/cron_auto_sms.php?type=checkout\" >> $LOG_DIR/cron_checkout.log 2>&1
 
 # SMS Check-in du jour (20h00 le soir)
-0 20 * * * cd $SCRIPT_DIR && /usr/bin/php auto_send_sms.php --type=checkin >> $PROJECT_DIR/logs/cron_checkin.log 2>&1
+0 20 * * * curl -sf -H \"Authorization: Bearer \$(cat $SECRET_FILE)\" \"$VPS_URL/api/cron_auto_sms.php?type=checkin\" >> $LOG_DIR/cron_checkin.log 2>&1
 
 # SMS Preparation J-4 avant arrivee (10h00)
-0 10 * * * cd $SCRIPT_DIR && /usr/bin/php auto_send_sms.php --type=preparation >> $PROJECT_DIR/logs/cron_preparation.log 2>&1
+0 10 * * * curl -sf -H \"Authorization: Bearer \$(cat $SECRET_FILE)\" \"$VPS_URL/api/cron_auto_sms.php?type=preparation\" >> $LOG_DIR/cron_preparation.log 2>&1
 
 # SMS Mi-parcours pour sejours longs (12h00)
-0 12 * * * cd $SCRIPT_DIR && /usr/bin/php auto_send_sms.php --type=midstay >> $PROJECT_DIR/logs/cron_midstay.log 2>&1
+0 12 * * * curl -sf -H \"Authorization: Bearer \$(cat $SECRET_FILE)\" \"$VPS_URL/api/cron_auto_sms.php?type=midstay\" >> $LOG_DIR/cron_midstay.log 2>&1
 
 # SMS Automatisations personnalisees (11h00)
-0 11 * * * cd $SCRIPT_DIR && /usr/bin/php auto_send_sms.php --type=custom >> $PROJECT_DIR/logs/cron_custom.log 2>&1
+0 11 * * * curl -sf -H \"Authorization: Bearer \$(cat $SECRET_FILE)\" \"$VPS_URL/api/cron_auto_sms.php?type=custom\" >> $LOG_DIR/cron_custom.log 2>&1
 
 # === Fin SMS Project ==="
 
@@ -97,14 +108,14 @@ if [[ $REPLY =~ ^[Oo]$ ]]; then
     fi
     echo -e "${YELLOW}Sauvegarde du crontab existant dans: $BACKUP_FILE${NC}"
 
-    # Supprimer les anciennes entrees SMS Project si elles existent
+    # Supprimer les anciennes entrées SMS Project
     if [ "$EUID" -eq 0 ]; then
-        EXISTING=$(crontab -u $CRON_USER -l 2>/dev/null | grep -v "SMS Project" | grep -v "auto_send_sms.php" | grep -v "sync_reservations.php")
+        EXISTING=$(crontab -u $CRON_USER -l 2>/dev/null | grep -v "SMS Project" | grep -v "auto_send_sms" | grep -v "sync_reservations" | grep -v "cron_auto_sms" | grep -v "cron_sync")
     else
-        EXISTING=$(crontab -l 2>/dev/null | grep -v "SMS Project" | grep -v "auto_send_sms.php" | grep -v "sync_reservations.php")
+        EXISTING=$(crontab -l 2>/dev/null | grep -v "SMS Project" | grep -v "auto_send_sms" | grep -v "sync_reservations" | grep -v "cron_auto_sms" | grep -v "cron_sync")
     fi
 
-    # Ajouter les nouvelles entrees
+    # Ajouter les nouvelles entrées
     NEW_CRONTAB="$EXISTING
 
 $CRON_ENTRIES"
@@ -134,15 +145,18 @@ echo "==========================================="
 echo "Prochaines etapes:"
 echo "==========================================="
 echo ""
-echo "1. Verifier que le daemon d'envoi SMS tourne:"
+echo "1. Sur le VPS, configurer CRON_SECRET dans le .env:"
+echo "   echo 'CRON_SECRET=<votre_secret>' >> /path/to/.env"
+echo ""
+echo "2. Sur le VPS, installer les dépendances composer:"
+echo "   cd ionos/gestion && composer install"
+echo ""
+echo "3. Verifier que le daemon d'envoi SMS tourne:"
 echo "   systemctl status sms-sender"
 echo ""
-echo "2. Si le service n'existe pas, l'installer:"
-echo "   sudo cp $PROJECT_DIR/config/sms-sender.service /etc/systemd/system/"
-echo "   sudo systemctl daemon-reload"
-echo "   sudo systemctl enable sms-sender"
-echo "   sudo systemctl start sms-sender"
+echo "4. Tester un appel manuellement:"
+echo "   curl -s -H \"Authorization: Bearer \$(cat $SECRET_FILE)\" \"$VPS_URL/api/cron_auto_sms.php?type=checkout\" | python3 -m json.tool"
 echo ""
-echo "3. Verifier les logs:"
-echo "   tail -f $PROJECT_DIR/logs/cron_*.log"
+echo "5. Verifier les logs:"
+echo "   tail -f $LOG_DIR/cron_*.log"
 echo ""
