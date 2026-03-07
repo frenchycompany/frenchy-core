@@ -72,6 +72,7 @@ if (!isset($menu_categories)) {
                 ['nom' => 'Relances voyageurs','chemin' => 'pages/relances_voyageurs.php',  'icon' => 'fa-bullhorn'],
                 ['nom' => 'Carnet clients',    'chemin' => 'pages/clients.php',             'icon' => 'fa-address-book'],
                 ['nom' => 'Créer contrat',     'chemin' => 'pages/create_contract.php',     'icon' => 'fa-file-contract'],
+                ['nom' => 'Contrats générés',  'chemin' => 'pages/contrats_generes.php',   'icon' => 'fa-file-signature'],
                 ['nom' => 'Modèles contrat',   'chemin' => 'pages/list_templates.php',      'icon' => 'fa-file-alt'],
                 ['nom' => 'Villes',            'chemin' => 'pages/villes.php',              'icon' => 'fa-city'],
                 ['nom' => 'Recommandations',  'chemin' => 'pages/recommandations_logement.php', 'icon' => 'fa-map-marked-alt'],

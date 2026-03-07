@@ -21,6 +21,9 @@ try {
     if (!in_array('proprietaire_id', $cols)) {
         $conn->exec("ALTER TABLE liste_logements ADD COLUMN `proprietaire_id` INT DEFAULT NULL");
     }
+    if (!in_array('book_bienvenue_url', $cols)) {
+        $conn->exec("ALTER TABLE liste_logements ADD COLUMN `book_bienvenue_url` VARCHAR(500) DEFAULT NULL AFTER `airbnb_url`");
+    }
 } catch (PDOException $e) {
     error_log('Migration logements : ' . $e->getMessage());
 }
@@ -47,6 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $ics_url = trim($_POST['ics_url'] ?? '');
         $ics_url_2 = trim($_POST['ics_url_2'] ?? '');
         $airbnb_url = trim($_POST['airbnb_url'] ?? '');
+        $book_bienvenue_url = trim($_POST['book_bienvenue_url'] ?? '');
         $proprietaire_id = (int) ($_POST['proprietaire_id'] ?? 0) ?: null;
 
         if (empty($nom)) {
@@ -56,12 +60,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt = $conn->prepare("
                     INSERT INTO liste_logements
                     (nom_du_logement, adresse, description, m2, nombre_de_personnes, poid_menage,
-                     prix_vente_menage, valeur_locative, valeur_fonciere, code, ics_url, ics_url_2, airbnb_url, proprietaire_id, actif)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+                     prix_vente_menage, valeur_locative, valeur_fonciere, code, ics_url, ics_url_2, airbnb_url, book_bienvenue_url, proprietaire_id, actif)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
                 ");
                 $stmt->execute([$nom, $adresse ?: null, $description ?: null, $m2, $nombre_de_personnes,
                     $poid_menage, $prix_vente_menage, $valeur_locative, $valeur_fonciere,
-                    $code, $ics_url ?: null, $ics_url_2 ?: null, $airbnb_url ?: null, $proprietaire_id]);
+                    $code, $ics_url ?: null, $ics_url_2 ?: null, $airbnb_url ?: null, $book_bienvenue_url ?: null, $proprietaire_id]);
                 $feedback = '<div class="alert alert-success">Logement ajouté avec succès.</div>';
             } catch (PDOException $e) {
                 $feedback = '<div class="alert alert-danger">Erreur : ' . htmlspecialchars($e->getMessage()) . '</div>';
@@ -85,6 +89,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $ics_url = trim($_POST['ics_url'] ?? '');
         $ics_url_2 = trim($_POST['ics_url_2'] ?? '');
         $airbnb_url = trim($_POST['airbnb_url'] ?? '');
+        $book_bienvenue_url = trim($_POST['book_bienvenue_url'] ?? '');
         $proprietaire_id = (int) ($_POST['proprietaire_id'] ?? 0) ?: null;
 
         if (empty($nom)) {
@@ -96,12 +101,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         nom_du_logement = ?, adresse = ?, description = ?,
                         m2 = ?, nombre_de_personnes = ?, poid_menage = ?,
                         prix_vente_menage = ?, valeur_locative = ?, valeur_fonciere = ?,
-                        code = ?, ics_url = ?, ics_url_2 = ?, airbnb_url = ?, proprietaire_id = ?
+                        code = ?, ics_url = ?, ics_url_2 = ?, airbnb_url = ?, book_bienvenue_url = ?, proprietaire_id = ?
                     WHERE id = ?
                 ");
                 $stmt->execute([$nom, $adresse ?: null, $description ?: null, $m2, $nombre_de_personnes,
                     $poid_menage, $prix_vente_menage, $valeur_locative, $valeur_fonciere,
-                    $code, $ics_url ?: null, $ics_url_2 ?: null, $airbnb_url ?: null, $proprietaire_id, $id]);
+                    $code, $ics_url ?: null, $ics_url_2 ?: null, $airbnb_url ?: null, $book_bienvenue_url ?: null, $proprietaire_id, $id]);
                 $feedback = '<div class="alert alert-success">Logement mis à jour.</div>';
             } catch (PDOException $e) {
                 $feedback = '<div class="alert alert-danger">Erreur : ' . htmlspecialchars($e->getMessage()) . '</div>';
@@ -244,6 +249,7 @@ foreach ($proprietaires_list as $pr) {
                             <th>Prix ménage</th>
                             <th>iCal</th>
                             <th>Airbnb</th>
+                            <th>Book</th>
                             <th>Proprio.</th>
                             <th>Résa.</th>
                             <th>Interv.</th>
@@ -282,6 +288,15 @@ foreach ($proprietaires_list as $pr) {
                                 <?php if (!empty($l['airbnb_url'])): ?>
                                     <a href="<?= htmlspecialchars($l['airbnb_url']) ?>" target="_blank" class="badge bg-danger badge-ics text-decoration-none" title="Voir l'annonce Airbnb">
                                         <i class="fas fa-external-link-alt"></i> Lien
+                                    </a>
+                                <?php else: ?>
+                                    <span class="badge bg-secondary badge-ics"><i class="fas fa-times"></i></span>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <?php if (!empty($l['book_bienvenue_url'])): ?>
+                                    <a href="<?= htmlspecialchars($l['book_bienvenue_url']) ?>" target="_blank" class="badge bg-success badge-ics text-decoration-none" title="Book bienvenue">
+                                        <i class="fas fa-book"></i> Lien
                                     </a>
                                 <?php else: ?>
                                     <span class="badge bg-secondary badge-ics"><i class="fas fa-times"></i></span>
@@ -329,7 +344,7 @@ foreach ($proprietaires_list as $pr) {
                         </tr>
                     <?php endforeach; ?>
                     <?php if (empty($logements)): ?>
-                        <tr><td colspan="14" class="text-center text-muted py-4">Aucun logement enregistré.</td></tr>
+                        <tr><td colspan="15" class="text-center text-muted py-4">Aucun logement enregistré.</td></tr>
                     <?php endif; ?>
                     </tbody>
                 </table>
@@ -421,6 +436,13 @@ foreach ($proprietaires_list as $pr) {
                             <div class="mb-3">
                                 <label class="form-label">URL annonce Airbnb</label>
                                 <input type="url" class="form-control" name="airbnb_url" placeholder="https://www.airbnb.fr/rooms/...">
+                            </div>
+
+                            <h6 class="text-muted mb-3 mt-3">Book de bienvenue</h6>
+                            <div class="mb-3">
+                                <label class="form-label">URL book bienvenue</label>
+                                <input type="url" class="form-control" name="book_bienvenue_url" placeholder="https://...">
+                                <small class="form-text text-muted">Lien vers le livret d'accueil du logement</small>
                             </div>
 
                             <h6 class="text-muted mb-3 mt-3">Propriétaire</h6>
@@ -529,6 +551,13 @@ foreach ($proprietaires_list as $pr) {
                                 <input type="url" class="form-control" name="airbnb_url" id="edit_airbnb">
                             </div>
 
+                            <h6 class="text-muted mb-3 mt-3">Book de bienvenue</h6>
+                            <div class="mb-3">
+                                <label class="form-label">URL book bienvenue</label>
+                                <input type="url" class="form-control" name="book_bienvenue_url" id="edit_book_bienvenue">
+                                <small class="form-text text-muted">Lien vers le livret d'accueil du logement</small>
+                            </div>
+
                             <h6 class="text-muted mb-3 mt-3">Propriétaire</h6>
                             <div class="mb-3">
                                 <select class="form-select" name="proprietaire_id" id="edit_proprietaire">
@@ -568,6 +597,7 @@ function editLogement(l) {
     document.getElementById('edit_ics').value       = l.ics_url || '';
     document.getElementById('edit_ics2').value      = l.ics_url_2 || '';
     document.getElementById('edit_airbnb').value    = l.airbnb_url || '';
+    document.getElementById('edit_book_bienvenue').value = l.book_bienvenue_url || '';
     document.getElementById('edit_proprietaire').value = l.proprietaire_id || '0';
 
     new bootstrap.Modal(document.getElementById('editModal')).show();
