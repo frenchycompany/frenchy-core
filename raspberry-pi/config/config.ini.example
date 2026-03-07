@@ -14,10 +14,11 @@ modem2 = /dev/ttyUSB1
 baudrate = 115200
 
 [DATABASE]
-host = 127.0.0.1
+# IP du VPS IONOS (BDD unique centralisée)
+host = 87.106.246.151
 user = sms_user
 password = YOUR_DATABASE_PASSWORD_HERE
-database = sms_db
+database = frenchyconciergerie
 
 [OPENAI]
 # Optional: OpenAI API key for AI-powered responses
