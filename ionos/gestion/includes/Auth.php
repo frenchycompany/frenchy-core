@@ -416,29 +416,65 @@ class Auth
 
     private function isLockedOut(string $ip): bool
     {
-        $stmt = $this->conn->prepare(
-            "SELECT COUNT(*) FROM auth_rate_limit
-             WHERE ip_address = ? AND action = 'login'
-               AND attempted_at > DATE_SUB(NOW(), INTERVAL ? SECOND)"
-        );
-        $stmt->execute([$ip, $this->lockoutDuration]);
-        return (int) $stmt->fetchColumn() >= $this->maxLoginAttempts;
+        try {
+            $stmt = $this->conn->prepare(
+                "SELECT COUNT(*) FROM auth_rate_limit
+                 WHERE ip_address = ? AND action = 'login'
+                   AND attempted_at > DATE_SUB(NOW(), INTERVAL ? SECOND)"
+            );
+            $stmt->execute([$ip, $this->lockoutDuration]);
+            return (int) $stmt->fetchColumn() >= $this->maxLoginAttempts;
+        } catch (PDOException $e) {
+            // Table pas encore créée — on laisse passer
+            $this->ensureRateLimitTable();
+            return false;
+        }
     }
 
     private function recordFailedAttempt(string $ip, string $email): void
     {
-        $stmt = $this->conn->prepare(
-            "INSERT INTO auth_rate_limit (ip_address, action, identifier) VALUES (?, 'login', ?)"
-        );
-        $stmt->execute([$ip, $email]);
+        try {
+            $stmt = $this->conn->prepare(
+                "INSERT INTO auth_rate_limit (ip_address, action, identifier) VALUES (?, 'login', ?)"
+            );
+            $stmt->execute([$ip, $email]);
+        } catch (PDOException $e) {
+            // Table pas encore créée — ignorer silencieusement
+        }
     }
 
     private function clearAttempts(string $ip): void
     {
-        $stmt = $this->conn->prepare(
-            "DELETE FROM auth_rate_limit WHERE ip_address = ? AND action = 'login'"
-        );
-        $stmt->execute([$ip]);
+        try {
+            $stmt = $this->conn->prepare(
+                "DELETE FROM auth_rate_limit WHERE ip_address = ? AND action = 'login'"
+            );
+            $stmt->execute([$ip]);
+        } catch (PDOException $e) {
+            // Table pas encore créée — ignorer silencieusement
+        }
+    }
+
+    /**
+     * Crée la table auth_rate_limit si elle n'existe pas.
+     */
+    private function ensureRateLimitTable(): void
+    {
+        try {
+            $this->conn->exec("
+                CREATE TABLE IF NOT EXISTS `auth_rate_limit` (
+                    `id` INT NOT NULL AUTO_INCREMENT,
+                    `ip_address` VARCHAR(45) NOT NULL,
+                    `action` VARCHAR(50) NOT NULL DEFAULT 'login',
+                    `identifier` VARCHAR(255) DEFAULT NULL,
+                    `attempted_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (`id`),
+                    KEY `idx_ip_action` (`ip_address`, `action`, `attempted_at`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            ");
+        } catch (PDOException $e) {
+            error_log("Auth: impossible de créer auth_rate_limit: " . $e->getMessage());
+        }
     }
 
     // ========================================================
