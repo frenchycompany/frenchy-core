@@ -1,6 +1,31 @@
 <?php
 include '../config.php'; // Inclut la configuration de la base de données
 
+// Mapping champ contrat -> source auto-fill depuis donnees logement/proprietaire
+$autofillMap = [
+    'client_name'          => 'proprietaire_fullname',
+    'nom_du_logement'      => 'nom_du_logement',
+    'percentage_fee'       => 'proprietaire_commission',
+    'prix_vente_menage'    => 'prix_vente_menage',
+    'location'             => 'ville',
+    'owner_address'        => 'proprietaire_adresse',
+    'property_description' => 'description_logement',
+    'contract_date'        => 'date_contrat',
+    'client_email'         => 'proprietaire_email',
+    'client_phone'         => 'proprietaire_telephone',
+    'client_societe'       => 'proprietaire_societe',
+    'client_siret'         => 'proprietaire_siret',
+    'iban'                 => 'proprietaire_rib_iban',
+    'bic'                  => 'proprietaire_rib_bic',
+    'banque'               => 'proprietaire_rib_banque',
+    'adresse'              => 'adresse',
+    'adresse_logement'     => 'adresse',
+    'ville'                => 'ville',
+    'code_postal'          => 'code_postal',
+    'capacite'             => 'capacite',
+    'type_logement'        => 'type_logement',
+];
+
 if (isset($_GET['id']) && is_numeric($_GET['id'])) {
     $template_id = (int)$_GET['id'];
 
@@ -22,14 +47,15 @@ if (isset($_GET['id']) && is_numeric($_GET['id'])) {
             foreach ($fields as $field) {
                 $fieldName = htmlspecialchars($field['field_name']);
                 $description = htmlspecialchars($field['description']);
+                $autofill = isset($autofillMap[$field['field_name']]) ? " data-autofill='" . htmlspecialchars($autofillMap[$field['field_name']]) . "'" : '';
 
                 echo "<div class='mb-3'>";
                 echo "<label for='{$fieldName}' class='form-label'>{$description} :</label>";
                 if ($field['input_type'] === 'textarea') {
-                    echo "<textarea name='{$fieldName}' id='{$fieldName}' class='form-control' rows='4' required></textarea>";
+                    echo "<textarea name='{$fieldName}' id='{$fieldName}' class='form-control' rows='4' required{$autofill}></textarea>";
                 } elseif ($field['input_type'] === 'select' && !empty($field['options'])) {
                     $options = explode(',', $field['options']);
-                    echo "<select name='{$fieldName}' id='{$fieldName}' class='form-select' required>";
+                    echo "<select name='{$fieldName}' id='{$fieldName}' class='form-select' required{$autofill}>";
                     echo '<option value="">-- Choisissez une option --</option>';
                     foreach ($options as $option) {
                         $opt = htmlspecialchars(trim($option));
@@ -37,7 +63,7 @@ if (isset($_GET['id']) && is_numeric($_GET['id'])) {
                     }
                     echo "</select>";
                 } else {
-                    echo "<input type='{$field['input_type']}' name='{$fieldName}' id='{$fieldName}' class='form-control' required>";
+                    echo "<input type='{$field['input_type']}' name='{$fieldName}' id='{$fieldName}' class='form-control' required{$autofill}>";
                 }
                 echo "</div>";
             }
