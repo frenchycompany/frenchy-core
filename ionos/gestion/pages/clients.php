@@ -7,7 +7,6 @@
  * Adapte de la version RPI pour le VPS unifie
  */
 include '../config.php';
-include '../pages/menu.php';
 require_once __DIR__ . '/../includes/rpi_bridge.php';
 
 // Fonction utilitaire
@@ -50,7 +49,7 @@ try {
 
 $feedback = '';
 
-// --- Traitement des actions POST ---
+// --- Traitement des actions POST (AVANT menu.php pour permettre les redirects) ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     validateCsrfToken();
 
@@ -142,6 +141,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 }
+
+// Menu apres le traitement POST (pour ne pas bloquer les redirects header())
+include '../pages/menu.php';
 
 // Messages flash
 if (isset($_GET['created'])) {
@@ -422,8 +424,8 @@ elseif ($viewPhoneNorm !== ''):
                         <form method="POST" style="display:inline">
                             <?php echoCsrfField(); ?>
                             <input type="hidden" name="telephone" value="<?= e($viewPhoneNorm) ?>">
-                            <input type="hidden" name="prenom" value="<?= e($reservations[0]['prenom'] ?? '') ?>">
-                            <input type="hidden" name="nom" value="<?= e($reservations[0]['nom'] ?? '') ?>">
+                            <input type="hidden" name="prenom" value="<?= e(!empty($reservations) ? ($reservations[0]['prenom'] ?? '') : '') ?>">
+                            <input type="hidden" name="nom" value="<?= e(!empty($reservations) ? ($reservations[0]['nom'] ?? '') : '') ?>">
                             <input type="hidden" name="email" value="<?= e($email) ?>">
                             <button type="submit" name="create_client" class="btn btn-sm btn-primary">
                                 <i class="fas fa-plus"></i> Creer la fiche
@@ -640,7 +642,7 @@ elseif ($viewPhoneNorm !== ''):
     <script>
         const CTX = {
             phone: <?= json_encode($viewPhoneNorm) ?>,
-            prenom: <?= json_encode($clientProfile['prenom'] ?? ($reservations[0]['prenom'] ?? '')) ?>
+            prenom: <?= json_encode(($clientProfile['prenom'] ?? null) ?: (!empty($reservations) ? ($reservations[0]['prenom'] ?? '') : '')) ?>
         };
 
         const TEMPLATES = {
