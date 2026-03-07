@@ -2,32 +2,35 @@
 /**
  * Gestion du Ménage - Frenchy Conciergerie
  * Interface complète pour la gestion des interventions de ménage
+ *
+ * MIGRATION: Utilise désormais le système d'auth unifié.
  */
 session_start();
 
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../includes/functions.php';
+require_once __DIR__ . '/../gestion/includes/Auth.php';
 
-// Configuration admin
-define('ADMIN_USER', 'admin');
-define('ADMIN_PASS', 'frenchyconciergerie2026');
-
-// Gestion de la connexion
-if (isset($_POST['login'])) {
-    if ($_POST['username'] === ADMIN_USER && $_POST['password'] === ADMIN_PASS) {
-        $_SESSION['admin_logged'] = true;
-    } else {
-        $loginError = 'Identifiants incorrects';
-    }
-}
+$auth = new Auth($conn);
 
 if (isset($_GET['logout'])) {
-    unset($_SESSION['admin_logged']);
-    header('Location: menage.php');
+    $auth->logout();
+    header('Location: ../gestion/login.php');
     exit;
 }
 
-$isLogged = isset($_SESSION['admin_logged']) && $_SESSION['admin_logged'] === true;
+// Auth unifiée ou ancien système (transition)
+$isLogged = false;
+if ($auth->check() && $auth->isAdmin()) {
+    $isLogged = true;
+} elseif (isset($_SESSION['admin_logged']) && $_SESSION['admin_logged'] === true) {
+    $isLogged = true;
+}
+
+if (!$isLogged) {
+    header('Location: ../gestion/login.php');
+    exit;
+}
 
 if (!$isLogged) {
     header('Location: index.php');

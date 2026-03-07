@@ -1,29 +1,77 @@
 <?php
 /**
  * Vérification d'authentification propriétaire — inclusion commune
+ * Compatible avec l'ancien système (FC_proprietaires) et le nouveau (users + Auth)
  */
 require_once __DIR__ . '/../../config.php';
 require_once __DIR__ . '/../../includes/functions.php';
-require_once __DIR__ . '/../../includes/security.php';
+require_once __DIR__ . '/../../includes/Auth.php';
 
-$security = new Security($conn);
-$settings = getAllSettings($conn);
+// Nouveau système Auth
+$auth = new Auth($conn);
 
-if (!isset($_SESSION['proprietaire_id'])) {
-    header('Location: login.php');
+// Vérifier l'authentification (compatible ancien + nouveau)
+if (!isset($_SESSION['proprietaire_id']) && !$auth->isProprietaire()) {
+    header('Location: ' . ($auth->check() ? '../login.php' : 'login.php'));
     exit;
 }
 
-$proprietaire_id = $_SESSION['proprietaire_id'];
+// Charger les données propriétaire
+$proprietaire = null;
+$proprietaire_id = null;
 
-$stmt = $conn->prepare("SELECT * FROM FC_proprietaires WHERE id = ? AND actif = 1");
-$stmt->execute([$proprietaire_id]);
-$proprietaire = $stmt->fetch(PDO::FETCH_ASSOC);
+if (isset($_SESSION['user_id']) && $auth->isProprietaire()) {
+    // Nouveau système : charger depuis la table users
+    $proprietaire_id = $_SESSION['user_id'];
+    $user = $auth->user();
 
-if (!$proprietaire) {
-    session_destroy();
-    header('Location: login.php');
-    exit;
+    if (!$user) {
+        $auth->logout();
+        header('Location: ../login.php');
+        exit;
+    }
+
+    // Mapper les champs users vers le format attendu par le portail
+    $proprietaire = [
+        'id'         => $user['id'],
+        'nom'        => $user['nom'],
+        'prenom'     => $user['prenom'],
+        'email'      => $user['email'],
+        'telephone'  => $user['telephone'],
+        'adresse'    => $user['adresse'],
+        'photo'      => $user['photo'],
+        'societe'    => $user['societe'],
+        'siret'      => $user['siret'],
+        'commission' => $user['commission'],
+        'actif'      => $user['actif'],
+        'role'       => $user['role'], // proprietaire_full ou proprietaire_opti
+    ];
+
+    // Pour la compatibilité, mapper le legacy_proprietaire_id si existant
+    $_SESSION['proprietaire_id'] = $user['legacy_proprietaire_id'] ?? $user['id'];
+    $proprietaire_id = $_SESSION['proprietaire_id'];
+
+} elseif (isset($_SESSION['proprietaire_id'])) {
+    // Ancien système : charger depuis FC_proprietaires (fallback)
+    $proprietaire_id = $_SESSION['proprietaire_id'];
+    require_once __DIR__ . '/../../includes/security.php';
+    $security = new Security($conn);
+
+    $stmt = $conn->prepare("SELECT * FROM FC_proprietaires WHERE id = ? AND actif = 1");
+    $stmt->execute([$proprietaire_id]);
+    $proprietaire = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$proprietaire) {
+        session_destroy();
+        header('Location: login.php');
+        exit;
+    }
+}
+
+// Charger les settings si la fonction existe
+$settings = [];
+if (function_exists('getAllSettings')) {
+    $settings = getAllSettings($conn);
 }
 
 // Logements du propriétaire

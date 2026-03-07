@@ -4,37 +4,26 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_set_cookie_params([
-        'lifetime' => 0,
-        'path'     => '/',
-        'domain'   => '',
-        'secure'   => false,
-        'httponly' => true,
-        'samesite' => 'Strict'
-    ]);
-    session_start();
-}
+require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/includes/Auth.php';
 
-if (!isset($_SESSION['regenerated'])) {
-    session_regenerate_id(true);
-    $_SESSION['regenerated'] = true;
-}
+$auth = new Auth($conn);
 
-if (!isset($_SESSION['nom_utilisateur']) || !isset($_SESSION['id_intervenant'])) {
-    header("Location: login.php");
+// Propriétaires → rediriger vers leur portail
+if ($auth->isProprietaire()) {
+    header('Location: proprietaire/index.php');
     exit;
 }
-$nom_utilisateur = filter_var($_SESSION['nom_utilisateur'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-$intervenant_id = (int) $_SESSION['id_intervenant'];
-$is_admin = (($_SESSION['role'] ?? '') === 'admin');
 
-if (empty($_SESSION['csrf_token'])) {
-    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-}
-$csrf_token = $_SESSION['csrf_token'];
+// Staff/Admin requis pour cette page
+$auth->requireStaff('login.php');
 
-require_once __DIR__ . '/config.php';
+// Variables de compatibilité pour le code existant
+$nom_utilisateur = $_SESSION['user_nom'] ?? $_SESSION['nom_utilisateur'] ?? 'Compte';
+$intervenant_id = (int) ($_SESSION['id_intervenant'] ?? $_SESSION['user_id'] ?? 0);
+$is_admin = $auth->isAdmin();
+$csrf_token = $auth->csrfToken();
+
 require_once __DIR__ . '/pages/menu.php';
 
 $today = date('Y-m-d');

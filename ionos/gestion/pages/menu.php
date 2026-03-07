@@ -16,15 +16,15 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Vérification de la connexion
-if (!isset($_SESSION['id_intervenant'])) {
+// Vérification de la connexion (compatible ancien + nouveau système)
+if (!isset($_SESSION['id_intervenant']) && !isset($_SESSION['user_id'])) {
     header('Location: ' . BASE_URL . 'login.php');
     exit;
 }
 
-$id_intervenant  = $_SESSION['id_intervenant'];
-$role            = $_SESSION['role']            ?? 'user';
-$nom_utilisateur = $_SESSION['nom_utilisateur'] ?? 'Compte';
+$id_intervenant  = $_SESSION['id_intervenant'] ?? $_SESSION['user_id'] ?? 0;
+$role            = $_SESSION['role'] ?? (in_array($_SESSION['user_role'] ?? '', ['admin', 'super_admin']) ? 'admin' : 'user');
+$nom_utilisateur = $_SESSION['nom_utilisateur'] ?? $_SESSION['user_nom'] ?? 'Compte';
 
 if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
@@ -37,22 +37,46 @@ if (file_exists(__DIR__ . '/../includes/i18n.php')) {
 }
 
 // Pages accessibles depuis la BDD (système de permissions)
+// Compatible avec l'ancien système (intervenants_pages) et le nouveau (user_permissions)
 $pages_accessibles = [];
 try {
     if ($role === 'admin') {
         $stmt = $conn->query("SELECT id, nom, chemin FROM pages WHERE afficher_menu = 1");
     } else {
-        $stmt = $conn->prepare(
-            "SELECT p.id, p.nom, p.chemin
-             FROM pages p
-             INNER JOIN intervenants_pages ip ON p.id = ip.page_id
-             WHERE ip.intervenant_id = :id_intervenant
-               AND p.afficher_menu = 1"
-        );
-        $stmt->bindValue(':id_intervenant', $id_intervenant, PDO::PARAM_INT);
-        $stmt->execute();
+        // Essayer d'abord le nouveau système (user_permissions)
+        $user_id = $_SESSION['user_id'] ?? null;
+        if ($user_id) {
+            $stmt = $conn->prepare(
+                "SELECT p.id, p.nom, p.chemin
+                 FROM pages p
+                 INNER JOIN user_permissions up ON p.id = up.page_id
+                 WHERE up.user_id = :user_id
+                   AND p.afficher_menu = 1"
+            );
+            $stmt->bindValue(':user_id', $user_id, PDO::PARAM_INT);
+            $stmt->execute();
+            $pages_accessibles = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        }
+
+        // Fallback : ancien système (intervenants_pages)
+        if (empty($pages_accessibles)) {
+            $stmt = $conn->prepare(
+                "SELECT p.id, p.nom, p.chemin
+                 FROM pages p
+                 INNER JOIN intervenants_pages ip ON p.id = ip.page_id
+                 WHERE ip.intervenant_id = :id_intervenant
+                   AND p.afficher_menu = 1"
+            );
+            $stmt->bindValue(':id_intervenant', $id_intervenant, PDO::PARAM_INT);
+            $stmt->execute();
+            $pages_accessibles = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        }
     }
-    $pages_accessibles = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    if (empty($pages_accessibles) && $role !== 'admin') {
+        // Déjà récupéré ci-dessus
+    } else if ($role === 'admin') {
+        $pages_accessibles = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 } catch (PDOException $e) {
     error_log('Erreur BD dans menu.php : ' . $e->getMessage());
 }

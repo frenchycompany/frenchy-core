@@ -1,38 +1,47 @@
 <?php
 /**
  * Panneau d'administration Frenchy Conciergerie
+ *
+ * MIGRATION: Ce panneau utilise désormais le système d'auth unifié.
+ * Les credentials hardcodés ont été supprimés.
+ * Connectez-vous via /gestion/login.php avec un compte admin/super_admin.
  */
 session_start();
 
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../includes/functions.php';
+require_once __DIR__ . '/../gestion/includes/Auth.php';
 
 // Vérifier la connexion à la base de données
 if (!$conn) {
     die('Erreur de connexion à la base de données. Veuillez réessayer plus tard.');
 }
 
-// Configuration admin (à modifier en production)
-define('ADMIN_USER', 'admin');
-define('ADMIN_PASS', 'frenchyconciergerie2026');
+$auth = new Auth($conn);
 
-// Gestion de la connexion
-if (isset($_POST['login'])) {
-    if ($_POST['username'] === ADMIN_USER && $_POST['password'] === ADMIN_PASS) {
-        $_SESSION['admin_logged'] = true;
-    } else {
-        $loginError = 'Identifiants incorrects';
-    }
-}
-
+// Logout
 if (isset($_GET['logout'])) {
-    unset($_SESSION['admin_logged']);
-    header('Location: index.php');
+    $auth->logout();
+    header('Location: ../gestion/login.php');
     exit;
 }
 
-// Vérification authentification
-$isLogged = isset($_SESSION['admin_logged']) && $_SESSION['admin_logged'] === true;
+// Vérification authentification via le système unifié
+// Accepte les sessions admin du nouveau système OU l'ancien système (transition)
+$isLogged = false;
+
+if ($auth->check() && $auth->isAdmin()) {
+    $isLogged = true;
+} elseif (isset($_SESSION['admin_logged']) && $_SESSION['admin_logged'] === true) {
+    // Ancien système — accepté temporairement pendant la migration
+    $isLogged = true;
+}
+
+// Si pas connecté, rediriger vers le login unifié
+if (!$isLogged) {
+    header('Location: ../gestion/login.php');
+    exit;
+}
 
 // Page courante
 $page = $_GET['page'] ?? 'dashboard';
