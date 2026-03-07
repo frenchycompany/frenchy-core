@@ -299,9 +299,31 @@ try {
         $logId   = (int)$r['logement_id'];
         $depart  = $r['date_depart']; // = today
         $nbPers  = max(0, (int)$r['nb_pers']);
+        // Fallback : capacité max du logement si nb_pers inconnu
+        if ($nbPers === 0 && isset($logements[$logId])) {
+            $nbPers = $logements[$logId]['capacite'];
+        }
         $nbJours = max(0, (int)$r['nb_jours']);
         $srcLabel = $r['_source'] ?? 'REMOTE';
         $note    = "Auto: ménage de sortie (resa #{$resaId}) [{$srcLabel}]";
+
+        // Vérifier d'abord s'il existe déjà UNE intervention ce jour pour ce logement
+        $findAnyToday->execute([$logId, $depart]);
+        $alreadyAny = $findAnyToday->fetch();
+        $findAnyToday->closeCursor();
+        if ($alreadyAny) {
+            $skipped++;
+            $report['departures'][] = [
+                'reservation_id'  => $resaId,
+                'logement_id'     => $logId,
+                'date_depart'     => $depart,
+                'reason'          => 'intervention_already_exists_today',
+                'had_intervention_before' => true,
+                'created_now'     => false,
+                'intervention_id' => (int)$alreadyAny['id'],
+            ];
+            continue;
+        }
 
         $existing = null;
 
@@ -357,6 +379,10 @@ try {
         $logId   = (int)$r['logement_id'];
         $arrivee = $r['date_arrivee']; // = today
         $nbPers  = max(0, (int)$r['nb_pers']);
+        // Fallback : capacité max du logement si nb_pers inconnu
+        if ($nbPers === 0 && isset($logements[$logId])) {
+            $nbPers = $logements[$logId]['capacite'];
+        }
         $nbJours = max(0, (int)$r['nb_jours']);
         $srcLabel = $r['_source'] ?? 'REMOTE';
         $note    = "Auto: ménage avant arrivée (resa #{$resaId}) [{$srcLabel}]";

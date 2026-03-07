@@ -299,9 +299,30 @@ try {
         $logId   = (int)$r['logement_id'];
         $depart  = $r['date_depart']; // = $target
         $nbPers  = max(0, (int)$r['nb_pers']);
+        // Fallback : capacité max du logement si nb_pers inconnu
+        if ($nbPers === 0 && isset($logements[$logId])) {
+            $nbPers = $logements[$logId]['capacite'];
+        }
         $nbJours = max(0, (int)$r['nb_jours']);
         $srcLabel = $r['_source'] ?? 'REMOTE';
         $note    = "Auto: ménage de sortie (resa #{$resaId}) [{$srcLabel}]";
+
+        // Vérifier s'il existe déjà UNE intervention ce jour pour ce logement
+        $findAnyOnDate->execute([$logId, $depart]);
+        $alreadyAny = $findAnyOnDate->fetch();
+        if ($alreadyAny) {
+            $skipped++;
+            $report['departures'][] = [
+                'reservation_id'  => $resaId,
+                'logement_id'     => $logId,
+                'date_depart'     => $depart,
+                'reason'          => 'intervention_already_exists_on_date',
+                'had_intervention_before' => true,
+                'created_now'     => false,
+                'intervention_id' => null,
+            ];
+            continue;
+        }
 
         $existing = null;
         if ($findBySourceCheckout) {
@@ -350,10 +371,14 @@ try {
 
     // 2) ARRIVÉES = $target (créer si rien n’existe déjà ce jour pour le logement)
     foreach ($arrs as $r) {
-        $resaId  = (int)$r['resa_id'];
-        $logId   = (int)$r['logement_id'];
-        $nbPers  = max(0, (int)$r['nb_pers']);
-        $nbJours = max(0, (int)$r['nb_jours']);
+        $resaId  = (int)$r[‘resa_id’];
+        $logId   = (int)$r[‘logement_id’];
+        $nbPers  = max(0, (int)$r[‘nb_pers’]);
+        // Fallback : capacité max du logement si nb_pers inconnu
+        if ($nbPers === 0 && isset($logements[$logId])) {
+            $nbPers = $logements[$logId][‘capacite’];
+        }
+        $nbJours = max(0, (int)$r[‘nb_jours’]);
         $srcLabel = $r['_source'] ?? 'REMOTE';
         $note    = "Auto: ménage avant arrivée (resa #{$resaId}) [{$srcLabel}]";
 
