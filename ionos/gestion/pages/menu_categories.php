@@ -69,6 +69,8 @@ if (!isset($menu_categories)) {
                 ['nom' => 'Analyse de marché', 'chemin' => 'pages/analyse_marche.php',      'icon' => 'fa-chart-line'],
                 ['nom' => 'Concurrence',       'chemin' => 'pages/analyse_concurrence.php', 'icon' => 'fa-chart-area'],
                 ['nom' => 'Carnet clients',    'chemin' => 'pages/clients.php',             'icon' => 'fa-address-book'],
+                ['nom' => 'Créer contrat',     'chemin' => 'pages/create_contract.php',     'icon' => 'fa-file-contract'],
+                ['nom' => 'Modèles contrat',   'chemin' => 'pages/list_templates.php',      'icon' => 'fa-file-alt'],
                 ['nom' => 'Villes',            'chemin' => 'pages/villes.php',              'icon' => 'fa-city'],
                 ['nom' => 'Todo',              'chemin' => 'pages/todo.php',                'icon' => 'fa-tasks'],
             ]

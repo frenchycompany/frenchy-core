@@ -1,45 +1,41 @@
 <?php
-include '../config.php'; // Inclut la configuration de la base de données
+include '../config.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (!isset($_POST['id']) || !is_numeric($_POST['id'])) {
-        echo "ID du modèle non valide.";
-        exit;
-    }
+    validateCsrfToken();
 
-    $template_id = (int)$_POST['id'];
-    $title = $_POST['title'] ?? '';
+    $template_id = isset($_POST['id']) && is_numeric($_POST['id']) ? (int)$_POST['id'] : 0;
+    $title = trim($_POST['title'] ?? '');
     $content = $_POST['content'] ?? '';
 
-    if (empty($title) || empty($content)) {
-        echo "Titre ou contenu manquant.";
+    if (!$template_id || empty($title) || empty($content)) {
+        header("Location: list_templates.php");
         exit;
     }
 
     try {
-        // Extraire les balises dynamiques {{...}} du contenu
-        preg_match_all('/{{(.*?)}}/', $content, $matches);
-        $placeholders = implode(',', array_unique($matches[1])); // Liste séparée par des virgules
+        // Extraire les placeholders {{...}} du contenu
+        preg_match_all('/\{\{(.*?)\}\}/', $content, $matches);
+        $placeholders = implode(',', array_unique($matches[1]));
 
-        // Mettre à jour le modèle dans la base de données
         $stmt = $conn->prepare("
-            UPDATE contract_templates 
-            SET title = :title, content = :content, placeholders = :placeholders, updated_at = NOW() 
+            UPDATE contract_templates
+            SET title = :title, content = :content, placeholders = :placeholders, updated_at = NOW()
             WHERE id = :id
         ");
         $stmt->execute([
             ':id' => $template_id,
-            ':title' => htmlspecialchars($title),
+            ':title' => $title,
             ':content' => $content,
             ':placeholders' => $placeholders
         ]);
 
-        // Rediriger vers la liste des modèles
-        header("Location: list_templates.php");
+        header("Location: list_templates.php?saved=1");
         exit;
     } catch (PDOException $e) {
-        echo "Erreur : " . $e->getMessage();
+        echo "Erreur : " . htmlspecialchars($e->getMessage());
     }
 } else {
-    echo "Méthode non autorisée.";
+    header("Location: list_templates.php");
+    exit;
 }
