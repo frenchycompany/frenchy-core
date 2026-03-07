@@ -173,6 +173,7 @@ document.addEventListener('DOMContentLoaded', function() {
         fetch('get_logement_infos.php?logement_id=' + logementId)
             .then(r => r.json())
             .then(data => {
+                console.log('Donnees logement recues:', data);
                 if (data.error) {
                     alert('Erreur: ' + data.error);
                     return;
@@ -251,6 +252,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Parcourir tous les inputs/textareas/selects du formulaire dynamique
         const fields = dynamicFields.querySelectorAll('input, textarea, select');
+        console.log('Champs du formulaire trouves:', fields.length, Array.from(fields).map(f => f.name || f.id));
+        console.log('Valeurs disponibles pour auto-fill:', fieldValues);
         fields.forEach(field => {
             if (field.value) return; // Ne pas ecraser une valeur deja remplie
             const name = (field.name || field.id || '').toLowerCase();
