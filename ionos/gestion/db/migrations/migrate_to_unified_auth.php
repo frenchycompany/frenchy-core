@@ -25,7 +25,7 @@ echo "=== Migration vers le système d'auth unifié ===\n\n";
 $auth = new Auth($conn);
 
 // ============================================================
-// ÉTAPE 1 : Créer les tables
+// ÉTAPE 1 : Créer les tables (ou mettre à jour si elles existent)
 // ============================================================
 echo "[1/5] Création des tables...\n";
 
@@ -47,6 +47,82 @@ foreach ($statements as $statement) {
             echo "  ATTENTION: " . $e->getMessage() . "\n";
         }
     }
+}
+
+// Si la table users existait déjà, ajouter les colonnes manquantes
+$columnsToAdd = [
+    'password_hash'          => "VARCHAR(255) NOT NULL DEFAULT ''",
+    'nom'                    => "VARCHAR(100) NOT NULL DEFAULT 'Sans nom'",
+    'prenom'                 => 'VARCHAR(100) DEFAULT NULL',
+    'telephone'              => 'VARCHAR(30) DEFAULT NULL',
+    'adresse'                => 'TEXT DEFAULT NULL',
+    'photo'                  => 'VARCHAR(255) DEFAULT NULL',
+    'role'                   => "ENUM('super_admin', 'admin', 'staff', 'proprietaire_full', 'proprietaire_opti') NOT NULL DEFAULT 'staff'",
+    'numero'                 => 'VARCHAR(50) DEFAULT NULL',
+    'role1'                  => 'VARCHAR(255) DEFAULT NULL',
+    'role2'                  => 'VARCHAR(255) DEFAULT NULL',
+    'role3'                  => 'VARCHAR(255) DEFAULT NULL',
+    'societe'                => 'VARCHAR(255) DEFAULT NULL',
+    'siret'                  => 'VARCHAR(20) DEFAULT NULL',
+    'rib_iban'               => 'VARCHAR(40) DEFAULT NULL',
+    'rib_bic'                => 'VARCHAR(15) DEFAULT NULL',
+    'rib_banque'             => 'VARCHAR(100) DEFAULT NULL',
+    'commission'             => 'DECIMAL(5,2) DEFAULT NULL',
+    'notes_admin'            => 'TEXT DEFAULT NULL',
+    'actif'                  => 'TINYINT(1) NOT NULL DEFAULT 1',
+    'derniere_connexion'     => 'DATETIME DEFAULT NULL',
+    'token_reset'            => 'VARCHAR(255) DEFAULT NULL',
+    'token_reset_expire'     => 'DATETIME DEFAULT NULL',
+    'legacy_intervenant_id'  => 'INT DEFAULT NULL',
+    'legacy_proprietaire_id' => 'INT DEFAULT NULL',
+    'created_at'             => 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP',
+    'updated_at'             => 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP',
+];
+
+// Récupérer les colonnes existantes de la table users
+$existingCols = [];
+try {
+    $colsResult = $conn->query("SHOW COLUMNS FROM users");
+    foreach ($colsResult as $col) {
+        $existingCols[] = $col['Field'];
+    }
+} catch (PDOException $e) {
+    // Table n'existe pas encore — pas de colonnes à ajouter
+}
+
+$addedCols = 0;
+foreach ($columnsToAdd as $colName => $colDef) {
+    if (!in_array($colName, $existingCols)) {
+        try {
+            $conn->exec("ALTER TABLE `users` ADD COLUMN `$colName` $colDef");
+            $addedCols++;
+            echo "  Colonne ajoutée : $colName\n";
+        } catch (PDOException $e) {
+            if (strpos($e->getMessage(), 'Duplicate column') === false) {
+                echo "  ATTENTION colonne $colName : " . $e->getMessage() . "\n";
+            }
+        }
+    }
+}
+
+// Ajouter les index manquants
+$indexesToAdd = [
+    'idx_role'                => 'ALTER TABLE `users` ADD KEY `idx_role` (`role`)',
+    'idx_actif'               => 'ALTER TABLE `users` ADD KEY `idx_actif` (`actif`)',
+    'idx_legacy_intervenant'  => 'ALTER TABLE `users` ADD KEY `idx_legacy_intervenant` (`legacy_intervenant_id`)',
+    'idx_legacy_proprietaire' => 'ALTER TABLE `users` ADD KEY `idx_legacy_proprietaire` (`legacy_proprietaire_id`)',
+];
+
+foreach ($indexesToAdd as $idxName => $idxSql) {
+    try {
+        $conn->exec($idxSql);
+    } catch (PDOException $e) {
+        // Ignorer si l'index existe déjà
+    }
+}
+
+if ($addedCols > 0) {
+    echo "  $addedCols colonnes ajoutées à la table users existante.\n";
 }
 echo "  Tables OK.\n";
 
@@ -219,10 +295,13 @@ try {
 echo "\n[4/5] Migration des permissions de pages...\n";
 
 try {
-    // Vérifier si la table intervenants_pages existe
+    // Vérifier si les tables intervenants_pages et user_permissions existent
     $tables = $conn->query("SHOW TABLES LIKE 'intervenants_pages'")->fetchAll();
+    $hasUserPerms = !empty($conn->query("SHOW TABLES LIKE 'user_permissions'")->fetchAll());
     if (empty($tables)) {
         echo "  Table intervenants_pages n'existe pas, skip.\n";
+    } elseif (!$hasUserPerms) {
+        echo "  Table user_permissions n'existe pas (table pages manquante ?), skip.\n";
     } else {
         $perms = $conn->query("SELECT * FROM intervenants_pages")->fetchAll(PDO::FETCH_ASSOC);
         $migrated_perms = 0;
@@ -258,22 +337,26 @@ try {
 // ============================================================
 echo "\n[5/5] Vérification super_admin...\n";
 
-$check = $conn->query("SELECT id FROM users WHERE role = 'super_admin'")->fetch();
-if (!$check) {
-    $defaultPassword = bin2hex(random_bytes(8)); // 16 caractères aléatoires
-    $hash = $auth->hashPassword($defaultPassword);
+try {
+    $check = $conn->query("SELECT id FROM users WHERE role = 'super_admin'")->fetch();
+    if (!$check) {
+        $defaultPassword = bin2hex(random_bytes(8)); // 16 caractères aléatoires
+        $hash = $auth->hashPassword($defaultPassword);
 
-    $conn->prepare(
-        "INSERT INTO users (email, password_hash, nom, role, actif)
-         VALUES ('admin@frenchy.local', ?, 'Super Admin', 'super_admin', 1)"
-    )->execute([$hash]);
+        $conn->prepare(
+            "INSERT INTO users (email, password_hash, nom, role, actif)
+             VALUES ('admin@frenchy.local', ?, 'Super Admin', 'super_admin', 1)"
+        )->execute([$hash]);
 
-    echo "  Super admin créé !\n";
-    echo "  Email: admin@frenchy.local\n";
-    echo "  Mot de passe: $defaultPassword\n";
-    echo "  >>> CHANGEZ CE MOT DE PASSE IMMÉDIATEMENT <<<\n";
-} else {
-    echo "  Super admin existe déjà.\n";
+        echo "  Super admin créé !\n";
+        echo "  Email: admin@frenchy.local\n";
+        echo "  Mot de passe: $defaultPassword\n";
+        echo "  >>> CHANGEZ CE MOT DE PASSE IMMÉDIATEMENT <<<\n";
+    } else {
+        echo "  Super admin existe déjà.\n";
+    }
+} catch (PDOException $e) {
+    echo "  ERREUR super_admin: " . $e->getMessage() . "\n";
 }
 
 // ============================================================
@@ -287,8 +370,12 @@ foreach ($counts as $c) {
     echo "  {$c['role']}: {$c['cnt']}\n";
 }
 
-$totalPerms = $conn->query("SELECT COUNT(*) FROM user_permissions")->fetchColumn();
-echo "\nPermissions de pages : $totalPerms\n";
+try {
+    $totalPerms = $conn->query("SELECT COUNT(*) FROM user_permissions")->fetchColumn();
+    echo "\nPermissions de pages : $totalPerms\n";
+} catch (PDOException $e) {
+    echo "\nPermissions de pages : table non créée (table pages manquante ?)\n";
+}
 
 echo "\nProchaines étapes :\n";
 echo "  1. Testez le login unifié : login_unified.php\n";

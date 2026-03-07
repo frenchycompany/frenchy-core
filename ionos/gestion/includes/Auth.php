@@ -27,7 +27,11 @@ class Auth
     {
         $this->conn = $conn;
         $this->sessionTimeout = (int) env('SESSION_TIMEOUT', 1800);
-        $this->ensureSession();
+
+        // Pas de session en CLI (migrations, scripts)
+        if (php_sapi_name() !== 'cli') {
+            $this->ensureSession();
+        }
     }
 
     // ========================================================
