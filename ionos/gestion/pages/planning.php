@@ -285,9 +285,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['bulk_update'])) {
         $logNom->execute([$logement_id]);
         $nomLogement = $logNom->fetchColumn() ?: 'Logement';
 
-        echo '<div class="alert alert-info">';
-        echo 'Lien de validation : <a href="' . htmlspecialchars($validation_link) . '" target="_blank">' . htmlspecialchars($validation_link) . '</a>';
-        echo '</div>';
+        // Stocker les messages en session pour affichage après redirect
+        $_SESSION['flash_messages'] = [];
+        $_SESSION['flash_messages'][] = [
+            'type' => 'info',
+            'html' => 'Lien de validation : <a href="' . htmlspecialchars($validation_link) . '" target="_blank">' . htmlspecialchars($validation_link) . '</a>'
+        ];
 
         // Creer le checkup + WhatsApp si checkup planifie
         if ($checkup_planifie) {
@@ -325,14 +328,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['bulk_update'])) {
             }
             $whatsUrl .= '?text=' . rawurlencode($whatsMsg);
 
-            echo '<div class="alert alert-success">';
-            echo '<i class="fas fa-clipboard-check"></i> <strong>Checkup cree et attribue</strong>';
-            if ($ckNom) echo ' a <strong>' . htmlspecialchars($ckNom) . '</strong>';
-            echo ' (' . number_format($checkup_prix, 2, ',', ' ') . ' &euro;)<br>';
-            echo '<a href="' . htmlspecialchars($checkup_link) . '" target="_blank" class="btn btn-sm btn-success mt-1"><i class="fas fa-clipboard-check"></i> Voir le Checkup</a> ';
-            echo '<a href="' . htmlspecialchars($whatsUrl) . '" target="_blank" class="btn btn-sm mt-1" style="background:#25D366;color:#fff;"><i class="fab fa-whatsapp"></i> Envoyer par WhatsApp</a>';
-            echo '</div>';
+            $ckHtml = '<i class="fas fa-clipboard-check"></i> <strong>Checkup cree et attribue</strong>';
+            if ($ckNom) $ckHtml .= ' a <strong>' . htmlspecialchars($ckNom) . '</strong>';
+            $ckHtml .= ' (' . number_format($checkup_prix, 2, ',', ' ') . ' &euro;)<br>';
+            $ckHtml .= '<a href="' . htmlspecialchars($checkup_link) . '" target="_blank" class="btn btn-sm btn-success mt-1"><i class="fas fa-clipboard-check"></i> Voir le Checkup</a> ';
+            $ckHtml .= '<a href="' . htmlspecialchars($whatsUrl) . '" target="_blank" class="btn btn-sm mt-1" style="background:#25D366;color:#fff;"><i class="fab fa-whatsapp"></i> Envoyer par WhatsApp</a>';
+
+            $_SESSION['flash_messages'][] = ['type' => 'success', 'html' => $ckHtml];
         }
+
+        // Redirect POST-Redirect-GET pour éviter les doublons au refresh
+        $redirectUrl = 'planning.php?date_debut=' . urlencode($date) . '&date_fin=' . urlencode($date);
+        header('Location: ' . $redirectUrl);
+        exit;
         } // fin else (pas de doublon)
     }
 }
@@ -456,6 +464,12 @@ $charges = $chargeStmt->fetchAll(PDO::FETCH_ASSOC);
 
     <?php if (!empty($error_message)): ?>
         <div class="alert alert-danger"><i class="fas fa-exclamation-triangle"></i> <?= $error_message ?></div>
+    <?php endif; ?>
+    <?php if (!empty($_SESSION['flash_messages'])): ?>
+        <?php foreach ($_SESSION['flash_messages'] as $flash): ?>
+            <div class="alert alert-<?= htmlspecialchars($flash['type']) ?>"><?= $flash['html'] ?></div>
+        <?php endforeach; ?>
+        <?php unset($_SESSION['flash_messages']); ?>
     <?php endif; ?>
 
     <form method="GET" action="planning.php" class="mb-4">
@@ -729,7 +743,7 @@ $charges = $chargeStmt->fetchAll(PDO::FETCH_ASSOC);
 
     <?php if ($is_admin): ?>
     <h3>Créer une nouvelle intervention</h3>
-    <form method="POST" action="">
+    <form method="POST" action="" id="form_ajouter" onsubmit="if(this.dataset.submitted){return false;}this.dataset.submitted='1';this.querySelector('button[type=submit]').disabled=true;">
         <input type="hidden" name="action" value="ajouter">
         <div class="form-row">
             <div class="form-group col-md-6">
