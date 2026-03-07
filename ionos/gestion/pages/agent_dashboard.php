@@ -1,513 +1,482 @@
 <?php
-declare(strict_types=1);
-session_start();
-
+/**
+ * Agent Com — Dashboard unifie
+ * Suivi des actions agents (SMS, reponses, upsell)
+ * Integre dans l'interface FrenchyConciergerie
+ */
 include '../config.php';
+include '../pages/menu.php';
 require_once __DIR__ . '/../includes/rpi_db.php';
-$pdo = getRpiPdo();
-if (file_exists(__DIR__ . '/../../vendor/autoload.php')) {
-    require __DIR__ . '/../../vendor/autoload.php';
-}
 
-function db(): PDO {
-    global $pdo;
-    return $pdo;
-}
+$pdo_rpi = getRpiPdo();
 
+// Fonctions utilitaires
 function h(string $s): string {
     return htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
 }
 
-function requireLogin(): void {
-    if (empty($_SESSION['agent_user'])) {
-        header("Location: ?login=1");
-        exit;
-    }
-}
+$intervenant_id = (int)($_SESSION['id_intervenant'] ?? $_SESSION['user_id'] ?? 0);
+$is_admin = ($_SESSION['role'] ?? '') === 'admin';
 
-/**
- * 🔗 Liens outils centralisés
- */
-$links = [
-    "SuperHote (login : julien / mdp : motdepassefort)" => "https://app.superhote.com/#/calendar/month",
-    "Réservations (serveur)" => "http://109.219.194.30/pages/reservation_list.php",
-    "Reçus (serveur)"        => "http://109.219.194.30/pages/recus.php",
-    "Planning (Frenchy)"     => "https://gestion.frenchyconciergerie.fr/pages/planning.php",
-    "Superhote Messagerie"   => "https://app.superhote.com/#/messages",
-
-];
-
-/**
- * Tarifs (table agent_action_rates)
- */
-function getRates(): array {
-    $pdo = db();
-    $stmt = $pdo->query("SELECT action_type, rate_eur FROM agent_action_rates");
-    $rates = [];
+// Tarifs
+$rates = [];
+try {
+    $stmt = $pdo_rpi->query("SELECT action_type, rate_eur FROM agent_action_rates");
     foreach ($stmt as $row) {
         $rates[(string)$row['action_type']] = (float)$row['rate_eur'];
     }
-    return $rates;
+} catch (PDOException $e) {
+    // Table n'existe peut-etre pas encore
+    try {
+        $pdo_rpi->exec("
+            CREATE TABLE IF NOT EXISTS agent_action_rates (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                action_type VARCHAR(100) NOT NULL UNIQUE,
+                rate_eur DECIMAL(8,2) NOT NULL DEFAULT 0.00
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        ");
+    } catch (PDOException $e2) {}
 }
 
 $actionTypesDefault = [
-    "SMS_envoye",
-    "SMS_recu_repondu",
-    "Airbnb_reponse",
-    "Booking_reponse",
-    "Pulse_reponse",
-    "Demande_enregistree",
-    "Relance_upsell",
-    "Autre"
+    "SMS_envoye", "SMS_recu_repondu", "Airbnb_reponse",
+    "Booking_reponse", "Pulse_reponse", "Demande_enregistree",
+    "Relance_upsell", "Autre"
 ];
+$actionTypes = !empty($rates) ? array_keys($rates) : $actionTypesDefault;
 
-/**
- * ✅ Import / liste des réservations depuis reservation + JOIN liste_logements
- * - confirmées
- * - date_arrivee >= (today - 7 jours)
- * - tri par date_arrivee ASC
- * - limite 250
- */
-function fetchReservations(): array {
-    $pdo = db();
+// Creer table agent_actions si elle n'existe pas
+try {
+    $pdo_rpi->exec("
+        CREATE TABLE IF NOT EXISTS agent_actions (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            agent_user_id INT NOT NULL,
+            action_type VARCHAR(100) NOT NULL,
+            channel VARCHAR(50) DEFAULT 'autre',
+            reservation_ref VARCHAR(100) DEFAULT NULL,
+            logement VARCHAR(255) DEFAULT NULL,
+            client_name VARCHAR(255) DEFAULT NULL,
+            notes TEXT DEFAULT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    ");
+} catch (PDOException $e) {}
 
-    $stmt = $pdo->prepare("
-        SELECT
-            r.id,
-            r.reference,
-            r.prenom,
-            r.nom,
-            r.telephone,
-            r.plateforme,
-            r.logement_id,
-            r.date_arrivee,
-            r.date_depart,
-            l.nom_du_logement
+// Reservations recentes
+$reservations = [];
+try {
+    $reservations = $pdo_rpi->query("
+        SELECT r.id, r.reference, r.prenom, r.nom, r.telephone, r.plateforme,
+               r.logement_id, r.date_arrivee, r.date_depart, l.nom_du_logement
         FROM reservation r
         LEFT JOIN liste_logements l ON l.id = r.logement_id
         WHERE (r.statut = 'confirmée' OR r.statut IS NULL)
           AND (r.date_arrivee IS NULL OR r.date_arrivee >= DATE_SUB(CURDATE(), INTERVAL 7 DAY))
-        ORDER BY
-          (r.date_arrivee IS NULL) ASC,
-          r.date_arrivee ASC,
-          r.id DESC
+        ORDER BY (r.date_arrivee IS NULL) ASC, r.date_arrivee ASC, r.id DESC
         LIMIT 250
-    ");
-    $stmt->execute();
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
-}
+    ")->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {}
 
-/**
- * LOGOUT
- */
-if (isset($_GET['logout'])) {
-    session_destroy();
-    header("Location: ?");
-    exit;
-}
+$feedback = '';
 
-/**
- * LOGIN
- */
-if (isset($_GET['login']) || empty($_SESSION['agent_user'])) {
-    $error = null;
-
-    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['do_login'])) {
-        $username = trim((string)($_POST['username'] ?? ''));
-        $password = (string)($_POST['password'] ?? '');
-
-        $pdo2 = db();
-        $stmt = $ros = $pdo2->prepare("SELECT id, username, password_hash, is_active FROM agent_users WHERE username = ? LIMIT 1");
-        $stmt->execute([$username]);
-        $u = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        if (!$u || (int)$u['is_active'] !== 1 || !password_verify($password, (string)$u['password_hash'])) {
-            $error = "Identifiants invalides.";
-        } else {
-            $_SESSION['agent_user'] = ['id' => (int)$u['id'], 'username' => (string)$u['username']];
-            header("Location: ?");
-            exit;
-        }
-    }
-    ?>
-    <!doctype html>
-    <html lang="fr">
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>Agent Com - Connexion</title>
-        <style>
-            body{font-family:Arial,sans-serif;background:#f6f7fb;margin:0;padding:30px;}
-            .card{max-width:420px;margin:0 auto;background:#fff;border-radius:12px;padding:20px;box-shadow:0 8px 24px rgba(0,0,0,.08);}
-            label{display:block;margin:12px 0 6px;}
-            input{width:100%;padding:10px;border:1px solid #ddd;border-radius:10px;}
-            button{margin-top:14px;width:100%;padding:10px;border:0;border-radius:10px;cursor:pointer;}
-            .err{color:#b00020;margin-top:10px;}
-            .muted{opacity:.7;font-size:12px;}
-        </style>
-    </head>
-    <body>
-        <div class="card">
-            <h2>Connexion Agent</h2>
-            <form method="post">
-                <input type="hidden" name="do_login" value="1">
-                <label>Utilisateur</label>
-                <input name="username" required>
-                <label>Mot de passe</label>
-                <input type="password" name="password" required>
-                <button type="submit">Se connecter</button>
-                <?php if ($error): ?><div class="err"><?=h($error)?></div><?php endif; ?>
-            </form>
-            <p class="muted" style="margin-top:16px;">
-                Si besoin, crée l'utilisateur via SQL dans <b>agent_users</b>.
-            </p>
-        </div>
-    </body>
-    </html>
-    <?php
-    exit;
-}
-
-/**
- * DASHBOARD
- */
-requireLogin();
-
-$pdo3 = db();
-$rates = getRates();
-$actionTypes = array_keys($rates);
-if (!$actionTypes) $actionTypes = $actionTypesDefault;
-
-$reservations = fetchReservations();
-
-/**
- * ENREGISTRER UNE ACTION
- */
+// Enregistrer une action
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_action'])) {
-    $action_type = trim((string)($_POST['action_type'] ?? 'Autre'));
-    $channel = (string)($_POST['channel'] ?? 'autre');
+    validateCsrfToken();
 
-    $reservation_ref = trim((string)($_POST['reservation_ref'] ?? ''));
-    $logement = trim((string)($_POST['logement'] ?? ''));
-    $client_name = trim((string)($_POST['client_name'] ?? ''));
-    $notes = trim((string)($_POST['notes'] ?? ''));
+    $action_type = trim($_POST['action_type'] ?? 'Autre');
+    $channel = $_POST['channel'] ?? 'autre';
+    $reservation_ref = trim($_POST['reservation_ref'] ?? '');
+    $logement = trim($_POST['logement'] ?? '');
+    $client_name = trim($_POST['client_name'] ?? '');
+    $notes = trim($_POST['notes'] ?? '');
 
     if (!in_array($action_type, $actionTypes, true)) $action_type = "Autre";
-    $allowedChannels = ['sms','airbnb','booking','pulse','autre'];
-    if (!in_array($channel, $allowedChannels, true)) $channel = "autre";
 
-    $stmt = $pdo3->prepare("
-        INSERT INTO agent_actions (agent_user_id, action_type, channel, reservation_ref, logement, client_name, notes)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    ");
-    $stmt->execute([
-        $_SESSION['agent_user']['id'],
-        $action_type,
-        $channel,
-        $reservation_ref !== '' ? $reservation_ref : null,
-        $logement !== '' ? $logement : null,
-        $client_name !== '' ? $client_name : null,
-        $notes !== '' ? $notes : null,
-    ]);
-
-    header("Location: ?saved=1");
-    exit;
+    try {
+        $pdo_rpi->prepare("
+            INSERT INTO agent_actions (agent_user_id, action_type, channel, reservation_ref, logement, client_name, notes)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ")->execute([
+            $intervenant_id,
+            $action_type,
+            $channel,
+            $reservation_ref ?: null,
+            $logement ?: null,
+            $client_name ?: null,
+            $notes ?: null,
+        ]);
+        $feedback = "<div class='alert alert-success alert-dismissible fade show'><i class='fas fa-check-circle'></i> Action enregistree <button type='button' class='btn-close' data-bs-dismiss='alert'></button></div>";
+    } catch (PDOException $e) {
+        $feedback = "<div class='alert alert-danger'>Erreur : " . htmlspecialchars($e->getMessage()) . "</div>";
+    }
 }
 
-/**
- * REPORTING période
- */
+// Gestion tarifs (admin)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_rates']) && $is_admin) {
+    validateCsrfToken();
+    foreach ($_POST['rate'] ?? [] as $type => $rate) {
+        try {
+            $pdo_rpi->prepare("INSERT INTO agent_action_rates (action_type, rate_eur) VALUES (?, ?) ON DUPLICATE KEY UPDATE rate_eur = ?")
+                ->execute([$type, (float)$rate, (float)$rate]);
+        } catch (PDOException $e) {}
+    }
+    // Recharger
+    $rates = [];
+    $stmt = $pdo_rpi->query("SELECT action_type, rate_eur FROM agent_action_rates");
+    foreach ($stmt as $row) {
+        $rates[(string)$row['action_type']] = (float)$row['rate_eur'];
+    }
+    $feedback = "<div class='alert alert-success'>Tarifs mis a jour</div>";
+}
+
+// Reporting periode
 $from = $_GET['from'] ?? date('Y-m-01');
 $to   = $_GET['to']   ?? date('Y-m-t');
 
-$fromDT = $from . " 00:00:00";
-$toDT   = $to   . " 23:59:59";
+$agentFilter = $is_admin ? (int)($_GET['agent'] ?? 0) : $intervenant_id;
 
-$stmt = $pdo3->prepare("
-    SELECT a.*
-    FROM agent_actions a
-    WHERE a.agent_user_id = ?
-      AND a.created_at BETWEEN ? AND ?
-    ORDER BY a.id DESC
-    LIMIT 200
-");
-$stmt->execute([$_SESSION['agent_user']['id'], $fromDT, $toDT]);
-$rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$sql = "SELECT a.* FROM agent_actions a WHERE a.created_at BETWEEN ? AND ? ";
+$params = [$from . " 00:00:00", $to . " 23:59:59"];
+if ($agentFilter > 0) {
+    $sql .= " AND a.agent_user_id = ?";
+    $params[] = $agentFilter;
+}
+$sql .= " ORDER BY a.id DESC LIMIT 200";
+
+$rows = [];
+try {
+    $stmt = $pdo_rpi->prepare($sql);
+    $stmt->execute($params);
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {}
 
 $totalActions = count($rows);
 $totalEur = 0.0;
 foreach ($rows as $r) {
     $totalEur += (float)($rates[(string)$r['action_type']] ?? 0.0);
 }
+
+// Stats par type
+$statsByType = [];
+foreach ($rows as $r) {
+    $t = $r['action_type'];
+    if (!isset($statsByType[$t])) $statsByType[$t] = ['count' => 0, 'eur' => 0];
+    $statsByType[$t]['count']++;
+    $statsByType[$t]['eur'] += (float)($rates[$t] ?? 0);
+}
+arsort($statsByType);
+
+// Liste agents (admin)
+$agents = [];
+if ($is_admin) {
+    try {
+        $agents = $pdo_rpi->query("SELECT DISTINCT agent_user_id FROM agent_actions ORDER BY agent_user_id")->fetchAll(PDO::FETCH_COLUMN);
+    } catch (PDOException $e) {}
+}
+
+// Liens outils
+$links = [
+    "SuperHote Calendrier" => "https://app.superhote.com/#/calendar/month",
+    "SuperHote Messagerie" => "https://app.superhote.com/#/messages",
+    "Planning Frenchy"     => "planning.php",
+    "Reservations"         => "reservations.php",
+];
 ?>
-<!doctype html>
+
+<!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Agent Com - Dashboard</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agent Dashboard — FrenchyConciergerie</title>
     <style>
-        body{font-family:Arial,sans-serif;background:#f6f7fb;margin:0;padding:18px;}
-        .wrap{max-width:1100px;margin:0 auto;display:grid;gap:14px;grid-template-columns: 420px 1fr;}
-        .card{background:#fff;border-radius:14px;padding:16px;box-shadow:0 8px 24px rgba(0,0,0,.08);}
-        h2,h3{margin:0 0 10px;}
-        .links a{display:block;padding:10px;border:1px solid #eee;border-radius:12px;text-decoration:none;margin:8px 0;color:#111;background:#fafafa;}
-        .links a:hover{background:#f2f2f2}
-        label{display:block;margin:10px 0 6px;font-size:13px;opacity:.85;}
-        input,select,textarea{width:100%;padding:10px;border:1px solid #ddd;border-radius:12px;}
-        textarea{min-height:90px;}
-        button{padding:10px 12px;border:0;border-radius:12px;cursor:pointer;}
-        .row{display:flex;gap:10px;}
-        .row > div{flex:1;}
-        table{width:100%;border-collapse:collapse;font-size:13px;}
-        th,td{padding:8px;border-bottom:1px solid #eee;vertical-align:top;}
-        .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
-        .pill{display:inline-block;padding:6px 10px;border-radius:999px;background:#f0f3ff;}
-        .muted{opacity:.7}
-        .ok{margin-top:10px;opacity:.75}
-        .kpi{display:flex;gap:10px;margin:10px 0 0}
-        .kpi > div{background:#fafafa;border:1px solid #eee;padding:10px;border-radius:12px;flex:1}
-        .kpi strong{font-size:16px}
-        .logout a{color:#111;text-decoration:none}
-        .hint{font-size:12px;opacity:.65;margin-top:6px}
+        .kpi-card { text-align: center; }
+        .kpi-card .h3 { margin-bottom: 0; }
+        .action-form .form-label { font-size: 0.85em; margin-bottom: 2px; }
     </style>
 </head>
 <body>
+<div class="container-fluid mt-3">
 
-<div class="topbar">
-    <div>
-        <strong>Agent :</strong> <?=h($_SESSION['agent_user']['username'])?>
-        <span class="pill">Période : <?=h($from)?> → <?=h($to)?></span>
-    </div>
-    <div class="logout"><a href="?logout=1">Se déconnecter</a></div>
-</div>
+    <?= $feedback ?>
 
-<div class="wrap">
-
-    <div class="card">
-        <h2>Outils</h2>
-        <div class="links">
-            <?php foreach ($links as $label => $url): ?>
-                <a target="_blank" rel="noopener" href="<?=h($url)?>"><?=h($label)?></a>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h2><i class="fas fa-headset"></i> Agent Dashboard</h2>
+            <p class="text-muted mb-0">Suivi des actions et remuneration</p>
+        </div>
+        <div class="d-flex gap-2">
+            <?php foreach ($links as $lbl => $url): ?>
+            <a href="<?= h($url) ?>" <?= str_starts_with($url, 'http') ? 'target="_blank"' : '' ?> class="btn btn-outline-secondary btn-sm">
+                <?= h($lbl) ?>
+            </a>
             <?php endforeach; ?>
         </div>
-
-        <hr style="border:0;border-top:1px solid #eee;margin:14px 0;">
-
-        <h3>Enregistrer une action</h3>
-        <form method="post" id="actionForm">
-            <input type="hidden" name="save_action" value="1">
-
-            <label>Réservation</label>
-            <select id="reservation_select">
-                <option value="">— Choisir une réservation (auto-remplissage) —</option>
-                <?php foreach ($reservations as $r): ?>
-                    <?php
-                        $ref = (string)($r['reference'] ?? '');
-                        $fullName = trim((string)$r['prenom'] . ' ' . (string)$r['nom']);
-                        $arr = (string)($r['date_arrivee'] ?? '');
-                        $dep = (string)($r['date_depart'] ?? '');
-                        $logementName = (string)($r['nom_du_logement'] ?? '');
-                        $plateforme = (string)($r['plateforme'] ?? '');
-                        $tel = (string)($r['telephone'] ?? '');
-
-                        $label = trim(
-                            ($ref !== '' ? $ref . ' — ' : '') .
-                            ($fullName !== '' ? $fullName : 'Client') .
-                            ($arr ? " ($arr→$dep)" : '') .
-                            ($logementName !== '' ? " — " . $logementName : '') .
-                            ($plateforme !== '' ? " — $plateforme" : '')
-                        );
-                    ?>
-                    <option
-                        value="<?=h((string)$r['id'])?>"
-                        data-reference="<?=h($ref)?>"
-                        data-client="<?=h($fullName)?>"
-                        data-logement="<?=h($logementName)?>"
-                        data-plateforme="<?=h($plateforme)?>"
-                        data-tel="<?=h($tel)?>"
-                        data-arr="<?=h($arr)?>"
-                        data-dep="<?=h($dep)?>"
-                    ><?=h($label)?></option>
-                <?php endforeach; ?>
-            </select>
-            <div class="hint">Choisis une réservation pour remplir automatiquement Réf / Logement / Client.</div>
-
-            <label>Type d’action</label>
-            <select name="action_type" required>
-                <?php foreach ($actionTypes as $t): ?>
-                    <option value="<?=h($t)?>"><?=h($t)?> (<?=number_format((float)($rates[$t] ?? 0), 2)?> €)</option>
-                <?php endforeach; ?>
-            </select>
-
-            <label>Canal</label>
-            <select name="channel" required>
-                <option value="sms">sms</option>
-                <option value="airbnb">airbnb</option>
-                <option value="booking">booking</option>
-                <option value="pulse">pulse</option>
-                <option value="autre">autre</option>
-            </select>
-
-            <div class="row">
-                <div>
-                    <label>Réf réservation (optionnel)</label>
-                    <input name="reservation_ref" id="reservation_ref" placeholder="ex: AB-123 / BK-987">
-                </div>
-                <div>
-                    <label>Logement (optionnel)</label>
-                    <input name="logement" id="logement" placeholder="ex: Château Vertefeuille">
-                </div>
-            </div>
-
-            <label>Nom client (optionnel)</label>
-            <input name="client_name" id="client_name" placeholder="ex: Mme Dupont">
-
-            <label>Notes / demande enregistrée</label>
-            <textarea name="notes" id="notes" placeholder="Résumé + réponse + prochaine action"></textarea>
-
-            <button type="submit">✅ Valider l’action</button>
-            <?php if (isset($_GET['saved'])): ?>
-                <div class="ok">Action enregistrée.</div>
-            <?php endif; ?>
-        </form>
     </div>
 
-    <div class="card">
-        <h2>Suivi & Paiement</h2>
-
-        <form method="get" class="row" style="align-items:end;margin-bottom:10px;">
-            <div>
-                <label>Du</label>
-                <input type="date" name="from" value="<?=h($from)?>">
-            </div>
-            <div>
-                <label>Au</label>
-                <input type="date" name="to" value="<?=h($to)?>">
-            </div>
-            <div style="flex:0 0 160px;">
-                <button type="submit">Filtrer</button>
-            </div>
-        </form>
-
-        <div class="kpi">
-            <div>
-                <div class="muted">Total actions</div>
-                <strong><?=h((string)$totalActions)?></strong>
-            </div>
-            <div>
-                <div class="muted">Total à payer</div>
-                <strong><?=number_format($totalEur, 2)?> €</strong>
+    <!-- KPIs -->
+    <div class="row mb-3">
+        <div class="col-md-3">
+            <div class="card kpi-card">
+                <div class="card-body py-2">
+                    <div class="h3 text-primary"><?= $totalActions ?></div>
+                    <small class="text-muted">Actions (periode)</small>
+                </div>
             </div>
         </div>
-
-        <div style="margin-top:12px;"></div>
-
-        <table>
-            <thead>
-            <tr>
-                <th>Date</th>
-                <th>Action</th>
-                <th>Canal</th>
-                <th>Réf / Logement</th>
-                <th>Client / Notes</th>
-                <th>€</th>
-            </tr>
-            </thead>
-            <tbody>
-            <?php foreach ($rows as $r): ?>
-                <?php $eur = (float)($rates[(string)$r['action_type']] ?? 0); ?>
-                <tr>
-                    <td><?=h((string)$r['created_at'])?></td>
-                    <td><?=h((string)$r['action_type'])?></td>
-                    <td><?=h((string)$r['channel'])?></td>
-                    <td>
-                        <div><?=h((string)($r['reservation_ref'] ?? ''))?></div>
-                        <div class="muted"><?=h((string)($r['logement'] ?? ''))?></div>
-                    </td>
-                    <td>
-                        <div><strong><?=h((string)($r['client_name'] ?? ''))?></strong></div>
-                        <div class="muted"><?=nl2br(h((string)($r['notes'] ?? '')))?></div>
-                    </td>
-                    <td><?=number_format($eur, 2)?> €</td>
-                </tr>
-            <?php endforeach; ?>
-            <?php if (!$rows): ?>
-                <tr><td colspan="6" class="muted">Aucune action sur la période.</td></tr>
-            <?php endif; ?>
-            </tbody>
-        </table>
-
-        <p class="muted" style="margin-top:10px;">
-            Historique limité à 200 lignes.
-        </p>
+        <div class="col-md-3">
+            <div class="card kpi-card">
+                <div class="card-body py-2">
+                    <div class="h3 text-success"><?= number_format($totalEur, 2) ?> &euro;</div>
+                    <small class="text-muted">A payer</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card kpi-card">
+                <div class="card-body py-2">
+                    <div class="h3"><?= count($statsByType) ?></div>
+                    <small class="text-muted">Types d'actions</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card kpi-card">
+                <div class="card-body py-2">
+                    <div class="h3"><?= count($reservations) ?></div>
+                    <small class="text-muted">Reservations actives</small>
+                </div>
+            </div>
+        </div>
     </div>
 
+    <div class="row">
+        <!-- Colonne gauche : Enregistrer action -->
+        <div class="col-md-4">
+            <div class="card mb-3 action-form">
+                <div class="card-header"><h6 class="mb-0"><i class="fas fa-plus-circle"></i> Enregistrer une action</h6></div>
+                <div class="card-body">
+                    <form method="POST">
+                        <?php echoCsrfField(); ?>
+
+                        <div class="mb-2">
+                            <label class="form-label">Reservation</label>
+                            <select id="reservation_select" class="form-select form-select-sm">
+                                <option value="">-- Choisir (auto-remplissage) --</option>
+                                <?php foreach ($reservations as $r):
+                                    $ref = $r['reference'] ?? '';
+                                    $fullName = trim(($r['prenom'] ?? '') . ' ' . ($r['nom'] ?? ''));
+                                    $arr = $r['date_arrivee'] ?? '';
+                                    $dep = $r['date_depart'] ?? '';
+                                    $logName = $r['nom_du_logement'] ?? '';
+                                    $label = ($ref ? "$ref — " : '') . ($fullName ?: 'Client') . ($arr ? " ($arr)" : '') . ($logName ? " — $logName" : '');
+                                ?>
+                                <option value="<?= h((string)$r['id']) ?>"
+                                        data-reference="<?= h($ref) ?>"
+                                        data-client="<?= h($fullName) ?>"
+                                        data-logement="<?= h($logName) ?>"
+                                        data-plateforme="<?= h($r['plateforme'] ?? '') ?>"
+                                        data-tel="<?= h($r['telephone'] ?? '') ?>"
+                                        data-arr="<?= h($arr) ?>"
+                                        data-dep="<?= h($dep) ?>"
+                                ><?= h($label) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+
+                        <div class="row mb-2">
+                            <div class="col">
+                                <label class="form-label">Type d'action</label>
+                                <select name="action_type" class="form-select form-select-sm" required>
+                                    <?php foreach ($actionTypes as $t): ?>
+                                    <option value="<?= h($t) ?>"><?= h($t) ?> (<?= number_format($rates[$t] ?? 0, 2) ?>&euro;)</option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="col">
+                                <label class="form-label">Canal</label>
+                                <select name="channel" class="form-select form-select-sm" required>
+                                    <option value="sms">SMS</option>
+                                    <option value="airbnb">Airbnb</option>
+                                    <option value="booking">Booking</option>
+                                    <option value="pulse">Pulse</option>
+                                    <option value="autre">Autre</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row mb-2">
+                            <div class="col">
+                                <label class="form-label">Ref reservation</label>
+                                <input type="text" name="reservation_ref" id="reservation_ref" class="form-control form-control-sm" placeholder="AB-123">
+                            </div>
+                            <div class="col">
+                                <label class="form-label">Logement</label>
+                                <input type="text" name="logement" id="logement" class="form-control form-control-sm">
+                            </div>
+                        </div>
+
+                        <div class="mb-2">
+                            <label class="form-label">Nom client</label>
+                            <input type="text" name="client_name" id="client_name" class="form-control form-control-sm">
+                        </div>
+
+                        <div class="mb-2">
+                            <label class="form-label">Notes</label>
+                            <textarea name="notes" id="notes" class="form-control form-control-sm" rows="3" placeholder="Resume + reponse + prochaine action"></textarea>
+                        </div>
+
+                        <button type="submit" name="save_action" value="1" class="btn btn-primary btn-sm w-100">
+                            <i class="fas fa-check"></i> Valider l'action
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Stats par type -->
+            <?php if (!empty($statsByType)): ?>
+            <div class="card mb-3">
+                <div class="card-header"><h6 class="mb-0"><i class="fas fa-chart-pie"></i> Repartition</h6></div>
+                <div class="card-body p-2">
+                    <table class="table table-sm mb-0">
+                        <?php foreach ($statsByType as $type => $s): ?>
+                        <tr>
+                            <td class="small"><?= h($type) ?></td>
+                            <td class="text-center"><span class="badge bg-primary"><?= $s['count'] ?></span></td>
+                            <td class="text-end small"><?= number_format($s['eur'], 2) ?>&euro;</td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </table>
+                </div>
+            </div>
+            <?php endif; ?>
+
+            <!-- Gestion tarifs (admin) -->
+            <?php if ($is_admin): ?>
+            <div class="card mb-3">
+                <div class="card-header"><h6 class="mb-0"><i class="fas fa-cog"></i> Tarifs (admin)</h6></div>
+                <div class="card-body">
+                    <form method="POST">
+                        <?php echoCsrfField(); ?>
+                        <?php foreach ($actionTypesDefault as $t): ?>
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <span class="flex-grow-1 small"><?= h($t) ?></span>
+                            <input type="number" step="0.01" name="rate[<?= h($t) ?>]" class="form-control form-control-sm" style="width:80px" value="<?= number_format($rates[$t] ?? 0, 2, '.', '') ?>">
+                            <span class="small">&euro;</span>
+                        </div>
+                        <?php endforeach; ?>
+                        <button type="submit" name="save_rates" class="btn btn-sm btn-outline-primary w-100 mt-2">
+                            <i class="fas fa-save"></i> Enregistrer tarifs
+                        </button>
+                    </form>
+                </div>
+            </div>
+            <?php endif; ?>
+        </div>
+
+        <!-- Colonne droite : Historique -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0"><i class="fas fa-history"></i> Historique des actions</h6>
+                        <form method="GET" class="d-flex gap-2 align-items-end">
+                            <input type="date" name="from" value="<?= h($from) ?>" class="form-control form-control-sm" style="width:140px">
+                            <input type="date" name="to" value="<?= h($to) ?>" class="form-control form-control-sm" style="width:140px">
+                            <?php if ($is_admin && !empty($agents)): ?>
+                            <select name="agent" class="form-select form-select-sm" style="width:120px">
+                                <option value="0">Tous</option>
+                                <?php foreach ($agents as $aid): ?>
+                                <option value="<?= $aid ?>" <?= $agentFilter == $aid ? 'selected' : '' ?>>Agent #<?= $aid ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                            <?php endif; ?>
+                            <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-filter"></i></button>
+                        </form>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Action</th>
+                                    <th>Canal</th>
+                                    <th>Ref / Logement</th>
+                                    <th>Client / Notes</th>
+                                    <th class="text-end">&euro;</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($rows as $r):
+                                    $eur = (float)($rates[(string)$r['action_type']] ?? 0);
+                                ?>
+                                <tr>
+                                    <td class="small text-nowrap"><?= date('d/m H:i', strtotime($r['created_at'])) ?></td>
+                                    <td><span class="badge bg-secondary"><?= h($r['action_type']) ?></span></td>
+                                    <td class="small"><?= h($r['channel']) ?></td>
+                                    <td class="small">
+                                        <?= h($r['reservation_ref'] ?? '') ?>
+                                        <?php if ($r['logement']): ?><br><span class="text-muted"><?= h($r['logement']) ?></span><?php endif; ?>
+                                    </td>
+                                    <td class="small">
+                                        <?php if ($r['client_name']): ?><strong><?= h($r['client_name']) ?></strong><br><?php endif; ?>
+                                        <span class="text-muted"><?= nl2br(h($r['notes'] ?? '')) ?></span>
+                                    </td>
+                                    <td class="text-end small"><?= number_format($eur, 2) ?>&euro;</td>
+                                </tr>
+                                <?php endforeach; ?>
+                                <?php if (empty($rows)): ?>
+                                <tr><td colspan="6" class="text-center text-muted py-4">Aucune action sur cette periode</td></tr>
+                                <?php endif; ?>
+                            </tbody>
+                            <?php if ($totalActions > 0): ?>
+                            <tfoot>
+                                <tr class="table-light">
+                                    <td colspan="5" class="text-end"><strong>Total</strong></td>
+                                    <td class="text-end"><strong><?= number_format($totalEur, 2) ?>&euro;</strong></td>
+                                </tr>
+                            </tfoot>
+                            <?php endif; ?>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
 (function(){
-  const sel = document.getElementById('reservation_select');
-  const ref = document.getElementById('reservation_ref');
-  const logement = document.getElementById('logement');
-  const client = document.getElementById('client_name');
-  const notes = document.getElementById('notes');
+    const sel = document.getElementById('reservation_select');
+    const ref = document.getElementById('reservation_ref');
+    const logement = document.getElementById('logement');
+    const client = document.getElementById('client_name');
+    const notes = document.getElementById('notes');
+    if(!sel) return;
 
-  if(!sel) return;
+    let notesTouched = false;
+    if(notes) notes.addEventListener('input', () => { notesTouched = true; });
 
-  // Flag: notes modifiées manuellement
-  let notesTouched = false;
+    sel.addEventListener('change', function(){
+        const opt = sel.options[sel.selectedIndex];
+        if(!opt || !opt.value) return;
 
-  if (notes) {
-    notes.addEventListener('input', function(){
-      // Dès que quelqu’un tape dans notes, on considère que c’est manuel
-      notesTouched = true;
-      notes.dataset.autofill = "0";
+        if(opt.dataset.reference) ref.value = opt.dataset.reference;
+        if(opt.dataset.logement) logement.value = opt.dataset.logement;
+        if(opt.dataset.client) client.value = opt.dataset.client;
+
+        if(notes && !notesTouched) {
+            const parts = [];
+            if(opt.dataset.plateforme) parts.push('Plateforme: ' + opt.dataset.plateforme);
+            if(opt.dataset.tel) parts.push('Tel: ' + opt.dataset.tel);
+            if(opt.dataset.arr) parts.push('Sejour: ' + opt.dataset.arr + ' → ' + (opt.dataset.dep || '?'));
+            notes.value = parts.join(' | ');
+        }
     });
-  }
-
-  function buildNotes(opt){
-    const plateforme = opt.getAttribute('data-plateforme') || '';
-    const tel = opt.getAttribute('data-tel') || '';
-    const arr = opt.getAttribute('data-arr') || '';
-    const dep = opt.getAttribute('data-dep') || '';
-
-    let base = [];
-    if(plateforme) base.push("Plateforme: " + plateforme);
-    if(tel) base.push("Tel: " + tel);
-    if(arr || dep) base.push("Séjour: " + (arr || '?') + " → " + (dep || '?'));
-
-    return base.join(" | ");
-  }
-
-  sel.addEventListener('change', function(){
-    const opt = sel.options[sel.selectedIndex];
-    if(!opt || !opt.value) return;
-
-    const reference = opt.getAttribute('data-reference') || '';
-    const clientName = opt.getAttribute('data-client') || '';
-    const logementName = opt.getAttribute('data-logement') || '';
-
-    if(reference) ref.value = reference;
-    if(logementName) logement.value = logementName;
-    if(clientName) client.value = clientName;
-
-    // ✅ Notes:
-    // - Si jamais modifiées manuellement => on n’écrase pas
-    // - Sinon => on met à jour à chaque changement de réservation
-    if (notes && !notesTouched) {
-      notes.value = buildNotes(opt);
-      notes.dataset.autofill = "1";
-    }
-  });
-
-  // Optionnel: si tu veux forcer le remplissage dès la 1ère sélection même si notes vide
-  // et permettre un reset manuel:
-  // Ajoute un bouton "Réinitialiser notes auto" si tu veux (je te le fais si besoin).
-
 })();
 </script>
-
 
 </body>
 </html>
