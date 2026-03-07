@@ -218,45 +218,72 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     function applyAutoFill(data) {
-        // Mapping des champs API vers les champs du formulaire
+        // Mapping des donnees API vers les noms de champs possibles dans les templates
         const mapping = {
-            'nom_du_logement': ['nom_du_logement', 'logement_nom', 'nom_logement'],
-            'adresse': ['adresse', 'adresse_logement'],
+            'nom_du_logement': ['nom_du_logement', 'logement_nom', 'nom_logement', 'logement'],
+            'adresse': ['adresse', 'adresse_logement', 'adresse_du_logement'],
             'ville': ['ville', 'ville_logement'],
+            'code_postal': ['code_postal', 'cp'],
             'type_logement': ['type_logement', 'type'],
-            'capacite': ['capacite'],
-            'proprietaire_nom': ['proprietaire_nom', 'nom_proprietaire'],
+            'capacite': ['capacite', 'capacite_logement'],
+            'proprietaire_nom': ['proprietaire_nom', 'nom_proprietaire', 'nom_du_proprietaire'],
             'proprietaire_prenom': ['proprietaire_prenom', 'prenom_proprietaire'],
-            'proprietaire_email': ['proprietaire_email', 'email_proprietaire'],
-            'proprietaire_telephone': ['proprietaire_telephone', 'telephone_proprietaire', 'tel_proprietaire'],
-            'proprietaire_adresse': ['proprietaire_adresse', 'adresse_proprietaire'],
-            'proprietaire_societe': ['proprietaire_societe', 'societe_proprietaire', 'societe'],
-            'proprietaire_siret': ['proprietaire_siret', 'siret_proprietaire', 'siret'],
-            'proprietaire_rib_iban': ['proprietaire_rib_iban', 'iban_proprietaire', 'iban', 'rib_iban'],
-            'proprietaire_rib_bic': ['proprietaire_rib_bic', 'bic_proprietaire', 'bic', 'rib_bic'],
-            'proprietaire_rib_banque': ['proprietaire_rib_banque', 'banque_proprietaire', 'banque', 'rib_banque'],
-            'proprietaire_commission': ['proprietaire_commission', 'commission_proprietaire', 'commission'],
+            'proprietaire_email': ['proprietaire_email', 'email_proprietaire', 'email_proprio'],
+            'proprietaire_telephone': ['proprietaire_telephone', 'telephone_proprietaire', 'tel_proprietaire', 'telephone_proprio'],
+            'proprietaire_adresse': ['proprietaire_adresse', 'adresse_proprietaire', 'adresse_proprio'],
+            'proprietaire_societe': ['proprietaire_societe', 'societe_proprietaire', 'societe', 'societe_proprio'],
+            'proprietaire_siret': ['proprietaire_siret', 'siret_proprietaire', 'siret', 'siret_proprio'],
+            'proprietaire_rib_iban': ['proprietaire_rib_iban', 'iban_proprietaire', 'iban', 'rib_iban', 'iban_proprio'],
+            'proprietaire_rib_bic': ['proprietaire_rib_bic', 'bic_proprietaire', 'bic', 'rib_bic', 'bic_proprio'],
+            'proprietaire_rib_banque': ['proprietaire_rib_banque', 'banque_proprietaire', 'banque', 'rib_banque', 'banque_proprio'],
+            'proprietaire_commission': ['proprietaire_commission', 'commission_proprietaire', 'commission', 'commission_proprio'],
         };
 
-        // Remplir par ID direct
-        for (const key in data) {
-            const field = document.getElementById(key);
-            if (field && data[key]) {
-                field.value = data[key];
-            }
-        }
-
-        // Remplir par mapping
+        // Construire un index inverse : nom de champ -> valeur
+        const fieldValues = {};
         for (const [dataKey, fieldNames] of Object.entries(mapping)) {
             if (data[dataKey]) {
                 fieldNames.forEach(name => {
-                    const field = document.getElementById(name) || document.querySelector('[name="' + name + '"]');
-                    if (field && !field.value) {
-                        field.value = data[dataKey];
-                    }
+                    fieldValues[name.toLowerCase()] = data[dataKey];
                 });
             }
         }
+
+        // Parcourir tous les inputs/textareas/selects du formulaire dynamique
+        const fields = dynamicFields.querySelectorAll('input, textarea, select');
+        fields.forEach(field => {
+            if (field.value) return; // Ne pas ecraser une valeur deja remplie
+            const name = (field.name || field.id || '').toLowerCase();
+            if (!name) return;
+
+            // 1) Match direct
+            if (fieldValues[name]) {
+                field.value = fieldValues[name];
+                return;
+            }
+
+            // 2) Match par sous-chaine (ex: le champ "nom_proprietaire" matche la cle "proprietaire_nom")
+            for (const [fName, fValue] of Object.entries(fieldValues)) {
+                if (name.includes(fName) || fName.includes(name)) {
+                    field.value = fValue;
+                    return;
+                }
+            }
+
+            // 3) Match direct par cle API
+            if (data[name]) {
+                field.value = data[name];
+                return;
+            }
+
+            // 4) Match par cle API en sous-chaine (pour les colonnes comme code, etc.)
+            for (const key in data) {
+                if (data[key] && (name === key.toLowerCase() || name.includes(key.toLowerCase()) || key.toLowerCase().includes(name))) {
+                    field.value = data[key];
+                    return;
+                }
+            }
+        });
 
         // Date du contrat
         const dateField = document.getElementById('date_contrat');
