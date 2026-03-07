@@ -39,6 +39,7 @@ if (!is_dir($uploadDir)) {
 }
 
 $feedback = '';
+$scraped_images = [];
 
 // Logements
 $logements = [];
@@ -61,6 +62,137 @@ try {
 // === ACTIONS POST ===
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     validateCsrfToken();
+
+    // Scraper une URL Airbnb pour extraire les photos
+    if (isset($_POST['scrape_url_btn'])) {
+        $scrape_url = trim($_POST['scrape_url'] ?? '');
+        $logement_id = (int)$_POST['logement_id'];
+
+        if ($logement_id > 0 && !empty($scrape_url)) {
+            $scraped_images = [];
+            $scrape_error = '';
+
+            // Fetch la page
+            $ch = curl_init();
+            curl_setopt_array($ch, [
+                CURLOPT_URL => $scrape_url,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_TIMEOUT => 20,
+                CURLOPT_SSL_VERIFYPEER => false,
+                CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                CURLOPT_HTTPHEADER => [
+                    'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                    'Accept-Language: fr-FR,fr;q=0.9,en;q=0.8',
+                ],
+            ]);
+            $html = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curlError = curl_error($ch);
+            curl_close($ch);
+
+            if ($html && $httpCode === 200) {
+                $found_urls = [];
+
+                // 1) Chercher les URLs muscache.com (CDN Airbnb) dans tout le HTML
+                if (preg_match_all('#https?://a\d+\.muscache\.com/im/pictures/[a-zA-Z0-9/_\-\.]+\.(?:jpg|jpeg|webp|png)#i', $html, $m)) {
+                    $found_urls = array_merge($found_urls, $m[0]);
+                }
+
+                // 2) Chercher dans les attributs data et src
+                if (preg_match_all('#https?://a\d+\.muscache\.com/im/(?:ml-)?pictures/[^\s"\'<>]+#i', $html, $m)) {
+                    $found_urls = array_merge($found_urls, $m[0]);
+                }
+
+                // 3) Chercher les URLs d'images Airbnb encodees dans le JSON embarque
+                if (preg_match_all('#https?:%2F%2Fa\d+\.muscache\.com%2Fim%2Fpictures%2F[^"\'&\s]+#i', $html, $m)) {
+                    foreach ($m[0] as $encoded) {
+                        $found_urls[] = urldecode($encoded);
+                    }
+                }
+
+                // 4) og:image et meta images
+                if (preg_match_all('#<meta[^>]+content=["\']?(https?://[^"\'>\s]+muscache[^"\'>\s]+)["\']?#i', $html, $m)) {
+                    $found_urls = array_merge($found_urls, $m[1]);
+                }
+
+                // Deduplication et nettoyage
+                $clean_urls = [];
+                foreach ($found_urls as $u) {
+                    // Nettoyer les parametres de taille pour avoir la meilleure qualite
+                    $u = preg_replace('/\?im_w=\d+/', '?im_w=1200', $u);
+                    // Retirer les doublons par nom de fichier
+                    $basename = preg_replace('/\?.*$/', '', $u);
+                    if (!isset($clean_urls[$basename])) {
+                        $clean_urls[$basename] = $u;
+                    }
+                }
+
+                // Filtrer les miniatures (trop petites) et icones
+                $scraped_images = array_values(array_filter($clean_urls, function($url) {
+                    // Exclure les images de profil, icones, logos
+                    if (preg_match('/(User-|avatar|logo|icon|badge|flag|marker)/i', $url)) return false;
+                    // Exclure les tres petites images (im_w < 200)
+                    if (preg_match('/im_w=(\d+)/', $url, $wm) && (int)$wm[1] < 200) return false;
+                    return true;
+                }));
+
+                if (empty($scraped_images)) {
+                    $scrape_error = "Aucune photo trouvee dans cette page. Le site bloque peut-etre le scraping.";
+                }
+            } else {
+                $scrape_error = "Impossible de charger la page" . ($curlError ? " : $curlError" : " (HTTP $httpCode)");
+            }
+
+            if ($scrape_error) {
+                $feedback = "<div class='alert alert-warning'><i class='fas fa-exclamation-triangle'></i> $scrape_error</div>";
+            }
+        }
+    }
+
+    // Importer les photos selectionnees depuis le scraping
+    if (isset($_POST['import_scraped'])) {
+        $logement_id = (int)$_POST['logement_id'];
+        $selected = $_POST['scraped_urls'] ?? [];
+
+        if ($logement_id > 0 && !empty($selected)) {
+            $imported = 0;
+            $errors = 0;
+
+            foreach ($selected as $i => $url) {
+                if (!filter_var($url, FILTER_VALIDATE_URL)) { $errors++; continue; }
+
+                $ext = 'jpg';
+                if (preg_match('/\.(png|webp|jpeg|jpg)(\?|$)/i', $url, $m)) {
+                    $ext = strtolower($m[1]);
+                }
+                $filename = 'logement_' . $logement_id . '_' . time() . '_' . $i . '.' . $ext;
+                $filepath = $uploadDir . $filename;
+
+                $ctx = stream_context_create([
+                    'http' => ['timeout' => 15, 'user_agent' => 'Mozilla/5.0 (compatible; FrenchyBot/1.0)'],
+                    'ssl' => ['verify_peer' => false, 'verify_peer_name' => false],
+                ]);
+                $imageData = @file_get_contents($url, false, $ctx);
+
+                if ($imageData && strlen($imageData) > 1000) {
+                    file_put_contents($filepath, $imageData);
+                    try {
+                        $conn->prepare("INSERT INTO logement_photos (logement_id, filename, url_source, ordre, source) VALUES (?, ?, ?, ?, 'airbnb')")
+                             ->execute([$logement_id, $filename, $url, $i + 1]);
+                        $imported++;
+                    } catch (PDOException $e) { $errors++; }
+                } else {
+                    $errors++;
+                }
+            }
+
+            $feedback = "<div class='alert alert-" . ($imported > 0 ? 'success' : 'warning') . "'>
+                <i class='fas fa-" . ($imported > 0 ? 'check-circle' : 'exclamation-triangle') . "'></i>
+                $imported photo(s) importee(s) depuis le scraping" . ($errors > 0 ? ", $errors erreur(s)" : '') . "
+            </div>";
+        }
+    }
 
     // Import depuis URLs collees
     if (isset($_POST['import_urls'])) {
@@ -194,6 +326,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // Photos existantes par logement
 $selected_logement = (int)($_GET['logement'] ?? 0);
+
+// URL Airbnb du logement selectionne (pour pre-remplir le scraping)
+$selected_airbnb_url = '';
+if ($selected_logement > 0) {
+    try {
+        $stmt = $conn->prepare("SELECT airbnb_url FROM liste_logements WHERE id = ?");
+        $stmt->execute([$selected_logement]);
+        $selected_airbnb_url = $stmt->fetchColumn() ?: '';
+    } catch (PDOException $e) {}
+}
 $photos = [];
 if ($selected_logement > 0) {
     try {
@@ -303,6 +445,58 @@ try {
             </div>
 
             <?php if ($selected_logement > 0): ?>
+            <!-- Scraping automatique -->
+            <div class="card mb-3">
+                <div class="card-header bg-danger text-white"><h6 class="mb-0"><i class="fas fa-spider"></i> Scraping automatique</h6></div>
+                <div class="card-body">
+                    <form method="POST">
+                        <?php echoCsrfField(); ?>
+                        <input type="hidden" name="logement_id" value="<?= $selected_logement ?>">
+                        <div class="mb-2">
+                            <label class="form-label small">URL de l'annonce Airbnb</label>
+                            <input type="url" name="scrape_url" class="form-control form-control-sm"
+                                   placeholder="https://www.airbnb.fr/rooms/123456"
+                                   value="<?= htmlspecialchars($_POST['scrape_url'] ?? $selected_airbnb_url) ?>">
+                            <small class="text-muted">Collez le lien de l'annonce, le systeme extraira toutes les photos</small>
+                        </div>
+                        <button type="submit" name="scrape_url_btn" value="1" class="btn btn-danger btn-sm w-100">
+                            <i class="fas fa-search"></i> Scanner les photos
+                        </button>
+                    </form>
+
+                    <?php if (!empty($scraped_images)): ?>
+                    <hr>
+                    <p class="small text-success mb-2"><i class="fas fa-check-circle"></i> <strong><?= count($scraped_images) ?> photo(s)</strong> trouvee(s)</p>
+                    <form method="POST">
+                        <?php echoCsrfField(); ?>
+                        <input type="hidden" name="logement_id" value="<?= $selected_logement ?>">
+                        <div class="mb-2" style="max-height: 300px; overflow-y: auto;">
+                            <?php foreach ($scraped_images as $idx => $img_url): ?>
+                            <div class="form-check mb-1 d-flex align-items-center gap-2">
+                                <input class="form-check-input scraped-check" type="checkbox" name="scraped_urls[]"
+                                       value="<?= htmlspecialchars($img_url) ?>" id="scrape_<?= $idx ?>" checked>
+                                <img src="<?= htmlspecialchars($img_url) ?>" style="width:60px;height:40px;object-fit:cover;border-radius:4px;"
+                                     onerror="this.parentElement.style.display='none'">
+                                <label class="form-check-label small text-truncate" for="scrape_<?= $idx ?>" style="max-width:200px;"
+                                       title="<?= htmlspecialchars($img_url) ?>">
+                                    Photo <?= $idx + 1 ?>
+                                </label>
+                            </div>
+                            <?php endforeach; ?>
+                        </div>
+                        <div class="d-flex gap-2 mt-2">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="document.querySelectorAll('.scraped-check').forEach(c=>c.checked=!c.checked)">
+                                <i class="fas fa-exchange-alt"></i> Inverser
+                            </button>
+                            <button type="submit" name="import_scraped" class="btn btn-success btn-sm flex-fill">
+                                <i class="fas fa-download"></i> Importer la selection
+                            </button>
+                        </div>
+                    </form>
+                    <?php endif; ?>
+                </div>
+            </div>
+
             <!-- Import par URL -->
             <div class="card mb-3">
                 <div class="card-header bg-primary text-white"><h6 class="mb-0"><i class="fas fa-link"></i> Import par URLs</h6></div>
