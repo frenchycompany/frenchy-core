@@ -1122,7 +1122,8 @@ const copyText = async (txt) => {
 function formatRelativeTimeJS(dateString) {
     if (!dateString) return '';
     try {
-        const date = new Date(dateString.replace(' ', 'T') + 'Z');
+        const normalized = dateString.includes('T') ? dateString : dateString.replace(' ', 'T') + 'Z';
+        const date = new Date(normalized);
         if (isNaN(date)) throw new Error('Invalid Date');
         const now = new Date();
 
@@ -1155,7 +1156,8 @@ function formatRelativeTimeJS(dateString) {
 function formatDateJS(dateString, formatOptions = { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) {
     if (!dateString) return '';
      try {
-         const date = new Date(dateString.replace(' ', 'T') + 'Z');
+         const normalized = dateString.includes('T') ? dateString : dateString.replace(' ', 'T') + 'Z';
+        const date = new Date(normalized);
          if (isNaN(date)) throw new Error('Invalid Date');
          return date.toLocaleString('fr-FR', { timeZone: "Europe/Paris", ...formatOptions });
      } catch(e) {
