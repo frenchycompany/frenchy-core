@@ -76,6 +76,15 @@ if ($is_admin) {
 }
 $interventions_jour = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+// Taches actives par logement (pour afficher sur les interventions)
+$taches_par_logement = [];
+try {
+    $stmtTaches = $conn->query("SELECT logement_id, description, statut FROM todo_list WHERE statut IN ('en attente', 'en cours') ORDER BY date_limite ASC");
+    foreach ($stmtTaches->fetchAll(PDO::FETCH_ASSOC) as $t) {
+        $taches_par_logement[(int)$t['logement_id']][] = $t;
+    }
+} catch (PDOException $e) {}
+
 // Prochaines interventions (7 jours)
 $stmt = $conn->prepare("
     SELECT p.date, l.nom_du_logement, p.statut,
@@ -325,6 +334,20 @@ if ($is_admin) {
             <?php if (!empty($interv['note'])): ?>
             <div style="font-size:0.85em;color:#555;margin-top:6px;background:#f9f9f9;padding:6px 10px;border-radius:6px;">
                 <i class="fas fa-sticky-note"></i> <?= htmlspecialchars($interv['note']) ?>
+            </div>
+            <?php endif; ?>
+
+            <?php
+            $taches_logement = $taches_par_logement[(int)$interv['logement_id']] ?? [];
+            if (!empty($taches_logement)):
+            ?>
+            <div style="font-size:0.85em;color:#b71c1c;margin-top:6px;background:#fff8e1;padding:8px 10px;border-radius:6px;border-left:3px solid #ff9800;">
+                <i class="fas fa-tasks"></i> <strong>Taches a faire :</strong>
+                <ul style="margin:4px 0 0 0;padding-left:18px;">
+                <?php foreach ($taches_logement as $tache): ?>
+                    <li><?= htmlspecialchars($tache['description']) ?> <span style="color:#888;font-size:0.85em;">(<?= htmlspecialchars($tache['statut']) ?>)</span></li>
+                <?php endforeach; ?>
+                </ul>
             </div>
             <?php endif; ?>
 
