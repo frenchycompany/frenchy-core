@@ -8,7 +8,6 @@ error_reporting(E_ALL);
 header('Content-Type: application/json; charset=utf-8');
 
 require_once '../config.php';
-session_start();
 
 // Vérif session / rôle
 if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
@@ -43,11 +42,13 @@ if (empty($ids)) {
 try {
     $placeholders = implode(',', array_fill(0, count($ids), '?'));
 
-    // Nettoyer la compta associée
-    $delCompta = $conn->prepare("DELETE FROM comptabilite WHERE source_typeIndex = 'intervention' AND source_idIndex IN ($placeholders)");
-    $delCompta->execute($ids);
+    // Nettoyer la compta associée (best effort)
+    try {
+        $delCompta = $conn->prepare("DELETE FROM comptabilite WHERE source_typeIndex = 'intervention' AND source_idIndex IN ($placeholders)");
+        $delCompta->execute($ids);
+    } catch (Throwable $e) {}
 
-    // Nettoyer les tokens associés
+    // Nettoyer les tokens associés (best effort)
     try {
         $delTokens = $conn->prepare("DELETE FROM intervention_tokens WHERE intervention_id IN ($placeholders)");
         $delTokens->execute($ids);
@@ -63,6 +64,7 @@ try {
         'deleted_ids' => $ids
     ]);
 } catch (Throwable $e) {
+    error_log("bulk_delete error: " . $e->getMessage());
     http_response_code(500);
-    echo json_encode(['status' => 'error', 'message' => 'Erreur serveur lors de la suppression.']);
+    echo json_encode(['status' => 'error', 'message' => 'Erreur serveur lors de la suppression: ' . $e->getMessage()]);
 }
