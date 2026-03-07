@@ -124,6 +124,22 @@ foreach ($indexesToAdd as $idxName => $idxSql) {
 if ($addedCols > 0) {
     echo "  $addedCols colonnes ajoutées à la table users existante.\n";
 }
+
+// Corriger les colonnes legacy qui ont NOT NULL sans DEFAULT
+// (ex: ancienne table users avec colonne 'username' NOT NULL)
+$legacyFixes = [
+    "ALTER TABLE `users` MODIFY COLUMN `username` VARCHAR(255) DEFAULT NULL",
+    "ALTER TABLE `users` MODIFY COLUMN `password` VARCHAR(255) DEFAULT NULL",
+];
+
+foreach ($legacyFixes as $fix) {
+    try {
+        $conn->exec($fix);
+    } catch (PDOException $e) {
+        // Colonne n'existe pas — pas grave
+    }
+}
+
 echo "  Tables OK.\n";
 
 // ============================================================
