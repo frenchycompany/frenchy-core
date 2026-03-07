@@ -206,6 +206,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['bulk_update'])) {
             die("Erreur : Le nombre de jours réservés doit être positif ou nul.");
         }
 
+        // Vérification doublon : même logement + même date
+        $checkDup = $conn->prepare("SELECT id FROM planning WHERE logement_id = ? AND date = ? LIMIT 1");
+        $checkDup->execute([$logement_id, $date]);
+        if ($checkDup->fetch()) {
+            $nomLog = $conn->prepare("SELECT nom_du_logement FROM liste_logements WHERE id = ?");
+            $nomLog->execute([$logement_id]);
+            $nomL = $nomLog->fetchColumn() ?: 'Logement #'.$logement_id;
+            $error_message = "Une intervention existe déjà pour " . htmlspecialchars($nomL) . " le " . htmlspecialchars($date) . ". Doublon non créé.";
+        } else {
+
         // 1) Insertion planning
         $stmt = $conn->prepare("
             INSERT INTO planning (
@@ -323,6 +333,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['bulk_update'])) {
             echo '<a href="' . htmlspecialchars($whatsUrl) . '" target="_blank" class="btn btn-sm mt-1" style="background:#25D366;color:#fff;"><i class="fab fa-whatsapp"></i> Envoyer par WhatsApp</a>';
             echo '</div>';
         }
+        } // fin else (pas de doublon)
     }
 }
 
@@ -442,6 +453,10 @@ $charges = $chargeStmt->fetchAll(PDO::FETCH_ASSOC);
 <body>
 <div class="container mt-4">
     <h2>Gestion du Planning</h2>
+
+    <?php if (!empty($error_message)): ?>
+        <div class="alert alert-danger"><i class="fas fa-exclamation-triangle"></i> <?= $error_message ?></div>
+    <?php endif; ?>
 
     <form method="GET" action="planning.php" class="mb-4">
         <div class="row g-3">
