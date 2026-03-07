@@ -44,7 +44,7 @@ $scraped_images = [];
 // Logements
 $logements = [];
 try {
-    $logements = $conn->query("SELECT id, nom_du_logement FROM liste_logements ORDER BY nom_du_logement")->fetchAll(PDO::FETCH_ASSOC);
+    $logements = $conn->query("SELECT id, nom_du_logement, actif FROM liste_logements ORDER BY actif DESC, nom_du_logement")->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {}
 
 // Liens Airbnb des logements (depuis market_competitors ou liste_logements)
@@ -436,7 +436,7 @@ try {
                             <option value="">-- Selectionner --</option>
                             <?php foreach ($logements as $l): ?>
                             <option value="<?= $l['id'] ?>" <?= $selected_logement == $l['id'] ? 'selected' : '' ?>>
-                                <?= htmlspecialchars($l['nom_du_logement']) ?>
+                                <?= htmlspecialchars($l['nom_du_logement']) ?> <?= empty($l['actif']) ? '(inactif)' : '' ?>
                             </option>
                             <?php endforeach; ?>
                         </select>
