@@ -195,9 +195,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     proprietaireInfoCard.style.display = 'block';
                     proprietaireInfoBody.innerHTML = buildInfoList([
                         {label: 'Nom', value: (data.proprietaire_prenom || '') + ' ' + (data.proprietaire_nom || '')},
+                        {label: 'Societe', value: data.proprietaire_societe},
+                        {label: 'SIRET', value: data.proprietaire_siret},
                         {label: 'Email', value: data.proprietaire_email},
                         {label: 'Tel', value: data.proprietaire_telephone},
                         {label: 'Adresse', value: data.proprietaire_adresse},
+                        {label: 'IBAN', value: data.proprietaire_rib_iban},
+                        {label: 'BIC', value: data.proprietaire_rib_bic},
+                        {label: 'Banque', value: data.proprietaire_rib_banque},
+                        {label: 'Commission', value: data.proprietaire_commission ? data.proprietaire_commission + '%' : ''},
                     ]);
                 } else {
                     proprietaireInfoCard.style.display = 'none';
@@ -224,6 +230,12 @@ document.addEventListener('DOMContentLoaded', function() {
             'proprietaire_email': ['proprietaire_email', 'email_proprietaire'],
             'proprietaire_telephone': ['proprietaire_telephone', 'telephone_proprietaire', 'tel_proprietaire'],
             'proprietaire_adresse': ['proprietaire_adresse', 'adresse_proprietaire'],
+            'proprietaire_societe': ['proprietaire_societe', 'societe_proprietaire', 'societe'],
+            'proprietaire_siret': ['proprietaire_siret', 'siret_proprietaire', 'siret'],
+            'proprietaire_rib_iban': ['proprietaire_rib_iban', 'iban_proprietaire', 'iban', 'rib_iban'],
+            'proprietaire_rib_bic': ['proprietaire_rib_bic', 'bic_proprietaire', 'bic', 'rib_bic'],
+            'proprietaire_rib_banque': ['proprietaire_rib_banque', 'banque_proprietaire', 'banque', 'rib_banque'],
+            'proprietaire_commission': ['proprietaire_commission', 'commission_proprietaire', 'commission'],
         };
 
         // Remplir par ID direct

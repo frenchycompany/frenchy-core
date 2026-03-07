@@ -17,7 +17,13 @@ try {
                p.prenom AS proprietaire_prenom,
                p.email AS proprietaire_email,
                p.telephone AS proprietaire_telephone,
-               p.adresse AS proprietaire_adresse
+               p.adresse AS proprietaire_adresse,
+               p.societe AS proprietaire_societe,
+               p.siret AS proprietaire_siret,
+               p.rib_iban AS proprietaire_rib_iban,
+               p.rib_bic AS proprietaire_rib_bic,
+               p.rib_banque AS proprietaire_rib_banque,
+               p.commission AS proprietaire_commission
         FROM liste_logements l
         LEFT JOIN FC_proprietaires p ON l.proprietaire_id = p.id
         WHERE l.id = ?
