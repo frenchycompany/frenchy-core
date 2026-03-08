@@ -50,5 +50,5 @@ try {
     ]);
 } catch (PDOException $e) {
     error_log("Erreur send_sms_ajax.php: " . $e->getMessage());
-    echo json_encode(['success' => false, 'message' => 'Erreur: ' . $e->getMessage()]);
+    echo json_encode(['success' => false, 'message' => 'Une erreur interne est survenue.']);
 }

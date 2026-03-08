@@ -36,5 +36,6 @@ try {
 
     echo "Le critère '$critere' a été ajouté avec succès et intégré à la table description_logements.";
 } catch (PDOException $e) {
-    echo "Erreur lors de l'ajout du critère : " . $e->getMessage();
+    error_log('add_poids_critere.php: ' . $e->getMessage());
+    echo "Une erreur interne est survenue.";
 }

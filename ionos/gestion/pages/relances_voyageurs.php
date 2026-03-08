@@ -12,56 +12,7 @@ if (($_SESSION['role'] ?? '') !== 'admin') {
     exit;
 }
 
-// Auto-creation tables
-try {
-    $pdo->exec("
-        CREATE TABLE IF NOT EXISTS relance_segments (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            nom VARCHAR(255) NOT NULL,
-            description TEXT,
-            criteres JSON,
-            nb_contacts INT DEFAULT 0,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-
-    $pdo->exec("
-        CREATE TABLE IF NOT EXISTS relance_campagnes (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            nom VARCHAR(255) NOT NULL,
-            segment_id INT DEFAULT NULL,
-            type ENUM('sms', 'email') DEFAULT 'sms',
-            message_template TEXT NOT NULL,
-            statut ENUM('brouillon', 'planifiee', 'envoyee', 'annulee') DEFAULT 'brouillon',
-            date_envoi_prevue DATETIME DEFAULT NULL,
-            total_destinataires INT DEFAULT 0,
-            total_envoyes INT DEFAULT 0,
-            total_echecs INT DEFAULT 0,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            sent_at TIMESTAMP NULL,
-            FOREIGN KEY (segment_id) REFERENCES relance_segments(id) ON DELETE SET NULL
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-
-    $pdo->exec("
-        CREATE TABLE IF NOT EXISTS relance_envois (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            campagne_id INT NOT NULL,
-            reservation_id INT DEFAULT NULL,
-            telephone VARCHAR(20) NOT NULL,
-            prenom VARCHAR(100),
-            nom VARCHAR(100),
-            message_envoye TEXT,
-            statut ENUM('en_attente', 'envoye', 'echec') DEFAULT 'en_attente',
-            sent_at TIMESTAMP NULL,
-            error_message TEXT,
-            FOREIGN KEY (campagne_id) REFERENCES relance_campagnes(id) ON DELETE CASCADE
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-} catch (PDOException $e) {
-    // Tables existent deja
-}
+// Tables requises : voir db/install_tables.php
 
 $feedback = '';
 $action = $_GET['action'] ?? 'dashboard';
@@ -70,7 +21,7 @@ $action = $_GET['action'] ?? 'dashboard';
 $logements = [];
 try {
     $logements = $pdo->query("SELECT id, nom_du_logement FROM liste_logements WHERE actif = 1 ORDER BY nom_du_logement")->fetchAll(PDO::FETCH_ASSOC);
-} catch (PDOException $e) {}
+} catch (PDOException $e) { error_log('relances_voyageurs.php: ' . $e->getMessage()); }
 
 // === ACTIONS POST ===
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -303,7 +254,7 @@ function getSegmentContacts(PDO $pdo, array $criteres): array {
 $segments = [];
 try {
     $segments = $pdo->query("SELECT * FROM relance_segments ORDER BY created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
-} catch (PDOException $e) {}
+} catch (PDOException $e) { error_log('relances_voyageurs.php: ' . $e->getMessage()); }
 
 $campagnes = [];
 try {
@@ -313,7 +264,7 @@ try {
         LEFT JOIN relance_segments s ON c.segment_id = s.id
         ORDER BY c.created_at DESC
     ")->fetchAll(PDO::FETCH_ASSOC);
-} catch (PDOException $e) {}
+} catch (PDOException $e) { error_log('relances_voyageurs.php: ' . $e->getMessage()); }
 
 // Stats globales voyageurs
 $stats_voyageurs = ['total' => 0, 'avec_tel' => 0, 'recents_6m' => 0, 'recurrents' => 0];
@@ -326,7 +277,7 @@ try {
             (SELECT COUNT(*) FROM (SELECT telephone FROM reservation WHERE telephone IS NOT NULL AND telephone != '' GROUP BY telephone HAVING COUNT(*) > 1) t) as recurrents
         FROM reservation
     ")->fetch(PDO::FETCH_ASSOC);
-} catch (PDOException $e) {}
+} catch (PDOException $e) { error_log('relances_voyageurs.php: ' . $e->getMessage()); }
 
 // Preview segment
 $preview_contacts = [];

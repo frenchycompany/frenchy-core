@@ -101,7 +101,7 @@ try {
             'capacite' => (int)($lg['nombre_de_personnes'] ?? 0),
         ];
     }
-} catch (Throwable $e) { /* ignore */ }
+} catch (Throwable $e) { error_log('sync_reservations_today.php: ' . $e->getMessage()); }
 
 $deps = [];
 $arrs = [];
@@ -170,7 +170,7 @@ if ($localHasReservation) {
                 $deps[] = $ld;
             }
         }
-    } catch (Throwable $e) { /* table locale incompatible, on ignore */ }
+    } catch (Throwable $e) { error_log('sync_reservations_today.php: ' . $e->getMessage()); }
 }
 
 // Lire les ARRIVÉES du jour (REMOTE)
@@ -221,7 +221,7 @@ if ($localHasReservation) {
                 $arrs[] = $la;
             }
         }
-    } catch (Throwable $e) { /* table locale incompatible, on ignore */ }
+    } catch (Throwable $e) { error_log('sync_reservations_today.php: ' . $e->getMessage()); }
 }
 
 // helper : token si possible
@@ -235,7 +235,7 @@ function ensure_token_if_possible(PDO $c, int $pid, bool $enabled): void {
         $exp = date('Y-m-d H:i:s', strtotime('+7 days'));
         $ins = $c->prepare("INSERT INTO intervention_tokens (intervention_id, token, expires_at) VALUES (?, ?, ?)");
         $ins->execute([$pid, $token, $exp]);
-    } catch (Throwable $e) { /* ignore */ }
+    } catch (Throwable $e) { error_log('sync_reservations_today.php: ' . $e->getMessage()); }
 }
 
 // Prépare les statements LOCAL pour recherche/création
@@ -302,7 +302,7 @@ try {
     foreach ($stmtTaches->fetchAll(PDO::FETCH_ASSOC) as $t) {
         $taches_par_logement[(int)$t['logement_id']][] = $t['description'];
     }
-} catch (PDOException $e) {}
+} catch (PDOException $e) { error_log('sync_reservations_today.php: ' . $e->getMessage()); }
 
 $report = [
   'departures' => [],

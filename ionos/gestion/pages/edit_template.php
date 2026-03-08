@@ -1,12 +1,19 @@
 <?php
 /**
  * Modifier un modele de contrat - Bootstrap 5
+ * Supporte les types : conciergerie et location
  */
 include '../config.php';
 include '../pages/menu.php';
+require_once __DIR__ . '/../includes/contract_config.php';
+
+$type = detectContractType();
+$config = getContractConfig($type);
+$table = $config['table_templates'];
+$table_fields = $config['table_fields'];
 
 if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
-    header("Location: list_templates.php");
+    header("Location: list_templates.php?type=$type");
     exit;
 }
 
@@ -15,40 +22,57 @@ $template_id = (int)$_GET['id'];
 // Recuperer le modele
 $template = null;
 try {
-    $stmt = $conn->prepare("SELECT id, title, content, placeholders FROM contract_templates WHERE id = :id");
+    $stmt = $conn->prepare("SELECT id, title, content, placeholders FROM `$table` WHERE id = :id");
     $stmt->execute([':id' => $template_id]);
     $template = $stmt->fetch(PDO::FETCH_ASSOC);
-} catch (PDOException $e) {}
+} catch (PDOException $e) { error_log('edit_template.php: ' . $e->getMessage()); }
 
 if (!$template) {
-    echo '<div class="container mt-4"><div class="alert alert-danger">Modele introuvable.</div><a href="list_templates.php" class="btn btn-secondary">Retour</a></div>';
+    echo '<div class="container mt-4"><div class="alert alert-danger">Modele introuvable.</div><a href="list_templates.php?type=' . $type . '" class="btn btn-secondary">Retour</a></div>';
     exit;
 }
 
 // Recuperer les champs dynamiques disponibles
 $fields = [];
 try {
-    $stmt = $conn->query("SELECT field_name, description FROM contract_fields ORDER BY field_name");
+    $stmt = $conn->query("SELECT field_name, description FROM `$table_fields` ORDER BY field_name");
     $fields = $stmt->fetchAll(PDO::FETCH_ASSOC);
-} catch (PDOException $e) {}
+} catch (PDOException $e) { error_log('edit_template.php: ' . $e->getMessage()); }
+
+// For location type, check if fields have field_group
+$fieldsByGroup = [];
+if ($type === 'location') {
+    try {
+        $cols = array_column($conn->query("SHOW COLUMNS FROM `$table_fields`")->fetchAll(), 'Field');
+        if (in_array('field_group', $cols)) {
+            $stmt = $conn->query("SELECT field_name, description, field_group FROM `$table_fields` ORDER BY field_group, field_name");
+            $fieldsWithGroup = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            foreach ($fieldsWithGroup as $f) {
+                $group = $f['field_group'] ?: 'Autres';
+                $fieldsByGroup[$group][] = $f;
+            }
+        }
+    } catch (PDOException $e) { error_log('edit_template.php: ' . $e->getMessage()); }
+}
 ?>
 
 <div class="container-fluid mt-4">
     <div class="row mb-4">
         <div class="col-md-8">
-            <h2><i class="fas fa-edit text-primary"></i> Modifier le modele</h2>
+            <h2><i class="fas fa-edit text-<?= $config['color'] ?>"></i> Modifier le modele (<?= htmlspecialchars($config['label']) ?>)</h2>
             <p class="text-muted">Modele #<?= $template['id'] ?> — <?= htmlspecialchars($template['title']) ?></p>
         </div>
         <div class="col-md-4 text-end">
-            <a href="list_templates.php" class="btn btn-secondary">
+            <a href="list_templates.php?type=<?= $type ?>" class="btn btn-secondary">
                 <i class="fas fa-arrow-left"></i> Retour
             </a>
         </div>
     </div>
 
-    <form action="save_template.php" method="POST">
+    <form action="save_template.php?type=<?= $type ?>" method="POST">
         <?php echoCsrfField(); ?>
         <input type="hidden" name="id" value="<?= $template['id'] ?>">
+        <input type="hidden" name="contract_type" value="<?= $type ?>">
 
         <div class="row">
             <div class="col-lg-8">
@@ -76,7 +100,7 @@ try {
                             <label class="form-label fw-bold">Placeholders detectes</label>
                             <div>
                                 <?php foreach ($currentPlaceholders as $ph): ?>
-                                    <span class="badge bg-primary me-1 mb-1"><?= htmlspecialchars($ph) ?></span>
+                                    <span class="badge bg-<?= $config['color'] ?> me-1 mb-1"><?= htmlspecialchars($ph) ?></span>
                                 <?php endforeach; ?>
                             </div>
                             <small class="text-muted">Ces placeholders seront automatiquement mis a jour lors de la sauvegarde</small>
@@ -84,7 +108,7 @@ try {
                         <?php endif; ?>
 
                         <div class="text-end">
-                            <a href="list_templates.php" class="btn btn-secondary">Annuler</a>
+                            <a href="list_templates.php?type=<?= $type ?>" class="btn btn-secondary">Annuler</a>
                             <button type="submit" class="btn btn-success btn-lg">
                                 <i class="fas fa-save"></i> Enregistrer
                             </button>
@@ -101,7 +125,20 @@ try {
                     <div class="card-body">
                         <p class="small text-muted mb-3">Cliquez pour inserer dans le contenu</p>
 
-                        <?php if (!empty($fields)): ?>
+                        <?php if (!empty($fieldsByGroup)): ?>
+                            <?php foreach ($fieldsByGroup as $group => $groupFields): ?>
+                                <h6 class="mt-3 mb-2 text-<?= $config['color'] ?>"><?= htmlspecialchars($group) ?></h6>
+                                <div class="list-group list-group-flush mb-2">
+                                    <?php foreach ($groupFields as $f): ?>
+                                        <a href="#" class="list-group-item list-group-item-action shortcode-btn py-2"
+                                           data-code="{{<?= htmlspecialchars($f['field_name']) ?>}}">
+                                            <code class="text-primary">{{<?= htmlspecialchars($f['field_name']) ?>}}</code>
+                                            <br><small class="text-muted"><?= htmlspecialchars($f['description']) ?></small>
+                                        </a>
+                                    <?php endforeach; ?>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php elseif (!empty($fields)): ?>
                             <div class="list-group list-group-flush">
                                 <?php foreach ($fields as $f): ?>
                                     <a href="#" class="list-group-item list-group-item-action shortcode-btn py-2"

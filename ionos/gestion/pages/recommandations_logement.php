@@ -39,7 +39,7 @@ if ($public) {
         $stmt = $pdo->prepare("SELECT id, nom_du_logement, ville_id FROM liste_logements WHERE MD5(CONCAT(id, '-frenchybnb')) = ? LIMIT 1");
         $stmt->execute([$token]);
         $logement = $stmt->fetch(PDO::FETCH_ASSOC);
-    } catch (PDOException $e) {}
+    } catch (PDOException $e) { error_log('recommandations_logement.php: ' . $e->getMessage()); }
 
     if (!$logement) {
         http_response_code(404);
@@ -53,7 +53,7 @@ if ($public) {
             $stmt = $pdo->prepare("SELECT id, nom_du_logement, ville_id FROM liste_logements WHERE id = ?");
             $stmt->execute([$logement_id]);
             $logement = $stmt->fetch(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {}
+        } catch (PDOException $e) { error_log('recommandations_logement.php: ' . $e->getMessage()); }
     }
 }
 
@@ -73,7 +73,7 @@ if ($logement && $logement['ville_id']) {
             $stmt->execute([$ville['id']]);
             $recommandations = $stmt->fetchAll(PDO::FETCH_ASSOC);
         }
-    } catch (PDOException $e) {}
+    } catch (PDOException $e) { error_log('recommandations_logement.php: ' . $e->getMessage()); }
 }
 
 // Grouper par categorie
@@ -92,7 +92,7 @@ if (!$public && !$logement):
             LEFT JOIN villes v ON l.ville_id = v.id
             ORDER BY l.nom_du_logement
         ")->fetchAll(PDO::FETCH_ASSOC);
-    } catch (PDOException $e) {}
+    } catch (PDOException $e) { error_log('recommandations_logement.php: ' . $e->getMessage()); }
 ?>
 <!DOCTYPE html>
 <html lang="fr">

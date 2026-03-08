@@ -68,7 +68,7 @@ try {
             $pdoRemote->query("SELECT 1 FROM `$t` LIMIT 1");
             $remoteLogTable = $t;
             break;
-        } catch (Throwable $e) {}
+        } catch (Throwable $e) { error_log('diag_sync.php: ' . $e->getMessage()); }
     }
     if ($remoteLogTable) {
         $remoteLogements = $pdoRemote->query("SELECT * FROM `$remoteLogTable` ORDER BY id")

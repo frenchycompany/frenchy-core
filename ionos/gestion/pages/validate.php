@@ -358,7 +358,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                   window.location.href = 'validate.php?token=<?= urlencode($token) ?>&done=1&cb=' + Date.now();
                   return;
                 }
-              } catch(e) {}
+              } catch(e) { console.error('validate.php: ' + e.message); }
               // Fallback : si la réponse n'est pas du JSON, c'est la page HTML (erreurs de validation)
               document.open();
               document.write(xhr.responseText);

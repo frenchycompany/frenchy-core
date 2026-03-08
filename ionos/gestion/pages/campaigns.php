@@ -17,47 +17,7 @@ if (!($pdo instanceof PDO)) {
 $feedback = '';
 $action = $_GET['action'] ?? 'list';
 
-// --- Creer les tables si elles n'existent pas ---
-try {
-    // Table pour les campagnes
-    $pdo->exec("
-        CREATE TABLE IF NOT EXISTS sms_campaigns (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            nom VARCHAR(255) NOT NULL,
-            description TEXT,
-            logement_id INT DEFAULT NULL,
-            message_template TEXT NOT NULL,
-            date_debut DATE DEFAULT NULL,
-            date_fin DATE DEFAULT NULL,
-            statut ENUM('brouillon', 'planifiee', 'envoyee', 'annulee') DEFAULT 'brouillon',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            sent_at TIMESTAMP NULL,
-            total_recipients INT DEFAULT 0,
-            total_sent INT DEFAULT 0,
-            FOREIGN KEY (logement_id) REFERENCES liste_logements(id) ON DELETE SET NULL
-        )
-    ");
-
-    // Table pour les destinataires de campagne
-    $pdo->exec("
-        CREATE TABLE IF NOT EXISTS sms_campaign_recipients (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            campaign_id INT NOT NULL,
-            reservation_id INT NOT NULL,
-            telephone VARCHAR(20) NOT NULL,
-            prenom VARCHAR(100),
-            nom VARCHAR(100),
-            statut ENUM('en_attente', 'envoye', 'echec') DEFAULT 'en_attente',
-            sent_at TIMESTAMP NULL,
-            error_message TEXT,
-            FOREIGN KEY (campaign_id) REFERENCES sms_campaigns(id) ON DELETE CASCADE,
-            FOREIGN KEY (reservation_id) REFERENCES reservation(id) ON DELETE CASCADE
-        )
-    ");
-
-} catch (PDOException $e) {
-    // Tables probablement deja creees
-}
+// Tables requises : voir db/install_tables.php
 
 // --- Traitement des actions POST ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

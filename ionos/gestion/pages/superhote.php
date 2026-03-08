@@ -60,84 +60,44 @@ function saveSuperhoteCredentials($pdo, $email, $password) {
 
 $superhoteCredentials = getSuperhoteCredentials($pdo);
 
-// Creer/mettre a jour les tables
-function ensureTablesExist($pdo) {
-    // Table superhote_config (simplifiee)
-    $pdo->exec("CREATE TABLE IF NOT EXISTS `superhote_config` (
-        `id` INT(11) NOT NULL AUTO_INCREMENT,
-        `logement_id` INT(11) NOT NULL,
-        `superhote_property_id` VARCHAR(100) DEFAULT NULL,
-        `superhote_property_name` VARCHAR(255) DEFAULT NULL,
-        `is_active` TINYINT(1) DEFAULT 1,
-        `prix_plancher` DECIMAL(10,2) DEFAULT NULL COMMENT 'Prix minimum (jour 0)',
-        `prix_standard` DECIMAL(10,2) DEFAULT NULL COMMENT 'Prix normal (J+14)',
-        `weekend_pourcent` DECIMAL(5,2) DEFAULT 10 COMMENT 'Majoration weekend en %',
-        `dimanche_reduction` DECIMAL(10,2) DEFAULT 5 COMMENT 'Reduction dimanche en euros',
-        `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        PRIMARY KEY (`id`),
-        UNIQUE KEY `unique_logement` (`logement_id`)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+// Tables requises : voir db/install_tables.php
 
+// Migrations et mises a jour des tables superhote
+function ensureTablesExist($pdo) {
     // Ajouter les nouvelles colonnes si elles n'existent pas
     $columns = ['prix_plancher', 'prix_standard', 'weekend_pourcent', 'dimanche_reduction'];
     foreach ($columns as $col) {
         try {
             $pdo->exec("ALTER TABLE `superhote_config` ADD COLUMN `$col` DECIMAL(10,2) DEFAULT NULL");
-        } catch (PDOException $e) {}
+        } catch (PDOException $e) { error_log('superhote.php: ' . $e->getMessage()); }
     }
 
     // Colonne groupe
     try {
         $pdo->exec("ALTER TABLE `superhote_config` ADD COLUMN `groupe` VARCHAR(100) DEFAULT NULL");
-    } catch (PDOException $e) {}
+    } catch (PDOException $e) { error_log('superhote.php: ' . $e->getMessage()); }
 
     // Colonne nuits_minimum
     try {
         $pdo->exec("ALTER TABLE `superhote_config` ADD COLUMN `nuits_minimum` INT(11) DEFAULT 1 COMMENT 'Nombre minimum de nuits'");
-    } catch (PDOException $e) {}
+    } catch (PDOException $e) { error_log('superhote.php: ' . $e->getMessage()); }
     try {
         $pdo->exec("ALTER TABLE `superhote_groups` ADD COLUMN `nuits_minimum` INT(11) DEFAULT 1 COMMENT 'Nombre minimum de nuits par defaut'");
-    } catch (PDOException $e) {}
-
-    // Table superhote_groups
-    $pdo->exec("CREATE TABLE IF NOT EXISTS `superhote_groups` (
-        `id` INT(11) NOT NULL AUTO_INCREMENT,
-        `nom` VARCHAR(100) NOT NULL,
-        `description` VARCHAR(255) DEFAULT NULL,
-        `logement_reference_id` INT(11) DEFAULT NULL COMMENT 'Logement fictif de reference',
-        `prix_plancher` DECIMAL(10,2) DEFAULT NULL COMMENT 'Prix minimum par defaut (J0)',
-        `prix_standard` DECIMAL(10,2) DEFAULT NULL COMMENT 'Prix normal par defaut (J14+)',
-        `weekend_pourcent` DECIMAL(5,2) DEFAULT 10 COMMENT 'Majoration weekend par defaut en %',
-        `dimanche_reduction` DECIMAL(10,2) DEFAULT 5 COMMENT 'Reduction dimanche par defaut en euros',
-        `is_active` TINYINT(1) DEFAULT 1,
-        `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        PRIMARY KEY (`id`),
-        UNIQUE KEY `unique_nom` (`nom`)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    } catch (PDOException $e) { error_log('superhote.php: ' . $e->getMessage()); }
 
     // Ajouter les colonnes de tarification si elles n'existent pas (migration)
     $groupPricingCols = ['prix_plancher', 'prix_standard', 'weekend_pourcent', 'dimanche_reduction'];
     foreach ($groupPricingCols as $col) {
         try {
             $pdo->exec("ALTER TABLE `superhote_groups` ADD COLUMN `$col` DECIMAL(10,2) DEFAULT NULL");
-        } catch (PDOException $e) {}
+        } catch (PDOException $e) { error_log('superhote.php: ' . $e->getMessage()); }
     }
 
     // Valeurs par defaut
     try {
         $pdo->exec("UPDATE superhote_config SET weekend_pourcent = 10 WHERE weekend_pourcent IS NULL");
         $pdo->exec("UPDATE superhote_config SET dimanche_reduction = 5 WHERE dimanche_reduction IS NULL");
-    } catch (PDOException $e) {}
-
-    // Table superhote_settings (parametres globaux)
-    $pdo->exec("CREATE TABLE IF NOT EXISTS `superhote_settings` (
-        `key_name` VARCHAR(50) NOT NULL,
-        `value` VARCHAR(255) NOT NULL,
-        `description` VARCHAR(255) DEFAULT NULL,
-        PRIMARY KEY (`key_name`)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    } catch (PDOException $e) { error_log('superhote.php: ' . $e->getMessage()); }
 
     // Inserer les parametres par defaut
     $defaults = [
@@ -155,31 +115,14 @@ function ensureTablesExist($pdo) {
         $stmt->execute($d);
     }
 
-    // Table superhote_price_updates
-    $pdo->exec("CREATE TABLE IF NOT EXISTS `superhote_price_updates` (
-        `id` INT(11) NOT NULL AUTO_INCREMENT,
-        `logement_id` INT(11) NOT NULL,
-        `superhote_property_id` VARCHAR(100) NOT NULL,
-        `nom_du_logement` VARCHAR(255) DEFAULT NULL,
-        `date_start` DATE NOT NULL,
-        `date_end` DATE NOT NULL,
-        `price` DECIMAL(10,2) NOT NULL,
-        `rule_name` VARCHAR(100) DEFAULT NULL,
-        `status` VARCHAR(20) DEFAULT 'pending',
-        `error_message` TEXT DEFAULT NULL,
-        `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        PRIMARY KEY (`id`),
-        KEY `idx_status` (`status`)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-
     try {
         $pdo->exec("ALTER TABLE `superhote_price_updates` ADD COLUMN `nom_du_logement` VARCHAR(255) DEFAULT NULL");
-    } catch (PDOException $e) {}
+    } catch (PDOException $e) { error_log('superhote.php: ' . $e->getMessage()); }
 }
 
 try {
     ensureTablesExist($pdo);
-} catch (PDOException $e) {}
+} catch (PDOException $e) { error_log('superhote.php: ' . $e->getMessage()); }
 
 // Messages
 $message = '';
@@ -256,7 +199,8 @@ if (isset($_GET['ajax'])) {
                 exit;
         }
     } catch (Exception $e) {
-        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+        error_log('superhote.php: ' . $e->getMessage());
+        echo json_encode(['success' => false, 'error' => 'Une erreur interne est survenue.']);
         exit;
     }
 }

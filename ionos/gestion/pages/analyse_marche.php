@@ -38,7 +38,8 @@ if (isset($_POST['action'])) {
                     ->execute([$logementId, $competitorId]);
                 echo json_encode(['success' => true]);
             } catch (Exception $e) {
-                echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+                error_log('analyse_marche.php: ' . $e->getMessage());
+                echo json_encode(['success' => false, 'error' => 'Une erreur interne est survenue.']);
             }
             exit;
 
@@ -57,7 +58,8 @@ if (isset($_POST['action'])) {
                     ->execute([$competitorId, $date, $prix]);
                 echo json_encode(['success' => true]);
             } catch (Exception $e) {
-                echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+                error_log('analyse_marche.php: ' . $e->getMessage());
+                echo json_encode(['success' => false, 'error' => 'Une erreur interne est survenue.']);
             }
             exit;
     }

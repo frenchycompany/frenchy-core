@@ -13,6 +13,8 @@ if (($_SESSION['role'] ?? '') !== 'admin') {
     exit;
 }
 
+// Tables requises : voir db/install_tables.php
+
 // Auto-migration : table FC_proprietaires (s'assurer que les colonnes existent)
 try {
     $cols = array_column($conn->query("SHOW COLUMNS FROM FC_proprietaires")->fetchAll(), 'Field');
@@ -35,25 +37,7 @@ try {
         }
     }
 } catch (PDOException $e) {
-    // Table n'existe pas, la créer
-    $conn->exec("CREATE TABLE IF NOT EXISTS FC_proprietaires (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        nom VARCHAR(100) NOT NULL,
-        prenom VARCHAR(100) DEFAULT NULL,
-        email VARCHAR(255) DEFAULT NULL,
-        telephone VARCHAR(20) DEFAULT NULL,
-        adresse TEXT DEFAULT NULL,
-        societe VARCHAR(255) DEFAULT NULL,
-        siret VARCHAR(20) DEFAULT NULL,
-        rib_iban VARCHAR(40) DEFAULT NULL,
-        rib_bic VARCHAR(15) DEFAULT NULL,
-        rib_banque VARCHAR(100) DEFAULT NULL,
-        commission DECIMAL(5,2) DEFAULT NULL,
-        notes TEXT DEFAULT NULL,
-        actif TINYINT(1) DEFAULT 1,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    error_log('proprietaires.php: ' . $e->getMessage());
 }
 
 // Auto-migration : colonne proprietaire_id dans liste_logements
@@ -62,7 +46,7 @@ try {
     if (!in_array('proprietaire_id', $cols)) {
         $conn->exec("ALTER TABLE liste_logements ADD COLUMN proprietaire_id INT DEFAULT NULL");
     }
-} catch (PDOException $e) {}
+} catch (PDOException $e) { error_log('proprietaires.php: ' . $e->getMessage()); }
 
 $feedback = '';
 

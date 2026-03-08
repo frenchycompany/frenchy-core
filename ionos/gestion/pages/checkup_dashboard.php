@@ -22,59 +22,7 @@ register_shutdown_function(function() {
 include '../config.php';
 include '../pages/menu.php';
 
-// Créer les tables si elles n'existent pas
-try {
-    $conn->exec("
-        CREATE TABLE IF NOT EXISTS checkup_sessions (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            logement_id INT NOT NULL,
-            intervenant_id INT DEFAULT NULL,
-            statut ENUM('en_cours','termine') DEFAULT 'en_cours',
-            nb_ok INT DEFAULT 0,
-            nb_problemes INT DEFAULT 0,
-            nb_absents INT DEFAULT 0,
-            nb_taches_faites INT DEFAULT 0,
-            commentaire_general TEXT DEFAULT NULL,
-            signature_path VARCHAR(500) DEFAULT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            INDEX idx_logement (logement_id),
-            INDEX idx_statut (statut)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-    ");
-    $conn->exec("
-        CREATE TABLE IF NOT EXISTS todo_list (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            logement_id INT NOT NULL,
-            description TEXT NOT NULL,
-            statut ENUM('en attente','en cours','termine') DEFAULT 'en attente',
-            date_limite DATE DEFAULT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            INDEX idx_logement (logement_id)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-    ");
-    $conn->exec("
-        CREATE TABLE IF NOT EXISTS sessions_inventaire (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            logement_id INT NOT NULL,
-            statut ENUM('en_cours','terminee') DEFAULT 'en_cours',
-            date_creation TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            INDEX idx_logement (logement_id)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-    ");
-    $conn->exec("
-        CREATE TABLE IF NOT EXISTS inventaire_objets (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            session_id INT NOT NULL,
-            nom_objet VARCHAR(255) NOT NULL,
-            quantite INT DEFAULT 1,
-            piece VARCHAR(100) DEFAULT NULL,
-            INDEX idx_session (session_id)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-    ");
-} catch (PDOException $e) {
-    // Tables existent deja
-}
+// Tables requises : voir db/install_tables.php
 
 // Donnees par logement
 try {

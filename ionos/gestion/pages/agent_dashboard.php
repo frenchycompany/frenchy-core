@@ -18,6 +18,8 @@ function h(string $s): string {
 $intervenant_id = (int)($_SESSION['id_intervenant'] ?? $_SESSION['user_id'] ?? 0);
 $is_admin = ($_SESSION['role'] ?? '') === 'admin';
 
+// Tables requises : voir db/install_tables.php
+
 // Tarifs
 $rates = [];
 try {
@@ -26,16 +28,7 @@ try {
         $rates[(string)$row['action_type']] = (float)$row['rate_eur'];
     }
 } catch (PDOException $e) {
-    // Table n'existe peut-etre pas encore
-    try {
-        $pdo_rpi->exec("
-            CREATE TABLE IF NOT EXISTS agent_action_rates (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                action_type VARCHAR(100) NOT NULL UNIQUE,
-                rate_eur DECIMAL(8,2) NOT NULL DEFAULT 0.00
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-        ");
-    } catch (PDOException $e2) {}
+    error_log('agent_dashboard.php: ' . $e->getMessage());
 }
 
 $actionTypesDefault = [
@@ -44,23 +37,6 @@ $actionTypesDefault = [
     "Relance_upsell", "Autre"
 ];
 $actionTypes = !empty($rates) ? array_keys($rates) : $actionTypesDefault;
-
-// Creer table agent_actions si elle n'existe pas
-try {
-    $pdo_rpi->exec("
-        CREATE TABLE IF NOT EXISTS agent_actions (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            agent_user_id INT NOT NULL,
-            action_type VARCHAR(100) NOT NULL,
-            channel VARCHAR(50) DEFAULT 'autre',
-            reservation_ref VARCHAR(100) DEFAULT NULL,
-            logement VARCHAR(255) DEFAULT NULL,
-            client_name VARCHAR(255) DEFAULT NULL,
-            notes TEXT DEFAULT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-    ");
-} catch (PDOException $e) {}
 
 // Reservations recentes
 $reservations = [];
@@ -75,7 +51,7 @@ try {
         ORDER BY (r.date_arrivee IS NULL) ASC, r.date_arrivee ASC, r.id DESC
         LIMIT 250
     ")->fetchAll(PDO::FETCH_ASSOC);
-} catch (PDOException $e) {}
+} catch (PDOException $e) { error_log('agent_dashboard.php: ' . $e->getMessage()); }
 
 $feedback = '';
 
@@ -118,7 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_rates']) && $is_
         try {
             $pdo_rpi->prepare("INSERT INTO agent_action_rates (action_type, rate_eur) VALUES (?, ?) ON DUPLICATE KEY UPDATE rate_eur = ?")
                 ->execute([$type, (float)$rate, (float)$rate]);
-        } catch (PDOException $e) {}
+        } catch (PDOException $e) { error_log('agent_dashboard.php: ' . $e->getMessage()); }
     }
     // Recharger
     $rates = [];
@@ -148,7 +124,7 @@ try {
     $stmt = $pdo_rpi->prepare($sql);
     $stmt->execute($params);
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-} catch (PDOException $e) {}
+} catch (PDOException $e) { error_log('agent_dashboard.php: ' . $e->getMessage()); }
 
 $totalActions = count($rows);
 $totalEur = 0.0;
@@ -171,7 +147,7 @@ $agents = [];
 if ($is_admin) {
     try {
         $agents = $pdo_rpi->query("SELECT DISTINCT agent_user_id FROM agent_actions ORDER BY agent_user_id")->fetchAll(PDO::FETCH_COLUMN);
-    } catch (PDOException $e) {}
+    } catch (PDOException $e) { error_log('agent_dashboard.php: ' . $e->getMessage()); }
 }
 
 // Liens outils

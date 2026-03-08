@@ -12,78 +12,7 @@ if (($_SESSION['role'] ?? '') !== 'admin') {
     exit;
 }
 
-// Auto-creation tables
-try {
-    $conn->exec("
-        CREATE TABLE IF NOT EXISTS rental_united_config (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            ru_username VARCHAR(255) DEFAULT NULL,
-            ru_password_encrypted TEXT DEFAULT NULL,
-            api_url VARCHAR(255) DEFAULT 'https://rm.rentalsunited.com/api/Handler.ashx',
-            actif TINYINT(1) DEFAULT 0,
-            last_sync TIMESTAMP NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-
-    $conn->exec("
-        CREATE TABLE IF NOT EXISTS rental_united_properties (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            logement_id INT NOT NULL,
-            ru_property_id VARCHAR(50) DEFAULT NULL,
-            ru_property_name VARCHAR(255) DEFAULT NULL,
-            sync_prix TINYINT(1) DEFAULT 1,
-            sync_disponibilite TINYINT(1) DEFAULT 1,
-            sync_reservations TINYINT(1) DEFAULT 1,
-            statut ENUM('non_configure', 'configure', 'actif', 'erreur', 'pause') DEFAULT 'non_configure',
-            derniere_sync TIMESTAMP NULL,
-            derniere_erreur TEXT DEFAULT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            UNIQUE KEY unique_logement (logement_id),
-            INDEX idx_ru_property (ru_property_id)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-
-    $conn->exec("
-        CREATE TABLE IF NOT EXISTS rental_united_channels (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            nom VARCHAR(100) NOT NULL,
-            code VARCHAR(50) NOT NULL UNIQUE,
-            actif TINYINT(1) DEFAULT 0,
-            logo_url VARCHAR(255) DEFAULT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-
-    // Inserer les channels par defaut
-    $conn->exec("
-        INSERT IGNORE INTO rental_united_channels (nom, code, actif) VALUES
-        ('Airbnb', 'airbnb', 1),
-        ('Booking.com', 'booking', 1),
-        ('Vrbo/Abritel', 'vrbo', 0),
-        ('Expedia', 'expedia', 0),
-        ('TripAdvisor', 'tripadvisor', 0),
-        ('Google Vacation Rentals', 'google', 0),
-        ('HomeAway', 'homeaway', 0)
-    ");
-
-    $conn->exec("
-        CREATE TABLE IF NOT EXISTS rental_united_sync_log (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            logement_id INT DEFAULT NULL,
-            type ENUM('prix', 'disponibilite', 'reservation', 'property', 'config') NOT NULL,
-            direction ENUM('push', 'pull') NOT NULL,
-            statut ENUM('succes', 'erreur', 'partiel') NOT NULL,
-            message TEXT,
-            details JSON DEFAULT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-} catch (PDOException $e) {
-    // Tables existent deja
-}
+// Tables requises : voir db/install_tables.php
 
 $feedback = '';
 
@@ -91,7 +20,7 @@ $feedback = '';
 $config = null;
 try {
     $config = $conn->query("SELECT * FROM rental_united_config LIMIT 1")->fetch(PDO::FETCH_ASSOC);
-} catch (PDOException $e) {}
+} catch (PDOException $e) { error_log('rental_united.php: ' . $e->getMessage()); }
 
 // Logements
 $logements = $conn->query("SELECT id, nom_du_logement, actif FROM liste_logements ORDER BY nom_du_logement")->fetchAll(PDO::FETCH_ASSOC);
@@ -169,7 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             $conn->prepare("UPDATE rental_united_channels SET actif = NOT actif WHERE id = ?")->execute([$channel_id]);
             $channels = $conn->query("SELECT * FROM rental_united_channels ORDER BY actif DESC, nom")->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {}
+        } catch (PDOException $e) { error_log('rental_united.php: ' . $e->getMessage()); }
     }
 
     // Supprimer un mapping
@@ -180,7 +109,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $feedback = "<div class='alert alert-success'>Mapping supprime</div>";
             $properties = $conn->query("SELECT rup.*, l.nom_du_logement FROM rental_united_properties rup JOIN liste_logements l ON rup.logement_id = l.id ORDER BY l.nom_du_logement")->fetchAll(PDO::FETCH_ASSOC);
             $mapped_ids = array_column($properties, 'logement_id');
-        } catch (PDOException $e) {}
+        } catch (PDOException $e) { error_log('rental_united.php: ' . $e->getMessage()); }
     }
 
     // Test connexion

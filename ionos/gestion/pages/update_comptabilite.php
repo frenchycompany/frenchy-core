@@ -119,5 +119,6 @@ try {
     exit;
 
 } catch (PDOException $e) {
-    echo "Erreur lors de la mise à jour comptable : " . $e->getMessage();
+    error_log('update_comptabilite.php: ' . $e->getMessage());
+    echo "Une erreur interne est survenue.";
 }

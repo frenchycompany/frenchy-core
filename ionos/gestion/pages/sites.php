@@ -18,36 +18,15 @@ if (!is_dir($sitesRoot)) {
 // Moteur FrenchySite source
 $frenchysiteSource = realpath(__DIR__ . '/../../../frenchysite');
 
-// ── Créer/mettre à jour la table de suivi ──
-try {
-    $conn->exec("
-        CREATE TABLE IF NOT EXISTS frenchysite_instances (
-            id            INT AUTO_INCREMENT PRIMARY KEY,
-            logement_id   INT NOT NULL,
-            db_prefix     VARCHAR(10) NOT NULL UNIQUE,
-            site_slug     VARCHAR(100) NOT NULL UNIQUE,
-            site_name     VARCHAR(255) NOT NULL,
-            site_url      VARCHAR(500) DEFAULT '',
-            deploy_path   VARCHAR(500) DEFAULT '',
-            admin_user    VARCHAR(100) DEFAULT 'admin',
-            admin_pass_hash VARCHAR(255) DEFAULT '',
-            actif         TINYINT(1) NOT NULL DEFAULT 1,
-            created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated_at    DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            INDEX idx_logement (logement_id)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-    ");
+// Tables requises : voir db/install_tables.php
 
-    // Migration : ajouter site_slug et deploy_path si absents
-    try {
-        $conn->exec("ALTER TABLE frenchysite_instances ADD COLUMN site_slug VARCHAR(100) NOT NULL DEFAULT '' AFTER db_prefix");
-    } catch (PDOException $e) { /* colonne existe déjà */ }
-    try {
-        $conn->exec("ALTER TABLE frenchysite_instances ADD COLUMN deploy_path VARCHAR(500) DEFAULT '' AFTER site_url");
-    } catch (PDOException $e) { /* colonne existe déjà */ }
-} catch (PDOException $e) {
-    // Table existe deja
-}
+// Migration : ajouter site_slug et deploy_path si absents
+try {
+    $conn->exec("ALTER TABLE frenchysite_instances ADD COLUMN site_slug VARCHAR(100) NOT NULL DEFAULT '' AFTER db_prefix");
+} catch (PDOException $e) { error_log('sites.php: ' . $e->getMessage()); }
+try {
+    $conn->exec("ALTER TABLE frenchysite_instances ADD COLUMN deploy_path VARCHAR(500) DEFAULT '' AFTER site_url");
+} catch (PDOException $e) { error_log('sites.php: ' . $e->getMessage()); }
 
 $feedback = '';
 
@@ -394,7 +373,7 @@ function countSiteTables($conn, $dbPrefix) {
         try {
             $conn->query("SELECT 1 FROM `{$dbPrefix}{$t}` LIMIT 1");
             $count++;
-        } catch (PDOException $e) {}
+        } catch (PDOException $e) { error_log('sites.php: ' . $e->getMessage()); }
     }
     return $count;
 }
@@ -574,7 +553,7 @@ try {
         LEFT JOIN liste_logements l ON s.logement_id = l.id
         ORDER BY s.created_at DESC
     ")->fetchAll();
-} catch (PDOException $e) {}
+} catch (PDOException $e) { error_log('sites.php: ' . $e->getMessage()); }
 
 $logements_dispo = [];
 try {
@@ -585,7 +564,7 @@ try {
         WHERE s.id IS NULL AND (l.actif = 1 OR l.actif IS NULL)
         ORDER BY l.nom_du_logement ASC
     ")->fetchAll();
-} catch (PDOException $e) {}
+} catch (PDOException $e) { error_log('sites.php: ' . $e->getMessage()); }
 
 $sitesHealth = [];
 foreach ($sites as $site) {

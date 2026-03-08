@@ -15,22 +15,7 @@ if (($_SESSION['role'] ?? '') !== 'admin') {
 
 $rpi = getRpiPdo();
 
-// Auto-creation table photos
-try {
-    $conn->exec("
-        CREATE TABLE IF NOT EXISTS logement_photos (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            logement_id INT NOT NULL,
-            filename VARCHAR(255) NOT NULL,
-            url_source TEXT DEFAULT NULL,
-            caption VARCHAR(255) DEFAULT NULL,
-            ordre INT DEFAULT 0,
-            source ENUM('airbnb', 'booking', 'manual', 'autre') DEFAULT 'airbnb',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            INDEX idx_logement (logement_id)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-} catch (PDOException $e) {}
+// Tables requises : voir db/install_tables.php
 
 // Repertoire uploads
 $uploadDir = __DIR__ . '/../uploads/photos/';
@@ -45,7 +30,7 @@ $scraped_images = [];
 $logements = [];
 try {
     $logements = $conn->query("SELECT id, nom_du_logement, actif FROM liste_logements ORDER BY actif DESC, nom_du_logement")->fetchAll(PDO::FETCH_ASSOC);
-} catch (PDOException $e) {}
+} catch (PDOException $e) { error_log('import_photos_airbnb.php: ' . $e->getMessage()); }
 
 // Liens Airbnb des logements (depuis market_competitors ou liste_logements)
 $airbnbLinks = [];
@@ -57,7 +42,7 @@ try {
         WHERE mc.url IS NOT NULL AND mc.url != ''
         ORDER BY mc.nom
     ")->fetchAll(PDO::FETCH_ASSOC);
-} catch (PDOException $e) {}
+} catch (PDOException $e) { error_log('import_photos_airbnb.php: ' . $e->getMessage()); }
 
 // === ACTIONS POST ===
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -181,7 +166,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $conn->prepare("INSERT INTO logement_photos (logement_id, filename, url_source, ordre, source) VALUES (?, ?, ?, ?, 'airbnb')")
                              ->execute([$logement_id, $filename, $url, $i + 1]);
                         $imported++;
-                    } catch (PDOException $e) { $errors++; }
+                    } catch (PDOException $e) { error_log('import_photos_airbnb.php: ' . $e->getMessage()); $errors++; }
                 } else {
                     $errors++;
                 }
@@ -320,7 +305,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $caption = trim($_POST['caption'] ?? '');
         try {
             $conn->prepare("UPDATE logement_photos SET caption = ? WHERE id = ?")->execute([$caption, $photo_id]);
-        } catch (PDOException $e) {}
+        } catch (PDOException $e) { error_log('import_photos_airbnb.php: ' . $e->getMessage()); }
     }
 }
 
@@ -334,7 +319,7 @@ if ($selected_logement > 0) {
         $stmt = $conn->prepare("SELECT airbnb_url FROM liste_logements WHERE id = ?");
         $stmt->execute([$selected_logement]);
         $selected_airbnb_url = $stmt->fetchColumn() ?: '';
-    } catch (PDOException $e) {}
+    } catch (PDOException $e) { error_log('import_photos_airbnb.php: ' . $e->getMessage()); }
 }
 $photos = [];
 if ($selected_logement > 0) {
@@ -342,7 +327,7 @@ if ($selected_logement > 0) {
         $stmt = $conn->prepare("SELECT * FROM logement_photos WHERE logement_id = ? ORDER BY ordre, id");
         $stmt->execute([$selected_logement]);
         $photos = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    } catch (PDOException $e) {}
+    } catch (PDOException $e) { error_log('import_photos_airbnb.php: ' . $e->getMessage()); }
 }
 
 // Stats globales
@@ -352,7 +337,7 @@ try {
     $stats = $conn->query("SELECT COUNT(*) as total, COUNT(DISTINCT logement_id) as logements FROM logement_photos")->fetch(PDO::FETCH_ASSOC);
     $total_photos = $stats['total'];
     $logements_avec_photos = $stats['logements'];
-} catch (PDOException $e) {}
+} catch (PDOException $e) { error_log('import_photos_airbnb.php: ' . $e->getMessage()); }
 ?>
 
 <!DOCTYPE html>

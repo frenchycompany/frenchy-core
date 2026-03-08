@@ -7,8 +7,8 @@ include '../config.php';
 include '../pages/menu.php';
 
 // Auto-migrations
-try { $conn->exec("ALTER TABLE inventaire_objets ADD COLUMN piece VARCHAR(50) DEFAULT NULL AFTER logement_id"); } catch (PDOException $e) {}
-try { $conn->exec("ALTER TABLE sessions_inventaire ADD COLUMN intervenant_id INT DEFAULT NULL AFTER logement_id"); } catch (PDOException $e) {}
+try { $conn->exec("ALTER TABLE inventaire_objets ADD COLUMN piece VARCHAR(50) DEFAULT NULL AFTER logement_id"); } catch (PDOException $e) { error_log('inventaire_saisie.php: ' . $e->getMessage()); }
+try { $conn->exec("ALTER TABLE sessions_inventaire ADD COLUMN intervenant_id INT DEFAULT NULL AFTER logement_id"); } catch (PDOException $e) { error_log('inventaire_saisie.php: ' . $e->getMessage()); }
 
 // Verifier la session
 if (!isset($_GET['session_id'])) {

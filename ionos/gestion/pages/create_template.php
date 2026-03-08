@@ -1,9 +1,16 @@
 <?php
 /**
  * Creer un nouveau modele de contrat
+ * Supporte les types : conciergerie et location
  */
 include '../config.php';
 include '../pages/menu.php';
+require_once __DIR__ . '/../includes/contract_config.php';
+
+$type = detectContractType();
+$config = getContractConfig($type);
+$table = $config['table_templates'];
+$table_fields = $config['table_fields'];
 
 $feedback = '';
 
@@ -23,7 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $placeholders = implode(',', array_unique($matches[1]));
 
             $stmt = $conn->prepare("
-                INSERT INTO contract_templates (title, content, placeholders, created_at, updated_at)
+                INSERT INTO `$table` (title, content, placeholders, created_at, updated_at)
                 VALUES (:title, :content, :placeholders, NOW(), NOW())
             ");
             $stmt->execute([
@@ -32,10 +39,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ':placeholders' => $placeholders
             ]);
 
-            header("Location: list_templates.php?saved=1");
+            header("Location: list_templates.php?type=$type&saved=1");
             exit;
         } catch (PDOException $e) {
-            $feedback = '<div class="alert alert-danger"><i class="fas fa-exclamation-triangle"></i> Erreur: ' . htmlspecialchars($e->getMessage()) . '</div>';
+            error_log('create_template.php: ' . $e->getMessage());
+            $feedback = '<div class="alert alert-danger"><i class="fas fa-exclamation-triangle"></i> Une erreur interne est survenue.</div>';
         }
     }
 }
@@ -43,19 +51,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Recuperer les champs disponibles
 $fields = [];
 try {
-    $stmt = $conn->query("SELECT field_name, description FROM contract_fields ORDER BY field_name");
+    $stmt = $conn->query("SELECT field_name, description FROM `$table_fields` ORDER BY field_name");
     $fields = $stmt->fetchAll(PDO::FETCH_ASSOC);
-} catch (PDOException $e) {}
+} catch (PDOException $e) { error_log('create_template.php: ' . $e->getMessage()); }
+
+// For location type, load fields with field_group
+$fieldsByGroup = [];
+if ($type === 'location') {
+    try {
+        $cols = array_column($conn->query("SHOW COLUMNS FROM `$table_fields`")->fetchAll(), 'Field');
+        if (in_array('field_group', $cols)) {
+            $stmt = $conn->query("SELECT field_name, description, field_group FROM `$table_fields` ORDER BY field_group, field_name");
+            $fieldsWithGroup = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            foreach ($fieldsWithGroup as $f) {
+                $group = $f['field_group'] ?: 'Autres';
+                $fieldsByGroup[$group][] = $f;
+            }
+        }
+    } catch (PDOException $e) { error_log('create_template.php: ' . $e->getMessage()); }
+}
 ?>
 
 <div class="container-fluid mt-4">
     <div class="row mb-4">
         <div class="col-md-8">
-            <h2><i class="fas fa-plus-circle text-success"></i> Nouveau modele de contrat</h2>
+            <h2><i class="fas fa-plus-circle text-success"></i> Nouveau modele de contrat (<?= htmlspecialchars($config['label']) ?>)</h2>
             <p class="text-muted">Creez un modele avec des placeholders {{nom_du_champ}} pour les champs dynamiques</p>
         </div>
         <div class="col-md-4 text-end">
-            <a href="list_templates.php" class="btn btn-secondary">
+            <a href="list_templates.php?type=<?= $type ?>" class="btn btn-secondary">
                 <i class="fas fa-arrow-left"></i> Retour
             </a>
         </div>
@@ -65,6 +89,7 @@ try {
 
     <form method="POST">
         <?php echoCsrfField(); ?>
+        <input type="hidden" name="contract_type" value="<?= $type ?>">
 
         <div class="row">
             <div class="col-lg-8">
@@ -76,7 +101,7 @@ try {
                         <div class="mb-3">
                             <label for="title" class="form-label fw-bold">Titre du modele</label>
                             <input type="text" name="title" id="title" class="form-control form-control-lg"
-                                   placeholder="Ex: Contrat de conciergerie standard" required
+                                   placeholder="Ex: Contrat de <?= $type === 'location' ? 'location' : 'conciergerie' ?> standard" required
                                    value="<?= htmlspecialchars($_POST['title'] ?? '') ?>">
                         </div>
 
@@ -88,7 +113,7 @@ try {
                         </div>
 
                         <div class="text-end">
-                            <a href="list_templates.php" class="btn btn-secondary">Annuler</a>
+                            <a href="list_templates.php?type=<?= $type ?>" class="btn btn-secondary">Annuler</a>
                             <button type="submit" class="btn btn-success btn-lg">
                                 <i class="fas fa-save"></i> Creer le modele
                             </button>
@@ -105,7 +130,20 @@ try {
                     <div class="card-body">
                         <p class="small text-muted mb-3">Cliquez sur un placeholder pour l'inserer dans le contenu</p>
 
-                        <?php if (!empty($fields)): ?>
+                        <?php if (!empty($fieldsByGroup)): ?>
+                            <?php foreach ($fieldsByGroup as $group => $groupFields): ?>
+                                <h6 class="mt-3 mb-2 text-<?= $config['color'] ?>"><?= htmlspecialchars($group) ?></h6>
+                                <div class="list-group list-group-flush mb-2">
+                                    <?php foreach ($groupFields as $f): ?>
+                                        <a href="#" class="list-group-item list-group-item-action shortcode-btn py-2"
+                                           data-code="{{<?= htmlspecialchars($f['field_name']) ?>}}">
+                                            <code class="text-primary">{{<?= htmlspecialchars($f['field_name']) ?>}}</code>
+                                            <br><small class="text-muted"><?= htmlspecialchars($f['description']) ?></small>
+                                        </a>
+                                    <?php endforeach; ?>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php elseif (!empty($fields)): ?>
                             <div class="list-group list-group-flush">
                                 <?php foreach ($fields as $f): ?>
                                     <a href="#" class="list-group-item list-group-item-action shortcode-btn py-2"

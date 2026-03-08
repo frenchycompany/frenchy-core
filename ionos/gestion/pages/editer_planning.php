@@ -4,7 +4,7 @@ include '../pages/menu.php'; // Inclusion du menu
 
 // Récupération de la liste des intervenants pour le <select>
 // Auto-migration : colonne actif pour intervenant
-try { $conn->exec("ALTER TABLE intervenant ADD COLUMN actif TINYINT(1) NOT NULL DEFAULT 1"); } catch (PDOException $e) {}
+try { $conn->exec("ALTER TABLE intervenant ADD COLUMN actif TINYINT(1) NOT NULL DEFAULT 1"); } catch (PDOException $e) { error_log('editer_planning.php: ' . $e->getMessage()); }
 
 $intervStmt = $conn->prepare("SELECT id, nom FROM intervenant WHERE actif = 1 ORDER BY nom");
 $intervStmt->execute();
@@ -91,7 +91,7 @@ try {
         foreach ($stmtTaches->fetchAll(PDO::FETCH_ASSOC) as $t) {
             $taches_par_logement[(int)$t['logement_id']][] = $t;
         }
-    } catch (PDOException $e2) {}
+    } catch (PDOException $e2) { error_log('editer_planning.php: ' . $e2->getMessage()); }
 
     // Génération du texte formaté pour WhatsApp (texte brut, pas de htmlspecialchars)
     $texte_combined = "📅 *Planning des interventions - " . date('d/m/Y', strtotime($date)) . "*\n\n";

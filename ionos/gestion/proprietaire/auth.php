@@ -1,37 +1,34 @@
 <?php
 /**
- * Vérification d'authentification propriétaire — inclusion commune
- * Compatible avec l'ancien système (FC_proprietaires) et le nouveau (users + Auth)
+ * Verification d'authentification proprietaire — inclusion commune
+ * Utilise le systeme Auth.php unifie
  */
 require_once __DIR__ . '/../../config.php';
-require_once __DIR__ . '/../../includes/functions.php';
 require_once __DIR__ . '/../../includes/Auth.php';
 
-// Nouveau système Auth
 $auth = new Auth($conn);
 
-// Vérifier l'authentification (compatible ancien + nouveau)
-if (!isset($_SESSION['proprietaire_id']) && !$auth->isProprietaire()) {
-    header('Location: ' . ($auth->check() ? '../login.php' : 'login.php'));
+// Verifier l'authentification proprietaire
+if (!$auth->isProprietaire() && !isset($_SESSION['proprietaire_id'])) {
+    header('Location: login.php');
     exit;
 }
 
-// Charger les données propriétaire
+// Charger les donnees proprietaire
 $proprietaire = null;
 $proprietaire_id = null;
 
-if (isset($_SESSION['user_id']) && $auth->isProprietaire()) {
-    // Nouveau système : charger depuis la table users
+if ($auth->check() && $auth->isProprietaire()) {
+    // Systeme unifie Auth.php
     $proprietaire_id = $_SESSION['user_id'];
     $user = $auth->user();
 
     if (!$user) {
         $auth->logout();
-        header('Location: ../login.php');
+        header('Location: login.php');
         exit;
     }
 
-    // Mapper les champs users vers le format attendu par le portail
     $proprietaire = [
         'id'         => $user['id'],
         'nom'        => $user['nom'],
@@ -39,27 +36,28 @@ if (isset($_SESSION['user_id']) && $auth->isProprietaire()) {
         'email'      => $user['email'],
         'telephone'  => $user['telephone'],
         'adresse'    => $user['adresse'],
-        'photo'      => $user['photo'],
-        'societe'    => $user['societe'],
-        'siret'      => $user['siret'],
-        'commission' => $user['commission'],
+        'photo'      => $user['photo'] ?? null,
+        'societe'    => $user['societe'] ?? null,
+        'siret'      => $user['siret'] ?? null,
+        'commission' => $user['commission'] ?? null,
         'actif'      => $user['actif'],
-        'role'       => $user['role'], // proprietaire_full ou proprietaire_opti
+        'role'       => $user['role'],
     ];
 
-    // Pour la compatibilité, mapper le legacy_proprietaire_id si existant
     $_SESSION['proprietaire_id'] = $user['legacy_proprietaire_id'] ?? $user['id'];
     $proprietaire_id = $_SESSION['proprietaire_id'];
 
 } elseif (isset($_SESSION['proprietaire_id'])) {
-    // Ancien système : charger depuis FC_proprietaires (fallback)
+    // Fallback ancien systeme (sera supprime apres migration complete)
     $proprietaire_id = $_SESSION['proprietaire_id'];
-    require_once __DIR__ . '/../../includes/security.php';
-    $security = new Security($conn);
 
-    $stmt = $conn->prepare("SELECT * FROM FC_proprietaires WHERE id = ? AND actif = 1");
-    $stmt->execute([$proprietaire_id]);
-    $proprietaire = $stmt->fetch(PDO::FETCH_ASSOC);
+    try {
+        $stmt = $conn->prepare("SELECT * FROM FC_proprietaires WHERE id = ? AND actif = 1");
+        $stmt->execute([$proprietaire_id]);
+        $proprietaire = $stmt->fetch(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        error_log('proprietaire/auth.php: ' . $e->getMessage());
+    }
 
     if (!$proprietaire) {
         session_destroy();
@@ -68,13 +66,7 @@ if (isset($_SESSION['user_id']) && $auth->isProprietaire()) {
     }
 }
 
-// Charger les settings si la fonction existe
-$settings = [];
-if (function_exists('getAllSettings')) {
-    $settings = getAllSettings($conn);
-}
-
-// Logements du propriétaire
+// Logements du proprietaire
 $stmt = $conn->prepare("SELECT * FROM liste_logements WHERE proprietaire_id = ? ORDER BY nom_du_logement");
 $stmt->execute([$proprietaire_id]);
 $logements = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -83,25 +75,26 @@ $logement_ids = array_column($logements, 'id');
 $placeholders = !empty($logement_ids) ? str_repeat('?,', count($logement_ids) - 1) . '?' : '';
 
 // Sites vitrine (pour sidebar)
-$sites_vitrine = [];
+$has_sites = false;
 if (!empty($logement_ids)) {
     try {
         $stmt = $conn->prepare("SELECT COUNT(*) FROM frenchysite_instances WHERE logement_id IN ($placeholders) AND actif = 1");
         $stmt->execute($logement_ids);
         $has_sites = (int)$stmt->fetchColumn() > 0;
-    } catch (PDOException $e) { $has_sites = false; }
-} else {
-    $has_sites = false;
+    } catch (PDOException $e) {
+        error_log('proprietaire/auth.php: ' . $e->getMessage());
+    }
 }
 
 $currentPage = basename($_SERVER['PHP_SELF']);
 
 function proprioSidebar($proprietaire, $currentPage, $has_sites) {
+    $e = function($v) { return htmlspecialchars($v ?? '', ENT_QUOTES, 'UTF-8'); };
     ?>
     <aside class="sidebar">
         <div class="sidebar-header">
             <img src="../../frenchyconciergerie.png.png" alt="Logo" onerror="this.style.display='none'">
-            <h2><?= e($proprietaire['prenom'] ?? '') ?> <?= e($proprietaire['nom']) ?></h2>
+            <h2><?= $e($proprietaire['prenom'] ?? '') ?> <?= $e($proprietaire['nom']) ?></h2>
             <p>Proprietaire</p>
         </div>
         <nav class="sidebar-nav">

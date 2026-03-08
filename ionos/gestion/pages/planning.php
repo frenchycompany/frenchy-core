@@ -17,12 +17,12 @@ $is_admin = ($_SESSION['role'] === 'admin');
 // Auto-migration : colonne actif pour intervenant
 try {
     $conn->exec("ALTER TABLE intervenant ADD COLUMN actif TINYINT(1) NOT NULL DEFAULT 1");
-} catch (PDOException $e) { /* colonne existe déjà */ }
+} catch (PDOException $e) { error_log('planning.php: ' . $e->getMessage()); }
 
 // Auto-migration : colonnes checkup pour planning
-try { $conn->exec("ALTER TABLE planning ADD COLUMN checkup_planifie TINYINT(1) NOT NULL DEFAULT 0 AFTER bonus"); } catch (PDOException $e) {}
-try { $conn->exec("ALTER TABLE planning ADD COLUMN checkup_prix DECIMAL(10,2) DEFAULT 50.00 AFTER checkup_planifie"); } catch (PDOException $e) {}
-try { $conn->exec("ALTER TABLE planning ADD COLUMN checkup_intervenant_id INT DEFAULT NULL AFTER checkup_prix"); } catch (PDOException $e) {}
+try { $conn->exec("ALTER TABLE planning ADD COLUMN checkup_planifie TINYINT(1) NOT NULL DEFAULT 0 AFTER bonus"); } catch (PDOException $e) { error_log('planning.php: ' . $e->getMessage()); }
+try { $conn->exec("ALTER TABLE planning ADD COLUMN checkup_prix DECIMAL(10,2) DEFAULT 50.00 AFTER checkup_planifie"); } catch (PDOException $e) { error_log('planning.php: ' . $e->getMessage()); }
+try { $conn->exec("ALTER TABLE planning ADD COLUMN checkup_intervenant_id INT DEFAULT NULL AFTER checkup_prix"); } catch (PDOException $e) { error_log('planning.php: ' . $e->getMessage()); }
 
 // ---------------------------------------------------------------------
 // BONUS/COMPTA : enregistre le bonus fixe 10€ (5€ pour F1, 5€ pour F2)
@@ -175,7 +175,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['bulk_update'])) {
         try {
             $delC = $conn->prepare("DELETE FROM comptabilite WHERE source_typeIndex='intervention' AND source_idIndex=?");
             $delC->execute([$id]);
-        } catch (Throwable $e) {}
+        } catch (Throwable $e) { error_log('planning.php: ' . $e->getMessage()); }
 
         $stmt = $conn->prepare("DELETE FROM planning WHERE id = ?");
         $stmt->execute([$id]);
@@ -996,10 +996,6 @@ $charges = $chargeStmt->fetchAll(PDO::FETCH_ASSOC);
       bulkBtn.addEventListener("click", function () {
         const new_status = document.getElementById("bulk_status").value;
         const ids = Array.from(document.querySelectorAll("input.bulk_checkbox:checked")).map(cb => cb.value);
-
-        console.log("DEBUG - IDs sélectionnés:", ids);
-        console.log("DEBUG - Statut sélectionné:", new_status);
-        console.log("DEBUG - Données envoyées:", { intervention_ids: ids, new_status: new_status });
 
         if (ids.length === 0) {
           alert("Veuillez sélectionner au moins une intervention.");

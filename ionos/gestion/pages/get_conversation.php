@@ -70,5 +70,6 @@ try {
 
 } catch (Throwable $e) {
     http_response_code(500);
-    echo json_encode(['error' => $e->getMessage()], JSON_UNESCAPED_UNICODE);
+    error_log('get_conversation.php: ' . $e->getMessage());
+    echo json_encode(['error' => 'Une erreur interne est survenue.'], JSON_UNESCAPED_UNICODE);
 }

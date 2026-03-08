@@ -13,30 +13,21 @@ if (!($pdo instanceof PDO)) {
     die("ERREUR: PDO non disponible\n");
 }
 
+// Tables requises : voir db/install_tables.php
+
 // Vérifier si la table existe
 try {
     $stmt = $pdo->query("SHOW TABLES LIKE 'sms_templates'");
     $exists = $stmt->fetch();
     if (!$exists) {
         echo "❌ La table sms_templates n'existe PAS\n";
-        echo "→ Création de la table...\n";
-
-        $pdo->exec("
-            CREATE TABLE IF NOT EXISTS sms_templates (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                name VARCHAR(50) NOT NULL UNIQUE,
-                template TEXT NOT NULL,
-                description TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-            )
-        ");
-        echo "✓ Table créée\n\n";
+        echo "→ Exécutez db/install_tables.php pour la créer\n\n";
     } else {
         echo "✓ La table sms_templates existe\n\n";
     }
 } catch (PDOException $e) {
-    die("ERREUR: " . $e->getMessage() . "\n");
+    error_log('diagnostic_templates.php: ' . $e->getMessage());
+    die("ERREUR: Une erreur interne est survenue.\n");
 }
 
 // Vérifier les templates
@@ -87,7 +78,8 @@ try {
         echo "\n";
     }
 } catch (PDOException $e) {
-    echo "ERREUR: " . $e->getMessage() . "\n";
+    error_log('diagnostic_templates.php: ' . $e->getMessage());
+    echo "ERREUR: Une erreur interne est survenue.\n";
 }
 
 echo "=== FIN DU DIAGNOSTIC ===\n";

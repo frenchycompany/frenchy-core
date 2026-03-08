@@ -46,13 +46,13 @@ try {
     try {
         $delCompta = $conn->prepare("DELETE FROM comptabilite WHERE source_typeIndex = 'intervention' AND source_idIndex IN ($placeholders)");
         $delCompta->execute($ids);
-    } catch (Throwable $e) {}
+    } catch (Throwable $e) { error_log('bulk_delete.php: ' . $e->getMessage()); }
 
     // Nettoyer les tokens associés (best effort)
     try {
         $delTokens = $conn->prepare("DELETE FROM intervention_tokens WHERE intervention_id IN ($placeholders)");
         $delTokens->execute($ids);
-    } catch (Throwable $e) {}
+    } catch (Throwable $e) { error_log('bulk_delete.php: ' . $e->getMessage()); }
 
     // Supprimer les interventions
     $stmt = $conn->prepare("DELETE FROM planning WHERE id IN ($placeholders)");
@@ -66,5 +66,5 @@ try {
 } catch (Throwable $e) {
     error_log("bulk_delete error: " . $e->getMessage());
     http_response_code(500);
-    echo json_encode(['status' => 'error', 'message' => 'Erreur serveur lors de la suppression: ' . $e->getMessage()]);
+    echo json_encode(['status' => 'error', 'message' => 'Une erreur interne est survenue.']);
 }

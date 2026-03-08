@@ -22,50 +22,13 @@ register_shutdown_function(function() {
 include '../config.php';
 include '../pages/menu.php';
 
-// Creation des tables si elles n'existent pas
-try {
-    $conn->exec("
-        CREATE TABLE IF NOT EXISTS checkup_sessions (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            logement_id INT NOT NULL,
-            intervenant_id INT DEFAULT NULL,
-            statut ENUM('en_cours','termine') DEFAULT 'en_cours',
-            nb_ok INT DEFAULT 0,
-            nb_problemes INT DEFAULT 0,
-            nb_absents INT DEFAULT 0,
-            nb_taches_faites INT DEFAULT 0,
-            commentaire_general TEXT DEFAULT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            INDEX idx_logement (logement_id),
-            INDEX idx_statut (statut)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-    ");
+// Tables requises : voir db/install_tables.php
 
-    $conn->exec("
-        CREATE TABLE IF NOT EXISTS checkup_items (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            session_id INT NOT NULL,
-            categorie VARCHAR(50) NOT NULL,
-            nom_item VARCHAR(255) NOT NULL,
-            statut ENUM('ok','probleme','absent','non_verifie') DEFAULT 'non_verifie',
-            commentaire TEXT DEFAULT NULL,
-            photo_path VARCHAR(500) DEFAULT NULL,
-            todo_task_id INT DEFAULT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            INDEX idx_session (session_id),
-            FOREIGN KEY (session_id) REFERENCES checkup_sessions(id) ON DELETE CASCADE
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-    ");
-
-    // Ajouter les colonnes manquantes sur tables existantes
-    try { $conn->exec("ALTER TABLE checkup_items ADD COLUMN todo_task_id INT DEFAULT NULL AFTER photo_path"); } catch (PDOException $e) {}
-    try { $conn->exec("ALTER TABLE checkup_sessions ADD COLUMN nb_taches_faites INT DEFAULT 0 AFTER nb_absents"); } catch (PDOException $e) {}
-    try { $conn->exec("ALTER TABLE checkup_sessions ADD COLUMN signature_path VARCHAR(500) DEFAULT NULL AFTER commentaire_general"); } catch (PDOException $e) {}
-    try { $conn->exec("ALTER TABLE checkup_sessions ADD COLUMN video_path VARCHAR(500) DEFAULT NULL AFTER signature_path"); } catch (PDOException $e) {}
-} catch (PDOException $e) {
-    // Tables existent deja
-}
+// Ajouter les colonnes manquantes sur tables existantes
+try { $conn->exec("ALTER TABLE checkup_items ADD COLUMN todo_task_id INT DEFAULT NULL AFTER photo_path"); } catch (PDOException $e) { error_log('checkup_logement.php: ' . $e->getMessage()); }
+try { $conn->exec("ALTER TABLE checkup_sessions ADD COLUMN nb_taches_faites INT DEFAULT 0 AFTER nb_absents"); } catch (PDOException $e) { error_log('checkup_logement.php: ' . $e->getMessage()); }
+try { $conn->exec("ALTER TABLE checkup_sessions ADD COLUMN signature_path VARCHAR(500) DEFAULT NULL AFTER commentaire_general"); } catch (PDOException $e) { error_log('checkup_logement.php: ' . $e->getMessage()); }
+try { $conn->exec("ALTER TABLE checkup_sessions ADD COLUMN video_path VARCHAR(500) DEFAULT NULL AFTER signature_path"); } catch (PDOException $e) { error_log('checkup_logement.php: ' . $e->getMessage()); }
 
 // AJAX : preview du logement quand on le selectionne
 if (isset($_GET['ajax_preview']) && isset($_GET['logement_id'])) {
@@ -78,7 +41,7 @@ if (isset($_GET['ajax_preview']) && isset($_GET['logement_id'])) {
         $stmt = $conn->prepare("SELECT COUNT(*) FROM todo_list WHERE logement_id = ? AND statut IN ('en attente','en cours')");
         $stmt->execute([$lid]);
         $nbTaches = $stmt->fetchColumn();
-    } catch (PDOException $e) {}
+    } catch (PDOException $e) { error_log('checkup_logement.php: ' . $e->getMessage()); }
 
     // Dernier inventaire
     $lastInv = null;
@@ -86,7 +49,7 @@ if (isset($_GET['ajax_preview']) && isset($_GET['logement_id'])) {
         $stmt = $conn->prepare("SELECT s.date_creation, COUNT(o.id) AS nb_objets FROM sessions_inventaire s LEFT JOIN inventaire_objets o ON o.session_id = s.id WHERE s.logement_id = ? AND s.statut = 'terminee' GROUP BY s.id ORDER BY s.date_creation DESC LIMIT 1");
         $stmt->execute([$lid]);
         $lastInv = $stmt->fetch(PDO::FETCH_ASSOC);
-    } catch (PDOException $e) {}
+    } catch (PDOException $e) { error_log('checkup_logement.php: ' . $e->getMessage()); }
 
     // Equipements renseignes
     $hasEquip = false;
@@ -94,7 +57,7 @@ if (isset($_GET['ajax_preview']) && isset($_GET['logement_id'])) {
         $stmt = $conn->prepare("SELECT COUNT(*) FROM logement_equipements WHERE logement_id = ?");
         $stmt->execute([$lid]);
         $hasEquip = $stmt->fetchColumn() > 0;
-    } catch (PDOException $e) {}
+    } catch (PDOException $e) { error_log('checkup_logement.php: ' . $e->getMessage()); }
 
     // Session en cours
     $stmt = $conn->prepare("SELECT id FROM checkup_sessions WHERE logement_id = ? AND statut = 'en_cours' ORDER BY created_at DESC LIMIT 1");

@@ -55,10 +55,11 @@ try {
             throw new Exception('Invalid action');
     }
 } catch (Exception $e) {
+    error_log('ical_sync_api.php: ' . $e->getMessage());
     http_response_code(400);
     echo json_encode([
         'success' => false,
-        'error' => $e->getMessage()
+        'error' => 'Une erreur interne est survenue.'
     ]);
 }
 
@@ -298,11 +299,12 @@ function syncAllIcals($pdo) {
                 'stats' => $result['stats'] ?? []
             ];
         } catch (Exception $e) {
+            error_log('ical_sync_api.php syncAllIcals: ' . $e->getMessage());
             $results[] = [
                 'connection_id' => $conn['id'],
                 'account_name' => $conn['account_name'],
                 'success' => false,
-                'error' => $e->getMessage()
+                'error' => 'Une erreur interne est survenue.'
             ];
         }
     }

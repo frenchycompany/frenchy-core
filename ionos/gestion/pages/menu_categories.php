@@ -9,13 +9,20 @@ if (!isset($menu_categories)) {
         'Logements' => [
             'icon' => 'fa-home',
             'items' => [
-                ['nom' => 'Planning',      'chemin' => 'pages/planning.php',              'icon' => 'fa-calendar-alt'],
                 ['nom' => 'Logements',     'chemin' => 'pages/logements.php',             'icon' => 'fa-building'],
                 ['nom' => 'Propriétaires','chemin' => 'pages/proprietaires.php',        'icon' => 'fa-user-tie'],
                 ['nom' => 'Équipements',   'chemin' => 'pages/logement_equipements.php',  'icon' => 'fa-couch'],
                 ['nom' => 'Descriptions',  'chemin' => 'pages/description_logements.php', 'icon' => 'fa-file-alt'],
                 ['nom' => 'Sites vitrine', 'chemin' => 'pages/sites.php',                 'icon' => 'fa-globe'],
                 ['nom' => 'Machines',      'chemin' => 'pages/machines.php',              'icon' => 'fa-cogs'],
+            ]
+        ],
+        'Ménage / Interventions' => [
+            'icon' => 'fa-broom',
+            'items' => [
+                ['nom' => 'Planning',             'chemin' => 'pages/planning.php',              'icon' => 'fa-calendar-alt'],
+                ['nom' => 'Intervenants',         'chemin' => 'pages/intervenants.php',          'icon' => 'fa-users'],
+                ['nom' => 'Stat. ménage',         'chemin' => 'pages/statistiques_menage.php',   'icon' => 'fa-chart-bar'],
             ]
         ],
         'Checkups' => [
@@ -65,19 +72,15 @@ if (!isset($menu_categories)) {
                 ['nom' => 'Facturation',        'chemin' => 'pages/facturation.php',   'icon' => 'fa-file-invoice'],
                 ['nom' => 'Superhôte / Tarifs', 'chemin' => 'pages/superhote.php',     'icon' => 'fa-star'],
                 ['nom' => 'Statistiques',       'chemin' => 'pages/statistiques.php',  'icon' => 'fa-chart-bar'],
-                ['nom' => 'Stat. ménage',       'chemin' => 'pages/statistiques_menage.php', 'icon' => 'fa-broom'],
             ]
         ],
         'Contrats' => [
             'icon' => 'fa-file-contract',
             'items' => [
-                ['nom' => 'Contrat conciergerie',  'chemin' => 'pages/create_contract.php',              'icon' => 'fa-file-contract'],
-                ['nom' => 'Contrats générés',      'chemin' => 'pages/contrats_generes.php',             'icon' => 'fa-file-signature'],
-                ['nom' => 'Modèles conciergerie',  'chemin' => 'pages/list_templates.php',               'icon' => 'fa-file-alt'],
-                ['nom' => 'Contrat location',      'chemin' => 'pages/create_location_contract.php',     'icon' => 'fa-house-user'],
-                ['nom' => 'Contrats location',     'chemin' => 'pages/location_contrats_generes.php',    'icon' => 'fa-file-signature'],
-                ['nom' => 'Modèles location',      'chemin' => 'pages/list_location_templates.php',      'icon' => 'fa-file-alt'],
-                ['nom' => 'Détails logements',     'chemin' => 'pages/location_logement_details.php',    'icon' => 'fa-house-circle-check'],
+                ['nom' => 'Créer contrat',        'chemin' => 'pages/create_contract.php',              'icon' => 'fa-file-contract'],
+                ['nom' => 'Contrats générés',     'chemin' => 'pages/contrats_generes.php',             'icon' => 'fa-file-signature'],
+                ['nom' => 'Modèles',              'chemin' => 'pages/list_templates.php',               'icon' => 'fa-file-alt'],
+                ['nom' => 'Détails logements',    'chemin' => 'pages/location_logement_details.php',    'icon' => 'fa-house-circle-check'],
             ]
         ],
         'Commercial' => [

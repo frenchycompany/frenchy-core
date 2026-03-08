@@ -6,6 +6,11 @@
 include '../config.php';
 include '../pages/menu.php';
 
+if (!in_array($_SESSION['role'] ?? '', ['admin', 'user'])) {
+    header("Location: ../error.php?message=" . urlencode('Acces reserve au personnel.'));
+    exit;
+}
+
 // Tables requises : voir db/install_tables.php
 
 $feedback = '';
@@ -48,7 +53,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_details'])) {
             ]);
             $feedback = '<div class="alert alert-success"><i class="fas fa-check-circle"></i> Details du logement enregistres</div>';
         } catch (PDOException $e) {
-            $feedback = '<div class="alert alert-danger">Erreur: ' . htmlspecialchars($e->getMessage()) . '</div>';
+            error_log('location_logement_details.php: ' . $e->getMessage());
+            $feedback = '<div class="alert alert-danger">Une erreur interne est survenue.</div>';
         }
     }
 }
@@ -58,7 +64,7 @@ $logements = [];
 try {
     $stmt = $conn->query("SELECT id, nom_du_logement, adresse, ville FROM liste_logements WHERE actif = 1 ORDER BY nom_du_logement");
     $logements = $stmt->fetchAll(PDO::FETCH_ASSOC);
-} catch (PDOException $e) {}
+} catch (PDOException $e) { error_log('location_logement_details.php: ' . $e->getMessage()); }
 
 // Recuperer tous les details existants
 $allDetails = [];
@@ -67,7 +73,7 @@ try {
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $allDetails[$row['logement_id']] = $row;
     }
-} catch (PDOException $e) {}
+} catch (PDOException $e) { error_log('location_logement_details.php: ' . $e->getMessage()); }
 
 // Logement selectionne
 $selected_id = (int)($_GET['logement_id'] ?? $_POST['logement_id'] ?? 0);

@@ -15,5 +15,6 @@ try {
     }
     echo "Les poids et temps ont été mis à jour avec succès.";
 } catch (PDOException $e) {
-    echo "Erreur lors de la mise à jour : " . $e->getMessage();
+    error_log('save_poids_criteres.php: ' . $e->getMessage());
+    echo "Une erreur interne est survenue.";
 }

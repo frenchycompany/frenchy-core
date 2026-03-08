@@ -20,7 +20,8 @@ header('Content-Type: application/json');
 try {
     $pdo = getRpiPdo();
 } catch (PDOException $e) {
-    echo json_encode(['success' => false, 'error' => 'Connexion RPI impossible: ' . $e->getMessage()]);
+    error_log('daemon_api.php: ' . $e->getMessage());
+    echo json_encode(['success' => false, 'error' => 'Une erreur interne est survenue.']);
     exit;
 }
 
@@ -69,7 +70,8 @@ function getQueueStats($pdo) {
         }
         return $stats;
     } catch (PDOException $e) {
-        return ['error' => $e->getMessage()];
+        error_log('daemon_api.php getQueueStats: ' . $e->getMessage());
+        return ['error' => 'Une erreur interne est survenue.'];
     }
 }
 
@@ -86,7 +88,7 @@ switch ($action) {
                 if ($row['key_name'] === 'scheduled_time') $scheduledTime = $row['value'];
                 if ($row['key_name'] === 'scheduled_enabled') $scheduledEnabled = $row['value'] === '1';
             }
-        } catch (PDOException $e) {}
+        } catch (PDOException $e) { error_log('daemon_api.php: ' . $e->getMessage()); }
 
         // Tenter de recuperer le statut de derniere execution depuis le RPI
         $lastRun = ['status' => 'unknown'];
@@ -120,7 +122,8 @@ switch ($action) {
             $count = $pdo->exec("DELETE FROM superhote_price_updates WHERE status = 'pending'");
             echo json_encode(['success' => true, 'deleted' => $count]);
         } catch (PDOException $e) {
-            echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+            error_log('daemon_api.php clear: ' . $e->getMessage());
+            echo json_encode(['success' => false, 'error' => 'Une erreur interne est survenue.']);
         }
         break;
 
@@ -139,7 +142,8 @@ switch ($action) {
             ");
             echo json_encode(['success' => true, 'released' => $count]);
         } catch (PDOException $e) {
-            echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+            error_log('daemon_api.php release: ' . $e->getMessage());
+            echo json_encode(['success' => false, 'error' => 'Une erreur interne est survenue.']);
         }
         break;
 

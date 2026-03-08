@@ -27,25 +27,7 @@ if (!function_exists('phone_normalize_php')) {
     }
 }
 
-// --- Creation de la table clients si elle n'existe pas ---
-try {
-    $pdo->exec("
-        CREATE TABLE IF NOT EXISTS clients (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            telephone VARCHAR(20) NOT NULL UNIQUE,
-            prenom VARCHAR(100),
-            nom VARCHAR(100),
-            email VARCHAR(255),
-            adresse TEXT,
-            notes TEXT,
-            tags VARCHAR(255),
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-    ");
-} catch (PDOException $e) {
-    // Table existe deja
-}
+// Tables requises : voir db/install_tables.php
 
 $feedback = '';
 
@@ -189,7 +171,8 @@ if (isset($_GET['api']) && $_GET['api'] === 'reservations_by_phone') {
         echo json_encode(['success' => true, 'reservations' => $rows], JSON_UNESCAPED_UNICODE);
     } catch (Throwable $e) {
         http_response_code(500);
-        echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        error_log('clients.php: ' . $e->getMessage());
+        echo json_encode(['success' => false, 'message' => 'Une erreur interne est survenue.']);
     }
     exit;
 }
@@ -307,7 +290,7 @@ elseif ($viewPhoneNorm !== ''):
         $stmt = $pdo->prepare("SELECT * FROM clients WHERE telephone = :phone");
         $stmt->execute([':phone' => $viewPhoneNorm]);
         $clientProfile = $stmt->fetch(PDO::FETCH_ASSOC);
-    } catch (PDOException $e) {}
+    } catch (PDOException $e) { error_log('clients.php: ' . $e->getMessage()); }
 
     // Recuperer les reservations liees
     $reservations = [];
@@ -323,7 +306,7 @@ elseif ($viewPhoneNorm !== ''):
         $stmt = $pdo->prepare($sql);
         $stmt->execute([':phone' => '%' . str_replace('+', '', $viewPhoneNorm) . '%']);
         $reservations = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    } catch (PDOException $e) {}
+    } catch (PDOException $e) { error_log('clients.php: ' . $e->getMessage()); }
 
     $nb = count($reservations);
     $first = $nb ? $reservations[array_key_last($reservations)]['date_arrivee'] : null;
@@ -732,7 +715,7 @@ else:
     try {
         $stmt = $pdo->query("SELECT * FROM clients ORDER BY updated_at DESC");
         $clientsProfiles = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    } catch (PDOException $e) {}
+    } catch (PDOException $e) { error_log('clients.php: ' . $e->getMessage()); }
 
     // Construire la liste combinee (clients enregistres + clients des reservations)
     $where = "WHERE r.telephone IS NOT NULL AND r.telephone <> ''";
@@ -801,7 +784,7 @@ else:
                 FROM reservation WHERE telephone IS NOT NULL GROUP BY phone HAVING COUNT(*) >= 2
             ) t
         ")->fetchColumn();
-    } catch (PDOException $e) {}
+    } catch (PDOException $e) { error_log('clients.php: ' . $e->getMessage()); }
 ?>
 
     <div class="row mb-4">

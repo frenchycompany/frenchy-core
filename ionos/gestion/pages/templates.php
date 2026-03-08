@@ -16,77 +16,7 @@ if (!($pdo instanceof PDO)) {
 
 $feedback = '';
 
-// --- Créer les tables si elles n'existent pas ---
-try {
-    // Table pour les templates par défaut
-    $pdo->exec("
-        CREATE TABLE IF NOT EXISTS sms_templates (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            name VARCHAR(50) NOT NULL UNIQUE,
-            template TEXT NOT NULL,
-            description TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-        )
-    ");
-
-    // Insérer les templates par défaut s'ils n'existent pas
-    $default_templates_to_insert = [
-        [
-            'name' => 'checkout',
-            'template' => "Bonjour {prenom},\nMerci pour votre séjour! Nous espérons vous revoir bientôt.",
-            'description' => 'Message envoyé le jour du départ'
-        ],
-        [
-            'name' => 'accueil',
-            'template' => "Bonjour {prenom},\nBienvenue! N'hésitez pas à nous contacter si vous avez besoin de quoi que ce soit.",
-            'description' => 'Message envoyé le jour de l\'arrivée'
-        ],
-        [
-            'name' => 'preparation',
-            'template' => "Bonjour {prenom},\nVotre arrivée approche! Nous préparons tout pour vous accueillir dans les meilleures conditions.",
-            'description' => 'Message envoyé 4 jours avant l\'arrivée'
-        ],
-        [
-            'name' => 'mi_parcours',
-            'template' => "Bonsoir {prenom}, ici Raphael, juste un petit coucou pour savoir si tout va bien ?",
-            'description' => 'Message envoyé à mi-séjour (séjours de 3+ nuits)'
-        ],
-        [
-            'name' => 'relance',
-            'template' => "Bonjour {prenom},\nNous espérons que vous avez passé un excellent séjour! N'hésitez pas à revenir nous voir.",
-            'description' => 'Message de relance pour campagnes'
-        ]
-    ];
-
-    $stmt_check = $pdo->prepare("SELECT COUNT(*) FROM sms_templates WHERE name = :name");
-    $stmt_insert = $pdo->prepare("INSERT INTO sms_templates (name, template, description) VALUES (:name, :template, :description)");
-
-    foreach ($default_templates_to_insert as $template) {
-        $stmt_check->execute([':name' => $template['name']]);
-        if ($stmt_check->fetchColumn() == 0) {
-            $stmt_insert->execute($template);
-        }
-    }
-
-    // Table pour les templates par logement
-    $pdo->exec("
-        CREATE TABLE IF NOT EXISTS sms_logement_templates (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            logement_id INT NOT NULL,
-            type_message VARCHAR(50) NOT NULL,
-            message TEXT NOT NULL,
-            actif BOOLEAN DEFAULT TRUE,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            FOREIGN KEY (logement_id) REFERENCES liste_logements(id) ON DELETE CASCADE,
-            UNIQUE KEY unique_logement_type (logement_id, type_message)
-        )
-    ");
-
-} catch (PDOException $e) {
-    // Tables probablement déjà créées
-}
+// Tables requises : voir db/install_tables.php
 
 // S'assurer que la colonne description existe dans sms_templates
 try {
@@ -213,7 +143,7 @@ try {
 
     $stmt = $pdo->query("SELECT COUNT(DISTINCT logement_id) FROM sms_logement_templates");
     $stats['logements_configures'] = $stmt->fetchColumn();
-} catch (PDOException $e) {}
+} catch (PDOException $e) { error_log('templates.php: ' . $e->getMessage()); }
 
 // --- Récupérer les données ---
 // Templates génériques
@@ -221,14 +151,14 @@ $default_templates = [];
 try {
     $stmt = $pdo->query("SELECT * FROM sms_templates ORDER BY name");
     $default_templates = $stmt->fetchAll();
-} catch (PDOException $e) {}
+} catch (PDOException $e) { error_log('templates.php: ' . $e->getMessage()); }
 
 // Logements (actifs uniquement)
 $logements = [];
 try {
     $stmt = $pdo->query("SELECT id, nom_du_logement FROM liste_logements WHERE actif = 1 ORDER BY nom_du_logement");
     $logements = $stmt->fetchAll();
-} catch (PDOException $e) {}
+} catch (PDOException $e) { error_log('templates.php: ' . $e->getMessage()); }
 
 // Templates par logement
 $logement_templates = [];
@@ -240,7 +170,7 @@ try {
         ORDER BY l.nom_du_logement, lt.type_message
     ");
     $logement_templates = $stmt->fetchAll();
-} catch (PDOException $e) {}
+} catch (PDOException $e) { error_log('templates.php: ' . $e->getMessage()); }
 
 // Grouper par logement
 $templates_by_logement = [];

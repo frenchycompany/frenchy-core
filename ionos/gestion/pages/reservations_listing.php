@@ -101,7 +101,8 @@ try {
     $stmt->execute($params);
     $reservations = $stmt->fetchAll();
 } catch (PDOException $e) {
-    echo "<div class='alert alert-danger'>Erreur: " . htmlspecialchars($e->getMessage()) . "</div>";
+    error_log('reservations_listing.php: ' . $e->getMessage());
+    echo "<div class='alert alert-danger'>Une erreur interne est survenue.</div>";
 }
 
 // Grouper par logement si vue = logement

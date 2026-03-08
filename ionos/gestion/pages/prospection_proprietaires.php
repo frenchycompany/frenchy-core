@@ -15,47 +15,7 @@ if (($_SESSION['role'] ?? '') !== 'admin') {
 
 $rpi = getRpiPdo();
 
-// Auto-creation de la table prospection
-try {
-    $conn->exec("
-        CREATE TABLE IF NOT EXISTS prospection_proprietaires (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            nom VARCHAR(255) NOT NULL,
-            telephone VARCHAR(20) DEFAULT NULL,
-            email VARCHAR(255) DEFAULT NULL,
-            ville VARCHAR(100) DEFAULT NULL,
-            nb_annonces INT DEFAULT 0,
-            note_moyenne DECIMAL(3,2) DEFAULT NULL,
-            host_profile_id VARCHAR(50) DEFAULT NULL,
-            source ENUM('concurrence', 'recommandation', 'demarchage', 'entrant') DEFAULT 'concurrence',
-            statut ENUM('identifie', 'contacte', 'en_discussion', 'proposition', 'converti', 'perdu') DEFAULT 'identifie',
-            priorite ENUM('basse', 'moyenne', 'haute') DEFAULT 'moyenne',
-            notes TEXT DEFAULT NULL,
-            prochaine_action VARCHAR(255) DEFAULT NULL,
-            date_prochaine_action DATE DEFAULT NULL,
-            date_premier_contact DATE DEFAULT NULL,
-            date_conversion DATE DEFAULT NULL,
-            proprietaire_id INT DEFAULT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            UNIQUE KEY unique_host (host_profile_id)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-
-    // Table historique des interactions
-    $conn->exec("
-        CREATE TABLE IF NOT EXISTS prospection_historique (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            prospect_id INT NOT NULL,
-            type ENUM('appel', 'email', 'sms', 'rdv', 'visite', 'note') DEFAULT 'note',
-            contenu TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (prospect_id) REFERENCES prospection_proprietaires(id) ON DELETE CASCADE
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-} catch (PDOException $e) {
-    // Tables existent deja
-}
+// Tables requises : voir db/install_tables.php
 
 $feedback = '';
 

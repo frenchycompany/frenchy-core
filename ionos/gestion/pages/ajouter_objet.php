@@ -79,7 +79,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         echo "<div style='color:green;'>✅ Objet ajouté avec succès.</div>";
 
     } catch (Exception $e) {
-        echo "<div style='color:red;'>❌ Erreur : " . htmlspecialchars($e->getMessage()) . "</div>";
+        error_log('ajouter_objet.php: ' . $e->getMessage());
+        echo "<div style='color:red;'>Une erreur interne est survenue.</div>";
     }
 }
 ?>
