@@ -28,7 +28,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header("Location: guide_bienvenue.pdf");
         exit;
     } catch (PDOException $e) {
-        echo "Erreur lors de l'enregistrement : " . $e->getMessage();
+        error_log('submit.php: ' . $e->getMessage());
+        echo "Une erreur interne est survenue.";
     }
 }
 ?>
