@@ -1,0 +1,295 @@
+<?php
+/**
+ * Creer un contrat de location pour une reservation directe
+ * Selectionner un modele + logement, remplir les infos voyageur et reservation
+ */
+include '../config.php';
+include '../pages/menu.php';
+
+// Auto-creation tables
+try {
+    $conn->exec("CREATE TABLE IF NOT EXISTS location_contract_templates (
+        id INT AUTO_INCREMENT PRIMARY KEY, title VARCHAR(255) NOT NULL, content TEXT NOT NULL,
+        placeholders TEXT DEFAULT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    $conn->exec("CREATE TABLE IF NOT EXISTS location_contract_fields (
+        id INT AUTO_INCREMENT PRIMARY KEY, field_name VARCHAR(255) NOT NULL UNIQUE,
+        description VARCHAR(255) NOT NULL, input_type ENUM('text','number','textarea','date','select') DEFAULT 'text',
+        options TEXT DEFAULT NULL, field_group ENUM('voyageur','reservation','logement','autre') DEFAULT 'autre',
+        sort_order INT DEFAULT 0
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    $conn->exec("CREATE TABLE IF NOT EXISTS location_contract_logement_details (
+        id INT AUTO_INCREMENT PRIMARY KEY, logement_id INT NOT NULL,
+        description_logement TEXT, equipements TEXT, regles_maison TEXT,
+        heure_arrivee VARCHAR(10) DEFAULT '16:00', heure_depart VARCHAR(10) DEFAULT '10:00',
+        depot_garantie DECIMAL(10,2), taxe_sejour_par_nuit DECIMAL(10,2),
+        conditions_annulation TEXT, informations_supplementaires TEXT,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_logement (logement_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+} catch (PDOException $e) {}
+
+// Recuperer les modeles
+$templates = [];
+try {
+    $stmt = $conn->query("SELECT id, title FROM location_contract_templates ORDER BY title");
+    $templates = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {}
+
+// Recuperer les logements actifs
+$logements = [];
+try {
+    $stmt = $conn->query("SELECT id, nom_du_logement FROM liste_logements WHERE actif = 1 ORDER BY nom_du_logement");
+    $logements = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {}
+?>
+
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2><i class="fas fa-file-signature text-warning"></i> Creer un contrat de location</h2>
+            <p class="text-muted">Selectionnez un modele et un logement, remplissez les infos du voyageur et de la reservation</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="list_location_templates.php" class="btn btn-outline-secondary">
+                <i class="fas fa-file-alt"></i> Modeles
+            </a>
+            <a href="location_logement_details.php" class="btn btn-outline-info">
+                <i class="fas fa-home"></i> Details logements
+            </a>
+            <a href="location_contrats_generes.php" class="btn btn-outline-dark">
+                <i class="fas fa-history"></i> Historique
+            </a>
+        </div>
+    </div>
+
+    <?php if (empty($templates)): ?>
+        <div class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle"></i> Aucun modele de contrat de location disponible.
+            <a href="create_location_template.php" class="btn btn-sm btn-success ms-2">
+                <i class="fas fa-plus"></i> Creer un modele
+            </a>
+        </div>
+    <?php endif; ?>
+
+    <form id="locationContractForm" action="generate_location_contract.php" method="POST">
+        <?php echoCsrfField(); ?>
+
+        <div class="row">
+            <!-- Colonne gauche : configuration -->
+            <div class="col-lg-4">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0"><i class="fas fa-cog"></i> Configuration</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="template_id" class="form-label fw-bold">Modele de contrat</label>
+                            <select name="template_id" id="template_id" class="form-select" required>
+                                <option value="">-- Selectionnez un modele --</option>
+                                <?php foreach ($templates as $t): ?>
+                                    <option value="<?= $t['id'] ?>"><?= htmlspecialchars($t['title']) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="logement_id" class="form-label fw-bold">Logement</label>
+                            <select name="logement_id" id="logement_id" class="form-select" required>
+                                <option value="">-- Selectionnez un logement --</option>
+                                <?php foreach ($logements as $l): ?>
+                                    <option value="<?= $l['id'] ?>"><?= htmlspecialchars($l['nom_du_logement']) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="date_contrat" class="form-label fw-bold">Date du contrat</label>
+                            <input type="date" name="date_contrat" id="date_contrat" class="form-control"
+                                   value="<?= date('Y-m-d') ?>">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Info logement auto-rempli -->
+                <div class="card shadow-sm mb-4" id="logementInfoCard" style="display:none;">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="fas fa-home"></i> Logement</h5>
+                    </div>
+                    <div class="card-body" id="logementInfoBody"></div>
+                </div>
+
+                <!-- Details personnalises -->
+                <div class="card shadow-sm mb-4" id="detailsInfoCard" style="display:none;">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="fas fa-clipboard-list"></i> Details location</h5>
+                    </div>
+                    <div class="card-body" id="detailsInfoBody"></div>
+                </div>
+            </div>
+
+            <!-- Colonne droite : champs dynamiques -->
+            <div class="col-lg-8">
+                <div class="card shadow-sm">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-edit"></i> Champs du contrat</h5>
+                    </div>
+                    <div class="card-body" id="dynamicFields">
+                        <div class="text-center py-5 text-muted">
+                            <i class="fas fa-hand-pointer fa-3x mb-3"></i>
+                            <p>Selectionnez un modele de contrat pour afficher les champs a remplir</p>
+                        </div>
+                    </div>
+                    <div class="card-footer text-end" id="submitSection" style="display:none;">
+                        <button type="submit" class="btn btn-warning btn-lg text-dark">
+                            <i class="fas fa-file-export"></i> Generer le contrat de location
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const templateSelect = document.getElementById('template_id');
+    const logementSelect = document.getElementById('logement_id');
+    const dynamicFields = document.getElementById('dynamicFields');
+    const submitSection = document.getElementById('submitSection');
+    const logementInfoCard = document.getElementById('logementInfoCard');
+    const logementInfoBody = document.getElementById('logementInfoBody');
+    const detailsInfoCard = document.getElementById('detailsInfoCard');
+    const detailsInfoBody = document.getElementById('detailsInfoBody');
+
+    let logementData = null;
+
+    // Charger les champs dynamiques du modele
+    templateSelect.addEventListener('change', function() {
+        const templateId = this.value;
+        if (!templateId) {
+            dynamicFields.innerHTML = '<div class="text-center py-5 text-muted"><i class="fas fa-hand-pointer fa-3x mb-3"></i><p>Selectionnez un modele de contrat pour afficher les champs a remplir</p></div>';
+            submitSection.style.display = 'none';
+            return;
+        }
+
+        dynamicFields.innerHTML = '<div class="text-center py-4"><i class="fas fa-spinner fa-spin fa-2x"></i></div>';
+
+        fetch('get_location_template_fields.php?id=' + templateId)
+            .then(r => r.text())
+            .then(html => {
+                if (html.trim()) {
+                    dynamicFields.innerHTML = html;
+                    submitSection.style.display = 'block';
+                    if (logementData) {
+                        applyAutoFill(logementData);
+                    }
+                } else {
+                    dynamicFields.innerHTML = '<div class="alert alert-warning">Aucun champ dynamique pour ce modele</div>';
+                    submitSection.style.display = 'block';
+                }
+            })
+            .catch(err => {
+                dynamicFields.innerHTML = '<div class="alert alert-danger">Erreur de chargement: ' + err.message + '</div>';
+            });
+    });
+
+    // Charger les donnees du logement
+    logementSelect.addEventListener('change', function() {
+        const logementId = this.value;
+        if (!logementId) {
+            logementInfoCard.style.display = 'none';
+            detailsInfoCard.style.display = 'none';
+            logementData = null;
+            return;
+        }
+
+        fetch('get_location_logement_infos.php?logement_id=' + logementId)
+            .then(r => r.json())
+            .then(data => {
+                if (data.error) {
+                    alert('Erreur: ' + data.error);
+                    return;
+                }
+
+                logementData = data;
+
+                // Afficher les infos logement
+                logementInfoCard.style.display = 'block';
+                logementInfoBody.innerHTML = buildInfoList([
+                    {label: 'Nom', value: data.nom_du_logement},
+                    {label: 'Adresse', value: data.adresse},
+                    {label: 'Ville', value: data.ville},
+                    {label: 'Type', value: data.type_logement},
+                    {label: 'Capacite', value: data.capacite ? data.capacite + ' pers.' : ''},
+                    {label: 'Surface', value: data.m2 ? data.m2 + ' m2' : ''},
+                ]);
+
+                // Afficher les details personnalises
+                if (data.detail_description_logement || data.detail_equipements || data.detail_regles_maison) {
+                    detailsInfoCard.style.display = 'block';
+                    detailsInfoBody.innerHTML = buildInfoList([
+                        {label: 'Arrivee', value: data.detail_heure_arrivee},
+                        {label: 'Depart', value: data.detail_heure_depart},
+                        {label: 'Garantie', value: data.detail_depot_garantie ? data.detail_depot_garantie + ' EUR' : ''},
+                        {label: 'Taxe sejour/nuit', value: data.detail_taxe_sejour_par_nuit ? data.detail_taxe_sejour_par_nuit + ' EUR' : ''},
+                    ]);
+                    if (data.detail_description_logement) {
+                        detailsInfoBody.innerHTML += '<div class="mt-2"><small class="text-muted">Description:</small><br><small>' + escapeHtml(data.detail_description_logement).substring(0, 100) + '...</small></div>';
+                    }
+                } else {
+                    detailsInfoCard.style.display = 'none';
+                }
+
+                // Auto-remplir les champs
+                applyAutoFill(data);
+            })
+            .catch(err => {
+                console.error('Erreur chargement logement:', err);
+            });
+    });
+
+    function applyAutoFill(data) {
+        const computed = Object.assign({}, data);
+        computed['date_contrat'] = document.getElementById('date_contrat') ? document.getElementById('date_contrat').value : '';
+
+        // Parcourir les champs avec data-autofill
+        const fields = dynamicFields.querySelectorAll('[data-autofill]');
+        fields.forEach(field => {
+            const source = field.getAttribute('data-autofill');
+            if (!source) return;
+            const value = computed[source];
+            if (value !== undefined && value !== null && value !== '') {
+                field.value = value;
+            }
+        });
+
+        // Fallback par nom de champ
+        dynamicFields.querySelectorAll('input, textarea, select').forEach(field => {
+            if (field.value) return;
+            const name = (field.name || field.id || '').toLowerCase();
+            if (name && data[name]) {
+                field.value = data[name];
+            }
+        });
+    }
+
+    function buildInfoList(items) {
+        let html = '<ul class="list-unstyled mb-0">';
+        items.forEach(item => {
+            if (item.value && String(item.value).trim()) {
+                html += '<li class="mb-1"><small class="text-muted">' + item.label + ':</small> <strong>' + escapeHtml(String(item.value).trim()) + '</strong></li>';
+            }
+        });
+        html += '</ul>';
+        return html;
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+});
+</script>
