@@ -278,11 +278,22 @@ $insertPlanningArrival = $conn->prepare("
         ".($pl_has_src_id ? ", source_reservation_id" : "")."
         ".($pl_has_src_type ? ", source_type" : "")."
     ) VALUES (
-        :logement_id, :date, :nb_pers, :nb_jours, 'À Faire', :note
+        :logement_id, :date, :nb_pers, :nb_jours, :statut, :note
         ".($pl_has_src_id ? ", :resa_id" : "")."
         ".($pl_has_src_type ? ", 'AUTO_ARRIVAL'" : "")."
     )
 ");
+
+// Dernière intervention sur un logement (pour déterminer si "À Vérifier")
+$findLastIntervention = $conn->prepare("
+    SELECT date FROM planning WHERE logement_id = ? AND date < ? ORDER BY date DESC LIMIT 1
+");
+
+// Set des logements qui ont un départ aujourd'hui (pour savoir si checkout existe)
+$logementsAvecDepart = [];
+foreach ($deps as $d) {
+    $logementsAvecDepart[(int)$d['logement_id']] = true;
+}
 
 $report = [
   'departures' => [],
@@ -425,12 +436,24 @@ try {
         $createdNow = false;
 
         if (!$hadBefore) {
+            // Déterminer le statut : "À Vérifier" si pas de checkout ce jour + dernière intervention > 2 jours
+            $statut = 'À Faire';
+            if (!isset($logementsAvecDepart[$logId])) {
+                $findLastIntervention->execute([$logId, $today]);
+                $lastRow = $findLastIntervention->fetch(PDO::FETCH_ASSOC);
+                $findLastIntervention->closeCursor();
+                if (!$lastRow || (strtotime($today) - strtotime($lastRow['date'])) > 2 * 86400) {
+                    $statut = 'À Vérifier';
+                }
+            }
+
             if (!$DRY_RUN) {
                 $params = [
                     ':logement_id'=>$logId,
                     ':date'=>$today,   // on planifie pour AUJOURD'HUI
                     ':nb_pers'=>$nbPers,
                     ':nb_jours'=>$nbJours,
+                    ':statut'=>$statut,
                     ':note'=>$note,
                 ];
                 if ($pl_has_src_id) $params[':resa_id'] = $resaId;
