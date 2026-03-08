@@ -280,6 +280,66 @@ document.addEventListener('DOMContentLoaded', function() {
                 field.value = data[name];
             }
         });
+
+        // Attacher les calculs auto apres le remplissage
+        attachAutoCalculations();
+    }
+
+    // Calcul automatique : nombre de nuits et prix total
+    function attachAutoCalculations() {
+        const dateArrivee = dynamicFields.querySelector('[name="date_arrivee"]');
+        const dateDepart = dynamicFields.querySelector('[name="date_depart"]');
+        const nombreNuits = dynamicFields.querySelector('[name="nombre_nuits"]');
+        const prixNuit = dynamicFields.querySelector('[name="prix_nuit"]');
+        const prixMenage = dynamicFields.querySelector('[name="prix_menage"]');
+        const prixTaxeSejour = dynamicFields.querySelector('[name="prix_taxe_sejour"]');
+        const prixTotal = dynamicFields.querySelector('[name="prix_total"]');
+        const nombreVoyageurs = dynamicFields.querySelector('[name="nombre_voyageurs"]');
+        const taxeParNuit = logementData ? parseFloat(logementData.detail_taxe_sejour_par_nuit) || 0 : 0;
+
+        function calcNuits() {
+            if (!dateArrivee || !dateDepart || !nombreNuits) return;
+            const d1 = new Date(dateArrivee.value);
+            const d2 = new Date(dateDepart.value);
+            if (d1 && d2 && d2 > d1) {
+                const nuits = Math.round((d2 - d1) / (1000 * 60 * 60 * 24));
+                nombreNuits.value = nuits;
+
+                // Auto-calcul taxe de sejour si on a le tarif par nuit
+                if (prixTaxeSejour && taxeParNuit > 0) {
+                    const nbVoyageurs = nombreVoyageurs ? (parseInt(nombreVoyageurs.value) || 1) : 1;
+                    prixTaxeSejour.value = (taxeParNuit * nuits * nbVoyageurs).toFixed(2);
+                }
+
+                calcTotal();
+            }
+        }
+
+        function calcTotal() {
+            if (!prixTotal) return;
+            const nuits = nombreNuits ? (parseFloat(nombreNuits.value) || 0) : 0;
+            const tarif = prixNuit ? (parseFloat(prixNuit.value) || 0) : 0;
+            const menage = prixMenage ? (parseFloat(prixMenage.value) || 0) : 0;
+            const taxe = prixTaxeSejour ? (parseFloat(prixTaxeSejour.value) || 0) : 0;
+
+            if (nuits > 0 && tarif > 0) {
+                prixTotal.value = (nuits * tarif + menage + taxe).toFixed(2);
+            }
+        }
+
+        // Ecouter les changements
+        if (dateArrivee) dateArrivee.addEventListener('change', calcNuits);
+        if (dateDepart) dateDepart.addEventListener('change', calcNuits);
+        if (prixNuit) prixNuit.addEventListener('input', calcTotal);
+        if (prixMenage) prixMenage.addEventListener('input', calcTotal);
+        if (prixTaxeSejour) prixTaxeSejour.addEventListener('input', calcTotal);
+        if (nombreNuits) nombreNuits.addEventListener('input', calcTotal);
+        if (nombreVoyageurs) nombreVoyageurs.addEventListener('input', calcNuits);
+
+        // Calculer si les dates sont deja remplies
+        if (dateArrivee && dateArrivee.value && dateDepart && dateDepart.value) {
+            calcNuits();
+        }
     }
 
     function buildInfoList(items) {
