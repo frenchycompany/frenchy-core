@@ -294,6 +294,15 @@ foreach ($deps as $d) {
     $logementsAvecDepart[(int)$d['logement_id']] = true;
 }
 
+// Charger les tâches actives par logement (pour les inclure dans la note)
+$taches_par_logement = [];
+try {
+    $stmtTaches = $conn->query("SELECT logement_id, description FROM todo_list WHERE statut IN ('en attente', 'en cours') ORDER BY date_limite ASC");
+    foreach ($stmtTaches->fetchAll(PDO::FETCH_ASSOC) as $t) {
+        $taches_par_logement[(int)$t['logement_id']][] = $t['description'];
+    }
+} catch (PDOException $e) {}
+
 $report = [
   'date'      => $target,
   'departures'=> [],
@@ -316,7 +325,10 @@ try {
         }
         $nbJours = max(0, (int)$r['nb_jours']);
         $srcLabel = $r['_source'] ?? 'REMOTE';
-        $note    = "Auto: ménage de sortie (resa #{$resaId}) [{$srcLabel}]";
+        // Note = tâches à faire sur ce logement (si existantes)
+        $note = !empty($taches_par_logement[$logId])
+            ? implode("\n", array_map(fn($t) => "- $t", $taches_par_logement[$logId]))
+            : '';
 
         // Vérifier s'il existe déjà UNE intervention ce jour pour ce logement
         $findAnyOnDate->execute([$logId, $depart]);
@@ -391,7 +403,10 @@ try {
         }
         $nbJours = max(0, (int)$r[‘nb_jours’]);
         $srcLabel = $r['_source'] ?? 'REMOTE';
-        $note    = "Auto: ménage avant arrivée (resa #{$resaId}) [{$srcLabel}]";
+        // Note = tâches à faire sur ce logement (si existantes)
+        $note = !empty($taches_par_logement[$logId])
+            ? implode("\n", array_map(fn($t) => "- $t", $taches_par_logement[$logId]))
+            : '';
 
         // si une intervention existe déjà ce jour → ne rien créer
         $findAnyOnDate->execute([$logId, $target]);
