@@ -430,7 +430,7 @@ try {
                 $findLastIntervention->execute([$logId, $target]);
                 $lastRow = $findLastIntervention->fetch(PDO::FETCH_ASSOC);
                 $findLastIntervention->closeCursor();
-                if (!$lastRow || (strtotime($target) - strtotime($lastRow['date'])) > 2 * 86400) {
+                if (!$lastRow || (strtotime($target) - strtotime($lastRow['date'])) >= 2 * 86400) {
                     $statut = 'À Vérifier';
                 }
             }
