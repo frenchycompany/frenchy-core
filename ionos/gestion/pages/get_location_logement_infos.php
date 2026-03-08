@@ -211,5 +211,6 @@ try {
 
     echo json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 } catch (PDOException $e) {
-    echo json_encode(['error' => 'Erreur SQL : ' . $e->getMessage()]);
+    error_log('get_location_logement_infos.php: ' . $e->getMessage());
+    echo json_encode(['error' => 'Erreur lors du chargement des donnees du logement.']);
 }

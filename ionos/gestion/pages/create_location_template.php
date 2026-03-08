@@ -5,26 +5,7 @@
 include '../config.php';
 include '../pages/menu.php';
 
-// Auto-creation des tables
-try {
-    $conn->exec("CREATE TABLE IF NOT EXISTS location_contract_templates (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        title VARCHAR(255) NOT NULL,
-        content TEXT NOT NULL,
-        placeholders TEXT DEFAULT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-    $conn->exec("CREATE TABLE IF NOT EXISTS location_contract_fields (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        field_name VARCHAR(255) NOT NULL UNIQUE,
-        description VARCHAR(255) NOT NULL,
-        input_type ENUM('text','number','textarea','date','select') DEFAULT 'text',
-        options TEXT DEFAULT NULL,
-        field_group ENUM('voyageur','reservation','logement','autre') DEFAULT 'autre',
-        sort_order INT DEFAULT 0
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-} catch (PDOException $e) {}
+// Tables requises : voir db/install_tables.php
 
 $feedback = '';
 

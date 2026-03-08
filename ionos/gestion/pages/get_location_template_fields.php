@@ -106,7 +106,8 @@ if (isset($_GET['id']) && is_numeric($_GET['id'])) {
             echo "Aucun champ dynamique disponible.";
         }
     } catch (PDOException $e) {
-        echo "Erreur : " . htmlspecialchars($e->getMessage());
+        error_log('get_location_template_fields.php: ' . $e->getMessage());
+        echo '<div class="alert alert-danger">Erreur lors du chargement des champs.</div>';
     }
 } else {
     echo "ID du modele non valide.";

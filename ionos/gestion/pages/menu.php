@@ -22,6 +22,20 @@ if (!isset($_SESSION['id_intervenant']) && !isset($_SESSION['user_id'])) {
     exit;
 }
 
+// Timeout de session (30 min d'inactivite)
+$sessionTimeout = 1800;
+if (isset($_SESSION['_auth_last_activity']) && (time() - $_SESSION['_auth_last_activity']) > $sessionTimeout) {
+    $_SESSION = [];
+    if (ini_get("session.use_cookies")) {
+        $params = session_get_cookie_params();
+        setcookie(session_name(), '', time() - 42000, $params["path"], $params["domain"], $params["secure"], $params["httponly"]);
+    }
+    session_destroy();
+    header('Location: ' . BASE_URL . 'login.php?expired=1');
+    exit;
+}
+$_SESSION['_auth_last_activity'] = time();
+
 $id_intervenant  = $_SESSION['id_intervenant'] ?? $_SESSION['user_id'] ?? 0;
 $role            = $_SESSION['role'] ?? (in_array($_SESSION['user_role'] ?? '', ['admin', 'super_admin']) ? 'admin' : 'user');
 $nom_utilisateur = $_SESSION['nom_utilisateur'] ?? $_SESSION['user_nom'] ?? 'Compte';

@@ -5,17 +5,7 @@
 include '../config.php';
 include '../pages/menu.php';
 
-// Auto-creation des tables si necessaire
-try {
-    $conn->exec("CREATE TABLE IF NOT EXISTS location_contract_templates (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        title VARCHAR(255) NOT NULL,
-        content TEXT NOT NULL,
-        placeholders TEXT DEFAULT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-} catch (PDOException $e) {}
+// Tables requises : voir db/install_tables.php
 
 $feedback = '';
 if (isset($_GET['saved'])) $feedback = '<div class="alert alert-success"><i class="fas fa-check-circle"></i> Modele enregistre avec succes</div>';

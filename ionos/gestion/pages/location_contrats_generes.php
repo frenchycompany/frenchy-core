@@ -6,15 +6,7 @@ include '../config.php';
 include '../pages/menu.php';
 require_once __DIR__ . '/../includes/csrf.php';
 
-// Auto-creation table
-try {
-    $conn->exec("CREATE TABLE IF NOT EXISTS generated_location_contracts (
-        id INT AUTO_INCREMENT PRIMARY KEY, user_id INT DEFAULT NULL, logement_id INT NOT NULL,
-        template_title VARCHAR(255), logement_nom VARCHAR(255), voyageur_nom VARCHAR(255),
-        date_arrivee DATE, date_depart DATE, prix_total DECIMAL(10,2),
-        file_path VARCHAR(255) NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-} catch (PDOException $e) {}
+// Tables requises : voir db/install_tables.php
 
 $feedback = '';
 

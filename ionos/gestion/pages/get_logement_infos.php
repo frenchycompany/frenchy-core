@@ -58,9 +58,11 @@ try {
     // Retourner les données sous forme JSON
     echo json_encode($logement_data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 } catch (PDOException $e) {
-    echo json_encode(['error' => 'Erreur SQL : ' . $e->getMessage()]);
+    error_log('get_logement_infos.php: ' . $e->getMessage());
+    echo json_encode(['error' => 'Erreur lors du chargement des donnees du logement.']);
     exit;
 } catch (Exception $e) {
-    echo json_encode(['error' => 'Erreur inattendue : ' . $e->getMessage()]);
+    error_log('get_logement_infos.php: ' . $e->getMessage());
+    echo json_encode(['error' => 'Erreur lors du chargement des donnees du logement.']);
     exit;
 }

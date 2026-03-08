@@ -11,14 +11,14 @@ $templates = [];
 try {
     $stmt = $conn->query("SELECT id, title FROM contract_templates ORDER BY title");
     $templates = $stmt->fetchAll(PDO::FETCH_ASSOC);
-} catch (PDOException $e) {}
+} catch (PDOException $e) { error_log('create_contract: ' . $e->getMessage()); }
 
 // Recuperer les logements actifs
 $logements = [];
 try {
     $stmt = $conn->query("SELECT id, nom_du_logement FROM liste_logements WHERE actif = 1 ORDER BY nom_du_logement");
     $logements = $stmt->fetchAll(PDO::FETCH_ASSOC);
-} catch (PDOException $e) {}
+} catch (PDOException $e) { error_log('create_contract: ' . $e->getMessage()); }
 ?>
 
 <div class="container-fluid mt-4">
@@ -35,6 +35,7 @@ try {
     </div>
 
     <form id="contractForm" action="generate_contract.php" method="POST">
+        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
         <?php echoCsrfField(); ?>
 
         <div class="row">
@@ -173,7 +174,6 @@ document.addEventListener('DOMContentLoaded', function() {
         fetch('get_logement_infos.php?logement_id=' + logementId)
             .then(r => r.json())
             .then(data => {
-                console.log('Donnees logement recues:', data);
                 if (data.error) {
                     alert('Erreur: ' + data.error);
                     return;

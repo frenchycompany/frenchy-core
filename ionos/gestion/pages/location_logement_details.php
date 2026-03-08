@@ -6,24 +6,7 @@
 include '../config.php';
 include '../pages/menu.php';
 
-// Auto-creation table
-try {
-    $conn->exec("CREATE TABLE IF NOT EXISTS location_contract_logement_details (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        logement_id INT NOT NULL,
-        description_logement TEXT DEFAULT NULL,
-        equipements TEXT DEFAULT NULL,
-        regles_maison TEXT DEFAULT NULL,
-        heure_arrivee VARCHAR(10) DEFAULT '16:00',
-        heure_depart VARCHAR(10) DEFAULT '10:00',
-        depot_garantie DECIMAL(10,2) DEFAULT NULL,
-        taxe_sejour_par_nuit DECIMAL(10,2) DEFAULT NULL,
-        conditions_annulation TEXT DEFAULT NULL,
-        informations_supplementaires TEXT DEFAULT NULL,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        UNIQUE KEY unique_logement (logement_id)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-} catch (PDOException $e) {}
+// Tables requises : voir db/install_tables.php
 
 $feedback = '';
 

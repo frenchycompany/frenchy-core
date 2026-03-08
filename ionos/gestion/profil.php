@@ -23,11 +23,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['csrf_token'])) {
         if (!empty($newPassword)) {
             if ($newPassword !== $confirmPassword) {
                 $message = '<div class="alert alert-danger">Les mots de passe ne correspondent pas.</div>';
-            } elseif (strlen($newPassword) < 6) {
-                $message = '<div class="alert alert-danger">Le mot de passe doit contenir au moins 6 caractères.</div>';
+            } elseif (strlen($newPassword) < 8) {
+                $message = '<div class="alert alert-danger">Le mot de passe doit contenir au moins 8 caractères.</div>';
             } else {
                 try {
-                    $hash = password_hash($newPassword, PASSWORD_DEFAULT);
+                    $hash = password_hash($newPassword, PASSWORD_ARGON2ID);
                     $stmt = $conn->prepare("UPDATE intervenant SET mot_de_passe = ? WHERE id = ?");
                     $stmt->execute([$hash, $id_intervenant]);
                     $message = '<div class="alert alert-success">Mot de passe mis à jour avec succès.</div>';
@@ -76,11 +76,11 @@ try {
                 <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>">
                 <div class="mb-3">
                     <label for="new_password" class="form-label">Nouveau mot de passe</label>
-                    <input type="password" name="new_password" id="new_password" class="form-control" required minlength="6">
+                    <input type="password" name="new_password" id="new_password" class="form-control" required minlength="8">
                 </div>
                 <div class="mb-3">
                     <label for="confirm_password" class="form-label">Confirmer le mot de passe</label>
-                    <input type="password" name="confirm_password" id="confirm_password" class="form-control" required minlength="6">
+                    <input type="password" name="confirm_password" id="confirm_password" class="form-control" required minlength="8">
                 </div>
                 <button type="submit" class="btn btn-primary">Mettre à jour</button>
             </form>

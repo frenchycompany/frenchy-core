@@ -10,6 +10,13 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
+// Validation CSRF
+if (!hash_equals($_SESSION['csrf_token'] ?? '', $_POST['csrf_token'] ?? '')) {
+    echo '<div class="container mt-4"><div class="alert alert-danger">Jeton CSRF invalide. Veuillez recharger la page.</div>';
+    echo '<a href="create_contract.php" class="btn btn-secondary">Retour</a></div>';
+    exit;
+}
+
 try {
     if (empty($_POST['template_id']) || !is_numeric($_POST['template_id'])) {
         throw new Exception("Modele de contrat non selectionne.");
@@ -69,7 +76,10 @@ try {
     file_put_contents($file_path, $full_html);
 
     // Sauvegarder en BDD
-    $user_id = isset($_SESSION['id_intervenant']) ? (int)$_SESSION['id_intervenant'] : 1;
+    $user_id = (int)($_SESSION['id_intervenant'] ?? $_SESSION['user_id'] ?? 0);
+    if (!$user_id) {
+        throw new Exception("Session utilisateur invalide.");
+    }
     $stmt = $conn->prepare("
         INSERT INTO generated_contracts (user_id, logement_id, file_path)
         VALUES (:user_id, :logement_id, :file_path)

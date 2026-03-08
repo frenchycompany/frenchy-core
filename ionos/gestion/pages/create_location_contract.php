@@ -6,43 +6,21 @@
 include '../config.php';
 include '../pages/menu.php';
 
-// Auto-creation tables
-try {
-    $conn->exec("CREATE TABLE IF NOT EXISTS location_contract_templates (
-        id INT AUTO_INCREMENT PRIMARY KEY, title VARCHAR(255) NOT NULL, content TEXT NOT NULL,
-        placeholders TEXT DEFAULT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-    $conn->exec("CREATE TABLE IF NOT EXISTS location_contract_fields (
-        id INT AUTO_INCREMENT PRIMARY KEY, field_name VARCHAR(255) NOT NULL UNIQUE,
-        description VARCHAR(255) NOT NULL, input_type ENUM('text','number','textarea','date','select') DEFAULT 'text',
-        options TEXT DEFAULT NULL, field_group ENUM('voyageur','reservation','logement','autre') DEFAULT 'autre',
-        sort_order INT DEFAULT 0
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-    $conn->exec("CREATE TABLE IF NOT EXISTS location_contract_logement_details (
-        id INT AUTO_INCREMENT PRIMARY KEY, logement_id INT NOT NULL,
-        description_logement TEXT, equipements TEXT, regles_maison TEXT,
-        heure_arrivee VARCHAR(10) DEFAULT '16:00', heure_depart VARCHAR(10) DEFAULT '10:00',
-        depot_garantie DECIMAL(10,2), taxe_sejour_par_nuit DECIMAL(10,2),
-        conditions_annulation TEXT, informations_supplementaires TEXT,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        UNIQUE KEY unique_logement (logement_id)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-} catch (PDOException $e) {}
+// Tables requises : voir db/install_tables.php
 
 // Recuperer les modeles
 $templates = [];
 try {
     $stmt = $conn->query("SELECT id, title FROM location_contract_templates ORDER BY title");
     $templates = $stmt->fetchAll(PDO::FETCH_ASSOC);
-} catch (PDOException $e) {}
+} catch (PDOException $e) { error_log('create_location_contract: ' . $e->getMessage()); }
 
 // Recuperer les logements actifs
 $logements = [];
 try {
     $stmt = $conn->query("SELECT id, nom_du_logement FROM liste_logements WHERE actif = 1 ORDER BY nom_du_logement");
     $logements = $stmt->fetchAll(PDO::FETCH_ASSOC);
-} catch (PDOException $e) {}
+} catch (PDOException $e) { error_log('create_location_contract: ' . $e->getMessage()); }
 ?>
 
 <div class="container-fluid mt-4">
@@ -74,6 +52,7 @@ try {
     <?php endif; ?>
 
     <form id="locationContractForm" action="generate_location_contract.php" method="POST">
+        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
         <?php echoCsrfField(); ?>
 
         <div class="row">

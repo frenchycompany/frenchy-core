@@ -16,10 +16,15 @@ if (!isset($menu_categories)) {
                 ['nom' => 'Descriptions',  'chemin' => 'pages/description_logements.php', 'icon' => 'fa-file-alt'],
                 ['nom' => 'Sites vitrine', 'chemin' => 'pages/sites.php',                 'icon' => 'fa-globe'],
                 ['nom' => 'Machines',      'chemin' => 'pages/machines.php',              'icon' => 'fa-cogs'],
-                ['nom' => 'Checkup',      'chemin' => 'pages/checkup_logement.php',     'icon' => 'fa-clipboard-check'],
-                ['nom' => 'Historique checkups', 'chemin' => 'pages/checkup_historique.php', 'icon' => 'fa-history'],
-                ['nom' => 'Dashboard',    'chemin' => 'pages/checkup_dashboard.php',  'icon' => 'fa-tachometer-alt'],
-                ['nom' => 'Stats checkup','chemin' => 'pages/checkup_statistiques.php','icon' => 'fa-chart-line'],
+            ]
+        ],
+        'Checkups' => [
+            'icon' => 'fa-clipboard-check',
+            'items' => [
+                ['nom' => 'Checkup',      'chemin' => 'pages/checkup_logement.php',      'icon' => 'fa-clipboard-check'],
+                ['nom' => 'Historique',   'chemin' => 'pages/checkup_historique.php',     'icon' => 'fa-history'],
+                ['nom' => 'Dashboard',    'chemin' => 'pages/checkup_dashboard.php',      'icon' => 'fa-tachometer-alt'],
+                ['nom' => 'Statistiques', 'chemin' => 'pages/checkup_statistiques.php',   'icon' => 'fa-chart-line'],
             ]
         ],
         'Réservations' => [

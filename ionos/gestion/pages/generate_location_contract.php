@@ -6,18 +6,17 @@
 include '../config.php';
 include '../pages/menu.php';
 
-// Auto-creation table
-try {
-    $conn->exec("CREATE TABLE IF NOT EXISTS generated_location_contracts (
-        id INT AUTO_INCREMENT PRIMARY KEY, user_id INT DEFAULT NULL, logement_id INT NOT NULL,
-        template_title VARCHAR(255), logement_nom VARCHAR(255), voyageur_nom VARCHAR(255),
-        date_arrivee DATE, date_depart DATE, prix_total DECIMAL(10,2),
-        file_path VARCHAR(255) NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-} catch (PDOException $e) {}
+// Tables requises : voir db/install_tables.php
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header("Location: create_location_contract.php");
+    exit;
+}
+
+// Validation CSRF
+if (!hash_equals($_SESSION['csrf_token'] ?? '', $_POST['csrf_token'] ?? '')) {
+    echo '<div class="container mt-4"><div class="alert alert-danger">Jeton CSRF invalide. Veuillez recharger la page.</div>';
+    echo '<a href="create_location_contract.php" class="btn btn-secondary">Retour</a></div>';
     exit;
 }
 
@@ -84,7 +83,10 @@ try {
     file_put_contents($file_path, $full_html);
 
     // Sauvegarder en BDD
-    $user_id = isset($_SESSION['id_intervenant']) ? (int)$_SESSION['id_intervenant'] : 1;
+    $user_id = (int)($_SESSION['id_intervenant'] ?? $_SESSION['user_id'] ?? 0);
+    if (!$user_id) {
+        throw new Exception("Session utilisateur invalide.");
+    }
     $voyageur_nom = trim(($_POST['prenom_voyageur'] ?? '') . ' ' . ($_POST['nom_voyageur'] ?? ''));
     $date_arrivee = !empty($_POST['date_arrivee']) ? $_POST['date_arrivee'] : null;
     $date_depart = !empty($_POST['date_depart']) ? $_POST['date_depart'] : null;
