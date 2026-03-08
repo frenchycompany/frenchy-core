@@ -436,14 +436,30 @@ try {
         $createdNow = false;
 
         if (!$hadBefore) {
-            // Déterminer le statut : "À Vérifier" si pas de checkout ce jour + dernière intervention > 2 jours
-            $statut = 'À Faire';
-            if (!isset($logementsAvecDepart[$logId])) {
+            // Checkout ce jour → "À Faire"
+            // Pas de checkout → vérifier dernière intervention :
+            //   - ≥ 2 jours → "À Vérifier"
+            //   - < 2 jours → rien (intervention récente, pas besoin)
+            if (isset($logementsAvecDepart[$logId])) {
+                $statut = 'À Faire';
+            } else {
                 $findLastIntervention->execute([$logId, $today]);
                 $lastRow = $findLastIntervention->fetch(PDO::FETCH_ASSOC);
                 $findLastIntervention->closeCursor();
                 if (!$lastRow || (strtotime($today) - strtotime($lastRow['date'])) >= 2 * 86400) {
                     $statut = 'À Vérifier';
+                } else {
+                    // Intervention récente, pas besoin d'en créer une
+                    $skipped++;
+                    $report['arrivals'][] = [
+                        'reservation_id'         => $resaId,
+                        'logement_id'            => $logId,
+                        'date_arrivee'           => $arrivee,
+                        'had_intervention_before'=> false,
+                        'created_now'            => false,
+                        'intervention_id'        => null,
+                    ];
+                    continue;
                 }
             }
 
