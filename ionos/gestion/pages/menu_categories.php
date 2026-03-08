@@ -86,9 +86,11 @@ if (!isset($menu_categories)) {
         'Commercial' => [
             'icon' => 'fa-handshake',
             'items' => [
+                ['nom' => 'CRM / Leads',       'chemin' => 'pages/prospection_proprietaires.php',  'icon' => 'fa-funnel-dollar'],
+                ['nom' => 'Simulations',       'chemin' => 'pages/simulations.php',                'icon' => 'fa-calculator'],
+                ['nom' => 'Agenda RDV',        'chemin' => 'pages/rdv_agenda.php',                 'icon' => 'fa-calendar-check'],
                 ['nom' => 'Analyse de marché', 'chemin' => 'pages/analyse_marche.php',             'icon' => 'fa-chart-line'],
                 ['nom' => 'Concurrence',       'chemin' => 'pages/analyse_concurrence.php',        'icon' => 'fa-chart-area'],
-                ['nom' => 'Prospection',       'chemin' => 'pages/prospection_proprietaires.php',  'icon' => 'fa-funnel-dollar'],
                 ['nom' => 'Relances voyageurs','chemin' => 'pages/relances_voyageurs.php',         'icon' => 'fa-bullhorn'],
                 ['nom' => 'Carnet clients',    'chemin' => 'pages/clients.php',                    'icon' => 'fa-address-book'],
             ]

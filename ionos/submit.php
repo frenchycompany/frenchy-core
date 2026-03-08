@@ -1,33 +1,50 @@
 <?php
+/**
+ * Traitement formulaire de contact — Site Frenchy Conciergerie
+ * Insere dans la table leads + prospection_leads (CRM)
+ */
 
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
-
-// Inclure la configuration
-include '../../config.php';
+require_once __DIR__ . '/config.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $name = htmlspecialchars($_POST['name']);
-    $email = htmlspecialchars($_POST['email']);
+    $name = trim($_POST['name'] ?? '');
+    $email = trim($_POST['email'] ?? '');
+    $telephone = trim($_POST['telephone'] ?? '');
+    $message = trim($_POST['message'] ?? '');
+
+    if (empty($name) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        header("Location: index.php?error=1");
+        exit;
+    }
 
     try {
-        // Vérifier si l'email existe déjà
+        // Table leads legacy
         $stmt = $conn->prepare("SELECT COUNT(*) FROM leads WHERE email = :email");
-        $stmt->execute(['email' => $email]);
-        $exists = $stmt->fetchColumn();
-
-        if (!$exists) {
-            // Insérer dans la base de données
-            $stmt = $conn->prepare("INSERT INTO leads (name, email) VALUES (:name, :email)");
-            $stmt->execute(['name' => $name, 'email' => $email']);
+        $stmt->execute([':email' => $email]);
+        if (!$stmt->fetchColumn()) {
+            $conn->prepare("INSERT INTO leads (name, email) VALUES (:name, :email)")
+                ->execute([':name' => $name, ':email' => $email]);
         }
 
-        // Redirection vers le fichier à télécharger
-        header("Location: ../../guide_bienvenue.pdf");
+        // Creer le lead dans le CRM
+        $score = 30; // base formulaire contact
+        if (!empty($email)) $score += 5;
+        if (!empty($telephone)) $score += 15;
+        $score = min(100, $score);
+
+        $conn->prepare("INSERT INTO prospection_leads
+            (nom, email, telephone, source, score, notes)
+            VALUES (?, ?, ?, 'formulaire_contact', ?, ?)")
+            ->execute([$name, $email, $telephone ?: null, $score, $message ?: null]);
+
+        header("Location: merci.php");
         exit;
     } catch (PDOException $e) {
-        echo "Erreur : " . $e->getMessage();
+        error_log('submit.php: ' . $e->getMessage());
+        header("Location: index.php?error=1");
+        exit;
     }
 }
-?>
+
+header("Location: index.php");
+exit;

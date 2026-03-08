@@ -304,6 +304,59 @@ $tables_ionos = [
         FOREIGN KEY (prospect_id) REFERENCES prospection_proprietaires(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
 
+    // --- Tunnel de vente : leads unifies ---
+    "CREATE TABLE IF NOT EXISTS prospection_leads (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        nom VARCHAR(150) DEFAULT NULL,
+        prenom VARCHAR(100) DEFAULT NULL,
+        email VARCHAR(255) DEFAULT NULL,
+        telephone VARCHAR(30) DEFAULT NULL,
+        ville VARCHAR(100) DEFAULT NULL,
+        source ENUM('simulateur','formulaire_contact','landing_page','concurrence','demarchage','recommandation','rdv_site','autre') NOT NULL DEFAULT 'autre',
+        score INT DEFAULT 0,
+        surface DECIMAL(10,2) DEFAULT NULL,
+        capacite INT DEFAULT NULL,
+        tarif_nuit_estime DECIMAL(10,2) DEFAULT NULL,
+        revenu_mensuel_estime DECIMAL(10,2) DEFAULT NULL,
+        equipements JSON DEFAULT NULL,
+        statut ENUM('nouveau','contacte','rdv_planifie','rdv_fait','proposition','negocie','converti','perdu') DEFAULT 'nouveau',
+        priorite ENUM('haute','moyenne','basse') DEFAULT 'moyenne',
+        date_rdv DATETIME DEFAULT NULL,
+        type_rdv ENUM('telephone','visio','physique') DEFAULT NULL,
+        message_rdv TEXT DEFAULT NULL,
+        proprietaire_id INT DEFAULT NULL,
+        contrat_id INT DEFAULT NULL,
+        date_premier_contact DATE DEFAULT NULL,
+        date_derniere_interaction DATETIME DEFAULT NULL,
+        prochaine_action TEXT DEFAULT NULL,
+        date_prochaine_action DATE DEFAULT NULL,
+        notes TEXT DEFAULT NULL,
+        legacy_simulation_id INT DEFAULT NULL,
+        legacy_prospect_id INT DEFAULT NULL,
+        host_profile_id VARCHAR(100) DEFAULT NULL,
+        nb_annonces INT DEFAULT NULL,
+        note_moyenne DECIMAL(3,2) DEFAULT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_email (email),
+        INDEX idx_statut (statut),
+        INDEX idx_source (source),
+        INDEX idx_score (score DESC),
+        INDEX idx_rdv (date_rdv),
+        INDEX idx_priorite (priorite)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+
+    "CREATE TABLE IF NOT EXISTS prospection_interactions (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        lead_id INT NOT NULL,
+        type ENUM('note','appel','email','sms','rdv','relance','proposition','contrat','conversion') NOT NULL DEFAULT 'note',
+        contenu TEXT,
+        user_id INT DEFAULT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_lead (lead_id),
+        INDEX idx_type (type)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+
     // --- Depuis rental_united.php ---
     "CREATE TABLE IF NOT EXISTS rental_united_config (
         id INT AUTO_INCREMENT PRIMARY KEY,

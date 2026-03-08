@@ -410,6 +410,65 @@ if ($is_admin) {
     <?php endforeach; ?>
     <?php endif; ?>
 
+    <!-- Leads & RDV (admin only) -->
+    <?php if ($is_admin):
+        $leadsChauds = 0;
+        $rdvAujourdhui = [];
+        $leadsRecents = [];
+        try {
+            $leadsChauds = (int)$conn->query("SELECT COUNT(*) FROM prospection_leads WHERE score >= 60 AND statut NOT IN ('converti','perdu')")->fetchColumn();
+            $rdvAujourdhui = $conn->query("SELECT nom, email, telephone, date_rdv, type_rdv, score FROM prospection_leads WHERE date_rdv IS NOT NULL AND DATE(date_rdv) = CURDATE() ORDER BY date_rdv ASC")->fetchAll(PDO::FETCH_ASSOC);
+            $leadsRecents = $conn->query("SELECT nom, email, source, score, created_at FROM prospection_leads ORDER BY created_at DESC LIMIT 5")->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) { error_log('index.php leads widget: ' . $e->getMessage()); }
+
+        if ($leadsChauds > 0 || !empty($rdvAujourdhui) || !empty($leadsRecents)):
+    ?>
+    <div class="section-title"><i class="fas fa-funnel-dollar"></i> Leads & Prospection</div>
+
+    <?php if ($leadsChauds > 0): ?>
+    <div style="background:linear-gradient(135deg,#dc3545,#ff6b6b);color:white;padding:12px 16px;border-radius:10px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
+        <div><i class="fas fa-fire"></i> <strong><?= $leadsChauds ?></strong> lead<?= $leadsChauds > 1 ? 's' : '' ?> chaud<?= $leadsChauds > 1 ? 's' : '' ?></div>
+        <a href="pages/prospection_proprietaires.php" style="color:white;font-size:0.85em">Voir &rarr;</a>
+    </div>
+    <?php endif; ?>
+
+    <?php if (!empty($rdvAujourdhui)): ?>
+    <div style="background:#e3f2fd;padding:12px 16px;border-radius:10px;margin-bottom:10px;border-left:4px solid #1976d2">
+        <strong><i class="fas fa-calendar-check text-primary"></i> RDV aujourd'hui (<?= count($rdvAujourdhui) ?>)</strong>
+        <?php foreach ($rdvAujourdhui as $rdv): ?>
+        <div style="padding:6px 0;border-bottom:1px solid #bbdefb;font-size:0.9em">
+            <strong><?= date('H:i', strtotime($rdv['date_rdv'])) ?></strong>
+            — <?= htmlspecialchars($rdv['nom'] ?? $rdv['email'] ?? 'Sans nom') ?>
+            <?php if ($rdv['telephone']): ?>
+                <a href="tel:<?= htmlspecialchars($rdv['telephone']) ?>" style="margin-left:8px"><i class="fas fa-phone"></i></a>
+            <?php endif; ?>
+        </div>
+        <?php endforeach; ?>
+    </div>
+    <?php endif; ?>
+
+    <?php if (!empty($leadsRecents)): ?>
+    <div style="background:#f5f5f5;padding:12px 16px;border-radius:10px;margin-bottom:10px">
+        <strong><i class="fas fa-users text-secondary"></i> Derniers leads</strong>
+        <?php
+        $sourceIcons = ['simulateur'=>'fa-calculator','formulaire_contact'=>'fa-envelope','landing_page'=>'fa-gift','concurrence'=>'fa-chart-area','rdv_site'=>'fa-calendar-check','recommandation'=>'fa-handshake','demarchage'=>'fa-phone'];
+        foreach ($leadsRecents as $lead):
+            $scoreColor = ($lead['score'] ?? 0) >= 70 ? '#dc3545' : (($lead['score'] ?? 0) >= 45 ? '#ffc107' : '#6c757d');
+        ?>
+        <div style="padding:6px 0;border-bottom:1px solid #e0e0e0;font-size:0.85em;display:flex;align-items:center;gap:8px">
+            <i class="fas <?= $sourceIcons[$lead['source']] ?? 'fa-user' ?> text-muted"></i>
+            <span style="flex:1"><?= htmlspecialchars($lead['nom'] ?? $lead['email'] ?? '-') ?></span>
+            <span style="background:<?= $scoreColor ?>;color:white;padding:2px 8px;border-radius:10px;font-size:0.8em;font-weight:700"><?= $lead['score'] ?? 0 ?></span>
+            <span class="text-muted" style="font-size:0.8em"><?= date('d/m', strtotime($lead['created_at'])) ?></span>
+        </div>
+        <?php endforeach; ?>
+        <div style="text-align:right;margin-top:6px">
+            <a href="pages/prospection_proprietaires.php" style="font-size:0.85em">Voir tout &rarr;</a>
+        </div>
+    </div>
+    <?php endif; ?>
+    <?php endif; endif; ?>
+
 </div>
 </body>
 </html>
