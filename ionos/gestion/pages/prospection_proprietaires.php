@@ -375,16 +375,87 @@ if ($filter_date_to !== '') {
 
 $where_sql = !empty($where_clauses) ? 'WHERE ' . implode(' AND ', $where_clauses) : '';
 
+// === Verifier que les tables existent, sinon les creer ===
+try {
+    $conn->query("SELECT 1 FROM prospection_leads LIMIT 1");
+} catch (PDOException $e) {
+    // Tables manquantes - les creer automatiquement
+    $conn->exec("
+        CREATE TABLE IF NOT EXISTS prospection_leads (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            nom VARCHAR(255) NOT NULL,
+            prenom VARCHAR(255) DEFAULT NULL,
+            email VARCHAR(255) DEFAULT NULL,
+            telephone VARCHAR(50) DEFAULT NULL,
+            ville VARCHAR(255) DEFAULT NULL,
+            source ENUM('simulateur','formulaire_contact','landing_page','concurrence','demarchage','recommandation','rdv_site','autre') DEFAULT 'autre',
+            score INT DEFAULT 0,
+            surface DECIMAL(10,2) DEFAULT NULL,
+            capacite INT DEFAULT NULL,
+            tarif_nuit_estime DECIMAL(10,2) DEFAULT NULL,
+            revenu_mensuel_estime DECIMAL(10,2) DEFAULT NULL,
+            equipements JSON DEFAULT NULL,
+            statut ENUM('nouveau','contacte','rdv_planifie','rdv_fait','proposition','negocie','converti','perdu') DEFAULT 'nouveau',
+            priorite ENUM('basse','moyenne','haute','urgente') DEFAULT 'moyenne',
+            date_premier_contact DATE DEFAULT NULL,
+            date_derniere_interaction DATETIME DEFAULT NULL,
+            date_rdv DATETIME DEFAULT NULL,
+            type_rdv ENUM('telephone','visio','physique') DEFAULT NULL,
+            message_rdv TEXT DEFAULT NULL,
+            prochaine_action VARCHAR(255) DEFAULT NULL,
+            date_prochaine_action DATE DEFAULT NULL,
+            notes TEXT DEFAULT NULL,
+            proprietaire_id INT DEFAULT NULL,
+            contrat_id INT DEFAULT NULL,
+            legacy_simulation_id INT DEFAULT NULL,
+            legacy_prospect_id INT DEFAULT NULL,
+            host_profile_id VARCHAR(255) DEFAULT NULL,
+            nb_annonces INT DEFAULT NULL,
+            note_moyenne DECIMAL(3,2) DEFAULT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            INDEX idx_statut (statut),
+            INDEX idx_source (source),
+            INDEX idx_score (score),
+            INDEX idx_ville (ville),
+            INDEX idx_created (created_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    ");
+    $conn->exec("
+        CREATE TABLE IF NOT EXISTS prospection_interactions (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            lead_id INT NOT NULL,
+            type ENUM('note','appel','email','sms','rdv','relance','proposition','contrat','conversion') DEFAULT 'note',
+            contenu TEXT,
+            user_id INT DEFAULT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_lead (lead_id),
+            FOREIGN KEY (lead_id) REFERENCES prospection_leads(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    ");
+}
+
 // === LOAD ALL LEADS (for kanban/funnel) ===
-$stmt_all = $conn->prepare("
-    SELECT l.*,
-        (SELECT COUNT(*) FROM prospection_interactions i WHERE i.lead_id = l.id) as nb_interactions
-    FROM prospection_leads l
-    $where_sql
-    ORDER BY l.score DESC, l.updated_at DESC
-");
-$stmt_all->execute($where_params);
-$all_leads = $stmt_all->fetchAll(PDO::FETCH_ASSOC);
+$all_leads = [];
+$list_leads = [];
+$villes_list = [];
+$db_error = false;
+
+try {
+    $stmt_all = $conn->prepare("
+        SELECT l.*,
+            (SELECT COUNT(*) FROM prospection_interactions i WHERE i.lead_id = l.id) as nb_interactions
+        FROM prospection_leads l
+        $where_sql
+        ORDER BY l.score DESC, l.updated_at DESC
+    ");
+    $stmt_all->execute($where_params);
+    $all_leads = $stmt_all->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    error_log("CRM load leads error: " . $e->getMessage());
+    $db_error = true;
+    $feedback = "<div class='alert alert-danger'><i class='fas fa-exclamation-triangle'></i> Erreur de chargement des leads. Verifiez que les tables sont installees.</div>";
+}
 
 // === STATS ===
 $total_leads = count($all_leads);
@@ -455,20 +526,24 @@ $detail_id = (int)($_GET['id'] ?? 0);
 $detail    = null;
 $interactions = [];
 
-if ($detail_id > 0) {
+if ($detail_id > 0 && !$db_error) {
     $view = 'detail';
-    $stmt = $conn->prepare("
-        SELECT l.*,
-            (SELECT COUNT(*) FROM prospection_interactions i WHERE i.lead_id = l.id) as nb_interactions
-        FROM prospection_leads l WHERE l.id = ?
-    ");
-    $stmt->execute([$detail_id]);
-    $detail = $stmt->fetch(PDO::FETCH_ASSOC);
+    try {
+        $stmt = $conn->prepare("
+            SELECT l.*,
+                (SELECT COUNT(*) FROM prospection_interactions i WHERE i.lead_id = l.id) as nb_interactions
+            FROM prospection_leads l WHERE l.id = ?
+        ");
+        $stmt->execute([$detail_id]);
+        $detail = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    if ($detail) {
-        $stmt_inter = $conn->prepare("SELECT * FROM prospection_interactions WHERE lead_id = ? ORDER BY created_at DESC");
-        $stmt_inter->execute([$detail_id]);
-        $interactions = $stmt_inter->fetchAll(PDO::FETCH_ASSOC);
+        if ($detail) {
+            $stmt_inter = $conn->prepare("SELECT * FROM prospection_interactions WHERE lead_id = ? ORDER BY created_at DESC");
+            $stmt_inter->execute([$detail_id]);
+            $interactions = $stmt_inter->fetchAll(PDO::FETCH_ASSOC);
+        }
+    } catch (PDOException $e) {
+        error_log("CRM detail lead error: " . $e->getMessage());
     }
 }
 
@@ -484,19 +559,25 @@ $sort_dir = strtoupper($_GET['dir'] ?? 'DESC') === 'ASC' ? 'ASC' : 'DESC';
 $valid_sorts = ['nom', 'score', 'ville', 'source', 'statut', 'created_at', 'updated_at'];
 if (!in_array($sort_col, $valid_sorts)) $sort_col = 'score';
 
-$stmt_list = $conn->prepare("
-    SELECT l.*,
-        (SELECT COUNT(*) FROM prospection_interactions i WHERE i.lead_id = l.id) as nb_interactions
-    FROM prospection_leads l
-    $where_sql
-    ORDER BY l.$sort_col $sort_dir
-    LIMIT $per_page OFFSET $offset
-");
-$stmt_list->execute($where_params);
-$list_leads = $stmt_list->fetchAll(PDO::FETCH_ASSOC);
+if (!$db_error) {
+    try {
+        $stmt_list = $conn->prepare("
+            SELECT l.*,
+                (SELECT COUNT(*) FROM prospection_interactions i WHERE i.lead_id = l.id) as nb_interactions
+            FROM prospection_leads l
+            $where_sql
+            ORDER BY l.$sort_col $sort_dir
+            LIMIT $per_page OFFSET $offset
+        ");
+        $stmt_list->execute($where_params);
+        $list_leads = $stmt_list->fetchAll(PDO::FETCH_ASSOC);
 
-// Get distinct villes for filter dropdown
-$villes_list = $conn->query("SELECT DISTINCT ville FROM prospection_leads WHERE ville IS NOT NULL AND ville != '' ORDER BY ville")->fetchAll(PDO::FETCH_COLUMN);
+        // Get distinct villes for filter dropdown
+        $villes_list = $conn->query("SELECT DISTINCT ville FROM prospection_leads WHERE ville IS NOT NULL AND ville != '' ORDER BY ville")->fetchAll(PDO::FETCH_COLUMN);
+    } catch (PDOException $e) {
+        error_log("CRM list leads error: " . $e->getMessage());
+    }
+}
 
 // Helper: build filter query string
 function buildFilterQs(array $overrides = []): string {
