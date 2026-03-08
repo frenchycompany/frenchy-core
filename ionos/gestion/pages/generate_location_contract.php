@@ -21,8 +21,6 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 try {
-    validateCsrfToken();
-
     if (empty($_POST['template_id']) || !is_numeric($_POST['template_id'])) {
         throw new Exception("Modele de contrat non selectionne.");
     }

@@ -223,11 +223,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     {label: 'Ville', value: data.ville},
                     {label: 'Type', value: data.type_logement},
                     {label: 'Capacite', value: data.capacite ? data.capacite + ' pers.' : ''},
-                    {label: 'Surface', value: data.m2 ? data.m2 + ' m2' : ''},
+                    {label: 'Surface', value: data.surface_m2 ? data.surface_m2 + ' m2' : (data.m2 ? data.m2 + ' m2' : '')},
+                    {label: 'Chambres', value: data.nombre_chambres},
+                    {label: 'Salles de bain', value: data.nombre_salles_bain},
                 ]);
 
                 // Afficher les details personnalises
-                if (data.detail_description_logement || data.detail_equipements || data.detail_regles_maison) {
+                const hasDetails = data.detail_description_logement || data.detail_equipements || data.detail_regles_maison || data.detail_heure_arrivee;
+                if (hasDetails) {
                     detailsInfoCard.style.display = 'block';
                     detailsInfoBody.innerHTML = buildInfoList([
                         {label: 'Arrivee', value: data.detail_heure_arrivee},
@@ -235,8 +238,12 @@ document.addEventListener('DOMContentLoaded', function() {
                         {label: 'Garantie', value: data.detail_depot_garantie ? data.detail_depot_garantie + ' EUR' : ''},
                         {label: 'Taxe sejour/nuit', value: data.detail_taxe_sejour_par_nuit ? data.detail_taxe_sejour_par_nuit + ' EUR' : ''},
                     ]);
-                    if (data.detail_description_logement) {
-                        detailsInfoBody.innerHTML += '<div class="mt-2"><small class="text-muted">Description:</small><br><small>' + escapeHtml(data.detail_description_logement).substring(0, 100) + '...</small></div>';
+                    if (data.detail_equipements) {
+                        const equipPreview = data.detail_equipements.substring(0, 150).replace(/\n/g, ', ');
+                        detailsInfoBody.innerHTML += '<div class="mt-2"><small class="text-muted">Equipements:</small><br><small>' + escapeHtml(equipPreview) + '...</small></div>';
+                    }
+                    if (data.detail_regles_maison) {
+                        detailsInfoBody.innerHTML += '<div class="mt-1"><small class="text-muted">Regles:</small><br><small>' + escapeHtml(data.detail_regles_maison) + '</small></div>';
                     }
                 } else {
                     detailsInfoCard.style.display = 'none';
