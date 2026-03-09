@@ -27,9 +27,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['csrf_token'])) {
                 $message = '<div class="alert alert-danger">Le mot de passe doit contenir au moins 8 caractères.</div>';
             } else {
                 try {
-                    $hash = password_hash($newPassword, PASSWORD_ARGON2ID);
+                    $hash = password_hash($newPassword, PASSWORD_ARGON2ID, [
+                        'memory_cost' => 65536, 'time_cost' => 4, 'threads' => 3
+                    ]);
                     $stmt = $conn->prepare("UPDATE intervenant SET mot_de_passe = ? WHERE id = ?");
                     $stmt->execute([$hash, $id_intervenant]);
+
+                    // Sync vers la table users (système d'auth unifié)
+                    $stmtUser = $conn->prepare("UPDATE users SET password_hash = ? WHERE legacy_intervenant_id = ?");
+                    $stmtUser->execute([$hash, $id_intervenant]);
+
                     $message = '<div class="alert alert-success">Mot de passe mis à jour avec succès.</div>';
                 } catch (PDOException $e) {
                     error_log('Erreur profil.php : ' . $e->getMessage());
