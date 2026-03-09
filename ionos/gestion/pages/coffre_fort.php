@@ -382,13 +382,11 @@ include __DIR__ . '/menu.php';
                 <button type="submit" class="btn btn-navy btn-lg">
                     <i class="fas fa-key me-2"></i>Vérifier
                 </button>
-                <div class="mt-3">
-                    <form method="POST" style="display: inline;">
-                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
-                        <input type="hidden" name="action" value="envoyer_2fa">
-                        <button type="submit" class="btn btn-link text-muted btn-sm">Renvoyer le code</button>
-                    </form>
-                </div>
+            </form>
+            <form method="POST" class="mt-3">
+                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
+                <input type="hidden" name="action" value="envoyer_2fa">
+                <button type="submit" class="btn btn-link text-muted btn-sm">Renvoyer le code</button>
             </form>
         <?php endif; ?>
     </div>
