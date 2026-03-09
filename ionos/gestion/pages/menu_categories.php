@@ -98,6 +98,7 @@ if (!isset($menu_categories)) {
                 ['nom' => 'Simulations',       'chemin' => 'pages/simulations.php',                'icon' => 'fa-calculator'],
                 ['nom' => 'Agenda RDV',        'chemin' => 'pages/rdv_agenda.php',                 'icon' => 'fa-calendar-check'],
                 ['nom' => 'Analyse de marché', 'chemin' => 'pages/analyse_marche.php',             'icon' => 'fa-chart-line'],
+                ['nom' => 'Audit LCD',         'chemin' => 'pages/audit_lcd.php',                  'icon' => 'fa-file-circle-check'],
                 ['nom' => 'Concurrence',       'chemin' => 'pages/analyse_concurrence.php',        'icon' => 'fa-chart-area'],
                 ['nom' => 'Relances voyageurs','chemin' => 'pages/relances_voyageurs.php',         'icon' => 'fa-bullhorn'],
                 ['nom' => 'Carnet clients',    'chemin' => 'pages/clients.php',                    'icon' => 'fa-address-book'],
