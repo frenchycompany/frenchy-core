@@ -81,15 +81,25 @@ class CoffreFort
     public function dechiffrerFichier(array $fichier): ?string
     {
         $cheminComplet = $this->storageDir . '/' . $fichier['nom_stockage'];
-        if (!file_exists($cheminComplet)) return null;
+        if (!file_exists($cheminComplet)) {
+            error_log("CoffreFort: fichier introuvable: {$cheminComplet}");
+            return null;
+        }
 
         // Déchiffrer la clé du fichier
         $encKeyData = base64_decode($fichier['cle_chiffrement']);
+        if ($encKeyData === false || strlen($encKeyData) < 29) {
+            error_log("CoffreFort: cle_chiffrement invalide pour fichier #{$fichier['id']}");
+            return null;
+        }
         $masterIv = substr($encKeyData, 0, 12);
         $masterTag = substr($encKeyData, 12, 16);
         $encKey = substr($encKeyData, 28);
         $fileKey = openssl_decrypt($encKey, 'aes-256-gcm', hash('sha256', $this->masterKey, true), OPENSSL_RAW_DATA, $masterIv, $masterTag);
-        if ($fileKey === false) return null;
+        if ($fileKey === false) {
+            error_log("CoffreFort: dechiffrement cle echoue pour fichier #{$fichier['id']} (masterKey len=" . strlen($this->masterKey) . ")");
+            return null;
+        }
 
         // Déchiffrer le fichier
         $encrypted = file_get_contents($cheminComplet);

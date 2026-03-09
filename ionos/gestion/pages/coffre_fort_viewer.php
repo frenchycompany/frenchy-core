@@ -47,6 +47,11 @@ if (isset($_GET['stream'])) {
         header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
         header('Pragma: no-cache');
         $b64 = $coffre->streamImageBase64($fichierId, $userId);
+        if (!$b64) {
+            http_response_code(500);
+            echo json_encode(['error' => 'Echec du déchiffrement', 'data' => null]);
+            exit;
+        }
         echo json_encode(['data' => $b64]);
         exit;
     }
@@ -361,10 +366,24 @@ const streamUrl = 'coffre_fort_viewer.php?id=<?= $fichierId ?>&stream=1';
 
 <?php if ($isImage): ?>
 // Image → Canvas (pas d'élément <img> = pas de clic-droit "enregistrer sous")
+function showError(msg) {
+    loading.innerHTML = '<i class="fas fa-exclamation-triangle" style="color:#E53935;animation:none;font-size:40px;"></i><p class="mt-3">' + msg + '</p><a href="coffre_fort.php" class="btn-viewer" style="margin-top:10px;display:inline-block;">Retour</a>';
+}
+
 fetch(streamUrl)
-    .then(r => r.json())
+    .then(r => {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+    })
     .then(data => {
+        if (!data.data) {
+            showError('Erreur de déchiffrement. La clé COFFRE_FORT_KEY est peut-être incorrecte.');
+            return;
+        }
         const img = new Image();
+        img.onerror = function() {
+            showError('Impossible de charger l\'image.');
+        };
         img.onload = function() {
             const canvas = document.getElementById('imageCanvas');
             const container = document.getElementById('viewerContainer');
@@ -409,8 +428,8 @@ fetch(streamUrl)
         };
         img.src = data.data;
     })
-    .catch(() => {
-        loading.innerHTML = '<i class="fas fa-exclamation-triangle" style="color:#E53935;animation:none;"></i><p class="mt-3">Erreur de déchiffrement.</p>';
+    .catch(err => {
+        showError('Erreur réseau ou session expirée. (' + err.message + ')');
     });
 
 function zoomChange(delta) {
