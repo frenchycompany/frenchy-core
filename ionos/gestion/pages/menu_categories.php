@@ -85,9 +85,9 @@ if (!isset($menu_categories)) {
         'Contrats Location' => [
             'icon' => 'fa-house-user',
             'items' => [
-                ['nom' => 'Créer contrat location',    'chemin' => 'pages/create_contract.php?type=location',      'icon' => 'fa-house-user'],
-                ['nom' => 'Contrats générés',          'chemin' => 'pages/contrats_generes.php?type=location',     'icon' => 'fa-file-signature'],
-                ['nom' => 'Modèles location',          'chemin' => 'pages/list_templates.php?type=location',       'icon' => 'fa-file-alt'],
+                ['nom' => 'Créer contrat location',    'chemin' => 'pages/create_location_contract.php',           'icon' => 'fa-house-user'],
+                ['nom' => 'Contrats générés',          'chemin' => 'pages/location_contrats_generes.php',          'icon' => 'fa-file-signature'],
+                ['nom' => 'Modèles location',          'chemin' => 'pages/list_location_templates.php',            'icon' => 'fa-file-alt'],
                 ['nom' => 'Détails logements',         'chemin' => 'pages/location_logement_details.php',          'icon' => 'fa-house-circle-check'],
             ]
         ],
