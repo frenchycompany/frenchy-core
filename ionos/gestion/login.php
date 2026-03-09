@@ -246,9 +246,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reset'])) {
                 <?php endif; ?>
 
                 <div class="form-group">
-                    <label for="email">Adresse email</label>
-                    <input type="email" id="email" name="email" required autocomplete="email"
-                           placeholder="votre@email.fr"
+                    <label for="email">Identifiant ou email</label>
+                    <input type="text" id="email" name="email" required autocomplete="username"
+                           placeholder="votre identifiant ou email"
                            value="<?= htmlspecialchars($_POST['email'] ?? '') ?>">
                 </div>
 

@@ -122,14 +122,16 @@ class Auth
             return ['success' => false, 'error' => 'Veuillez remplir tous les champs.'];
         }
 
-        // Recherche de l'utilisateur
+        // Recherche de l'utilisateur par email ou nom_utilisateur (intervenant)
         $stmt = $this->conn->prepare(
-            "SELECT id, email, password_hash, nom, prenom, role, actif,
-                    numero, role1, role2, role3,
-                    legacy_intervenant_id, legacy_proprietaire_id
-             FROM users WHERE email = ?"
+            "SELECT u.id, u.email, u.password_hash, u.nom, u.prenom, u.role, u.actif,
+                    u.numero, u.role1, u.role2, u.role3,
+                    u.legacy_intervenant_id, u.legacy_proprietaire_id
+             FROM users u
+             LEFT JOIN intervenant i ON u.legacy_intervenant_id = i.id
+             WHERE u.email = ? OR LOWER(i.nom_utilisateur) = ?"
         );
-        $stmt->execute([$email]);
+        $stmt->execute([$email, $email]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$user || !password_verify($password, $user['password_hash'])) {
