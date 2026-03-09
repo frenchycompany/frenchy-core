@@ -25,7 +25,9 @@ function vn($key, $default = 0) {
     return isset($d[$key]) && $d[$key] !== '' ? floatval($d[$key]) : $default;
 }
 
-$isAdmin = isset($_GET['admin']) && $_GET['admin'] == '1';
+// Le formulaire est toujours visible pour les admins connectés
+// Passer ?print=1 pour masquer le formulaire (mode rapport seul)
+$hideForm = isset($_GET['print']) && $_GET['print'] == '1';
 
 // Calcul couleur badge risque
 function badgeRisque($val) {
@@ -572,7 +574,7 @@ $ref_dossier = v('ref_dossier', 'FC-' . date('Ymd') . '-' . strtoupper(substr(md
 </head>
 <body>
 
-<?php if ($isAdmin): ?>
+<?php if (!$hideForm): ?>
 <!-- ===== FORMULAIRE ADMIN ===== -->
 <div class="container no-print">
     <form class="admin-panel" method="POST" action="audit_lcd.php">
