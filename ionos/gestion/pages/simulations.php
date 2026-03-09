@@ -232,23 +232,13 @@ if ($filterContacted !== '') $queryParams['contacted'] = $filterContacted;
 $baseUrl = 'simulations.php?' . http_build_query($queryParams);
 ?>
 
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simulations - FrenchyConciergerie</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <style>
-        .row-contacted { background-color: rgba(25, 135, 84, 0.08); }
-        .stat-card { border-left: 4px solid; }
-        .stat-card .stat-value { font-size: 1.5rem; font-weight: 700; }
-        .table th { white-space: nowrap; }
-        .badge-ville { font-size: 0.8rem; }
-    </style>
-</head>
-<body>
+<style>
+    .row-contacted { background-color: rgba(25, 135, 84, 0.08); }
+    .stat-card { border-left: 4px solid; }
+    .stat-card .stat-value { font-size: 1.5rem; font-weight: 700; }
+    .table th { white-space: nowrap; }
+    .badge-ville { font-size: 0.8rem; }
+</style>
 <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2><i class="fas fa-chart-line me-2"></i>Simulations</h2>
@@ -528,7 +518,4 @@ $baseUrl = 'simulations.php?' . http_build_query($queryParams);
     </div>
 <?php endforeach; ?>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
 <?php ob_end_flush(); ?>
