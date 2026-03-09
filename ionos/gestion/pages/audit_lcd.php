@@ -4,6 +4,14 @@
  * Frenchy Conciergerie — Tunnel de vente / acquisition propriétaires
  */
 
+require_once __DIR__ . '/../config.php';
+require_once __DIR__ . '/../includes/Auth.php';
+
+$auth = new Auth($conn);
+$auth->requireAdmin('../login.php');
+
+$csrf_token = $auth->csrfToken();
+
 // Récupération des données (GET ou POST)
 $d = array_merge($_GET, $_POST);
 
