@@ -101,11 +101,19 @@ $currentFile = basename($_SERVER['PHP_SELF']);
 $fichiers_accessibles = array_map(fn($p) => basename($p['chemin']), $pages_accessibles);
 
 /**
+ * Extrait le nom de fichier d'un chemin (sans query string)
+ */
+function extractBasename(string $chemin): string {
+    $path = parse_url($chemin, PHP_URL_PATH) ?: $chemin;
+    return basename($path);
+}
+
+/**
  * Vérifie si l'utilisateur a accès à une page
  */
 function userCanAccess(string $chemin, string $role, array $fichiers_accessibles): bool {
     if ($role === 'admin') return true;
-    return in_array(basename($chemin), $fichiers_accessibles);
+    return in_array(extractBasename($chemin), $fichiers_accessibles);
 }
 
 // ============================================
@@ -117,7 +125,7 @@ require_once __DIR__ . '/menu_categories.php';
 $pages_dans_categories = [];
 foreach ($menu_categories as $cat) {
     foreach ($cat['items'] as $item) {
-        $pages_dans_categories[] = basename($item['chemin']);
+        $pages_dans_categories[] = extractBasename($item['chemin']);
     }
 }
 
@@ -167,7 +175,7 @@ foreach ($pages_accessibles as $page) {
                     foreach ($categorie['items'] as $item) {
                         if (userCanAccess($item['chemin'], $role, $fichiers_accessibles)) {
                             $items_visibles[] = $item;
-                            if (basename($item['chemin']) === $currentFile) {
+                            if (extractBasename($item['chemin']) === $currentFile) {
                                 $cat_active = true;
                             }
                         }
@@ -182,7 +190,7 @@ foreach ($pages_accessibles as $page) {
                         <ul class="dropdown-menu">
                             <?php foreach ($items_visibles as $item):
                                 $url = BASE_URL . ltrim($item['chemin'], '/');
-                                $isActive = (basename($item['chemin']) === $currentFile);
+                                $isActive = (extractBasename($item['chemin']) === $currentFile);
                             ?>
                                 <li>
                                     <a class="dropdown-item <?= $isActive ? 'active' : '' ?>" href="<?= htmlspecialchars($url) ?>">

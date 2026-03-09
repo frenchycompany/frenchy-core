@@ -74,13 +74,21 @@ if (!isset($menu_categories)) {
                 ['nom' => 'Statistiques',       'chemin' => 'pages/statistiques.php',  'icon' => 'fa-chart-bar'],
             ]
         ],
-        'Contrats' => [
+        'Contrats Conciergerie' => [
             'icon' => 'fa-file-contract',
             'items' => [
                 ['nom' => 'Créer contrat',        'chemin' => 'pages/create_contract.php',              'icon' => 'fa-file-contract'],
                 ['nom' => 'Contrats générés',     'chemin' => 'pages/contrats_generes.php',             'icon' => 'fa-file-signature'],
                 ['nom' => 'Modèles',              'chemin' => 'pages/list_templates.php',               'icon' => 'fa-file-alt'],
-                ['nom' => 'Détails logements',    'chemin' => 'pages/location_logement_details.php',    'icon' => 'fa-house-circle-check'],
+            ]
+        ],
+        'Contrats Location' => [
+            'icon' => 'fa-house-user',
+            'items' => [
+                ['nom' => 'Créer contrat location',    'chemin' => 'pages/create_contract.php?type=location',      'icon' => 'fa-house-user'],
+                ['nom' => 'Contrats générés',          'chemin' => 'pages/contrats_generes.php?type=location',     'icon' => 'fa-file-signature'],
+                ['nom' => 'Modèles location',          'chemin' => 'pages/list_templates.php?type=location',       'icon' => 'fa-file-alt'],
+                ['nom' => 'Détails logements',         'chemin' => 'pages/location_logement_details.php',          'icon' => 'fa-house-circle-check'],
             ]
         ],
         'Commercial' => [
