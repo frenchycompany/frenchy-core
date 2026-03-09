@@ -49,7 +49,7 @@ if (isset($_GET['stream'])) {
         $b64 = $coffre->streamImageBase64($fichierId, $userId);
         if (!$b64) {
             http_response_code(500);
-            echo json_encode(['error' => 'Echec du déchiffrement', 'data' => null]);
+            echo json_encode(['error' => $coffre->lastError ?? 'Echec du déchiffrement', 'data' => null]);
             exit;
         }
         echo json_encode(['data' => $b64]);
@@ -371,13 +371,10 @@ function showError(msg) {
 }
 
 fetch(streamUrl)
-    .then(r => {
-        if (!r.ok) throw new Error('HTTP ' + r.status);
-        return r.json();
-    })
-    .then(data => {
-        if (!data.data) {
-            showError('Erreur de déchiffrement. La clé COFFRE_FORT_KEY est peut-être incorrecte.');
+    .then(r => r.json().then(data => ({ ok: r.ok, data })))
+    .then(({ ok, data }) => {
+        if (!ok || !data.data) {
+            showError(data.error || 'Erreur de déchiffrement inconnue');
             return;
         }
         const img = new Image();

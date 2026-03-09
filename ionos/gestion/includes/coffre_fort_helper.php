@@ -78,18 +78,32 @@ class CoffreFort
     /**
      * Déchiffre un fichier et retourne son contenu.
      */
+    /** @var string|null Dernière erreur de déchiffrement */
+    public ?string $lastError = null;
+
     public function dechiffrerFichier(array $fichier): ?string
     {
+        $this->lastError = null;
         $cheminComplet = $this->storageDir . '/' . $fichier['nom_stockage'];
+
         if (!file_exists($cheminComplet)) {
-            error_log("CoffreFort: fichier introuvable: {$cheminComplet}");
+            $this->lastError = "Fichier vault introuvable: {$cheminComplet}";
+            error_log("CoffreFort: " . $this->lastError);
+            return null;
+        }
+
+        if (!is_readable($cheminComplet)) {
+            $perms = substr(sprintf('%o', fileperms($cheminComplet)), -4);
+            $this->lastError = "Fichier non lisible: {$cheminComplet} (perms={$perms}, php_user=" . get_current_user() . ")";
+            error_log("CoffreFort: " . $this->lastError);
             return null;
         }
 
         // Déchiffrer la clé du fichier
         $encKeyData = base64_decode($fichier['cle_chiffrement']);
         if ($encKeyData === false || strlen($encKeyData) < 29) {
-            error_log("CoffreFort: cle_chiffrement invalide pour fichier #{$fichier['id']}");
+            $this->lastError = "Clé chiffrée invalide (longueur=" . strlen($encKeyData ?: '') . ")";
+            error_log("CoffreFort: " . $this->lastError);
             return null;
         }
         $masterIv = substr($encKeyData, 0, 12);
@@ -97,18 +111,29 @@ class CoffreFort
         $encKey = substr($encKeyData, 28);
         $fileKey = openssl_decrypt($encKey, 'aes-256-gcm', hash('sha256', $this->masterKey, true), OPENSSL_RAW_DATA, $masterIv, $masterTag);
         if ($fileKey === false) {
-            error_log("CoffreFort: dechiffrement cle echoue pour fichier #{$fichier['id']} (masterKey len=" . strlen($this->masterKey) . ")");
+            $this->lastError = "Déchiffrement clé maître échoué (COFFRE_FORT_KEY len=" . strlen($this->masterKey) . ", valeur commence par '" . substr($this->masterKey, 0, 8) . "...')";
+            error_log("CoffreFort: " . $this->lastError);
             return null;
         }
 
         // Déchiffrer le fichier
         $encrypted = file_get_contents($cheminComplet);
+        if ($encrypted === false || strlen($encrypted) < 29) {
+            $this->lastError = "Lecture fichier échouée ou fichier trop petit (" . strlen($encrypted ?: '') . " octets)";
+            error_log("CoffreFort: " . $this->lastError);
+            return null;
+        }
         $iv = substr($encrypted, 0, 12);
         $tag = substr($encrypted, 12, 16);
         $ciphertext = substr($encrypted, 28);
 
         $plaintext = openssl_decrypt($ciphertext, 'aes-256-gcm', $fileKey, OPENSSL_RAW_DATA, $iv, $tag);
-        return $plaintext !== false ? $plaintext : null;
+        if ($plaintext === false) {
+            $this->lastError = "Déchiffrement contenu échoué (taille chiffrée=" . strlen($encrypted) . ")";
+            error_log("CoffreFort: " . $this->lastError);
+            return null;
+        }
+        return $plaintext;
     }
 
     // ========================================================
