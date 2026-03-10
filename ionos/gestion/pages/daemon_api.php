@@ -34,13 +34,12 @@ define('RPI_BASE_URL', 'http://109.219.194.30');
  * Proxy une requete vers le daemon_api.php du RPI
  */
 function proxyToRpi($action, $method = 'GET', $postData = null) {
-    $url = RPI_BASE_URL . '/pages/daemon_api.php?action=' . urlencode($action);
+    $url = RPI_BASE_URL . '/pages/daemon_api.php?action=' . urlencode($action) . '&token=' . urlencode(env('CRON_SECRET', ''));
     $opts = [
         'http' => [
             'method' => $method,
             'timeout' => 10,
-            'header' => "Content-Type: application/x-www-form-urlencoded\r\n"
-                      . "Authorization: Bearer " . env('CRON_SECRET', '') . "\r\n",
+            'header' => "Content-Type: application/x-www-form-urlencoded\r\n",
         ]
     ];
     if ($method === 'POST' && $postData) {

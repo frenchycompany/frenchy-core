@@ -348,9 +348,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $stmt->execute(['max_workers', $maxWorkers]);
 
                     // Notifier le RPI pour mettre a jour les timers systemd
-                    $rpiUrl = RPI_BASE_URL . '/pages/daemon_api.php?action=update_schedule&times=' . urlencode($timesString);
-                    $rpiAuthHeader = "Authorization: Bearer " . env('CRON_SECRET', '') . "\r\n";
-                    @file_get_contents($rpiUrl, false, stream_context_create(['http' => ['timeout' => 5, 'header' => $rpiAuthHeader]]));
+                    $rpiUrl = RPI_BASE_URL . '/pages/daemon_api.php?action=update_schedule&times=' . urlencode($timesString) . '&token=' . urlencode(env('CRON_SECRET', ''));
+                    @file_get_contents($rpiUrl, false, stream_context_create(['http' => ['timeout' => 5]]));
 
                     $count = count($validTimes);
                     $message = "Planification sauvegardee! $count mise(s) a jour/jour: " . implode(', ', $validTimes);
@@ -363,13 +362,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             case 'run_now':
                 // Lancer la mise a jour via le RPI (le script est sur le RPI)
-                $rpiUrl = RPI_BASE_URL . '/pages/daemon_api.php?action=run_now';
+                $rpiUrl = RPI_BASE_URL . '/pages/daemon_api.php?action=run_now&token=' . urlencode(env('CRON_SECRET', ''));
                 $ctx = stream_context_create([
                     'http' => [
                         'method' => 'POST',
                         'timeout' => 10,
-                        'header' => "Content-Type: application/x-www-form-urlencoded\r\n"
-                                  . "Authorization: Bearer " . env('CRON_SECRET', '') . "\r\n",
+                        'header' => "Content-Type: application/x-www-form-urlencoded\r\n",
                     ]
                 ]);
                 $rpiResponse = @file_get_contents($rpiUrl, false, $ctx);
