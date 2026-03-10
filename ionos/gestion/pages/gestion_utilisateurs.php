@@ -5,16 +5,11 @@
  * Remplace la gestion des accès via intervenants.php.
  */
 
-// Debug temporaire — afficher les erreurs pour diagnostiquer la page blanche
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
-
 include '../config.php';
 include '../pages/menu.php';
 require_once __DIR__ . '/../includes/csrf.php';
 
-// Vérifier que la table users existe (migration nécessaire)
+// Vérifier que les tables nécessaires existent
 $usersTableExists = false;
 try {
     $conn->query("SELECT 1 FROM users LIMIT 1");
@@ -44,6 +39,20 @@ if (!$usersTableExists) {
     </html>
     <?php
     exit;
+}
+
+// Créer user_permissions si absente (migration partielle)
+try {
+    $conn->query("SELECT 1 FROM user_permissions LIMIT 1");
+} catch (PDOException $e) {
+    $conn->exec("
+        CREATE TABLE IF NOT EXISTS `user_permissions` (
+            `user_id` INT NOT NULL,
+            `page_id` INT NOT NULL,
+            PRIMARY KEY (`user_id`, `page_id`),
+            KEY `idx_page` (`page_id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    ");
 }
 
 require_once __DIR__ . '/../includes/Auth.php';
