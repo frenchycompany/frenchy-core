@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS `users` (
     `photo` VARCHAR(255) DEFAULT NULL,
 
     -- Rôle unique par utilisateur
-    `role` ENUM('super_admin', 'admin', 'staff', 'proprietaire_full', 'proprietaire_opti') NOT NULL DEFAULT 'staff',
+    `role` ENUM('super_admin', 'gestionnaire', 'femme_de_menage', 'proprietaire', 'voyageur') NOT NULL DEFAULT 'femme_de_menage',
 
     -- Champs spécifiques staff (ex-intervenant)
     `numero` VARCHAR(50) DEFAULT NULL COMMENT 'Numéro interne staff',

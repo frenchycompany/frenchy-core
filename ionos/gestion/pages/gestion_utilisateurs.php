@@ -26,7 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $nom      = trim($_POST['nom'] ?? '');
         $prenom   = trim($_POST['prenom'] ?? '');
         $telephone = trim($_POST['telephone'] ?? '');
-        $role_user = $_POST['role'] ?? 'staff';
+        $role_user = $_POST['role'] ?? 'femme_de_menage';
         $password  = $_POST['password'] ?? '';
         $numero   = trim($_POST['numero'] ?? '');
         $role1    = trim($_POST['role1'] ?? '');
@@ -84,7 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $nom      = trim($_POST['nom'] ?? '');
         $prenom   = trim($_POST['prenom'] ?? '');
         $telephone = trim($_POST['telephone'] ?? '');
-        $role_user = $_POST['role'] ?? 'staff';
+        $role_user = $_POST['role'] ?? 'femme_de_menage';
         $password  = $_POST['password'] ?? '';
         $numero   = trim($_POST['numero'] ?? '');
         $role1    = trim($_POST['role1'] ?? '');
@@ -186,7 +186,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ]);
                     $stmtU = $conn->prepare(
                         "INSERT INTO users (email, password_hash, nom, role, numero, role1, role2, role3, legacy_intervenant_id, actif)
-                         VALUES (?, ?, ?, 'staff', ?, ?, ?, ?, ?, ?)"
+                         VALUES (?, ?, ?, 'femme_de_menage', ?, ?, ?, ?, ?, ?)"
                     );
                     $stmtU->execute([
                         trim(strtolower($email)), $hash, $inter['nom'] ?? 'Sans nom',
@@ -268,18 +268,18 @@ try {
 
 $roles_labels = [
     'super_admin' => 'Super Admin',
-    'admin' => 'Admin',
-    'staff' => 'Staff',
-    'proprietaire_full' => 'Proprio. Conciergerie',
-    'proprietaire_opti' => 'Proprio. Optimisation',
+    'gestionnaire' => 'Gestionnaire',
+    'femme_de_menage' => 'Femme de ménage',
+    'proprietaire' => 'Propriétaire',
+    'voyageur' => 'Voyageur',
 ];
 
 $roles_colors = [
     'super_admin' => 'danger',
-    'admin' => 'warning',
-    'staff' => 'primary',
-    'proprietaire_full' => 'success',
-    'proprietaire_opti' => 'info',
+    'gestionnaire' => 'warning',
+    'femme_de_menage' => 'primary',
+    'proprietaire' => 'success',
+    'voyageur' => 'info',
 ];
 ?>
 
@@ -406,7 +406,7 @@ $roles_colors = [
                                 <?php endif; endforeach; ?>
                             </td>
                             <td>
-                                <?php if (in_array($u['role'], ['admin', 'super_admin'])): ?>
+                                <?php if (in_array($u['role'], ['gestionnaire', 'super_admin'])): ?>
                                     <span class="badge bg-success"><i class="fas fa-infinity"></i> Toutes</span>
                                 <?php else: ?>
                                     <span class="badge bg-<?= $u['nb_pages'] > 0 ? 'info' : 'light text-muted' ?>">
@@ -594,7 +594,7 @@ function resetUserModal() {
     document.getElementById('u_password').value = '';
     document.getElementById('u_password').required = true;
     document.getElementById('u_pwd_hint').textContent = '(obligatoire)';
-    document.getElementById('u_role').value = 'staff';
+    document.getElementById('u_role').value = 'femme_de_menage';
     document.getElementById('u_numero').value = '';
     document.getElementById('u_role1').value = '';
     document.getElementById('u_role2').value = '';
@@ -620,7 +620,7 @@ function editUser(u) {
     document.getElementById('u_password').value = '';
     document.getElementById('u_password').required = false;
     document.getElementById('u_pwd_hint').textContent = '(laisser vide pour ne pas changer)';
-    document.getElementById('u_role').value = u.role || 'staff';
+    document.getElementById('u_role').value = u.role || 'femme_de_menage';
     document.getElementById('u_numero').value = u.numero || '';
     document.getElementById('u_role1').value = u.role1 || '';
     document.getElementById('u_role2').value = u.role2 || '';
@@ -654,7 +654,7 @@ function toggleAllPages(checked) {
 
 function updatePermsVisibility() {
     var role = document.getElementById('u_role').value;
-    var isAdmin = (role === 'admin' || role === 'super_admin');
+    var isAdmin = (role === 'gestionnaire' || role === 'super_admin');
     document.getElementById('u_perms_note').style.display = isAdmin ? 'block' : 'none';
     document.getElementById('u_perm_container').style.opacity = isAdmin ? '0.4' : '1';
 }

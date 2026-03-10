@@ -8,7 +8,7 @@
  * - ionos/admin/index.php (admin hardcodé)
  * - ionos/includes/security.php (classe Security pour proprios)
  *
- * Rôles disponibles : super_admin, admin, staff, proprietaire_full, proprietaire_opti
+ * Rôles disponibles : super_admin, gestionnaire, femme_de_menage, proprietaire, voyageur
  */
 
 class Auth
@@ -177,14 +177,14 @@ class Auth
         $_SESSION['user_role']   = $user['role'];
 
         // Compatibilité avec l'ancien système staff
-        if (in_array($user['role'], ['super_admin', 'admin', 'staff'])) {
+        if (in_array($user['role'], ['super_admin', 'gestionnaire', 'femme_de_menage'])) {
             $_SESSION['id_intervenant'] = $user['legacy_intervenant_id'] ?? $user['id'];
             $_SESSION['nom_utilisateur'] = $user['nom'];
-            $_SESSION['role'] = ($user['role'] === 'staff') ? 'user' : 'admin';
+            $_SESSION['role'] = ($user['role'] === 'femme_de_menage') ? 'user' : 'admin';
         }
 
         // Compatibilité avec l'ancien système propriétaire
-        if (in_array($user['role'], ['proprietaire_full', 'proprietaire_opti'])) {
+        if ($user['role'] === 'proprietaire') {
             $_SESSION['proprietaire_id'] = $user['legacy_proprietaire_id'] ?? $user['id'];
             $_SESSION['proprietaire_nom'] = $user['nom'];
         }
@@ -246,19 +246,19 @@ class Auth
     }
 
     /**
-     * Vérifie si l'utilisateur courant est admin (admin ou super_admin).
+     * Vérifie si l'utilisateur courant est admin (gestionnaire ou super_admin).
      */
     public function isAdmin(): bool
     {
-        return in_array($this->role(), ['admin', 'super_admin']);
+        return in_array($this->role(), ['gestionnaire', 'super_admin']);
     }
 
     /**
-     * Vérifie si l'utilisateur courant est staff (staff, admin, super_admin).
+     * Vérifie si l'utilisateur courant est staff (femme_de_menage, gestionnaire, super_admin).
      */
     public function isStaff(): bool
     {
-        return in_array($this->role(), ['staff', 'admin', 'super_admin']);
+        return in_array($this->role(), ['femme_de_menage', 'gestionnaire', 'super_admin']);
     }
 
     /**
@@ -266,15 +266,15 @@ class Auth
      */
     public function isProprietaire(): bool
     {
-        return in_array($this->role(), ['proprietaire_full', 'proprietaire_opti']);
+        return $this->role() === 'proprietaire';
     }
 
     /**
-     * Vérifie si l'utilisateur courant est propriétaire optimisation.
+     * Vérifie si l'utilisateur courant est voyageur.
      */
-    public function isProprietaireOpti(): bool
+    public function isVoyageur(): bool
     {
-        return $this->role() === 'proprietaire_opti';
+        return $this->role() === 'voyageur';
     }
 
     /**
@@ -284,21 +284,21 @@ class Auth
     {
         $hierarchy = [
             'super_admin' => 5,
-            'admin' => 4,
-            'staff' => 3,
-            'proprietaire_full' => 2,
-            'proprietaire_opti' => 1,
+            'gestionnaire' => 4,
+            'femme_de_menage' => 3,
+            'proprietaire' => 2,
+            'voyageur' => 1,
         ];
 
         $userLevel = $hierarchy[$this->role()] ?? 0;
         $requiredLevel = $hierarchy[$role] ?? 99;
 
-        // Pour les rôles staff, la hiérarchie s'applique
-        if (in_array($role, ['staff', 'admin', 'super_admin'])) {
+        // Pour les rôles internes, la hiérarchie s'applique
+        if (in_array($role, ['femme_de_menage', 'gestionnaire', 'super_admin'])) {
             return $userLevel >= $requiredLevel;
         }
 
-        // Pour les rôles proprio, on vérifie l'exact match ou si c'est un admin
+        // Pour les rôles proprio/voyageur, on vérifie l'exact match ou si c'est un admin
         return $this->role() === $role || $this->isAdmin();
     }
 
@@ -359,11 +359,14 @@ class Auth
     public function getRedirectUrl(): string
     {
         $role = $this->role();
-        if (in_array($role, ['super_admin', 'admin', 'staff'])) {
+        if (in_array($role, ['super_admin', 'gestionnaire', 'femme_de_menage'])) {
             return 'index.php';
         }
-        if (in_array($role, ['proprietaire_full', 'proprietaire_opti'])) {
+        if ($role === 'proprietaire') {
             return 'proprietaire/index.php';
+        }
+        if ($role === 'voyageur') {
+            return 'voyageur/index.php';
         }
         return 'login.php';
     }
@@ -615,7 +618,7 @@ class Auth
             $data['prenom'] ?? null,
             $data['telephone'] ?? null,
             $data['adresse'] ?? null,
-            $data['role'] ?? 'staff',
+            $data['role'] ?? 'femme_de_menage',
             $data['numero'] ?? null,
             $data['role1'] ?? null,
             $data['role2'] ?? null,

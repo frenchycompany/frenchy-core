@@ -57,7 +57,7 @@ $columnsToAdd = [
     'telephone'              => 'VARCHAR(30) DEFAULT NULL',
     'adresse'                => 'TEXT DEFAULT NULL',
     'photo'                  => 'VARCHAR(255) DEFAULT NULL',
-    'role'                   => "ENUM('super_admin', 'admin', 'staff', 'proprietaire_full', 'proprietaire_opti') NOT NULL DEFAULT 'staff'",
+    'role'                   => "ENUM('super_admin', 'gestionnaire', 'femme_de_menage', 'proprietaire', 'voyageur') NOT NULL DEFAULT 'femme_de_menage'",
     'numero'                 => 'VARCHAR(50) DEFAULT NULL',
     'role1'                  => 'VARCHAR(255) DEFAULT NULL',
     'role2'                  => 'VARCHAR(255) DEFAULT NULL',
@@ -179,9 +179,9 @@ try {
         }
 
         // Déterminer le rôle
-        $role = 'staff';
+        $role = 'femme_de_menage';
         if (($i['role'] ?? '') === 'admin') {
-            $role = 'admin';
+            $role = 'gestionnaire';
         }
 
         // Le mot de passe existant est déjà hashé (bcrypt), on le garde tel quel
@@ -251,15 +251,15 @@ try {
             if ($checkEmail->fetch()) {
                 // L'email existe déjà (par ex. un staff qui est aussi proprio)
                 // On ajoute le legacy_proprietaire_id à l'user existant
-                $conn->prepare("UPDATE users SET legacy_proprietaire_id = ?, role = 'proprietaire_full' WHERE email = ?")
+                $conn->prepare("UPDATE users SET legacy_proprietaire_id = ?, role = 'proprietaire' WHERE email = ?")
                     ->execute([$p['id'], $email]);
                 $skipped_prop++;
                 echo "  Email dupliqué $email → lié au user existant.\n";
                 continue;
             }
 
-            // Déterminer le rôle proprio (par défaut: full, à ajuster manuellement pour opti)
-            $role = 'proprietaire_full';
+            // Déterminer le rôle proprio
+            $role = 'proprietaire';
 
             // Le password_hash existant est déjà hashé, on le garde
             $stmt = $conn->prepare(
@@ -397,5 +397,3 @@ echo "\nProchaines étapes :\n";
 echo "  1. Testez le login unifié : login_unified.php\n";
 echo "  2. Une fois validé, renommez login_unified.php → login.php\n";
 echo "  3. Mettez à jour les redirections des anciennes pages de login\n";
-echo "  4. Les propriétaires 'optimisation' doivent être basculés manuellement\n";
-echo "     UPDATE users SET role = 'proprietaire_opti', commission = 6.00 WHERE id = X;\n";

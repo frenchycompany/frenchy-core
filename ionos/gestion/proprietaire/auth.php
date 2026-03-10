@@ -9,7 +9,7 @@ require_once __DIR__ . '/../../includes/Auth.php';
 $auth = new Auth($conn);
 
 // Verifier l'authentification proprietaire
-if (!$auth->isProprietaire() && !isset($_SESSION['proprietaire_id'])) {
+if (!$auth->isProprietaire() && !$auth->isAdmin() && !isset($_SESSION['proprietaire_id'])) {
     header('Location: login.php');
     exit;
 }

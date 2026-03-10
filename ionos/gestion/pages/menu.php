@@ -37,7 +37,7 @@ if (isset($_SESSION['_auth_last_activity']) && (time() - $_SESSION['_auth_last_a
 $_SESSION['_auth_last_activity'] = time();
 
 $id_intervenant  = $_SESSION['id_intervenant'] ?? $_SESSION['user_id'] ?? 0;
-$role            = $_SESSION['role'] ?? (in_array($_SESSION['user_role'] ?? '', ['admin', 'super_admin']) ? 'admin' : 'user');
+$role            = $_SESSION['role'] ?? (in_array($_SESSION['user_role'] ?? '', ['gestionnaire', 'super_admin']) ? 'admin' : 'user');
 $nom_utilisateur = $_SESSION['nom_utilisateur'] ?? $_SESSION['user_nom'] ?? 'Compte';
 
 if (empty($_SESSION['csrf_token'])) {
