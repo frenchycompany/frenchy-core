@@ -395,16 +395,16 @@ try {
         ];
     }
 
-    // 2) ARRIVÉES = $target (créer si rien n’existe déjà ce jour pour le logement)
+    // 2) ARRIVÉES = $target (créer si rien n'existe déjà ce jour pour le logement)
     foreach ($arrs as $r) {
-        $resaId  = (int)$r[‘resa_id’];
-        $logId   = (int)$r[‘logement_id’];
-        $nbPers  = max(0, (int)$r[‘nb_pers’]);
+        $resaId  = (int)$r['resa_id'];
+        $logId   = (int)$r['logement_id'];
+        $nbPers  = max(0, (int)$r['nb_pers']);
         // Fallback : capacité max du logement si nb_pers inconnu
         if ($nbPers === 0 && isset($logements[$logId])) {
-            $nbPers = $logements[$logId][‘capacite’];
+            $nbPers = $logements[$logId]['capacite'];
         }
-        $nbJours = max(0, (int)$r[‘nb_jours’]);
+        $nbJours = max(0, (int)$r['nb_jours']);
         $srcLabel = $r['_source'] ?? 'REMOTE';
         // Note = tâches à faire sur ce logement (si existantes)
         $note = !empty($taches_par_logement[$logId])
