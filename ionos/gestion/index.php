@@ -265,7 +265,7 @@ if ($is_admin) {
     <!-- Welcome -->
     <div class="welcome-card">
         <h2>Bonjour, <?= htmlspecialchars($nom_utilisateur) ?></h2>
-        <small><?= strftime('%A %d %B %Y') ?: date('d/m/Y') ?></small>
+        <small><?= (new IntlDateFormatter('fr_FR', IntlDateFormatter::FULL, IntlDateFormatter::NONE))->format(new DateTime()) ?></small>
         <div class="paie"><?= number_format($paie_mois, 2, ',', ' ') ?> &euro;</div>
         <small>Paie du mois en cours</small>
     </div>
