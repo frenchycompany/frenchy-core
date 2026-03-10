@@ -50,25 +50,48 @@ if (file_exists(__DIR__ . '/../includes/i18n.php')) {
     require_once __DIR__ . '/../includes/i18n.php';
 }
 
-// Pages accessibles depuis la BDD (système de permissions unifié via user_permissions)
+// Pages accessibles depuis la BDD (compatible ancien + nouveau système)
 $pages_accessibles = [];
 try {
     if ($role === 'admin') {
         $stmt = $conn->query("SELECT id, nom, chemin FROM pages WHERE afficher_menu = 1");
         $pages_accessibles = $stmt->fetchAll(PDO::FETCH_ASSOC);
     } else {
+        // Essayer d'abord le nouveau système (user_permissions)
         $user_id = $_SESSION['user_id'] ?? null;
         if ($user_id) {
-            $stmt = $conn->prepare(
-                "SELECT p.id, p.nom, p.chemin
-                 FROM pages p
-                 INNER JOIN user_permissions up ON p.id = up.page_id
-                 WHERE up.user_id = :user_id
-                   AND p.afficher_menu = 1"
-            );
-            $stmt->bindValue(':user_id', $user_id, PDO::PARAM_INT);
-            $stmt->execute();
-            $pages_accessibles = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            try {
+                $stmt = $conn->prepare(
+                    "SELECT p.id, p.nom, p.chemin
+                     FROM pages p
+                     INNER JOIN user_permissions up ON p.id = up.page_id
+                     WHERE up.user_id = :user_id
+                       AND p.afficher_menu = 1"
+                );
+                $stmt->bindValue(':user_id', $user_id, PDO::PARAM_INT);
+                $stmt->execute();
+                $pages_accessibles = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            } catch (PDOException $e) {
+                // Table user_permissions n'existe pas — essayer l'ancien système
+            }
+        }
+
+        // Fallback : ancien système (intervenants_pages)
+        if (empty($pages_accessibles) && $id_intervenant) {
+            try {
+                $stmt = $conn->prepare(
+                    "SELECT p.id, p.nom, p.chemin
+                     FROM pages p
+                     INNER JOIN intervenants_pages ip ON p.id = ip.page_id
+                     WHERE ip.intervenant_id = :id_intervenant
+                       AND p.afficher_menu = 1"
+                );
+                $stmt->bindValue(':id_intervenant', $id_intervenant, PDO::PARAM_INT);
+                $stmt->execute();
+                $pages_accessibles = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            } catch (PDOException $e) {
+                // Table intervenants_pages n'existe pas non plus — pas de permissions
+            }
         }
     }
 } catch (PDOException $e) {

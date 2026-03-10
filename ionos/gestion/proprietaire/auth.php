@@ -3,22 +3,44 @@
  * Verification d'authentification proprietaire — inclusion commune
  * Utilise le systeme Auth.php unifie
  */
-require_once __DIR__ . '/../../config.php';
-require_once __DIR__ . '/../../includes/Auth.php';
+require_once __DIR__ . '/../../includes/env_loader.php';
+require_once __DIR__ . '/../../db/connection.php';
 
-$auth = new Auth($conn);
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Détecter si le nouveau système est disponible (table users)
+$useNewAuth = false;
+try {
+    $conn->query("SELECT 1 FROM users LIMIT 1");
+    $useNewAuth = true;
+} catch (PDOException $e) {}
+
+$auth = null;
+if ($useNewAuth) {
+    require_once __DIR__ . '/../../includes/Auth.php';
+    $auth = new Auth($conn);
+}
 
 // Verifier l'authentification proprietaire
-if (!$auth->isProprietaire() && !$auth->isAdmin() && !isset($_SESSION['proprietaire_id'])) {
-    header('Location: login.php');
-    exit;
+if ($auth) {
+    if (!$auth->isProprietaire() && !$auth->isAdmin() && !isset($_SESSION['proprietaire_id'])) {
+        header('Location: login.php');
+        exit;
+    }
+} else {
+    if (!isset($_SESSION['proprietaire_id'])) {
+        header('Location: login.php');
+        exit;
+    }
 }
 
 // Charger les donnees proprietaire
 $proprietaire = null;
 $proprietaire_id = null;
 
-if ($auth->check() && $auth->isProprietaire()) {
+if ($auth && $auth->check() && $auth->isProprietaire()) {
     // Systeme unifie Auth.php
     $proprietaire_id = $_SESSION['user_id'];
     $user = $auth->user();

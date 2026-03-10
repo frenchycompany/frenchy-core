@@ -4,25 +4,53 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-require_once __DIR__ . '/config.php';
-require_once __DIR__ . '/includes/Auth.php';
+require_once __DIR__ . '/includes/env_loader.php';
+require_once __DIR__ . '/db/connection.php';
 
-$auth = new Auth($conn);
-
-// Propriétaires → rediriger vers leur portail
-if ($auth->isProprietaire()) {
-    header('Location: proprietaire/index.php');
-    exit;
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
 }
 
-// Staff/Admin requis pour cette page
-$auth->requireStaff('login.php');
+// Détecter si le nouveau système est disponible (table users)
+$useNewAuth = false;
+try {
+    $conn->query("SELECT 1 FROM users LIMIT 1");
+    $useNewAuth = true;
+} catch (PDOException $e) {
+    // Table users n'existe pas → ancien système
+}
 
-// Variables de compatibilité pour le code existant
-$nom_utilisateur = $_SESSION['user_nom'] ?? $_SESSION['nom_utilisateur'] ?? 'Compte';
-$intervenant_id = (int) ($_SESSION['id_intervenant'] ?? $_SESSION['user_id'] ?? 0);
-$is_admin = $auth->isAdmin();
-$csrf_token = $auth->csrfToken();
+if ($useNewAuth) {
+    require_once __DIR__ . '/includes/Auth.php';
+    $auth = new Auth($conn);
+
+    // Propriétaires → rediriger vers leur portail
+    if ($auth->isProprietaire()) {
+        header('Location: proprietaire/index.php');
+        exit;
+    }
+
+    // Staff/Admin requis pour cette page
+    $auth->requireStaff('login.php');
+
+    $nom_utilisateur = $_SESSION['user_nom'] ?? $_SESSION['nom_utilisateur'] ?? 'Compte';
+    $intervenant_id = (int) ($_SESSION['id_intervenant'] ?? $_SESSION['user_id'] ?? 0);
+    $is_admin = $auth->isAdmin();
+    $csrf_token = $auth->csrfToken();
+} else {
+    // Ancien système : vérifier la session intervenant
+    if (!isset($_SESSION['id_intervenant'])) {
+        header('Location: login.php');
+        exit;
+    }
+    $nom_utilisateur = $_SESSION['nom_utilisateur'] ?? 'Compte';
+    $intervenant_id = (int) ($_SESSION['id_intervenant'] ?? 0);
+    $is_admin = ($_SESSION['role'] ?? '') === 'admin';
+    if (empty($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+    $csrf_token = $_SESSION['csrf_token'];
+}
 
 require_once __DIR__ . '/pages/menu.php';
 

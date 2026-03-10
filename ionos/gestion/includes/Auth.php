@@ -214,7 +214,8 @@ class Auth
      */
     public function check(): ?int
     {
-        return $_SESSION['user_id'] ?? null;
+        // Compatible ancien système (session intervenant) + nouveau (session users)
+        return $_SESSION['user_id'] ?? $_SESSION['id_intervenant'] ?? null;
     }
 
     /**
@@ -225,16 +226,36 @@ class Auth
         $id = $this->check();
         if (!$id) return null;
 
-        $stmt = $this->conn->prepare("SELECT * FROM users WHERE id = ? AND actif = 1");
-        $stmt->execute([$id]);
-        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        try {
+            $stmt = $this->conn->prepare("SELECT * FROM users WHERE id = ? AND actif = 1");
+            $stmt->execute([$id]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        if (!$user) {
-            $this->destroySession();
+            if (!$user) {
+                // En ancien système, user est dans intervenant, pas users
+                if (isset($_SESSION['id_intervenant'])) {
+                    return [
+                        'id' => $_SESSION['id_intervenant'],
+                        'nom' => $_SESSION['nom_utilisateur'] ?? 'Compte',
+                        'role' => $this->role(),
+                    ];
+                }
+                $this->destroySession();
+                return null;
+            }
+
+            return $user;
+        } catch (PDOException $e) {
+            // Table users n'existe pas → fallback sur la session
+            if (isset($_SESSION['id_intervenant'])) {
+                return [
+                    'id' => $_SESSION['id_intervenant'],
+                    'nom' => $_SESSION['nom_utilisateur'] ?? 'Compte',
+                    'role' => $this->role(),
+                ];
+            }
             return null;
         }
-
-        return $user;
     }
 
     /**
@@ -242,7 +263,16 @@ class Auth
      */
     public function role(): ?string
     {
-        return $_SESSION['user_role'] ?? null;
+        // Compatible ancien système : 'admin' → 'gestionnaire', 'user' → 'femme_de_menage'
+        if (isset($_SESSION['user_role'])) {
+            return $_SESSION['user_role'];
+        }
+        // Fallback ancien système (table intervenant)
+        $oldRole = $_SESSION['role'] ?? null;
+        if ($oldRole === 'admin') return 'gestionnaire';
+        if ($oldRole === 'user') return 'femme_de_menage';
+        if ($oldRole) return $oldRole;
+        return null;
     }
 
     /**
@@ -250,7 +280,12 @@ class Auth
      */
     public function isAdmin(): bool
     {
-        return in_array($this->role(), ['gestionnaire', 'super_admin']);
+        $role = $this->role();
+        // Ancien système : role = 'admin'
+        if (($role === 'gestionnaire' || $role === 'super_admin') || ($_SESSION['role'] ?? '') === 'admin') {
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -258,7 +293,15 @@ class Auth
      */
     public function isStaff(): bool
     {
-        return in_array($this->role(), ['femme_de_menage', 'gestionnaire', 'super_admin']);
+        $role = $this->role();
+        // Ancien système : tout intervenant connecté est staff
+        if (in_array($role, ['femme_de_menage', 'gestionnaire', 'super_admin'])) {
+            return true;
+        }
+        if (isset($_SESSION['id_intervenant'])) {
+            return true;
+        }
+        return false;
     }
 
     /**

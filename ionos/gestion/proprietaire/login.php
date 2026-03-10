@@ -1,20 +1,33 @@
 <?php
 /**
  * Page de connexion - Espace Proprietaire
- * Utilise le systeme Auth.php unifie
+ * Compatible ancien système (FC_proprietaires) + nouveau (Auth.php / users)
  */
 
-require_once __DIR__ . '/../../config.php';
-require_once __DIR__ . '/../../includes/Auth.php';
+require_once __DIR__ . '/../../includes/env_loader.php';
+require_once __DIR__ . '/../../db/connection.php';
 
-$auth = new Auth($conn);
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Détecter si le nouveau système est disponible (table users)
+$useNewAuth = false;
+try {
+    $conn->query("SELECT 1 FROM users LIMIT 1");
+    $useNewAuth = true;
+} catch (PDOException $e) {}
+
+if ($useNewAuth) {
+    require_once __DIR__ . '/../../includes/Auth.php';
+    $auth = new Auth($conn);
+}
 
 // Redirection si deja connecte
-if ($auth->isProprietaire()) {
+if ($useNewAuth && $auth->isProprietaire()) {
     header('Location: index.php');
     exit;
 }
-// Compatibilite ancien systeme
 if (isset($_SESSION['proprietaire_id'])) {
     header('Location: index.php');
     exit;
@@ -25,23 +38,22 @@ $success = '';
 
 // Traitement de la connexion
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
-    if (!$auth->validateCsrf()) {
-        $error = 'Token de securite invalide. Veuillez rafraichir la page.';
-    } else {
-        $email = trim($_POST['email'] ?? '');
-        $password = $_POST['password'] ?? '';
+    $email = trim($_POST['email'] ?? '');
+    $password = $_POST['password'] ?? '';
 
-        if (empty($email) || empty($password)) {
-            $error = 'Veuillez remplir tous les champs.';
+    if (empty($email) || empty($password)) {
+        $error = 'Veuillez remplir tous les champs.';
+    } elseif ($useNewAuth) {
+        // Nouveau système
+        if (!$auth->validateCsrf()) {
+            $error = 'Token de securite invalide. Veuillez rafraichir la page.';
         } else {
             $result = $auth->login($email, $password);
-
             if ($result['success']) {
                 if ($auth->isProprietaire()) {
                     header('Location: index.php');
                     exit;
                 } else {
-                    // L'utilisateur n'est pas un proprietaire, rediriger vers le bon portail
                     header('Location: ../index.php');
                     exit;
                 }
@@ -49,24 +61,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
                 $error = $result['error'];
             }
         }
+    } else {
+        // Ancien système : FC_proprietaires
+        try {
+            $stmt = $conn->prepare("SELECT * FROM FC_proprietaires WHERE email = ? AND actif = 1");
+            $stmt->execute([strtolower($email)]);
+            $proprietaire = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($proprietaire && password_verify($password, $proprietaire['password_hash'])) {
+                $_SESSION['proprietaire_id'] = $proprietaire['id'];
+                $_SESSION['proprietaire_nom'] = $proprietaire['nom'];
+
+                $conn->prepare("UPDATE FC_proprietaires SET derniere_connexion = NOW() WHERE id = ?")
+                    ->execute([$proprietaire['id']]);
+
+                header('Location: index.php');
+                exit;
+            } else {
+                $error = 'Email ou mot de passe incorrect.';
+            }
+        } catch (PDOException $e) {
+            $error = 'Erreur interne, veuillez réessayer.';
+            error_log("Erreur proprietaire login: " . $e->getMessage());
+        }
     }
 }
 
 // Traitement de reinitialisation de mot de passe
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reset'])) {
+if ($useNewAuth && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reset'])) {
     $email = trim($_POST['reset_email'] ?? '');
-
     if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $error = 'Veuillez entrer une adresse email valide.';
     } else {
         $token = $auth->createResetToken($email);
-        // En production, envoyer un email avec le token
-        // if ($token) mail($email, 'Reinitialisation', "Lien: .../reset.php?token=$token");
         $success = 'Si cette adresse existe dans notre base, vous recevrez un email de reinitialisation.';
     }
 }
 
-$csrf_token = $auth->csrfToken();
+if ($useNewAuth) {
+    $csrf_token = $auth->csrfToken();
+} else {
+    if (empty($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+    $csrf_token = $_SESSION['csrf_token'];
+}
 ?>
 <!DOCTYPE html>
 <html lang="fr">

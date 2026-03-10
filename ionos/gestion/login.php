@@ -1,56 +1,154 @@
 <?php
 /**
- * Page de connexion unifiée — FrenchyConciergerie
- * Tous les rôles passent par cette page unique.
- * Redirection automatique selon le rôle après connexion.
+ * Page de connexion — FrenchyConciergerie
+ * Compatible avec l'ancien système (table intervenant) ET le nouveau (table users + Auth.php)
+ * Si la table users existe → utilise Auth.php
+ * Sinon → fallback sur l'ancien système intervenant
  */
 
-require_once __DIR__ . '/config.php';
-require_once __DIR__ . '/includes/Auth.php';
+require_once __DIR__ . '/includes/env_loader.php';
+require_once __DIR__ . '/db/connection.php';
 
-$auth = new Auth($conn);
-
-// Déjà connecté → rediriger
-if ($auth->check()) {
-    header('Location: ' . $auth->getRedirectUrl());
-    exit;
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
 }
 
-$error = '';
-$success = '';
+// Détecter si le nouveau système est disponible (table users)
+$useNewAuth = false;
+try {
+    $conn->query("SELECT 1 FROM users LIMIT 1");
+    $useNewAuth = true;
+} catch (PDOException $e) {
+    // Table users n'existe pas → ancien système
+}
 
-// Traitement connexion
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
-    if (!$auth->validateCsrf()) {
-        $error = 'Token de sécurité invalide. Veuillez rafraîchir la page.';
-    } else {
-        $email = trim($_POST['email'] ?? '');
-        $password = $_POST['password'] ?? '';
+// ================================================================
+// NOUVEAU SYSTÈME (Auth.php + table users)
+// ================================================================
+if ($useNewAuth) {
+    require_once __DIR__ . '/includes/Auth.php';
+    $auth = new Auth($conn);
 
-        $result = $auth->login($email, $password);
+    // Déjà connecté → rediriger
+    if ($auth->check()) {
+        header('Location: ' . $auth->getRedirectUrl());
+        exit;
+    }
 
-        if ($result['success']) {
-            header('Location: ' . $auth->getRedirectUrl());
-            exit;
+    $error = '';
+    $success = '';
+
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
+        if (!$auth->validateCsrf()) {
+            $error = 'Token de sécurité invalide. Veuillez rafraîchir la page.';
         } else {
-            $error = $result['error'];
+            $email = trim($_POST['email'] ?? $_POST['nom_utilisateur'] ?? '');
+            $password = $_POST['password'] ?? $_POST['mot_de_passe'] ?? '';
+            $result = $auth->login($email, $password);
+            if ($result['success']) {
+                header('Location: ' . $auth->getRedirectUrl());
+                exit;
+            } else {
+                $error = $result['error'];
+            }
         }
     }
-}
 
-// Traitement reset password
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reset'])) {
-    if (!$auth->validateCsrf()) {
-        $error = 'Token de sécurité invalide.';
-    } else {
-        $email = trim($_POST['reset_email'] ?? '');
-        if (!empty($email) && filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $token = $auth->createResetToken($email);
-            // En production : envoyer l'email avec le token
-            // if ($token) { mail($email, 'Reset', "...?token=$token"); }
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reset'])) {
+        if (!$auth->validateCsrf()) {
+            $error = 'Token de sécurité invalide.';
+        } else {
+            $email = trim($_POST['reset_email'] ?? '');
+            if (!empty($email) && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                $token = $auth->createResetToken($email);
+            }
+            $success = 'Si cette adresse existe, vous recevrez un email de réinitialisation.';
         }
-        $success = 'Si cette adresse existe, vous recevrez un email de réinitialisation.';
     }
+
+    $csrf_token = $auth->csrfToken();
+
+// ================================================================
+// ANCIEN SYSTÈME (table intervenant)
+// ================================================================
+} else {
+    // Déjà connecté → rediriger
+    if (isset($_SESSION['id_intervenant'])) {
+        header('Location: index.php');
+        exit;
+    }
+
+    $error = '';
+    $success = '';
+    $max_attempts = 5;
+    $lockout_duration = 15 * 60;
+
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_POST['login']) || isset($_POST['nom_utilisateur']))) {
+        $nom_utilisateur = trim($_POST['nom_utilisateur'] ?? $_POST['email'] ?? '');
+        $mot_de_passe = trim($_POST['mot_de_passe'] ?? $_POST['password'] ?? '');
+        $ip_address = $_SERVER['REMOTE_ADDR'];
+
+        // Rate limiting (si la table existe)
+        $locked = false;
+        try {
+            $stmt = $conn->prepare(
+                "SELECT COUNT(*) AS attempts FROM login_attempts
+                 WHERE ip_address = :ip AND attempt_time > NOW() - INTERVAL :duration SECOND"
+            );
+            $stmt->bindValue(':ip', $ip_address);
+            $stmt->bindValue(':duration', $lockout_duration, PDO::PARAM_INT);
+            $stmt->execute();
+            $locked = (int) $stmt->fetchColumn() >= $max_attempts;
+        } catch (PDOException $e) {
+            // Table login_attempts n'existe pas — on continue
+        }
+
+        if ($locked) {
+            $error = "Trop de tentatives de connexion. Réessayez plus tard.";
+        } elseif (empty($nom_utilisateur) || empty($mot_de_passe)) {
+            $error = "Veuillez remplir tous les champs.";
+        } else {
+            try {
+                $stmt = $conn->prepare(
+                    "SELECT id, nom_utilisateur, mot_de_passe, role
+                     FROM intervenant
+                     WHERE nom_utilisateur = :nom"
+                );
+                $stmt->execute([':nom' => $nom_utilisateur]);
+                $utilisateur = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                if ($utilisateur && password_verify($mot_de_passe, $utilisateur['mot_de_passe'])) {
+                    try {
+                        $conn->prepare("DELETE FROM login_attempts WHERE ip_address = :ip")
+                            ->execute([':ip' => $ip_address]);
+                    } catch (PDOException $e) {}
+
+                    $_SESSION['id_intervenant'] = $utilisateur['id'];
+                    $_SESSION['nom_utilisateur'] = htmlspecialchars($utilisateur['nom_utilisateur']);
+                    $_SESSION['role'] = htmlspecialchars($utilisateur['role']);
+
+                    header('Location: index.php');
+                    exit;
+                } else {
+                    try {
+                        $conn->prepare(
+                            "INSERT INTO login_attempts (ip_address, nom_utilisateur) VALUES (:ip, :nom)"
+                        )->execute([':ip' => $ip_address, ':nom' => $nom_utilisateur]);
+                    } catch (PDOException $e) {}
+                    $error = "Nom d'utilisateur ou mot de passe incorrect.";
+                }
+            } catch (PDOException $e) {
+                $error = "Erreur interne, veuillez réessayer.";
+                error_log("Erreur de connexion : " . $e->getMessage());
+            }
+        }
+    }
+
+    // CSRF token simple pour l'ancien système
+    if (empty($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+    $csrf_token = $_SESSION['csrf_token'];
 }
 ?>
 <!DOCTYPE html>
@@ -235,13 +333,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reset'])) {
             </div>
 
             <form method="POST" class="login-form">
-                <?= $auth->csrfField() ?>
+                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
 
-                <?php if ($error): ?>
+                <?php if (!empty($error)): ?>
                 <div class="alert alert-error"><?= htmlspecialchars($error) ?></div>
                 <?php endif; ?>
 
-                <?php if ($success): ?>
+                <?php if (!empty($success)): ?>
                 <div class="alert alert-success"><?= htmlspecialchars($success) ?></div>
                 <?php endif; ?>
 
@@ -249,26 +347,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reset'])) {
                     <label for="email">Identifiant ou email</label>
                     <input type="text" id="email" name="email" required autocomplete="username"
                            placeholder="votre identifiant ou email"
-                           value="<?= htmlspecialchars($_POST['email'] ?? '') ?>">
+                           value="<?= htmlspecialchars($_POST['email'] ?? $_POST['nom_utilisateur'] ?? '') ?>">
+                    <!-- Champs cachés pour compatibilité avec les deux systèmes -->
+                    <input type="hidden" name="nom_utilisateur" id="nom_utilisateur_hidden">
                 </div>
 
                 <div class="form-group">
                     <label for="password">Mot de passe</label>
                     <input type="password" id="password" name="password" required
                            autocomplete="current-password" placeholder="••••••••">
+                    <input type="hidden" name="mot_de_passe" id="mot_de_passe_hidden">
                 </div>
 
                 <button type="submit" name="login" class="btn-login">Se connecter</button>
 
+                <?php if ($useNewAuth): ?>
                 <div class="forgot-password">
                     <a href="#" onclick="document.getElementById('resetModal').classList.add('active'); return false;">
                         Mot de passe oublié ?
                     </a>
                 </div>
+                <?php endif; ?>
             </form>
         </div>
     </div>
 
+    <?php if ($useNewAuth): ?>
     <!-- Modal réinitialisation -->
     <div class="modal-overlay" id="resetModal">
         <div class="modal-content">
@@ -277,7 +381,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reset'])) {
             <p style="margin-bottom: 1.5rem; color: #6B7280;">Entrez votre email pour recevoir un lien de réinitialisation.</p>
 
             <form method="POST">
-                <?= $auth->csrfField() ?>
+                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
                 <div class="form-group">
                     <label for="reset_email">Email</label>
                     <input type="email" id="reset_email" name="reset_email" required>
@@ -290,6 +394,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reset'])) {
     <script>
         document.getElementById('resetModal').addEventListener('click', function(e) {
             if (e.target === this) this.classList.remove('active');
+        });
+    </script>
+    <?php endif; ?>
+
+    <script>
+        // Synchroniser les champs pour compatibilité ancien/nouveau système
+        document.querySelector('form.login-form').addEventListener('submit', function() {
+            var email = document.getElementById('email').value;
+            var pass = document.getElementById('password').value;
+            document.getElementById('nom_utilisateur_hidden').value = email;
+            document.getElementById('mot_de_passe_hidden').value = pass;
         });
     </script>
 </body>
