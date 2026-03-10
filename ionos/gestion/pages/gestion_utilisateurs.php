@@ -4,6 +4,12 @@
  * CRUD complet sur la table `users` + assignation des permissions par page.
  * Remplace la gestion des accès via intervenants.php.
  */
+
+// Debug temporaire — afficher les erreurs pour diagnostiquer la page blanche
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 include '../config.php';
 include '../pages/menu.php';
 require_once __DIR__ . '/../includes/csrf.php';
@@ -259,15 +265,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // ============================================================
 
 // Tous les users
-$users = $conn->query("
-    SELECT u.*,
-           (SELECT COUNT(*) FROM user_permissions up WHERE up.user_id = u.id) AS nb_pages
-    FROM users u
-    ORDER BY u.actif DESC, u.role ASC, u.nom ASC
-")->fetchAll(PDO::FETCH_ASSOC);
+try {
+    $users = $conn->query("
+        SELECT u.*,
+               (SELECT COUNT(*) FROM user_permissions up WHERE up.user_id = u.id) AS nb_pages
+        FROM users u
+        ORDER BY u.actif DESC, u.role ASC, u.nom ASC
+    ")->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    // user_permissions n'existe pas — requête sans le compteur
+    try {
+        $users = $conn->query("
+            SELECT u.*, 0 AS nb_pages
+            FROM users u
+            ORDER BY u.actif DESC, u.role ASC, u.nom ASC
+        ")->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e2) {
+        $users = [];
+        $feedback = '<div class="alert alert-danger">Erreur : ' . htmlspecialchars($e2->getMessage()) . '</div>';
+    }
+}
 
 // Toutes les pages visibles
-$allPages = $conn->query("SELECT id, nom, chemin FROM pages WHERE afficher_menu = 1 ORDER BY nom ASC")->fetchAll(PDO::FETCH_ASSOC);
+try {
+    $allPages = $conn->query("SELECT id, nom, chemin FROM pages WHERE afficher_menu = 1 ORDER BY nom ASC")->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    $allPages = [];
+}
 
 // Map des catégories par chemin
 require_once __DIR__ . '/menu_categories.php';
