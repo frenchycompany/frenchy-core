@@ -146,136 +146,158 @@ foreach ($pages_accessibles as $page) {
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link rel="stylesheet" href="<?= BASE_URL ?>css/menu.css">
+<script>
+// Apply theme immediately to prevent flash
+(function(){var t=localStorage.getItem('fc_theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');})();
+</script>
 
-<!-- Barre de navigation -->
-<header>
-<nav class="navbar navbar-expand-lg navbar-dark fc-navbar">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="<?= BASE_URL ?>index.php">
-            <i class="fas fa-bolt"></i> Frenchy
+<!-- Sidebar -->
+<aside class="fc-sidebar" id="fcSidebar">
+    <div class="fc-sidebar-header">
+        <a href="<?= BASE_URL ?>index.php">
+            <i class="fas fa-bolt"></i>
+            <span>Frenchy</span>
         </a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
-                data-bs-target="#navbarNav" aria-controls="navbarNav"
-                aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-
-                <!-- Accueil -->
-                <li class="nav-item">
-                    <a class="nav-link <?= $currentFile === 'index.php' ? 'active' : '' ?>" href="<?= BASE_URL ?>index.php">
-                        <i class="fas fa-tachometer-alt"></i> Accueil
-                    </a>
-                </li>
-
-                <!-- Catégories organisées en dropdowns -->
-                <?php foreach ($menu_categories as $categorie_nom => $categorie): ?>
-                    <?php
-                    // Filtrer les items accessibles à cet utilisateur
-                    $items_visibles = [];
-                    $cat_active = false;
-                    foreach ($categorie['items'] as $item) {
-                        if (userCanAccess($item['chemin'], $role, $fichiers_accessibles)) {
-                            $items_visibles[] = $item;
-                            if (extractBasename($item['chemin']) === $currentFile) {
-                                $cat_active = true;
-                            }
-                        }
-                    }
-                    if (empty($items_visibles)) continue;
-                    ?>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle <?= $cat_active ? 'active' : '' ?>"
-                           href="#" data-bs-toggle="dropdown">
-                            <i class="fas <?= $categorie['icon'] ?>"></i> <?= $categorie_nom ?>
-                        </a>
-                        <ul class="dropdown-menu">
-                            <?php foreach ($items_visibles as $item):
-                                $url = BASE_URL . ltrim($item['chemin'], '/');
-                                $isActive = (extractBasename($item['chemin']) === $currentFile);
-                            ?>
-                                <li>
-                                    <a class="dropdown-item <?= $isActive ? 'active' : '' ?>" href="<?= htmlspecialchars($url) ?>">
-                                        <i class="fas <?= $item['icon'] ?>"></i> <?= htmlspecialchars($item['nom']) ?>
-                                    </a>
-                                </li>
-                            <?php endforeach; ?>
-                        </ul>
-                    </li>
-                <?php endforeach; ?>
-
-                <!-- Pages dynamiques non catégorisées (ajoutées via admin) -->
-                <?php if (!empty($pages_hors_categories)): ?>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
-                            <i class="fas fa-ellipsis-h"></i> Autres
-                        </a>
-                        <ul class="dropdown-menu">
-                            <?php foreach ($pages_hors_categories as $page):
-                                $chemin = $page['chemin'];
-                                if (!str_starts_with($chemin, 'pages/') && file_exists(BASE_PATH . '/pages/' . basename($chemin))) {
-                                    $chemin = 'pages/' . basename($chemin);
-                                }
-                                $url = BASE_URL . ltrim($chemin, '/');
-                                $isActive = (basename($chemin) === $currentFile);
-                            ?>
-                                <li>
-                                    <a class="dropdown-item <?= $isActive ? 'active' : '' ?>" href="<?= htmlspecialchars($url) ?>">
-                                        <?= htmlspecialchars($page['nom']) ?>
-                                    </a>
-                                </li>
-                            <?php endforeach; ?>
-                        </ul>
-                    </li>
-                <?php endif; ?>
-
-            </ul>
-
-            <!-- Partie droite : langue + utilisateur -->
-            <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
-                <?php if (function_exists('langSelector')): ?>
-                <li class="nav-item d-flex align-items-center me-2">
-                    <?= langSelector() ?>
-                </li>
-                <?php endif; ?>
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button"
-                       data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="fas fa-user-circle"></i>
-                        <?= htmlspecialchars($nom_utilisateur) ?>
-                        <?php if ($role === 'admin'): ?>
-                            <span class="badge bg-warning text-dark ms-1">Admin</span>
-                        <?php endif; ?>
-                    </a>
-                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                        <li><a class="dropdown-item" href="<?= BASE_URL ?>profil.php">
-                            <i class="fas fa-user"></i> Mon Profil</a></li>
-                        <?php if ($role === 'admin'): ?>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="<?= BASE_URL ?>pages/admin.php">
-                            <i class="fas fa-cog"></i> Administration</a></li>
-                        <li><a class="dropdown-item" href="<?= BASE_URL ?>pages/gestion_utilisateurs.php">
-                            <i class="fas fa-users-cog"></i> Utilisateurs & Droits</a></li>
-                        <li><a class="dropdown-item" href="<?= BASE_URL ?>pages/gestion_pages.php">
-                            <i class="fas fa-file-circle-plus"></i> Gestion pages</a></li>
-                        <li><a class="dropdown-item" href="<?= BASE_URL ?>pages/intervenants.php">
-                            <i class="fas fa-users"></i> Intervenants (legacy)</a></li>
-                        <?php endif; ?>
-                        <li><hr class="dropdown-divider"></li>
-                        <li>
-                            <form action="<?= BASE_URL ?>logout.php" method="post" class="d-inline">
-                                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
-                                <button type="submit" class="dropdown-item text-danger">
-                                    <i class="fas fa-sign-out-alt"></i> Déconnexion
-                                </button>
-                            </form>
-                        </li>
-                    </ul>
-                </li>
-            </ul>
-        </div>
     </div>
-</nav>
+
+    <nav class="fc-sidebar-nav">
+        <a class="fc-nav-link <?= $currentFile === 'index.php' ? 'active' : '' ?>" href="<?= BASE_URL ?>index.php">
+            <i class="fas fa-tachometer-alt"></i><span>Accueil</span>
+        </a>
+
+        <?php foreach ($menu_categories as $categorie_nom => $categorie): ?>
+            <?php
+            $items_visibles = [];
+            $cat_active = false;
+            foreach ($categorie['items'] as $item) {
+                if (userCanAccess($item['chemin'], $role, $fichiers_accessibles)) {
+                    $items_visibles[] = $item;
+                    if (extractBasename($item['chemin']) === $currentFile) {
+                        $cat_active = true;
+                    }
+                }
+            }
+            if (empty($items_visibles)) continue;
+            ?>
+            <div class="fc-nav-group <?= $cat_active ? 'open' : '' ?>">
+                <div class="fc-nav-group-toggle" onclick="fcToggleGroup(this)">
+                    <span><i class="fas <?= $categorie['icon'] ?>"></i> <?= $categorie_nom ?></span>
+                    <i class="fas fa-chevron-right fc-chevron"></i>
+                </div>
+                <div class="fc-nav-group-items">
+                    <?php foreach ($items_visibles as $item):
+                        $url = BASE_URL . ltrim($item['chemin'], '/');
+                        $isActive = (extractBasename($item['chemin']) === $currentFile);
+                    ?>
+                        <a class="fc-nav-link <?= $isActive ? 'active' : '' ?>" href="<?= htmlspecialchars($url) ?>">
+                            <i class="fas <?= $item['icon'] ?>"></i><span><?= htmlspecialchars($item['nom']) ?></span>
+                        </a>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+        <?php endforeach; ?>
+
+        <?php if (!empty($pages_hors_categories)): ?>
+            <div class="fc-nav-group">
+                <div class="fc-nav-group-toggle" onclick="fcToggleGroup(this)">
+                    <span><i class="fas fa-ellipsis-h"></i> Autres</span>
+                    <i class="fas fa-chevron-right fc-chevron"></i>
+                </div>
+                <div class="fc-nav-group-items">
+                    <?php foreach ($pages_hors_categories as $page):
+                        $chemin = $page['chemin'];
+                        if (!str_starts_with($chemin, 'pages/') && file_exists(BASE_PATH . '/pages/' . basename($chemin))) {
+                            $chemin = 'pages/' . basename($chemin);
+                        }
+                        $url = BASE_URL . ltrim($chemin, '/');
+                        $isActive = (basename($chemin) === $currentFile);
+                    ?>
+                        <a class="fc-nav-link <?= $isActive ? 'active' : '' ?>" href="<?= htmlspecialchars($url) ?>">
+                            <span><?= htmlspecialchars($page['nom']) ?></span>
+                        </a>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+        <?php endif; ?>
+    </nav>
+
+    <div class="fc-sidebar-footer">
+        <button class="fc-dark-toggle" onclick="fcToggleDark()" title="Mode sombre">
+            <i class="fas fa-moon" id="fcDarkIcon"></i>
+        </button>
+        <a href="<?= BASE_URL ?>profil.php" class="fc-user-block">
+            <i class="fas fa-user-circle"></i>
+            <span><?= htmlspecialchars($nom_utilisateur) ?></span>
+            <?php if ($role === 'admin'): ?>
+                <span class="fc-badge-admin">Admin</span>
+            <?php endif; ?>
+        </a>
+    </div>
+</aside>
+
+<!-- Top Bar -->
+<header class="fc-topbar" id="fcTopbar">
+    <button class="fc-hamburger" onclick="fcToggleSidebar()" aria-label="Menu">
+        <i class="fas fa-bars"></i>
+    </button>
+    <div class="fc-topbar-right">
+        <?php if (function_exists('langSelector')): ?>
+            <div class="fc-topbar-item"><?= langSelector() ?></div>
+        <?php endif; ?>
+        <?php if ($role === 'admin'): ?>
+        <div class="fc-topbar-dropdown">
+            <button class="fc-topbar-btn" onclick="fcToggleDropdown(this)" title="Administration">
+                <i class="fas fa-cog"></i>
+            </button>
+            <div class="fc-dropdown-menu">
+                <a href="<?= BASE_URL ?>pages/admin.php"><i class="fas fa-cog"></i> Administration</a>
+                <a href="<?= BASE_URL ?>pages/gestion_utilisateurs.php"><i class="fas fa-users-cog"></i> Utilisateurs & Droits</a>
+                <a href="<?= BASE_URL ?>pages/gestion_pages.php"><i class="fas fa-file-circle-plus"></i> Gestion pages</a>
+                <a href="<?= BASE_URL ?>pages/intervenants.php"><i class="fas fa-users"></i> Intervenants</a>
+            </div>
+        </div>
+        <?php endif; ?>
+        <form action="<?= BASE_URL ?>logout.php" method="post" class="fc-logout-form">
+            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
+            <button type="submit" class="fc-topbar-btn fc-btn-logout" title="Déconnexion">
+                <i class="fas fa-sign-out-alt"></i>
+            </button>
+        </form>
+    </div>
 </header>
+
+<div class="fc-sidebar-overlay" id="fcOverlay" onclick="fcToggleSidebar()"></div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function fcToggleSidebar(){
+    document.getElementById('fcSidebar').classList.toggle('open');
+    document.getElementById('fcOverlay').classList.toggle('visible');
+}
+function fcToggleGroup(el){
+    el.closest('.fc-nav-group').classList.toggle('open');
+    fcSaveNav();
+}
+function fcSaveNav(){
+    var g=[];document.querySelectorAll('.fc-nav-group.open .fc-nav-group-toggle span').forEach(function(s){g.push(s.textContent.trim());});
+    localStorage.setItem('fc_nav_open',JSON.stringify(g));
+}
+function fcRestoreNav(){
+    try{var s=JSON.parse(localStorage.getItem('fc_nav_open'));if(s&&Array.isArray(s)){document.querySelectorAll('.fc-nav-group').forEach(function(g){var l=g.querySelector('.fc-nav-group-toggle span');if(l&&s.indexOf(l.textContent.trim())!==-1)g.classList.add('open');});}}catch(e){}
+}
+function fcToggleDark(){
+    var h=document.documentElement,d=h.getAttribute('data-theme')==='dark';
+    h.setAttribute('data-theme',d?'light':'dark');
+    localStorage.setItem('fc_theme',d?'light':'dark');
+    fcUpdateDarkIcon();
+}
+function fcUpdateDarkIcon(){
+    var i=document.getElementById('fcDarkIcon');
+    if(i)i.className=document.documentElement.getAttribute('data-theme')==='dark'?'fas fa-sun':'fas fa-moon';
+}
+function fcToggleDropdown(btn){
+    var m=btn.nextElementSibling;m.classList.toggle('show');
+    setTimeout(function(){document.addEventListener('click',function h(e){if(!btn.parentElement.contains(e.target)){m.classList.remove('show');document.removeEventListener('click',h);}});},0);
+}
+document.addEventListener('DOMContentLoaded',function(){fcUpdateDarkIcon();fcRestoreNav();});
+</script>

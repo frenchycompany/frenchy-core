@@ -180,82 +180,102 @@ if ($is_admin) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Accueil — FrenchyConciergerie</title>
     <style>
-        .accueil-container { max-width: 900px; margin: 0 auto; padding: 0 10px 40px; }
+        .accueil-container { max-width: 960px; margin: 0 auto; padding: 20px 16px 40px; }
         .welcome-card {
-            background: linear-gradient(135deg, #1976d2, #1565c0);
-            color: #fff; border-radius: 16px; padding: 24px; margin-bottom: 20px;
+            background: linear-gradient(135deg, #17a2b8, #138496);
+            color: #fff; border-radius: 16px; padding: 28px; margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(23, 162, 184, 0.3);
         }
-        .welcome-card h2 { margin: 0 0 6px; font-size: 1.4em; }
-        .welcome-card .paie { font-size: 1.8em; font-weight: 700; }
-        .welcome-card small { opacity: 0.8; }
+        .welcome-card h2 { margin: 0 0 6px; font-size: 1.5em; font-weight: 600; }
+        .welcome-card .paie { font-size: 2em; font-weight: 700; }
+        .welcome-card small { opacity: 0.85; }
 
-        .stat-row { display: flex; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; }
+        .stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px; }
         .stat-card {
-            flex: 1; min-width: 120px; background: #fff; border-radius: 12px;
-            padding: 16px; text-align: center; box-shadow: 0 1px 6px rgba(0,0,0,0.08);
+            background: var(--fc-content-bg, #fff); border-radius: 12px;
+            padding: 18px; text-align: center; box-shadow: var(--fc-card-shadow, 0 2px 8px rgba(0,0,0,0.06));
+            transition: transform 0.2s, box-shadow 0.2s;
         }
-        .stat-card .num { font-size: 1.8em; font-weight: 700; }
-        .stat-card .label { font-size: 0.85em; color: #888; }
+        .stat-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .stat-card .num { font-size: 1.9em; font-weight: 700; }
+        .stat-card .label { font-size: 0.82em; color: var(--fc-text-secondary, #888); margin-top: 4px; }
 
         .section-title {
-            font-weight: 700; font-size: 1.1em; margin: 22px 0 10px;
+            font-weight: 700; font-size: 1.1em; margin: 26px 0 12px;
             display: flex; align-items: center; gap: 8px;
+            color: var(--fc-text-primary, #212529);
         }
-        .section-title i { color: #1976d2; }
+        .section-title i { color: #17a2b8; }
 
         .intervention-card {
-            background: #fff; border-radius: 12px; padding: 16px; margin-bottom: 10px;
-            box-shadow: 0 1px 5px rgba(0,0,0,0.06); border-left: 4px solid #1976d2;
+            background: var(--fc-content-bg, #fff); border-radius: 12px; padding: 18px; margin-bottom: 10px;
+            box-shadow: var(--fc-card-shadow, 0 2px 8px rgba(0,0,0,0.06)); border-left: 4px solid #17a2b8;
+            transition: transform 0.15s, box-shadow 0.15s;
         }
+        .intervention-card:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         .intervention-card.statut-fait { border-left-color: #43a047; opacity: 0.7; }
         .intervention-card.statut-annule { border-left-color: #bbb; opacity: 0.5; }
         .intervention-card.statut-a-verifier { border-left-color: #ff9800; }
-        .intervention-card .logement-name { font-weight: 700; font-size: 1.05em; }
-        .intervention-card .badges { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+        .intervention-card .logement-name { font-weight: 700; font-size: 1.05em; color: var(--fc-text-primary, #212529); }
+        .intervention-card .badges { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
         .intervention-card .badge-role {
-            padding: 3px 10px; border-radius: 20px; font-size: 0.78em; font-weight: 600;
+            padding: 4px 10px; border-radius: 20px; font-size: 0.78em; font-weight: 600;
         }
-        .intervention-card .actions-row { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+        .intervention-card .actions-row { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
         .intervention-card .actions-row a, .intervention-card .actions-row button {
-            padding: 6px 14px; border-radius: 8px; font-size: 0.85em; font-weight: 600;
-            text-decoration: none; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;
+            padding: 7px 16px; border-radius: 8px; font-size: 0.85em; font-weight: 600;
+            text-decoration: none; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;
+            transition: all 0.15s;
         }
         .btn-checkup { background: #e8f5e9; color: #2e7d32; }
-        .btn-checkup:hover { background: #c8e6c9; }
-        .btn-valider { background: #e3f2fd; color: #1565c0; }
-        .btn-valider:hover { background: #bbdefb; }
+        .btn-checkup:hover { background: #c8e6c9; transform: translateY(-1px); }
+        .btn-valider { background: #e0f7fa; color: #00838f; }
+        .btn-valider:hover { background: #b2ebf2; transform: translateY(-1px); }
 
         .next-card {
             display: flex; align-items: center; gap: 12px;
-            background: #fff; border-radius: 10px; padding: 12px 14px; margin-bottom: 6px;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+            background: var(--fc-content-bg, #fff); border-radius: 10px; padding: 13px 16px; margin-bottom: 8px;
+            box-shadow: var(--fc-card-shadow, 0 2px 8px rgba(0,0,0,0.06));
+            transition: transform 0.15s;
         }
+        .next-card:hover { transform: translateX(4px); }
         .next-card .date-badge {
-            background: #e3f2fd; color: #1565c0; border-radius: 8px;
-            padding: 6px 10px; font-weight: 700; font-size: 0.9em; white-space: nowrap;
+            background: #e0f7fa; color: #00838f; border-radius: 8px;
+            padding: 6px 12px; font-weight: 700; font-size: 0.9em; white-space: nowrap;
         }
 
         .checkup-card {
             display: flex; align-items: center; justify-content: space-between;
-            background: #fff3e0; border-radius: 10px; padding: 12px 14px; margin-bottom: 6px;
+            background: #fff3e0; border-radius: 10px; padding: 13px 16px; margin-bottom: 8px;
         }
         .checkup-card a {
-            background: #ff9800; color: #fff; padding: 6px 14px; border-radius: 8px;
+            background: #ff9800; color: #fff; padding: 7px 16px; border-radius: 8px;
             text-decoration: none; font-weight: 600; font-size: 0.85em;
+            transition: background 0.15s;
         }
+        .checkup-card a:hover { background: #f57c00; }
 
         .notif-item {
-            background: #f5f5f5; border-radius: 8px; padding: 10px 12px; margin-bottom: 6px;
-            font-size: 0.9em;
+            background: var(--fc-content-bg, #f5f5f5); border-radius: 10px; padding: 12px 14px; margin-bottom: 8px;
+            font-size: 0.9em; box-shadow: var(--fc-card-shadow, 0 1px 4px rgba(0,0,0,0.04));
+            border-left: 3px solid #17a2b8;
         }
-        .notif-item .notif-date { color: #999; font-size: 0.8em; }
+        .notif-item .notif-date { color: var(--fc-text-secondary, #999); font-size: 0.8em; }
 
-        .empty-state { text-align: center; color: #bbb; padding: 30px; font-size: 0.95em; }
+        .empty-state { text-align: center; color: var(--fc-text-secondary, #bbb); padding: 40px; font-size: 0.95em; }
+
+        /* Dark mode overrides for dashboard */
+        [data-theme="dark"] .welcome-card { box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4); }
+        [data-theme="dark"] .checkup-card { background: rgba(255, 152, 0, 0.15); }
+        [data-theme="dark"] .checkup-card div { color: var(--fc-text-primary, #e1e4e8); }
+        [data-theme="dark"] .btn-checkup { background: rgba(46, 125, 50, 0.15); color: #66bb6a; }
+        [data-theme="dark"] .btn-valider { background: rgba(0, 131, 143, 0.15); color: #4dd0e1; }
 
         @media (max-width: 600px) {
-            .stat-row { gap: 6px; }
-            .stat-card { padding: 12px 8px; }
-            .stat-card .num { font-size: 1.4em; }
+            .accueil-container { padding: 12px 10px 40px; }
+            .stat-row { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+            .stat-card { padding: 14px 10px; }
+            .stat-card .num { font-size: 1.5em; }
         }
     </style>
 </head>
