@@ -6,8 +6,41 @@
  */
 include '../config.php';
 include '../pages/menu.php';
-require_once __DIR__ . '/../includes/Auth.php';
 require_once __DIR__ . '/../includes/csrf.php';
+
+// Vérifier que la table users existe (migration nécessaire)
+$usersTableExists = false;
+try {
+    $conn->query("SELECT 1 FROM users LIMIT 1");
+    $usersTableExists = true;
+} catch (PDOException $e) {}
+
+if (!$usersTableExists) {
+    ?>
+    <!DOCTYPE html>
+    <html lang="fr">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Gestion des Utilisateurs — FrenchyConciergerie</title>
+        <link rel="stylesheet" href="../css/style.css">
+    </head>
+    <body>
+    <div class="container-fluid mt-4">
+        <div class="alert alert-warning">
+            <h4><i class="fas fa-exclamation-triangle"></i> Migration requise</h4>
+            <p>La table <code>users</code> n'existe pas encore. Vous devez exécuter la migration pour utiliser cette page :</p>
+            <pre class="bg-light p-2 rounded">php ionos/gestion/db/migrations/migrate_to_unified_auth.php</pre>
+            <p class="mb-0">En attendant, la gestion des accès se fait via la page <a href="intervenants.php">Intervenants</a>.</p>
+        </div>
+    </div>
+    </body>
+    </html>
+    <?php
+    exit;
+}
+
+require_once __DIR__ . '/../includes/Auth.php';
 
 $auth = new Auth($conn);
 $auth->requireAdmin('login.php');

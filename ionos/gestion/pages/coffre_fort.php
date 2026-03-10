@@ -12,14 +12,19 @@ $auth = new Auth($conn);
 $auth->requireAdmin('../login.php');
 
 $csrf_token = $auth->csrfToken();
-$userId = $_SESSION['user_id'];
-$userNom = $_SESSION['user_nom'] ?? 'Admin';
+$userId = $_SESSION['user_id'] ?? $_SESSION['id_intervenant'] ?? 0;
+$userNom = $_SESSION['user_nom'] ?? $_SESSION['nom_utilisateur'] ?? 'Admin';
 $coffre = new CoffreFort($conn);
 
 // Récupérer le numéro de téléphone de l'utilisateur
-$stmtUser = $conn->prepare("SELECT telephone FROM users WHERE id = ?");
-$stmtUser->execute([$userId]);
-$userPhone = $stmtUser->fetchColumn();
+$userPhone = '';
+try {
+    $stmtUser = $conn->prepare("SELECT telephone FROM users WHERE id = ?");
+    $stmtUser->execute([$userId]);
+    $userPhone = $stmtUser->fetchColumn() ?: '';
+} catch (PDOException $e) {
+    // Table users n'existe pas — pas de téléphone disponible
+}
 
 $message = '';
 $messageType = '';
