@@ -16,8 +16,14 @@
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/auth.php';
 
-// Verifier authentification
-requireAuth();
+// Auth: session OU token API (appels inter-serveurs)
+$authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
+$cronSecret = env('CRON_SECRET', '');
+if ($cronSecret && preg_match('/^Bearer\s+(.+)$/i', $authHeader, $m) && hash_equals($cronSecret, $m[1])) {
+    // Authentifie par token inter-serveur
+} else {
+    requireAuth();
+}
 
 header('Content-Type: application/json');
 

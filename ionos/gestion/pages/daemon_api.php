@@ -39,7 +39,8 @@ function proxyToRpi($action, $method = 'GET', $postData = null) {
         'http' => [
             'method' => $method,
             'timeout' => 10,
-            'header' => "Content-Type: application/x-www-form-urlencoded\r\n",
+            'header' => "Content-Type: application/x-www-form-urlencoded\r\n"
+                      . "Authorization: Bearer " . env('CRON_SECRET', '') . "\r\n",
         ]
     ];
     if ($method === 'POST' && $postData) {

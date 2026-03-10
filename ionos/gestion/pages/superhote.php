@@ -349,7 +349,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     // Notifier le RPI pour mettre a jour les timers systemd
                     $rpiUrl = RPI_BASE_URL . '/pages/daemon_api.php?action=update_schedule&times=' . urlencode($timesString);
-                    @file_get_contents($rpiUrl, false, stream_context_create(['http' => ['timeout' => 5]]));
+                    $rpiAuthHeader = "Authorization: Bearer " . env('CRON_SECRET', '') . "\r\n";
+                    @file_get_contents($rpiUrl, false, stream_context_create(['http' => ['timeout' => 5, 'header' => $rpiAuthHeader]]));
 
                     $count = count($validTimes);
                     $message = "Planification sauvegardee! $count mise(s) a jour/jour: " . implode(', ', $validTimes);
@@ -367,7 +368,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'http' => [
                         'method' => 'POST',
                         'timeout' => 10,
-                        'header' => "Content-Type: application/x-www-form-urlencoded\r\n",
+                        'header' => "Content-Type: application/x-www-form-urlencoded\r\n"
+                                  . "Authorization: Bearer " . env('CRON_SECRET', '') . "\r\n",
                     ]
                 ]);
                 $rpiResponse = @file_get_contents($rpiUrl, false, $ctx);
