@@ -50,14 +50,13 @@ if (file_exists(__DIR__ . '/../includes/i18n.php')) {
     require_once __DIR__ . '/../includes/i18n.php';
 }
 
-// Pages accessibles depuis la BDD (système de permissions)
-// Compatible avec l'ancien système (intervenants_pages) et le nouveau (user_permissions)
+// Pages accessibles depuis la BDD (système de permissions unifié via user_permissions)
 $pages_accessibles = [];
 try {
     if ($role === 'admin') {
         $stmt = $conn->query("SELECT id, nom, chemin FROM pages WHERE afficher_menu = 1");
+        $pages_accessibles = $stmt->fetchAll(PDO::FETCH_ASSOC);
     } else {
-        // Essayer d'abord le nouveau système (user_permissions)
         $user_id = $_SESSION['user_id'] ?? null;
         if ($user_id) {
             $stmt = $conn->prepare(
@@ -71,25 +70,6 @@ try {
             $stmt->execute();
             $pages_accessibles = $stmt->fetchAll(PDO::FETCH_ASSOC);
         }
-
-        // Fallback : ancien système (intervenants_pages)
-        if (empty($pages_accessibles)) {
-            $stmt = $conn->prepare(
-                "SELECT p.id, p.nom, p.chemin
-                 FROM pages p
-                 INNER JOIN intervenants_pages ip ON p.id = ip.page_id
-                 WHERE ip.intervenant_id = :id_intervenant
-                   AND p.afficher_menu = 1"
-            );
-            $stmt->bindValue(':id_intervenant', $id_intervenant, PDO::PARAM_INT);
-            $stmt->execute();
-            $pages_accessibles = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        }
-    }
-    if (empty($pages_accessibles) && $role !== 'admin') {
-        // Déjà récupéré ci-dessus
-    } else if ($role === 'admin') {
-        $pages_accessibles = $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 } catch (PDOException $e) {
     error_log('Erreur BD dans menu.php : ' . $e->getMessage());
@@ -252,10 +232,12 @@ foreach ($pages_accessibles as $page) {
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item" href="<?= BASE_URL ?>pages/admin.php">
                             <i class="fas fa-cog"></i> Administration</a></li>
+                        <li><a class="dropdown-item" href="<?= BASE_URL ?>pages/gestion_utilisateurs.php">
+                            <i class="fas fa-users-cog"></i> Utilisateurs & Droits</a></li>
                         <li><a class="dropdown-item" href="<?= BASE_URL ?>pages/gestion_pages.php">
                             <i class="fas fa-file-circle-plus"></i> Gestion pages</a></li>
                         <li><a class="dropdown-item" href="<?= BASE_URL ?>pages/intervenants.php">
-                            <i class="fas fa-users"></i> Intervenants</a></li>
+                            <i class="fas fa-users"></i> Intervenants (legacy)</a></li>
                         <?php endif; ?>
                         <li><hr class="dropdown-divider"></li>
                         <li>

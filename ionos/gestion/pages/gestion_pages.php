@@ -4,13 +4,12 @@
  */
 include '../config.php';
 include '../pages/menu.php';
+require_once __DIR__ . '/../includes/Auth.php';
 require_once __DIR__ . '/../includes/csrf.php';
 
-// Vérification admin
-if (($_SESSION['role'] ?? '') !== 'admin') {
-    header("Location: ../error.php?message=" . urlencode('Accès réservé aux administrateurs.'));
-    exit;
-}
+// Vérification admin via Auth unifié
+$auth = new Auth($conn);
+$auth->requireAdmin('login.php');
 
 $feedback = '';
 
@@ -63,13 +62,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['delete_page'])) {
         $page_id = (int) $_POST['page_id'];
         try {
-            // Vérifier si des intervenants utilisent cette page
-            $count = $conn->prepare("SELECT COUNT(*) FROM intervenants_pages WHERE page_id = ?");
+            // Vérifier si des utilisateurs ont accès à cette page
+            $count = $conn->prepare("SELECT COUNT(*) FROM user_permissions WHERE page_id = ?");
             $count->execute([$page_id]);
             $nb = $count->fetchColumn();
 
             if ($nb > 0) {
-                $feedback = '<div class="alert alert-warning">Impossible de supprimer : ' . $nb . ' intervenant(s) ont accès à cette page.</div>';
+                $feedback = '<div class="alert alert-warning">Impossible de supprimer : ' . $nb . ' utilisateur(s) ont accès à cette page. <a href="gestion_utilisateurs.php">Gérer les droits</a></div>';
             } else {
                 $conn->prepare("DELETE FROM pages WHERE id = ?")->execute([$page_id]);
                 $feedback = '<div class="alert alert-success alert-dismissible fade show">Page supprimée.<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
@@ -124,7 +123,7 @@ if ($synced > 0) {
 // ============================================================
 $pages = $conn->query("
     SELECT p.id, p.nom, p.chemin, p.afficher_menu,
-           (SELECT COUNT(*) FROM intervenants_pages ip WHERE ip.page_id = p.id) AS nb_users
+           (SELECT COUNT(*) FROM user_permissions up WHERE up.page_id = p.id) AS nb_users
     FROM pages p
     ORDER BY p.afficher_menu DESC, p.nom ASC
 ")->fetchAll(PDO::FETCH_ASSOC);
