@@ -5,6 +5,11 @@
  * Permissions : admin = tout, user = pages assignées en BDD
  */
 
+// Output buffering : permet aux pages d'appeler header() après cet include
+if (!ob_get_level()) {
+    ob_start();
+}
+
 if (!defined('BASE_PATH')) {
     define('BASE_PATH', realpath(__DIR__ . '/..'));
 }
@@ -145,7 +150,7 @@ foreach ($pages_accessibles as $page) {
 <!-- Bootstrap 5 + FontAwesome -->
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<link rel="stylesheet" href="<?= BASE_URL ?>css/menu.css">
+<link rel="stylesheet" href="<?= BASE_URL ?>css/menu.css?v=2">
 <script>
 // Apply theme immediately to prevent flash
 (function(){var t=localStorage.getItem('fc_theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');})();
