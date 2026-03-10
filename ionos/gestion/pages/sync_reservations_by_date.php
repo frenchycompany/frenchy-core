@@ -7,7 +7,7 @@ date_default_timezone_set('Europe/Paris');
 
 require_once '../config.php'; // $conn = LOCAL (Ionos) — démarre déjà la session
 
-$DEBUG   = isset($_GET['debug'])   && $_GET['debug'] === '1';
+$DEBUG   = (isset($_GET['debug']) && $_GET['debug'] === '1') || (isset($_SESSION['role']) && $_SESSION['role'] === 'admin');
 $DRY_RUN = isset($_GET['dry_run']) && $_GET['dry_run'] === '1';
 
 // ---- lecture et validation de la date cible ----
@@ -49,8 +49,10 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
 
 // Connexion REMOTE (Raspberry) via helper centralisé
 require_once __DIR__ . '/../includes/rpi_db.php';
+$remoteOk = false;
 try {
     $pdoRemote = getRpiPdo();
+    $remoteOk = true;
 } catch (Throwable $e) {
     jerr(500, 'Connexion distante impossible.', $DEBUG?['ex'=>$e->getMessage()]:[]);
 }
@@ -93,6 +95,7 @@ if ($localHasReservation) {
 }
 
 // Charger logements actifs
+$logements = [];
 try {
     $stLog = $conn->query("SELECT id, nom_du_logement, nombre_de_personnes FROM liste_logements WHERE actif = 1");
     $rows = $stLog->fetchAll(PDO::FETCH_ASSOC);
