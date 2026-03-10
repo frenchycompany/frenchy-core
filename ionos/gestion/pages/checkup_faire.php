@@ -146,7 +146,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['terminer'])) {
         $videoFile = $_FILES['video_fin'];
         $videoExt = strtolower(pathinfo($videoFile['name'], PATHINFO_EXTENSION));
         $allowedVideoExt = ['mp4', 'mov', 'webm', 'avi', 'mkv'];
-        $maxVideoSize = 100 * 1024 * 1024; // 100 Mo
+        $maxVideoSize = 500 * 1024 * 1024; // 500 Mo
 
         if (in_array($videoExt, $allowedVideoExt) && $videoFile['size'] <= $maxVideoSize) {
             $videoDir = __DIR__ . '/../uploads/checkup/';

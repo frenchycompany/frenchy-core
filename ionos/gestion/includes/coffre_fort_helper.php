@@ -16,8 +16,8 @@ class CoffreFort
     const CODE_EXPIRY = 300;
     // Max tentatives code 2FA
     const MAX_ATTEMPTS = 3;
-    // Taille max upload (200 Mo)
-    const MAX_FILE_SIZE = 200 * 1024 * 1024;
+    // Taille max upload (500 Mo)
+    const MAX_FILE_SIZE = 500 * 1024 * 1024;
 
     const ALLOWED_TYPES = [
         'image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic',

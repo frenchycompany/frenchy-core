@@ -122,8 +122,8 @@ if ($action === 'upload_photo') {
         exit;
     }
 
-    if ($file['size'] > 5 * 1024 * 1024) {
-        echo json_encode(['success' => false, 'error' => 'Fichier trop volumineux (max 5 Mo)']);
+    if ($file['size'] > 500 * 1024 * 1024) {
+        echo json_encode(['success' => false, 'error' => 'Fichier trop volumineux (max 500 Mo)']);
         exit;
     }
 

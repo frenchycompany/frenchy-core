@@ -113,7 +113,7 @@ if ($isLogged && $_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             $allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-            $maxSize = 5 * 1024 * 1024; // 5 Mo
+            $maxSize = 500 * 1024 * 1024; // 500 Mo
 
             if (in_array($_FILES['photo']['type'], $allowedTypes) && $_FILES['photo']['size'] <= $maxSize) {
                 $ext = pathinfo($_FILES['photo']['name'], PATHINFO_EXTENSION);
