@@ -58,6 +58,37 @@ function loadLogementEquipements($conn, $logementId) {
     }
 }
 
+// ── Helper : charger les photos d'un logement ──
+function loadLogementPhotos($conn, $logementId) {
+    try {
+        $stmt = $conn->prepare("SELECT * FROM logement_photos WHERE logement_id = :id ORDER BY ordre, id");
+        $stmt->execute([':id' => $logementId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    } catch (PDOException $e) {
+        return [];
+    }
+}
+
+// ── Helper : générer l'URL publique de recommandations pour un logement ──
+function buildRecommandationsUrl($conn, $logementId) {
+    try {
+        $stmt = $conn->prepare("SELECT ville_id FROM liste_logements WHERE id = ?");
+        $stmt->execute([$logementId]);
+        $villeId = $stmt->fetchColumn();
+        if (!$villeId) return '';
+
+        // Vérifier qu'il y a des recommandations pour cette ville
+        $stmt = $conn->prepare("SELECT COUNT(*) FROM ville_recommandations WHERE ville_id = ? AND actif = 1");
+        $stmt->execute([$villeId]);
+        if ($stmt->fetchColumn() == 0) return '';
+
+        $token = md5($logementId . '-frenchybnb');
+        return '/pages/recommandations_logement.php?token=' . $token;
+    } catch (PDOException $e) {
+        return '';
+    }
+}
+
 // ── Helper : créer les tables BDD avec préfixe ──
 function createSiteTables($conn, $dbPrefix, $siteName, $logementData, $equipements) {
     $schemaFile = __DIR__ . '/../../../frenchysite/db/schema.sql';
@@ -84,12 +115,49 @@ function createSiteTables($conn, $dbPrefix, $siteName, $logementData, $equipemen
         $stmtSetting->execute([$logementData['adresse'], 'site_location']);
     }
     if (!empty($logementData['description'])) {
-        $tagline = mb_substr(strip_tags($logementData['description']), 0, 100);
+        $descClean = strip_tags($logementData['description']);
+        $tagline = mb_substr($descClean, 0, 100);
         $stmtSetting->execute([$tagline, 'site_tagline']);
+    }
+
+    // Intégrations : Airbnb
+    if (!empty($logementData['airbnb_url'])) {
+        $stmtSetting->execute([$logementData['airbnb_url'], 'airbnb_url']);
+        // Extraire l'ID Airbnb depuis l'URL (format: /rooms/123456)
+        if (preg_match('#/rooms/(\d+)#', $logementData['airbnb_url'], $m)) {
+            $stmtSetting->execute([$m[1], 'airbnb_id']);
+        }
+    }
+
+    // ICS URL pour calendrier
+    if (!empty($logementData['ics_url'])) {
+        $stmtSetting->execute([$logementData['ics_url'], 'ics_url']);
+    }
+
+    // Recommandations URL (auto-générée si ville avec recommandations)
+    $recoUrl = buildRecommandationsUrl($conn, $logementData['id']);
+    if ($recoUrl) {
+        $stmtSetting->execute([$recoUrl, 'recommandations_url']);
     }
 
     // Mettre à jour les textes avec les équipements
     $stmtText = $conn->prepare("UPDATE {$dbPrefix}texts SET field_value = ? WHERE section_key = ? AND field_key = ?");
+
+    // Histoire : utiliser la description du logement
+    if (!empty($logementData['description'])) {
+        $descClean = strip_tags($logementData['description']);
+        // Découper en 2 paragraphes si la description est assez longue
+        $sentences = preg_split('/(?<=[.!?])\s+/', $descClean, -1, PREG_SPLIT_NO_EMPTY);
+        if (count($sentences) > 2) {
+            $mid = (int)ceil(count($sentences) / 2);
+            $para1 = implode(' ', array_slice($sentences, 0, $mid));
+            $para2 = implode(' ', array_slice($sentences, $mid));
+            $stmtText->execute([$para1, 'histoire', 'para1']);
+            $stmtText->execute([$para2, 'histoire', 'para2']);
+        } else {
+            $stmtText->execute([$descClean, 'histoire', 'para1']);
+        }
+    }
 
     if (!empty($equipements)) {
         if (!empty($equipements['nombre_couchages'])) {
@@ -212,6 +280,165 @@ function createSiteTables($conn, $dbPrefix, $siteName, $logementData, $equipemen
     }
 }
 
+// ── Helper : copier les photos du logement vers le site déployé ──
+function deployLogementPhotos($conn, $dbPrefix, $logementId, $deployPath) {
+    $photos = loadLogementPhotos($conn, $logementId);
+    if (empty($photos)) return 0;
+
+    $uploadSource = __DIR__ . '/../uploads/photos/';
+    $imported = 0;
+
+    foreach ($photos as $i => $photo) {
+        $srcFile = $uploadSource . $photo['filename'];
+        if (!file_exists($srcFile)) continue;
+
+        // Déterminer le groupe de destination
+        if ($i === 0) {
+            // Première photo = hero
+            $group = 'hero';
+            $key = 'hero';
+            $destDir = $deployPath . '/assets/photos/hero/';
+        } elseif ($i <= 6) {
+            // Photos 2-7 = galerie
+            $group = 'galerie';
+            $key = 'photo_' . $i;
+            $destDir = $deployPath . '/assets/photos/galerie/';
+        } else {
+            // Photos 8+ = aussi galerie
+            $group = 'galerie';
+            $key = 'photo_' . $i;
+            $destDir = $deployPath . '/assets/photos/galerie/';
+        }
+
+        if (!is_dir($destDir)) {
+            mkdir($destDir, 0755, true);
+        }
+
+        // Copier le fichier
+        $destFile = $destDir . $photo['filename'];
+        if (!copy($srcFile, $destFile)) continue;
+
+        $relPath = 'assets/photos/' . ($group === 'hero' ? 'hero/' : 'galerie/') . $photo['filename'];
+        $isWide = ($i === 0 || $i === 1 || $i === 6) ? 1 : 0;
+        $alt = $photo['caption'] ?: 'Photo du logement';
+
+        // Insérer dans la table photos du site
+        try {
+            $conn->prepare("INSERT INTO {$dbPrefix}photos (photo_group, photo_key, file_path, alt_text, is_wide, sort_order) VALUES (?, ?, ?, ?, ?, ?)")
+                 ->execute([$group, $key, $relPath, $alt, $isWide, $i]);
+            $imported++;
+        } catch (PDOException $e) {
+            error_log('deployLogementPhotos: ' . $e->getMessage());
+        }
+    }
+
+    // Photos 2-4 pour la section expérience (si on a assez de photos)
+    $expKeys = ['confort', 'charme', 'accueil'];
+    for ($j = 0; $j < 3; $j++) {
+        $idx = $j + 1; // photos 2, 3, 4
+        if (isset($photos[$idx])) {
+            $srcFile = $uploadSource . $photos[$idx]['filename'];
+            if (!file_exists($srcFile)) continue;
+
+            $destDir = $deployPath . '/assets/photos/experience/';
+            if (!is_dir($destDir)) mkdir($destDir, 0755, true);
+
+            $destFile = $destDir . $photos[$idx]['filename'];
+            copy($srcFile, $destFile);
+
+            $relPath = 'assets/photos/experience/' . $photos[$idx]['filename'];
+            try {
+                $conn->prepare("INSERT INTO {$dbPrefix}photos (photo_group, photo_key, file_path, alt_text, sort_order) VALUES (?, ?, ?, ?, ?)")
+                     ->execute(['experience', $expKeys[$j], $relPath, $photos[$idx]['caption'] ?: ucfirst($expKeys[$j]), $j]);
+            } catch (PDOException $e) {
+                error_log('deployLogementPhotos exp: ' . $e->getMessage());
+            }
+        }
+    }
+
+    return $imported;
+}
+
+// ── Helper : resynchroniser les données d'un site existant ──
+function resyncSiteData($conn, $dbPrefix, $logementId) {
+    $logStmt = $conn->prepare("SELECT * FROM liste_logements WHERE id = ?");
+    $logStmt->execute([$logementId]);
+    $logement = $logStmt->fetch(PDO::FETCH_ASSOC);
+    if (!$logement) return 'Logement introuvable';
+
+    $equipements = loadLogementEquipements($conn, $logementId);
+
+    $stmtSetting = $conn->prepare("UPDATE {$dbPrefix}settings SET setting_value = ? WHERE setting_key = ?");
+
+    // Identité
+    $stmtSetting->execute([$logement['nom_du_logement'], 'site_name']);
+    if (!empty($logement['adresse'])) {
+        $stmtSetting->execute([$logement['adresse'], 'address']);
+        $stmtSetting->execute([$logement['adresse'], 'site_location']);
+    }
+    if (!empty($logement['description'])) {
+        $stmtSetting->execute([mb_substr(strip_tags($logement['description']), 0, 100), 'site_tagline']);
+    }
+
+    // Airbnb
+    if (!empty($logement['airbnb_url'])) {
+        $stmtSetting->execute([$logement['airbnb_url'], 'airbnb_url']);
+        if (preg_match('#/rooms/(\d+)#', $logement['airbnb_url'], $m)) {
+            $stmtSetting->execute([$m[1], 'airbnb_id']);
+        }
+    }
+
+    // ICS
+    if (!empty($logement['ics_url'])) {
+        $stmtSetting->execute([$logement['ics_url'], 'ics_url']);
+    }
+
+    // Recommandations
+    $recoUrl = buildRecommandationsUrl($conn, $logementId);
+    if ($recoUrl) {
+        $stmtSetting->execute([$recoUrl, 'recommandations_url']);
+    }
+
+    // Bandeau chiffres clés
+    $stmtText = $conn->prepare("UPDATE {$dbPrefix}texts SET field_value = ? WHERE section_key = ? AND field_key = ?");
+    if (!empty($equipements['nombre_couchages'])) {
+        $stmtText->execute([(string)$equipements['nombre_couchages'], 'band', 'stat1_number']);
+    }
+    if (!empty($equipements['nombre_chambres'])) {
+        $stmtText->execute([(string)$equipements['nombre_chambres'], 'band', 'stat2_number']);
+    }
+    if (!empty($equipements['superficie_m2'])) {
+        $stmtText->execute([(string)$equipements['superficie_m2'], 'band', 'stat3_number']);
+    }
+
+    // Description → histoire
+    if (!empty($logement['description'])) {
+        $descClean = strip_tags($logement['description']);
+        $sentences = preg_split('/(?<=[.!?])\s+/', $descClean, -1, PREG_SPLIT_NO_EMPTY);
+        if (count($sentences) > 2) {
+            $mid = (int)ceil(count($sentences) / 2);
+            $stmtText->execute([implode(' ', array_slice($sentences, 0, $mid)), 'histoire', 'para1']);
+            $stmtText->execute([implode(' ', array_slice($sentences, $mid)), 'histoire', 'para2']);
+        } else {
+            $stmtText->execute([$descClean, 'histoire', 'para1']);
+        }
+    }
+
+    // WiFi
+    if (!empty($equipements['nom_wifi']))  $stmtText->execute([$equipements['nom_wifi'], 'guide_wifi', 'network_name']);
+    if (!empty($equipements['code_wifi'])) $stmtText->execute([$equipements['code_wifi'], 'guide_wifi', 'password']);
+
+    // Horaires
+    $horaires = [];
+    if (!empty($equipements['heure_checkin']))  $horaires[] = 'Arrivée à partir de ' . $equipements['heure_checkin'];
+    if (!empty($equipements['heure_checkout'])) $horaires[] = 'Départ avant ' . $equipements['heure_checkout'];
+    if (!empty($horaires)) {
+        $stmtText->execute([implode(' · ', $horaires), 'hero', 'kicker']);
+    }
+
+    return true;
+}
+
 // ── Helper : copier un dossier récursivement ──
 function copyDir($src, $dst) {
     if (!is_dir($src)) {
@@ -235,7 +462,7 @@ function copyDir($src, $dst) {
 }
 
 // ── Helper : déployer le moteur FrenchySite dans un dossier ──
-function deploySite($frenchysiteSource, $deployPath, $dbPrefix, $siteName, $logementData, $adminPass) {
+function deploySite($frenchysiteSource, $deployPath, $dbPrefix, $siteName, $logementData, $adminPass, $conn = null) {
     // 1. Copier le moteur
     copyDir($frenchysiteSource, $deployPath);
 
@@ -257,8 +484,12 @@ function deploySite($frenchysiteSource, $deployPath, $dbPrefix, $siteName, $loge
         . "    'email'     => 'contact@frenchyconciergerie.fr',\n"
         . "    'address'   => " . var_export($location, true) . ",\n"
         . "    'db_prefix' => " . var_export($dbPrefix, true) . ",\n"
-        . "    'airbnb_id'     => '',\n"
+        . "    'airbnb_id'     => " . var_export(!empty($logementData['airbnb_url']) && preg_match('#/rooms/(\d+)#', $logementData['airbnb_url'], $_m) ? $_m[1] : '', true) . ",\n"
+        . "    'airbnb_url'    => " . var_export($logementData['airbnb_url'] ?? '', true) . ",\n"
+        . "    'ics_url'       => " . var_export($logementData['ics_url'] ?? '', true) . ",\n"
         . "    'matterport_id' => '',\n"
+        . "    'superhote_planning_url' => '',\n"
+        . "    'recommandations_url'    => " . var_export($conn ? buildRecommandationsUrl($conn, $logementData['id']) : '', true) . ",\n"
         . "    'colors' => [\n"
         . "        'green'    => '#1D5345',\n"
         . "        'green_dk' => '#153d33',\n"
@@ -276,9 +507,11 @@ function deploySite($frenchysiteSource, $deployPath, $dbPrefix, $siteName, $loge
         . "        'histoire'    => ['label' => 'Histoire',      'nav' => 'Histoire'],\n"
         . "        'experience'  => ['label' => 'L\\'expérience', 'nav' => 'L\\'expérience'],\n"
         . "        'galerie'     => ['label' => 'Galerie',       'nav' => 'Galerie'],\n"
-        . "        'visite'      => ['label' => 'Visite 360°',   'nav' => 'Visite 360°'],\n"
-        . "        'reservation' => ['label' => 'Réservation',   'nav' => 'Réserver', 'id' => 'reserver'],\n"
-        . "        'contact'     => ['label' => 'Contact',       'nav' => 'Contact'],\n"
+        . "        'visite'          => ['label' => 'Visite 360°',    'nav' => 'Visite 360°'],\n"
+        . "        'recommandations' => ['label' => 'Recommandations','nav' => 'Recommandations'],\n"
+        . "        'planning'        => ['label' => 'Disponibilités','nav' => 'Disponibilités'],\n"
+        . "        'reservation'     => ['label' => 'Réservation',   'nav' => 'Réserver', 'id' => 'reserver'],\n"
+        . "        'contact'         => ['label' => 'Contact',       'nav' => 'Contact'],\n"
         . "    ],\n"
         . "    'guides' => [\n"
         . "        'wifi'    => ['label' => 'WiFi',    'admin_label' => 'WiFi',            'icon' => '<path d=\"M5 12.55a11 11 0 0 1 14.08 0\"/><path d=\"M1.42 9a16 16 0 0 1 21.16 0\"/><path d=\"M8.53 16.11a6 6 0 0 1 6.95 0\"/><circle cx=\"12\" cy=\"20\" r=\"1\" fill=\"currentColor\" stroke=\"none\"/>'],\n"
@@ -337,6 +570,11 @@ function deploySite($frenchysiteSource, $deployPath, $dbPrefix, $siteName, $loge
     $envExample = $deployPath . '/.env.example';
     if (file_exists($envExample)) {
         unlink($envExample);
+    }
+
+    // 6. Copier les photos du logement vers le site et les insérer en BDD
+    if ($conn && !empty($logementData['id'])) {
+        deployLogementPhotos($conn, $dbPrefix, $logementData['id'], $deployPath);
     }
 }
 
@@ -435,7 +673,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_site'])) {
                         createSiteTables($conn, $dbPrefix, $siteName, $logement, $equipements);
 
                         // 2. Déployer le moteur FrenchySite
-                        deploySite($frenchysiteSource, $deployPath, $dbPrefix, $siteName, $logement, $admin_pass);
+                        deploySite($frenchysiteSource, $deployPath, $dbPrefix, $siteName, $logement, $admin_pass, $conn);
 
                         // 3. Enregistrer l'instance
                         $passHash = password_hash($admin_pass, PASSWORD_BCRYPT);
@@ -495,6 +733,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_site'])) {
             $stmt->execute([':pass' => $passHash, ':id' => $id]);
         }
         $feedback = "<div class='alert alert-success'><i class='fas fa-check-circle'></i> Site mis à jour</div>";
+    } catch (PDOException $e) {
+        $feedback = "<div class='alert alert-danger'><i class='fas fa-exclamation-triangle'></i> Erreur : " . htmlspecialchars($e->getMessage()) . "</div>";
+    }
+}
+
+// ── RESYNCHRONISER les données d'un site ──
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['resync_site'])) {
+    validateCsrfToken();
+
+    $id = (int)$_POST['site_id'];
+    try {
+        $stmt = $conn->prepare("SELECT * FROM frenchysite_instances WHERE id = :id");
+        $stmt->execute([':id' => $id]);
+        $siteData = $stmt->fetch();
+
+        if ($siteData) {
+            $result = resyncSiteData($conn, $siteData['db_prefix'], $siteData['logement_id']);
+
+            // Resync photos si le dossier déployé existe
+            if (!empty($siteData['deploy_path']) && is_dir($siteData['deploy_path'])) {
+                // Vider les anciennes photos de la BDD du site
+                $conn->exec("DELETE FROM {$siteData['db_prefix']}photos");
+                $nbPhotos = deployLogementPhotos($conn, $siteData['db_prefix'], $siteData['logement_id'], $siteData['deploy_path']);
+                $photoMsg = $nbPhotos > 0 ? " — {$nbPhotos} photo(s) synchronisée(s)" : '';
+            } else {
+                $photoMsg = ' — dossier absent, photos non synchronisées';
+            }
+
+            if ($result === true) {
+                $feedback = "<div class='alert alert-success'><i class='fas fa-sync'></i> Site \"" . htmlspecialchars($siteData['site_name']) . "\" resynchronisé{$photoMsg}</div>";
+            } else {
+                $feedback = "<div class='alert alert-warning'><i class='fas fa-exclamation-triangle'></i> " . htmlspecialchars($result) . "</div>";
+            }
+        }
     } catch (PDOException $e) {
         $feedback = "<div class='alert alert-danger'><i class='fas fa-exclamation-triangle'></i> Erreur : " . htmlspecialchars($e->getMessage()) . "</div>";
     }
@@ -567,8 +839,17 @@ try {
 } catch (PDOException $e) { error_log('sites.php: ' . $e->getMessage()); }
 
 $sitesHealth = [];
+$sitesPhotos = [];
 foreach ($sites as $site) {
     $sitesHealth[$site['id']] = countSiteTables($conn, $site['db_prefix']);
+    // Compter les photos du logement source
+    try {
+        $stmt = $conn->prepare("SELECT COUNT(*) FROM logement_photos WHERE logement_id = ?");
+        $stmt->execute([$site['logement_id']]);
+        $sitesPhotos[$site['id']] = (int)$stmt->fetchColumn();
+    } catch (PDOException $e) {
+        $sitesPhotos[$site['id']] = 0;
+    }
 }
 ?>
 
@@ -660,9 +941,12 @@ foreach ($sites as $site) {
                         <li>Copie le moteur FrenchySite dans un nouveau dossier</li>
                         <li>Configure le <code>.env</code> et <code>property.php</code></li>
                         <li>Pré-remplit les données du logement et équipements</li>
+                        <li>Copie les photos importées (hero, galerie, expérience)</li>
+                        <li>Injecte Airbnb, calendrier, recommandations</li>
                     </ul>
                     <strong>3.</strong> Le site est immédiatement accessible via <code>/sites/{slug}/</code><br><br>
-                    <strong>4.</strong> Personnalisez via <code>/admin.php</code> du site
+                    <strong>4.</strong> Personnalisez via <code>/admin.php</code> du site<br><br>
+                    <strong>5.</strong> Utilisez <i class="fas fa-sync"></i> pour resynchroniser les données après modification du logement
                 </small>
             </div>
         </div>
@@ -688,6 +972,7 @@ foreach ($sites as $site) {
                                     <th>Sous-domaine</th>
                                     <th>Préfixe</th>
                                     <th>Santé</th>
+                                    <th>Photos</th>
                                     <th>Dossier</th>
                                     <th>Statut</th>
                                     <th>Actions</th>
@@ -729,6 +1014,14 @@ foreach ($sites as $site) {
                                             <?php endif; ?>
                                         </td>
                                         <td>
+                                            <?php $nbPhotos = $sitesPhotos[$site['id']] ?? 0; ?>
+                                            <?php if ($nbPhotos > 0): ?>
+                                                <span class="badge bg-success"><i class="fas fa-images"></i> <?= $nbPhotos ?></span>
+                                            <?php else: ?>
+                                                <span class="badge bg-secondary"><i class="fas fa-image"></i> 0</span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td>
                                             <?php if ($folderExists): ?>
                                                 <span class="badge bg-success"><i class="fas fa-folder"></i> OK</span>
                                             <?php else: ?>
@@ -751,6 +1044,13 @@ foreach ($sites as $site) {
                                             </form>
                                         </td>
                                         <td class="text-nowrap">
+                                            <form method="POST" style="display:inline" title="Resynchroniser données + photos">
+                                                <?php echoCsrfField(); ?>
+                                                <input type="hidden" name="site_id" value="<?= $site['id'] ?>">
+                                                <button type="submit" name="resync_site" class="btn btn-sm btn-info" title="Resynchroniser">
+                                                    <i class="fas fa-sync"></i>
+                                                </button>
+                                            </form>
                                             <button type="button" class="btn btn-sm btn-warning"
                                                     onclick="editSite(<?= htmlspecialchars(json_encode($site)) ?>)"
                                                     title="Modifier">
