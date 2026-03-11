@@ -100,6 +100,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['logement_id'])) {
     $intervenant_id = $_SESSION['id_intervenant'] ?? null;
     $session_id = createCheckupSession($conn, $logement_id, $intervenant_id);
 
+    // Nettoyer tous les buffers de sortie pour permettre la redirection
+    while (ob_get_level()) {
+        ob_end_clean();
+    }
+
     // Rediriger vers la page de checkup
     header("Location: checkup_faire.php?session_id=" . $session_id);
     exit;

@@ -94,6 +94,31 @@ try {
         }
     } catch (PDOException $e) { }
 
+    // Migration: add superhote_planning_url and recommandations_url settings
+    try {
+        $check_sh = $conn->prepare("SELECT setting_key FROM " . vf_table('settings') . " WHERE setting_key = 'superhote_planning_url'");
+        $check_sh->execute();
+        if (!$check_sh->fetch()) {
+            $ins = $conn->prepare("INSERT IGNORE INTO " . vf_table('settings') . " (setting_key, setting_value, setting_group, label, field_type, sort_order) VALUES (?, ?, ?, ?, 'text', ?)");
+            $ins->execute(['superhote_planning_url', '', 'integrations', 'Lien planning Superhôte (iframe)', 5]);
+            $ins->execute(['recommandations_url', '', 'integrations', 'Lien page recommandations (public)', 6]);
+        }
+    } catch (PDOException $e) { }
+
+    // Migration: add recommandations and planning section texts
+    try {
+        $check_reco = $conn->prepare("SELECT id FROM " . vf_table('texts') . " WHERE section_key = 'recommandations' LIMIT 1");
+        $check_reco->execute();
+        if (!$check_reco->fetch()) {
+            $ins = $conn->prepare("INSERT IGNORE INTO " . vf_table('texts') . " (section_key, field_key, field_value, label, field_type, sort_order) VALUES (?, ?, ?, ?, ?, ?)");
+            $ins->execute(['recommandations', 'title', 'Nos recommandations', 'Titre', 'text', 1]);
+            $ins->execute(['recommandations', 'subtitle', 'Découvrez nos adresses préférées autour du logement.', 'Sous-titre', 'text', 2]);
+            $ins->execute(['recommandations', 'cta', 'Voir toutes les recommandations', 'Bouton CTA', 'text', 3]);
+            $ins->execute(['planning', 'title', 'Disponibilités', 'Titre', 'text', 1]);
+            $ins->execute(['planning', 'subtitle', 'Consultez le calendrier de disponibilité du logement.', 'Sous-titre', 'text', 2]);
+        }
+    } catch (PDOException $e) { }
+
     // Migration: add new integration fields (airbnb_url, ics_url) + contact group
     try {
         $check_ics = $conn->prepare("SELECT setting_key FROM " . vf_table('settings') . " WHERE setting_key = 'ics_url'");

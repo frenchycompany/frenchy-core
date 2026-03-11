@@ -14,14 +14,15 @@ if (!isset($menu_categories)) {
                 ['nom' => 'Équipements',   'chemin' => 'pages/logement_equipements.php',  'icon' => 'fa-couch'],
                 ['nom' => 'Descriptions',  'chemin' => 'pages/description_logements.php', 'icon' => 'fa-file-alt'],
                 ['nom' => 'Sites vitrine', 'chemin' => 'pages/sites.php',                 'icon' => 'fa-globe'],
-                ['nom' => 'Machines',      'chemin' => 'pages/machines.php',              'icon' => 'fa-cogs'],
             ]
         ],
         'Ménage / Interventions' => [
             'icon' => 'fa-broom',
             'items' => [
                 ['nom' => 'Planning',             'chemin' => 'pages/planning.php',              'icon' => 'fa-calendar-alt'],
+                ['nom' => 'Éditer planning',      'chemin' => 'pages/editer_planning.php',       'icon' => 'fa-edit'],
                 ['nom' => 'Intervenants',         'chemin' => 'pages/intervenants.php',          'icon' => 'fa-users'],
+                ['nom' => 'Machines',             'chemin' => 'pages/machines.php',              'icon' => 'fa-cogs'],
                 ['nom' => 'Stat. ménage',         'chemin' => 'pages/statistiques_menage.php',   'icon' => 'fa-chart-bar'],
             ]
         ],
