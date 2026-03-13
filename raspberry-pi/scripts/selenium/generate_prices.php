@@ -165,9 +165,10 @@ function getOccupancyAdjustment($occupancyRate, $occupancyRules) {
 
 // Calculer le prix selon l'anticipation et les nouvelles regles
 function calculatePrice($prixPlancher, $prixStandard, $joursAvant, $jourSemaine, $weekendPourcent, $dimancheReduction, $settings, $date = null, $seasons = [], $holidays = [], $occupancyRate = null, $occupancyRules = []) {
-    $palierJ1_3 = floatval($settings['palier_j1_3_pourcent'] ?? 25) / 100;
-    $palierJ4_6 = floatval($settings['palier_j4_6_pourcent'] ?? 50) / 100;
-    $palierJ7_13 = floatval($settings['palier_j7_13_pourcent'] ?? 75) / 100;
+    $palierJ1_3 = floatval($settings['palier_j1_3_pourcent'] ?? 20) / 100;
+    $palierJ4_13 = floatval($settings['palier_j4_13_pourcent'] ?? 40) / 100;
+    $palierJ14_30 = floatval($settings['palier_j14_30_pourcent'] ?? 60) / 100;
+    $palierJ31_60 = floatval($settings['palier_j31_60_pourcent'] ?? 80) / 100;
 
     $ecart = $prixStandard - $prixPlancher;
     $details = [];
@@ -179,15 +180,18 @@ function calculatePrice($prixPlancher, $prixStandard, $joursAvant, $jourSemaine,
     } elseif ($joursAvant <= 3) {
         $prix = $prixPlancher + ($ecart * $palierJ1_3);
         $palier = 'J1-3';
-    } elseif ($joursAvant <= 6) {
-        $prix = $prixPlancher + ($ecart * $palierJ4_6);
-        $palier = 'J4-6';
     } elseif ($joursAvant <= 13) {
-        $prix = $prixPlancher + ($ecart * $palierJ7_13);
-        $palier = 'J7-13';
+        $prix = $prixPlancher + ($ecart * $palierJ4_13);
+        $palier = 'J4-13';
+    } elseif ($joursAvant <= 30) {
+        $prix = $prixPlancher + ($ecart * $palierJ14_30);
+        $palier = 'J14-30';
+    } elseif ($joursAvant <= 60) {
+        $prix = $prixPlancher + ($ecart * $palierJ31_60);
+        $palier = 'J31-60';
     } else {
         $prix = $prixStandard;
-        $palier = 'J14+';
+        $palier = 'J60+';
     }
 
     // 2. Majoration weekend (vendredi=5, samedi=6)

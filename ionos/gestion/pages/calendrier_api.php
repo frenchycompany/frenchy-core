@@ -133,9 +133,10 @@ try {
             }
         } catch (PDOException $e) { /* table might not exist */ }
 
-        $palierJ1_3 = floatval($superhoteSettings['palier_j1_3_pourcent'] ?? 25) / 100;
-        $palierJ4_6 = floatval($superhoteSettings['palier_j4_6_pourcent'] ?? 50) / 100;
-        $palierJ7_13 = floatval($superhoteSettings['palier_j7_13_pourcent'] ?? 75) / 100;
+        $palierJ1_3 = floatval($superhoteSettings['palier_j1_3_pourcent'] ?? 20) / 100;
+        $palierJ4_13 = floatval($superhoteSettings['palier_j4_13_pourcent'] ?? 40) / 100;
+        $palierJ14_30 = floatval($superhoteSettings['palier_j14_30_pourcent'] ?? 60) / 100;
+        $palierJ31_60 = floatval($superhoteSettings['palier_j31_60_pourcent'] ?? 80) / 100;
 
         $today = new DateTime('today');
         $dateStart = new DateTime($start);
@@ -153,10 +154,12 @@ try {
                     $prix = $lp['prix_plancher'];
                 } elseif ($joursAvant <= 3) {
                     $prix = $lp['prix_plancher'] + ($ecart * $palierJ1_3);
-                } elseif ($joursAvant <= 6) {
-                    $prix = $lp['prix_plancher'] + ($ecart * $palierJ4_6);
                 } elseif ($joursAvant <= 13) {
-                    $prix = $lp['prix_plancher'] + ($ecart * $palierJ7_13);
+                    $prix = $lp['prix_plancher'] + ($ecart * $palierJ4_13);
+                } elseif ($joursAvant <= 30) {
+                    $prix = $lp['prix_plancher'] + ($ecart * $palierJ14_30);
+                } elseif ($joursAvant <= 60) {
+                    $prix = $lp['prix_plancher'] + ($ecart * $palierJ31_60);
                 } else {
                     $prix = $lp['prix_standard'];
                 }

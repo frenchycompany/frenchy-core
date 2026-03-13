@@ -215,9 +215,10 @@ def calculate_price(prix_plancher: float, prix_standard: float, jours_avant: int
     Returns:
         Tuple (prix, nom_du_palier)
     """
-    palier_j1_3 = float(settings.get("palier_j1_3_pourcent", 25)) / 100
-    palier_j4_6 = float(settings.get("palier_j4_6_pourcent", 50)) / 100
-    palier_j7_13 = float(settings.get("palier_j7_13_pourcent", 75)) / 100
+    palier_j1_3 = float(settings.get("palier_j1_3_pourcent", 20)) / 100
+    palier_j4_13 = float(settings.get("palier_j4_13_pourcent", 40)) / 100
+    palier_j14_30 = float(settings.get("palier_j14_30_pourcent", 60)) / 100
+    palier_j31_60 = float(settings.get("palier_j31_60_pourcent", 80)) / 100
 
     ecart = prix_standard - prix_plancher
 
@@ -228,15 +229,18 @@ def calculate_price(prix_plancher: float, prix_standard: float, jours_avant: int
     elif jours_avant <= 3:
         prix = prix_plancher + (ecart * palier_j1_3)
         palier = "J1-3"
-    elif jours_avant <= 6:
-        prix = prix_plancher + (ecart * palier_j4_6)
-        palier = "J4-6"
     elif jours_avant <= 13:
-        prix = prix_plancher + (ecart * palier_j7_13)
-        palier = "J7-13"
+        prix = prix_plancher + (ecart * palier_j4_13)
+        palier = "J4-13"
+    elif jours_avant <= 30:
+        prix = prix_plancher + (ecart * palier_j14_30)
+        palier = "J14-30"
+    elif jours_avant <= 60:
+        prix = prix_plancher + (ecart * palier_j31_60)
+        palier = "J31-60"
     else:
         prix = prix_standard
-        palier = "J14+"
+        palier = "J60+"
 
     # Majoration weekend (vendredi=5, samedi=6)
     if jour_semaine in (5, 6):
