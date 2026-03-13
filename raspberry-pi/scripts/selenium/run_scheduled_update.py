@@ -29,6 +29,9 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional, Dict, List, Tuple
 
+# Numero de telephone pour les notifications SMS
+SMS_NOTIFICATION_NUMBER = "+33647554678"
+
 # ============================================================================
 # CONFIGURATION
 # ============================================================================
@@ -512,6 +515,31 @@ def run_workers(max_workers: int = 2, use_groups: bool = True) -> Dict:
 # STEP 4: FINAL STATS
 # ============================================================================
 
+def send_sms(message: str):
+    """Envoie un SMS de notification via la table sms_outbox."""
+    if not SMS_NOTIFICATION_NUMBER or SMS_NOTIFICATION_NUMBER == "+33600000000":
+        return
+
+    db = get_db_connection()
+    if not db:
+        logger.warning("Impossible d'envoyer le SMS: pas de connexion BDD")
+        return
+
+    try:
+        with db.cursor() as cursor:
+            cursor.execute(
+                "INSERT INTO sms_outbox (receiver, message, status, created_at) "
+                "VALUES (%s, %s, 'pending', NOW())",
+                (SMS_NOTIFICATION_NUMBER, message)
+            )
+        db.commit()
+        logger.info(f"SMS de notification envoye: {message}")
+    except Exception as e:
+        logger.error(f"Erreur envoi SMS: {e}")
+    finally:
+        db.close()
+
+
 def get_final_stats() -> Dict:
     """Recupere les statistiques finales."""
     db = get_db_connection()
@@ -600,10 +628,21 @@ def run_full_update(max_workers: int = 2, use_groups: bool = True) -> Dict:
         logger.info(f"  Stats finales: {final_stats}")
         logger.info("=" * 60)
 
+        # SMS de confirmation
+        completed = final_stats.get("completed", 0)
+        failed = final_stats.get("failed", 0)
+        pending = final_stats.get("pending", 0)
+
+        if failed == 0:
+            send_sms(f"Superhote OK: {completed} maj appliquees, {pending} en attente")
+        else:
+            send_sms(f"Superhote: {completed} OK, {failed} echecs, {pending} en attente")
+
     except Exception as e:
         report["status"] = "error"
         report["error"] = str(e)
         logger.error(f"Erreur fatale: {e}")
+        send_sms(f"ERREUR Superhote: {e}")
 
     write_status(report)
     return report
