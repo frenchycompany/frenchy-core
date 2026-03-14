@@ -4,40 +4,13 @@
  * Frenchy Conciergerie
  */
 
-require_once __DIR__ . '/../../config.php';
-require_once __DIR__ . '/../../includes/functions.php';
-require_once __DIR__ . '/../../includes/security.php';
-
-$security = new Security($conn);
-$settings = getAllSettings($conn);
-
-// Vérification de l'authentification
-if (!isset($_SESSION['proprietaire_id'])) {
-    header('Location: login.php');
-    exit;
-}
-
-$proprietaire_id = $_SESSION['proprietaire_id'];
-
-// Récupération des infos du propriétaire
-$stmt = $conn->prepare("SELECT * FROM FC_proprietaires WHERE id = ? AND actif = 1");
-$stmt->execute([$proprietaire_id]);
-$proprietaire = $stmt->fetch(PDO::FETCH_ASSOC);
-
-if (!$proprietaire) {
-    session_destroy();
-    header('Location: login.php');
-    exit;
-}
+require_once __DIR__ . '/auth.php';
 
 // Mise à jour de la dernière connexion
-$stmt = $conn->prepare("UPDATE FC_proprietaires SET derniere_connexion = NOW() WHERE id = ?");
-$stmt->execute([$proprietaire_id]);
-
-// Récupération des logements du propriétaire
-$stmt = $conn->prepare("SELECT * FROM liste_logements WHERE proprietaire_id = ? ORDER BY nom_du_logement");
-$stmt->execute([$proprietaire_id]);
-$logements = $stmt->fetchAll(PDO::FETCH_ASSOC);
+try {
+    $stmt = $conn->prepare("UPDATE FC_proprietaires SET derniere_connexion = NOW() WHERE id = ?");
+    $stmt->execute([$proprietaire_id]);
+} catch (PDOException $e) {}
 
 // Statistiques globales
 $stats = [
@@ -47,13 +20,7 @@ $stats = [
     'inventaires' => 0
 ];
 
-$logement_ids = [];
-$placeholders = '';
-
-if (!empty($logements)) {
-    $logement_ids = array_column($logements, 'id');
-    $placeholders = str_repeat('?,', count($logement_ids) - 1) . '?';
-
+if (!empty($logement_ids)) {
     // Tâches en attente
     try {
         $stmt = $conn->prepare("SELECT COUNT(*) FROM todo_list WHERE logement_id IN ($placeholders) AND statut != 'terminee'");
@@ -115,8 +82,6 @@ if (!empty($logement_ids)) {
 }
 
 $security->trackVisit('/proprietaire/dashboard');
-
-$currentPage = basename($_SERVER['PHP_SELF']);
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -125,76 +90,8 @@ $currentPage = basename($_SERVER['PHP_SELF']);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Espace Propriétaire - <?= e($settings['site_nom'] ?? 'Frenchy Conciergerie') ?></title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="proprio.css">
     <style>
-        :root {
-            --bleu-frenchy: #1E3A8A;
-            --bleu-clair: #3B82F6;
-            --rouge-frenchy: #EF4444;
-            --gris-clair: #F3F4F6;
-            --gris-fonce: #1F2937;
-            --vert: #10B981;
-        }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: var(--gris-clair);
-            min-height: 100vh;
-        }
-
-        .dashboard-container { display: flex; min-height: 100vh; }
-
-        .sidebar {
-            width: 260px;
-            background: linear-gradient(180deg, var(--bleu-frenchy), #1e40af);
-            color: white;
-            padding: 1.5rem;
-            position: fixed;
-            height: 100vh;
-            overflow-y: auto;
-        }
-
-        .sidebar-header {
-            text-align: center;
-            padding-bottom: 1.5rem;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            margin-bottom: 1.5rem;
-        }
-
-        .sidebar-header img {
-            width: 60px; height: 60px; border-radius: 50%;
-            background: white; padding: 5px; margin-bottom: 0.5rem;
-        }
-
-        .sidebar-header h2 { font-size: 1.1rem; }
-        .sidebar-header p { font-size: 0.85rem; opacity: 0.8; }
-
-        .sidebar-nav a {
-            display: flex; align-items: center; gap: 0.8rem;
-            color: rgba(255,255,255,0.8); text-decoration: none;
-            padding: 0.8rem 1rem; border-radius: 8px; margin-bottom: 0.3rem;
-            transition: all 0.2s;
-        }
-
-        .sidebar-nav a:hover, .sidebar-nav a.active {
-            background: rgba(255,255,255,0.15); color: white;
-        }
-
-        .sidebar-nav .icon { width: 20px; text-align: center; }
-        .sidebar-nav .nav-separator {
-            border-top: 1px solid rgba(255,255,255,0.1);
-            margin: 0.8rem 0;
-        }
-
-        .main-content { flex: 1; margin-left: 260px; padding: 2rem; }
-
-        .page-header {
-            display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 2rem;
-        }
-
-        .page-header h1 { color: var(--gris-fonce); font-size: 1.8rem; }
         .date-info { color: #6B7280; }
 
         .stats-grid {
@@ -227,36 +124,6 @@ $currentPage = basename($_SERVER['PHP_SELF']);
 
         @media (max-width: 1200px) { .content-grid { grid-template-columns: 1fr; } }
 
-        .card {
-            background: white; border-radius: 12px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05); padding: 1.5rem;
-        }
-
-        .card-header {
-            display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 1.5rem;
-        }
-
-        .card-header h2 { font-size: 1.2rem; color: var(--gris-fonce); }
-        .card-header a { color: var(--bleu-clair); text-decoration: none; font-size: 0.9rem; }
-
-        .list-item {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 0.8rem 0; border-bottom: 1px solid var(--gris-clair);
-        }
-        .list-item:last-child { border-bottom: none; }
-        .list-item h4 { color: var(--gris-fonce); font-size: 0.95rem; }
-        .list-item p, .list-item small { color: #6B7280; font-size: 0.85rem; }
-
-        .badge {
-            display: inline-block; padding: 3px 10px; border-radius: 20px;
-            font-size: 0.78rem; font-weight: 600;
-        }
-        .badge-warning { background: #FEF3C7; color: #92400E; }
-        .badge-success { background: #D1FAE5; color: #065F46; }
-        .badge-info { background: #DBEAFE; color: #1E40AF; }
-        .badge-danger { background: #FEE2E2; color: #991B1B; }
-
         .site-link {
             display: flex; align-items: center; gap: 0.8rem;
             padding: 0.8rem; border: 1px solid #E5E7EB; border-radius: 10px;
@@ -265,56 +132,11 @@ $currentPage = basename($_SERVER['PHP_SELF']);
         }
         .site-link:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
         .site-link i { font-size: 1.2rem; color: var(--bleu-clair); }
-
-        .empty-state { color: #9CA3AF; text-align: center; padding: 2rem; font-size: 0.9rem; }
-
-        @media (max-width: 768px) {
-            .sidebar { width: 100%; height: auto; position: relative; }
-            .main-content { margin-left: 0; }
-            .dashboard-container { flex-direction: column; }
-        }
     </style>
 </head>
 <body>
     <div class="dashboard-container">
-        <!-- Sidebar -->
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <img src="../../frenchyconciergerie.png.png" alt="Logo" onerror="this.style.display='none'">
-                <h2><?= e($proprietaire['prenom'] ?? '') ?> <?= e($proprietaire['nom']) ?></h2>
-                <p>Propriétaire</p>
-            </div>
-
-            <nav class="sidebar-nav">
-                <a href="index.php" class="<?= $currentPage === 'index.php' ? 'active' : '' ?>">
-                    <span class="icon"><i class="fas fa-tachometer-alt"></i></span> Tableau de bord
-                </a>
-                <a href="taches.php" class="<?= $currentPage === 'taches.php' ? 'active' : '' ?>">
-                    <span class="icon"><i class="fas fa-tasks"></i></span> Taches
-                </a>
-                <a href="calendrier.php" class="<?= $currentPage === 'calendrier.php' ? 'active' : '' ?>">
-                    <span class="icon"><i class="fas fa-calendar-alt"></i></span> Calendrier
-                </a>
-                <a href="checkups.php" class="<?= $currentPage === 'checkups.php' ? 'active' : '' ?>">
-                    <span class="icon"><i class="fas fa-clipboard-check"></i></span> Checkups
-                </a>
-                <a href="inventaires.php" class="<?= $currentPage === 'inventaires.php' ? 'active' : '' ?>">
-                    <span class="icon"><i class="fas fa-boxes-stacked"></i></span> Inventaires
-                </a>
-                <?php if (!empty($sites_vitrine)): ?>
-                <a href="sites.php" class="<?= $currentPage === 'sites.php' ? 'active' : '' ?>">
-                    <span class="icon"><i class="fas fa-globe"></i></span> Sites vitrine
-                </a>
-                <?php endif; ?>
-                <div class="nav-separator"></div>
-                <a href="profil.php" class="<?= $currentPage === 'profil.php' ? 'active' : '' ?>">
-                    <span class="icon"><i class="fas fa-user"></i></span> Mon profil
-                </a>
-                <a href="logout.php">
-                    <span class="icon"><i class="fas fa-sign-out-alt"></i></span> Deconnexion
-                </a>
-            </nav>
-        </aside>
+        <?php proprioSidebar($proprietaire, $currentPage, $has_sites); ?>
 
         <!-- Main content -->
         <main class="main-content">

@@ -190,7 +190,7 @@ if ($useNewAuth) {
     <div class="login-container">
         <div class="login-card">
             <div class="login-header">
-                <img src="../../frenchyconciergerie.png.png" alt="Logo" onerror="this.style.display='none'">
+                <img src="../images/logo.png" alt="Logo" onerror="this.style.display='none'">
                 <h1>Espace Proprietaire</h1>
                 <p>Connectez-vous pour acceder a votre tableau de bord</p>
             </div>

@@ -6,6 +6,13 @@
 require_once __DIR__ . '/../../includes/env_loader.php';
 require_once __DIR__ . '/../../db/connection.php';
 
+// Fonctions utilitaires partagees
+require_once __DIR__ . '/../../includes/functions.php';
+require_once __DIR__ . '/../../includes/security.php';
+
+$security = new Security($conn);
+$settings = getAllSettings($conn);
+
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
@@ -115,7 +122,7 @@ function proprioSidebar($proprietaire, $currentPage, $has_sites) {
     ?>
     <aside class="sidebar">
         <div class="sidebar-header">
-            <img src="../../frenchyconciergerie.png.png" alt="Logo" onerror="this.style.display='none'">
+            <img src="../images/logo.png" alt="Logo" onerror="this.style.display='none'">
             <h2><?= $e($proprietaire['prenom'] ?? '') ?> <?= $e($proprietaire['nom']) ?></h2>
             <p>Proprietaire</p>
         </div>
