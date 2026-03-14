@@ -698,6 +698,9 @@ body {
     align-items: center;
     justify-content: center;
 }
+.adm-modal[hidden] {
+    display: none;
+}
 
 .adm-modal-backdrop {
     position: absolute;
