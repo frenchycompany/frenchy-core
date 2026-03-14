@@ -124,6 +124,7 @@ unset($int);
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Prestations du <?= e(date('d/m/Y', strtotime($date))) ?></title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 </head>
 <body>
   <div class="container mt-4">
@@ -166,8 +167,13 @@ unset($int);
               <td><?= e($int['commentaire_menage'] ?: '—') ?></td>
               <td>
                 <?php if ($int['video']): ?>
-                  <a href="../uploads/<?= e($int['video']) ?>" target="_blank">
-                    <?= e($int['video']) ?>
+                  <button type="button" class="btn btn-sm btn-outline-primary btn-play-video"
+                          data-video-src="../uploads/<?= e($int['video']) ?>"
+                          data-video-name="<?= e($int['nom_du_logement']) ?> — <?= e($int['date']) ?>">
+                    <i class="bi bi-play-circle"></i> Voir
+                  </button>
+                  <a href="../uploads/<?= e($int['video']) ?>" download class="btn btn-sm btn-outline-secondary ms-1" title="Télécharger">
+                    <i class="bi bi-download"></i>
                   </a>
                 <?php else: ?>
                   <span class="text-muted">Pas de vidéo</span>
@@ -206,5 +212,41 @@ unset($int);
       </tbody>
     </table>
   </div>
+
+  <!-- Modale lecteur vidéo -->
+  <div class="modal fade" id="videoModal" tabindex="-1" aria-labelledby="videoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="videoModalLabel">Vidéo</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+        </div>
+        <div class="modal-body p-0 bg-dark">
+          <video id="videoPlayer" controls playsinline style="width:100%;max-height:70vh;display:block;margin:0 auto;">
+            Votre navigateur ne supporte pas la lecture vidéo.
+          </video>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  document.querySelectorAll('.btn-play-video').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var video = document.getElementById('videoPlayer');
+      var src = this.getAttribute('data-video-src');
+      var name = this.getAttribute('data-video-name');
+      document.getElementById('videoModalLabel').textContent = name;
+      video.src = src;
+      var modal = new bootstrap.Modal(document.getElementById('videoModal'));
+      modal.show();
+    });
+  });
+  document.getElementById('videoModal').addEventListener('hidden.bs.modal', function() {
+    var video = document.getElementById('videoPlayer');
+    video.pause();
+    video.src = '';
+  });
+  </script>
 </body>
 </html>
