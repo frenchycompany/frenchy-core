@@ -446,10 +446,8 @@ def run_workers(max_workers: int = 2, use_groups: bool = True) -> Dict:
             for g in groups:
                 logger.info(f"    - {g['groupe_name']}: {g['pending_count']} taches")
 
-        # Lancer les workers
-        # En mode sequentiel (max_workers <= 2), on lance 1 worker a la fois
-        # En mode parallele (max_workers > 2), on peut lancer plusieurs
-        effective_workers = 1 if max_workers <= 2 else max_workers
+        # Lancer les workers avec le nombre configure
+        effective_workers = max(1, max_workers)
 
         cmd = [
             sys.executable,

@@ -326,7 +326,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             case 'save_schedule':
                 $scheduledTimes = $_POST['scheduled_times'] ?? ['07:00'];
                 $scheduledEnabled = isset($_POST['scheduled_enabled']) ? '1' : '0';
-                $maxWorkers = intval($_POST['max_workers'] ?? 2);
+                $maxWorkers = max(1, min(5, intval($_POST['max_workers'] ?? 2)));
+
+                // Sauvegarder max_workers et scheduled_enabled immediatement (independant des heures)
+                $stmt = $pdo->prepare("INSERT INTO superhote_settings (key_name, value) VALUES (?, ?)
+                                      ON DUPLICATE KEY UPDATE value = VALUES(value)");
+                $stmt->execute(['scheduled_enabled', $scheduledEnabled]);
+                $stmt->execute(['max_workers', $maxWorkers]);
 
                 // Filtrer et valider les heures
                 $validTimes = [];
@@ -342,23 +348,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     sort($validTimes);
                     $timesString = implode(',', $validTimes);
 
-                    $stmt = $pdo->prepare("INSERT INTO superhote_settings (key_name, value) VALUES (?, ?)
-                                          ON DUPLICATE KEY UPDATE value = VALUES(value)");
                     $stmt->execute(['scheduled_times', $timesString]);
                     $stmt->execute(['scheduled_time', $validTimes[0]]); // Garder compatibilite
-                    $stmt->execute(['scheduled_enabled', $scheduledEnabled]);
-                    $stmt->execute(['max_workers', $maxWorkers]);
 
                     // Notifier le RPI pour mettre a jour les timers systemd
-                    $rpiUrl = RPI_BASE_URL . '/pages/daemon_api.php?action=update_schedule&times=' . urlencode($timesString) . '&token=' . urlencode(env('CRON_SECRET', ''));
+                    $rpiUrl = RPI_BASE_URL . '/pages/daemon_api.php?action=update_schedule&times=' . urlencode($timesString) . '&workers=' . $maxWorkers . '&token=' . urlencode(env('CRON_SECRET', ''));
                     @file_get_contents($rpiUrl, false, stream_context_create(['http' => ['timeout' => 5]]));
 
                     $count = count($validTimes);
-                    $message = "Planification sauvegardee! $count mise(s) a jour/jour: " . implode(', ', $validTimes);
+                    $message = "Planification sauvegardee! $count mise(s) a jour/jour: " . implode(', ', $validTimes) . " ($maxWorkers worker" . ($maxWorkers > 1 ? 's' : '') . ")";
                     $messageType = "success";
                 } else {
-                    $message = "Format d'heure invalide (utilisez HH:MM)";
-                    $messageType = "danger";
+                    $message = "Workers mis a jour ($maxWorkers). Attention: format d'heure invalide (utilisez HH:MM)";
+                    $messageType = "warning";
                 }
                 break;
 
