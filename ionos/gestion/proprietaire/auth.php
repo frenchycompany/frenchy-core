@@ -17,7 +17,7 @@ if (!function_exists('e')) {
     }
 }
 
-// Protection CSRF simple pour les formulaires proprietaire
+// Protection CSRF pour les formulaires proprietaire
 function proprio_csrf_token() {
     if (empty($_SESSION['proprio_csrf_token'])) {
         $_SESSION['proprio_csrf_token'] = bin2hex(random_bytes(32));
@@ -138,7 +138,7 @@ function proprioSidebar($proprietaire, $currentPage, $has_sites) {
     ?>
     <aside class="sidebar">
         <div class="sidebar-header">
-            <img src="../images/logo.png" alt="Logo" onerror="this.style.display='none'">
+            <img src="../../frenchyconciergerie.png.png" alt="Logo" onerror="this.style.display='none'">
             <h2><?= $e($proprietaire['prenom'] ?? '') ?> <?= $e($proprietaire['nom']) ?></h2>
             <p>Proprietaire</p>
         </div>
