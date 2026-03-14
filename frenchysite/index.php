@@ -37,6 +37,7 @@ $hero_img = vf_photo_url($db_photos, 'hero', 'hero',
 if (!empty($db_photos['galerie'])) {
     $galerie_items = [];
     foreach ($db_photos['galerie'] as $p) {
+        if (!empty($p['is_hidden'])) continue;
         $galerie_items[] = [
             'url'    => $p['file_path'],
             'alt'    => $p['alt_text'],

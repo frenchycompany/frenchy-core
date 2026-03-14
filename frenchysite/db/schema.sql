@@ -37,6 +37,7 @@ CREATE TABLE IF NOT EXISTS vf_photos (
     srcset_json   TEXT         DEFAULT NULL,
     alt_text      VARCHAR(300) DEFAULT '',
     is_wide       TINYINT(1)   DEFAULT 0,
+    is_hidden     TINYINT(1)   DEFAULT 0,
     sort_order    INT          DEFAULT 0,
     updated_at    DATETIME     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_group (photo_group)

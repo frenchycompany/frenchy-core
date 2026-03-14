@@ -439,6 +439,57 @@ function resyncSiteData($conn, $dbPrefix, $logementId) {
     return true;
 }
 
+// ── Helper : recopier le moteur (PHP/CSS/JS) sans écraser config, .env, photos uploadées ──
+function redeploySiteEngine($frenchysiteSource, $deployPath) {
+    if (!is_dir($frenchysiteSource)) {
+        throw new Exception("Moteur FrenchySite introuvable : $frenchysiteSource");
+    }
+    if (!is_dir($deployPath)) {
+        throw new Exception("Dossier du site introuvable : $deployPath");
+    }
+    // Fichiers/dossiers à ne pas écraser (config spécifique au site)
+    $exclude = ['.env', '.env.example', 'config', 'install.php'];
+
+    $dir = opendir($frenchysiteSource);
+    while (($file = readdir($dir)) !== false) {
+        if ($file === '.' || $file === '..' || in_array($file, $exclude)) continue;
+        $srcPath = $frenchysiteSource . '/' . $file;
+        $dstPath = $deployPath . '/' . $file;
+        if (is_dir($srcPath)) {
+            // Pour assets/, on recopie tout sauf les photos uploadées
+            if ($file === 'assets') {
+                redeployAssetsDir($srcPath, $dstPath);
+            } else {
+                copyDir($srcPath, $dstPath);
+            }
+        } else {
+            copy($srcPath, $dstPath);
+        }
+    }
+    closedir($dir);
+}
+
+// ── Helper : recopier assets/ en préservant les photos uploadées ──
+function redeployAssetsDir($src, $dst) {
+    if (!is_dir($dst)) {
+        mkdir($dst, 0755, true);
+    }
+    $dir = opendir($src);
+    while (($file = readdir($dir)) !== false) {
+        if ($file === '.' || $file === '..') continue;
+        $srcPath = $src . '/' . $file;
+        $dstPath = $dst . '/' . $file;
+        if (is_dir($srcPath)) {
+            // Ne pas écraser le dossier photos/ (contient les uploads du site)
+            if ($file === 'photos') continue;
+            copyDir($srcPath, $dstPath);
+        } else {
+            copy($srcPath, $dstPath);
+        }
+    }
+    closedir($dir);
+}
+
 // ── Helper : copier un dossier récursivement ──
 function copyDir($src, $dst) {
     if (!is_dir($src)) {
@@ -751,18 +802,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['resync_site'])) {
         if ($siteData) {
             $result = resyncSiteData($conn, $siteData['db_prefix'], $siteData['logement_id']);
 
-            // Resync photos si le dossier déployé existe
+            // Redéployer les fichiers du moteur (PHP, CSS, JS) sans écraser config/photos
+            $engineMsg = '';
             if (!empty($siteData['deploy_path']) && is_dir($siteData['deploy_path'])) {
-                // Vider les anciennes photos de la BDD du site
+                redeploySiteEngine($frenchysiteSource, $siteData['deploy_path']);
+                $engineMsg = ' — fichiers mis à jour';
+
+                // Resync photos
                 $conn->exec("DELETE FROM {$siteData['db_prefix']}photos");
                 $nbPhotos = deployLogementPhotos($conn, $siteData['db_prefix'], $siteData['logement_id'], $siteData['deploy_path']);
-                $photoMsg = $nbPhotos > 0 ? " — {$nbPhotos} photo(s) synchronisée(s)" : '';
+                $photoMsg = $nbPhotos > 0 ? ", {$nbPhotos} photo(s) synchronisée(s)" : '';
             } else {
                 $photoMsg = ' — dossier absent, photos non synchronisées';
             }
 
             if ($result === true) {
-                $feedback = "<div class='alert alert-success'><i class='fas fa-sync'></i> Site \"" . htmlspecialchars($siteData['site_name']) . "\" resynchronisé{$photoMsg}</div>";
+                $feedback = "<div class='alert alert-success'><i class='fas fa-sync'></i> Site \"" . htmlspecialchars($siteData['site_name']) . "\" resynchronisé{$engineMsg}{$photoMsg}</div>";
             } else {
                 $feedback = "<div class='alert alert-warning'><i class='fas fa-exclamation-triangle'></i> " . htmlspecialchars($result) . "</div>";
             }

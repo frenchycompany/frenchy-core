@@ -837,6 +837,151 @@
         });
     })();
 
+    /* ── Pick photo from gallery (for experience vignettes) ── */
+    (function () {
+        var modal    = document.getElementById('modal-pick-photo');
+        var grid     = document.getElementById('pick-grid');
+        var pickGroup  = document.getElementById('pick-group');
+        var pickKey    = document.getElementById('pick-key');
+        var pickAlt    = document.getElementById('pick-alt');
+        var pickTarget = document.getElementById('pick-target');
+        var btnCancel  = document.getElementById('modal-pick-cancel');
+        var backdrop   = modal ? modal.querySelector('.adm-modal-backdrop') : null;
+        if (!modal) return;
+
+        function closeModal() { modal.hidden = true; }
+        btnCancel.addEventListener('click', closeModal);
+        backdrop.addEventListener('click', closeModal);
+
+        document.addEventListener('click', function (e) {
+            var btn = e.target.closest('.adm-pick-from-gallery');
+            if (!btn) return;
+
+            pickGroup.value  = btn.dataset.group;
+            pickKey.value    = btn.dataset.key;
+            pickAlt.value    = btn.dataset.alt;
+            pickTarget.value = btn.dataset.target;
+            grid.innerHTML = '<p class="adm-photo-empty">Chargement...</p>';
+            modal.hidden = false;
+
+            var fd = new FormData();
+            fd.append('ajax', '1');
+            fd.append('action', 'list_gallery_photos');
+            csrfAppend(fd);
+
+            fetch('admin.php', { method: 'POST', body: fd })
+                .then(function (r) { return r.json(); })
+                .then(function (r) {
+                    if (!r.success || !r.photos.length) {
+                        grid.innerHTML = '<p class="adm-photo-empty">Aucune photo dans la galerie. Ajoutez d\'abord des photos dans la galerie.</p>';
+                        return;
+                    }
+                    grid.innerHTML = '';
+                    r.photos.forEach(function (photo) {
+                        var item = document.createElement('div');
+                        item.className = 'adm-pick-item';
+                        item.dataset.id = photo.id;
+                        item.innerHTML = '<img src="' + photo.file_path + '" alt="' + (photo.alt_text || '') + '">';
+                        item.addEventListener('click', function () {
+                            selectPhoto(photo.id, photo.file_path);
+                        });
+                        grid.appendChild(item);
+                    });
+                })
+                .catch(function () {
+                    grid.innerHTML = '<p class="adm-photo-empty">Erreur de chargement.</p>';
+                });
+        });
+
+        function selectPhoto(sourceId, filePath) {
+            var fd = new FormData();
+            fd.append('ajax', '1');
+            fd.append('action', 'assign_photo');
+            fd.append('source_photo_id', sourceId);
+            fd.append('photo_group', pickGroup.value);
+            fd.append('photo_key', pickKey.value);
+            fd.append('alt_text', pickAlt.value);
+            csrfAppend(fd);
+
+            fetch('admin.php', { method: 'POST', body: fd })
+                .then(function (r) { return r.json(); })
+                .then(function (r) {
+                    if (r.success) {
+                        toast('Photo assignée');
+                        var target = document.getElementById(pickTarget.value);
+                        if (target) {
+                            var empty = target.querySelector('.adm-photo-empty');
+                            if (empty) empty.remove();
+                            var oldCard = target.querySelector('.adm-photo-card');
+                            if (oldCard) oldCard.remove();
+
+                            var card = document.createElement('div');
+                            card.className = 'adm-photo-card';
+                            card.dataset.id = r.id;
+                            card.innerHTML =
+                                '<img src="' + r.path + '" alt="' + (pickAlt.value || '') + '">' +
+                                '<button type="button" class="adm-photo-delete" data-id="' + r.id + '" title="Supprimer">' +
+                                    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>' +
+                                '</button>';
+                            target.appendChild(card);
+                        }
+                        closeModal();
+                    } else {
+                        toast(r.error || 'Erreur', 'error');
+                    }
+                })
+                .catch(function () { toast('Erreur réseau', 'error'); });
+        }
+    })();
+
+    /* ── Toggle photo hidden ── */
+    document.addEventListener('click', function (e) {
+        var btn = e.target.closest('.adm-photo-toggle-hidden');
+        if (!btn) return;
+
+        var id = btn.dataset.id;
+        var fd = new FormData();
+        fd.append('ajax', '1');
+        fd.append('action', 'toggle_photo_hidden');
+        fd.append('photo_id', id);
+        csrfAppend(fd);
+
+        fetch('admin.php', { method: 'POST', body: fd })
+            .then(function (r) { return r.json(); })
+            .then(function (r) {
+                if (r.success) {
+                    var card = btn.closest('.adm-photo-card');
+                    var isHidden = r.is_hidden;
+                    if (isHidden) {
+                        card.classList.add('is-hidden');
+                        btn.title = 'Rendre visible';
+                        // Add badge
+                        var info = card.querySelector('.adm-photo-info');
+                        if (info && !info.querySelector('.adm-badge--muted')) {
+                            var badge = document.createElement('span');
+                            badge.className = 'adm-badge adm-badge--muted';
+                            badge.textContent = 'Masquée';
+                            info.appendChild(badge);
+                        }
+                        toast('Photo masquée de la galerie');
+                    } else {
+                        card.classList.remove('is-hidden');
+                        btn.title = 'Masquer de la galerie';
+                        var badge = card.querySelector('.adm-badge--muted');
+                        if (badge) badge.remove();
+                        toast('Photo visible dans la galerie');
+                    }
+                    // Update eye icon
+                    btn.innerHTML = isHidden
+                        ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>'
+                        : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+                } else {
+                    toast(r.error || 'Erreur', 'error');
+                }
+            })
+            .catch(function () { toast('Erreur réseau', 'error'); });
+    });
+
     /* ── Delete Photo (event delegation) ── */
     document.addEventListener('click', function (e) {
         var btn = e.target.closest('.adm-photo-delete');
