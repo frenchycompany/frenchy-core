@@ -871,6 +871,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_site'])) {
     }
 }
 
+// ── Générer un token bridge pour accéder à l'admin du site ──
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['bridge_admin'])) {
+    validateCsrfToken();
+
+    $siteId = (int)$_POST['site_id'];
+    $userId = $_SESSION['user_id'] ?? $_SESSION['id_intervenant'] ?? null;
+
+    if ($userId) {
+        try {
+            // Créer la table si nécessaire
+            $conn->exec("CREATE TABLE IF NOT EXISTS admin_bridge_tokens (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                token VARCHAR(128) NOT NULL UNIQUE,
+                user_id INT NOT NULL,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                used_at DATETIME DEFAULT NULL,
+                INDEX idx_token (token)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+            // Générer un token sécurisé
+            $token = bin2hex(random_bytes(32));
+            $stmt = $conn->prepare("INSERT INTO admin_bridge_tokens (token, user_id) VALUES (:token, :user_id)");
+            $stmt->execute([':token' => $token, ':user_id' => $userId]);
+
+            // Récupérer l'URL du site
+            $stmt = $conn->prepare("SELECT site_url FROM frenchysite_instances WHERE id = :id");
+            $stmt->execute([':id' => $siteId]);
+            $siteUrl = $stmt->fetchColumn();
+
+            if ($siteUrl) {
+                $adminUrl = rtrim($siteUrl, '/') . '/admin.php?bridge_token=' . urlencode($token);
+                header('Location: ' . $adminUrl);
+                exit;
+            }
+        } catch (PDOException $e) {
+            $feedback = "<div class='alert alert-danger'><i class='fas fa-exclamation-triangle'></i> Erreur token : " . htmlspecialchars($e->getMessage()) . "</div>";
+        }
+    }
+}
+
 // ── Charger les données ──
 $sites = [];
 try {
@@ -1051,9 +1091,14 @@ foreach ($sites as $site) {
                                                     <i class="fas fa-external-link-alt ms-1"></i>
                                                 </a>
                                                 <br>
-                                                <a href="<?= htmlspecialchars(rtrim($site['site_url'], '/')) ?>/admin.php" target="_blank" class="text-warning" title="Admin">
-                                                    <small><i class="fas fa-cog"></i> admin</small>
-                                                </a>
+                                                <form method="POST" style="display:inline" target="_blank">
+                                                    <?php echoCsrfField(); ?>
+                                                    <input type="hidden" name="bridge_admin" value="1">
+                                                    <input type="hidden" name="site_id" value="<?= $site['id'] ?>">
+                                                    <button type="submit" class="btn btn-link btn-sm text-warning p-0" title="Ouvrir l'admin du site">
+                                                        <small><i class="fas fa-cog"></i> admin</small>
+                                                    </button>
+                                                </form>
                                             <?php else: ?>
                                                 <span class="text-muted"><?= htmlspecialchars($slug ?: '—') ?></span>
                                             <?php endif; ?>
