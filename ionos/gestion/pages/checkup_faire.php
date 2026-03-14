@@ -26,45 +26,10 @@ include '../pages/menu.php';
 require_once __DIR__ . '/../includes/validation.php';
 require_once __DIR__ . '/../includes/upload_helper.php';
 
-// Auto-create tables si elles n'existent pas encore
-try {
-    $conn->exec("
-        CREATE TABLE IF NOT EXISTS checkup_sessions (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            logement_id INT NOT NULL,
-            intervenant_id INT DEFAULT NULL,
-            statut ENUM('en_cours','termine') DEFAULT 'en_cours',
-            nb_ok INT DEFAULT 0,
-            nb_problemes INT DEFAULT 0,
-            nb_absents INT DEFAULT 0,
-            nb_taches_faites INT DEFAULT 0,
-            commentaire_general TEXT DEFAULT NULL,
-            signature_path VARCHAR(500) DEFAULT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            INDEX idx_logement (logement_id),
-            INDEX idx_statut (statut)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-    ");
-    $conn->exec("
-        CREATE TABLE IF NOT EXISTS checkup_items (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            session_id INT NOT NULL,
-            categorie VARCHAR(50) NOT NULL,
-            nom_item VARCHAR(255) NOT NULL,
-            statut ENUM('ok','probleme','absent','non_verifie') DEFAULT 'non_verifie',
-            commentaire TEXT DEFAULT NULL,
-            photo_path VARCHAR(500) DEFAULT NULL,
-            todo_task_id INT DEFAULT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            INDEX idx_session (session_id),
-            FOREIGN KEY (session_id) REFERENCES checkup_sessions(id) ON DELETE CASCADE
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-    ");
-} catch (PDOException $e) { /* tables existent déjà */ }
+// Tables requises : voir db/install_tables.php
 
 // Ajouter colonne video_path si elle n'existe pas
-try { $conn->exec("ALTER TABLE checkup_sessions ADD COLUMN video_path VARCHAR(500) DEFAULT NULL AFTER signature_path"); } catch (PDOException $e) {}
+try { $conn->exec("ALTER TABLE checkup_sessions ADD COLUMN video_path VARCHAR(500) DEFAULT NULL AFTER signature_path"); } catch (PDOException $e) { error_log('checkup_faire.php: ' . $e->getMessage()); }
 
 $session_id = isset($_GET['session_id']) ? intval($_GET['session_id']) : 0;
 
@@ -181,7 +146,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['terminer'])) {
         $videoFile = $_FILES['video_fin'];
         $videoExt = strtolower(pathinfo($videoFile['name'], PATHINFO_EXTENSION));
         $allowedVideoExt = ['mp4', 'mov', 'webm', 'avi', 'mkv'];
-        $maxVideoSize = 100 * 1024 * 1024; // 100 Mo
+        $maxVideoSize = 500 * 1024 * 1024; // 500 Mo
 
         if (in_array($videoExt, $allowedVideoExt) && $videoFile['size'] <= $maxVideoSize) {
             $videoDir = __DIR__ . '/../uploads/checkup/';
@@ -547,7 +512,7 @@ $progress = $total > 0 ? round(($done / $total) * 100) : 0;
                 $invStmt = $conn->prepare("SELECT id FROM sessions_inventaire WHERE logement_id = ? AND statut = 'en_cours' ORDER BY date_creation DESC LIMIT 1");
                 $invStmt->execute([$session['logement_id']]);
                 $invSession = $invStmt->fetch(PDO::FETCH_ASSOC);
-            } catch (PDOException $e) { /* table n'existe pas encore */ }
+            } catch (PDOException $e) { error_log('checkup_faire.php: ' . $e->getMessage()); }
             echo $invSession ? urlencode($invSession['id']) : '';
         ?>" style="flex:1; padding:10px; background:#e3f2fd; color:#1565c0; border-radius:10px; text-align:center; text-decoration:none; font-weight:600; font-size:0.88em;"
         <?= $invSession ? '' : 'onclick="event.preventDefault(); if(confirm(\'Pas d\\\'inventaire en cours. Lancer un nouvel inventaire ?\')) window.location.href=\'inventaire_lancer.php\';"' ?>>

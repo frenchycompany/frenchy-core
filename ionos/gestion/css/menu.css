@@ -1,161 +1,585 @@
 /**
- * FrenchyConciergerie - Menu Navigation CSS
- * Fichier unique pour tous les styles du menu
+ * FrenchyConciergerie - Sidebar Navigation CSS
+ * Layout: fixed sidebar + top bar + responsive
  */
 
 /* ============================================
-   NAVBAR PRINCIPALE
+   CSS VARIABLES
    ============================================ */
-.fc-navbar {
-    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-    padding: 0.5rem 1rem;
-    border-bottom: 3px solid #17a2b8;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-    margin-bottom: 0;
+:root {
+    --fc-sidebar-width: 260px;
+    --fc-topbar-height: 56px;
+    --fc-sidebar-bg: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+    --fc-sidebar-text: rgba(255, 255, 255, 0.75);
+    --fc-sidebar-text-hover: #ffffff;
+    --fc-sidebar-accent: #17a2b8;
+    --fc-sidebar-active-bg: rgba(23, 162, 184, 0.15);
+    --fc-sidebar-group-bg: rgba(255, 255, 255, 0.03);
+    --fc-sidebar-divider: rgba(255, 255, 255, 0.08);
+    --fc-topbar-bg: #ffffff;
+    --fc-topbar-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    --fc-topbar-text: #333;
+    --fc-body-bg: #f0f2f5;
+    --fc-content-bg: #ffffff;
+    --fc-text-primary: #212529;
+    --fc-text-secondary: #6c757d;
+    --fc-border-color: #e9ecef;
+    --fc-card-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
-.fc-navbar .navbar-brand {
-    font-weight: 700;
+/* ============================================
+   BODY LAYOUT
+   ============================================ */
+body {
+    padding-left: var(--fc-sidebar-width) !important;
+    padding-top: var(--fc-topbar-height) !important;
+    background-color: var(--fc-body-bg) !important;
+    min-height: 100vh;
+}
+
+/* ============================================
+   SIDEBAR
+   ============================================ */
+.fc-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: var(--fc-sidebar-width);
+    height: 100vh;
+    background: var(--fc-sidebar-bg);
+    z-index: 1040;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-right: 1px solid rgba(255, 255, 255, 0.05);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Header */
+.fc-sidebar-header {
+    padding: 20px 20px 16px;
+    border-bottom: 1px solid var(--fc-sidebar-divider);
+    flex-shrink: 0;
+}
+
+.fc-sidebar-header a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: #fff;
     font-size: 1.3rem;
-    color: #ffffff;
+    font-weight: 700;
     letter-spacing: 0.5px;
 }
 
-.fc-navbar .navbar-brand i {
-    color: #17a2b8;
+.fc-sidebar-header a i {
+    color: var(--fc-sidebar-accent);
+    font-size: 1.4rem;
 }
 
-.fc-navbar .navbar-brand:hover {
-    color: #17a2b8;
+.fc-sidebar-header a:hover {
+    text-decoration: none;
+    color: var(--fc-sidebar-accent);
 }
 
-/* ============================================
-   LIENS DE NAVIGATION
-   ============================================ */
-.fc-navbar .nav-link {
-    color: rgba(255, 255, 255, 0.85);
-    font-size: 0.9rem;
-    font-weight: 500;
-    padding: 0.6rem 0.8rem;
-    border-radius: 6px;
-    transition: all 0.2s ease;
+/* Nav */
+.fc-sidebar-nav {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 12px 0;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.15) transparent;
 }
 
-.fc-navbar .nav-link:hover {
-    color: #ffffff;
-    background-color: rgba(255, 255, 255, 0.1);
+.fc-sidebar-nav::-webkit-scrollbar {
+    width: 4px;
 }
 
-.fc-navbar .nav-link.active {
-    color: #17a2b8;
-    background-color: rgba(23, 162, 184, 0.15);
+.fc-sidebar-nav::-webkit-scrollbar-track {
+    background: transparent;
 }
 
-.fc-navbar .nav-link i {
-    margin-right: 4px;
-    font-size: 0.85rem;
+.fc-sidebar-nav::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.15);
+    border-radius: 4px;
 }
 
-/* ============================================
-   MENUS DÉROULANTS
-   ============================================ */
-.fc-navbar .dropdown-menu {
-    background: #1e2a3a;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-    padding: 0.4rem 0;
-    min-width: 220px;
-    animation: fadeIn 0.15s ease;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-5px); }
-    to   { opacity: 1; transform: translateY(0); }
-}
-
-.fc-navbar .dropdown-item {
-    color: rgba(255, 255, 255, 0.8);
-    padding: 0.5rem 1rem;
+/* Nav Links */
+.fc-nav-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 20px;
+    color: var(--fc-sidebar-text);
+    text-decoration: none;
     font-size: 0.875rem;
+    font-weight: 500;
     transition: all 0.15s ease;
+    border-left: 3px solid transparent;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-.fc-navbar .dropdown-item:hover,
-.fc-navbar .dropdown-item:focus {
-    color: #ffffff;
-    background-color: rgba(23, 162, 184, 0.2);
+.fc-nav-link:hover {
+    color: var(--fc-sidebar-text-hover);
+    background: rgba(255, 255, 255, 0.06);
+    text-decoration: none;
 }
 
-.fc-navbar .dropdown-item.active {
-    color: #17a2b8;
-    background-color: rgba(23, 162, 184, 0.15);
+.fc-nav-link.active {
+    color: var(--fc-sidebar-accent);
+    background: var(--fc-sidebar-active-bg);
+    border-left-color: var(--fc-sidebar-accent);
     font-weight: 600;
 }
 
-.fc-navbar .dropdown-item i {
-    width: 20px;
+.fc-nav-link i {
+    width: 18px;
     text-align: center;
-    margin-right: 8px;
-    color: #17a2b8;
-    font-size: 0.8rem;
+    font-size: 0.85rem;
+    flex-shrink: 0;
 }
 
-.fc-navbar .dropdown-divider {
-    border-color: rgba(255, 255, 255, 0.1);
-    margin: 0.3rem 0;
+/* Nav Groups */
+.fc-nav-group {
+    margin: 2px 0;
+}
+
+.fc-nav-group-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 9px 20px;
+    color: var(--fc-sidebar-text);
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    user-select: none;
+}
+
+.fc-nav-group-toggle:hover {
+    color: var(--fc-sidebar-text-hover);
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.fc-nav-group-toggle span {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.fc-nav-group-toggle span i {
+    width: 18px;
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--fc-sidebar-accent);
+    opacity: 0.7;
+}
+
+.fc-chevron {
+    font-size: 0.65rem;
+    transition: transform 0.25s ease;
+    opacity: 0.5;
+}
+
+.fc-nav-group.open .fc-chevron {
+    transform: rotate(90deg);
+}
+
+/* Group Items (collapsible) */
+.fc-nav-group-items {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    background: var(--fc-sidebar-group-bg);
+}
+
+.fc-nav-group.open .fc-nav-group-items {
+    max-height: 800px;
+}
+
+.fc-nav-group-items .fc-nav-link {
+    padding-left: 48px;
+    font-size: 0.825rem;
+    font-weight: 400;
+}
+
+.fc-nav-group-items .fc-nav-link i {
+    font-size: 0.75rem;
+    opacity: 0.7;
+}
+
+/* Sidebar Footer */
+.fc-sidebar-footer {
+    flex-shrink: 0;
+    padding: 12px 16px;
+    border-top: 1px solid var(--fc-sidebar-divider);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.fc-dark-toggle {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.05);
+    color: var(--fc-sidebar-text);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    flex-shrink: 0;
+    font-size: 0.9rem;
+}
+
+.fc-dark-toggle:hover {
+    background: rgba(255,255,255,0.12);
+    color: #fff;
+}
+
+.fc-user-block {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--fc-sidebar-text);
+    text-decoration: none;
+    font-size: 0.825rem;
+    font-weight: 500;
+    overflow: hidden;
+    transition: color 0.2s;
+}
+
+.fc-user-block:hover {
+    color: #fff;
+    text-decoration: none;
+}
+
+.fc-user-block i {
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
+.fc-user-block span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.fc-badge-admin {
+    background: #ffc107;
+    color: #333;
+    font-size: 0.65rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 700;
+    flex-shrink: 0;
 }
 
 /* ============================================
-   BADGE ADMIN
+   TOP BAR
    ============================================ */
-.fc-navbar .badge {
-    font-size: 0.7rem;
-    padding: 0.2em 0.5em;
-    vertical-align: middle;
+.fc-topbar {
+    position: fixed;
+    top: 0;
+    left: var(--fc-sidebar-width);
+    right: 0;
+    height: var(--fc-topbar-height);
+    background: var(--fc-topbar-bg);
+    box-shadow: var(--fc-topbar-shadow);
+    z-index: 1030;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* ============================================
-   BOUTON TOGGLER (MOBILE)
-   ============================================ */
-.fc-navbar .navbar-toggler {
-    border-color: rgba(255, 255, 255, 0.2);
-    padding: 0.3rem 0.6rem;
+.fc-hamburger {
+    display: none;
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    color: var(--fc-topbar-text);
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 8px;
+    transition: background 0.2s;
 }
 
-.fc-navbar .navbar-toggler:focus {
-    box-shadow: 0 0 0 0.2rem rgba(23, 162, 184, 0.3);
+.fc-hamburger:hover {
+    background: var(--fc-border-color);
 }
 
-/* ============================================
-   DÉCONNEXION
-   ============================================ */
-.fc-navbar .dropdown-item.text-danger {
-    color: #dc3545 !important;
+.fc-topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
 }
 
-.fc-navbar .dropdown-item.text-danger:hover {
-    background-color: rgba(220, 53, 69, 0.15);
+.fc-topbar-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+    border: 1px solid var(--fc-border-color);
+    background: transparent;
+    color: var(--fc-text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    transition: all 0.15s;
+}
+
+.fc-topbar-btn:hover {
+    background: var(--fc-body-bg);
+    color: var(--fc-text-primary);
+}
+
+.fc-btn-logout:hover {
+    color: #dc3545;
+    border-color: #dc3545;
+    background: rgba(220, 53, 69, 0.05);
+}
+
+.fc-logout-form {
+    display: inline;
+    margin: 0;
+    padding: 0;
+}
+
+/* Topbar Dropdown */
+.fc-topbar-dropdown {
+    position: relative;
+}
+
+.fc-dropdown-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 6px;
+    background: var(--fc-content-bg);
+    border: 1px solid var(--fc-border-color);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    min-width: 220px;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-8px);
+    transition: all 0.2s ease;
+    z-index: 1050;
+    overflow: hidden;
+}
+
+.fc-dropdown-menu.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.fc-dropdown-menu a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    color: var(--fc-text-primary);
+    text-decoration: none;
+    font-size: 0.875rem;
+    transition: background 0.15s;
+}
+
+.fc-dropdown-menu a:hover {
+    background: var(--fc-body-bg);
+    text-decoration: none;
+}
+
+.fc-dropdown-menu a i {
+    width: 16px;
+    text-align: center;
+    color: var(--fc-sidebar-accent);
+    font-size: 0.85rem;
+}
+
+/* Sidebar Overlay (mobile) */
+.fc-sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1035;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(2px);
+}
+
+.fc-sidebar-overlay.visible {
+    opacity: 1;
+    visibility: visible;
 }
 
 /* ============================================
    RESPONSIVE
    ============================================ */
 @media (max-width: 991.98px) {
-    .fc-navbar .navbar-collapse {
-        padding: 0.5rem 0;
-        border-top: 1px solid rgba(255, 255, 255, 0.1);
-        margin-top: 0.5rem;
+    body {
+        padding-left: 0 !important;
     }
 
-    .fc-navbar .nav-link {
-        padding: 0.5rem 0.8rem;
+    .fc-sidebar {
+        transform: translateX(-100%);
     }
 
-    .fc-navbar .dropdown-menu {
-        background: rgba(255, 255, 255, 0.05);
-        border: none;
-        box-shadow: none;
-        padding-left: 1rem;
+    .fc-sidebar.open {
+        transform: translateX(0);
+        box-shadow: 4px 0 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .fc-topbar {
+        left: 0;
+    }
+
+    .fc-hamburger {
+        display: flex;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .fc-sidebar {
+        width: 280px;
+    }
+
+    .fc-topbar {
+        padding: 0 12px;
+    }
+}
+
+/* ============================================
+   DARK MODE
+   ============================================ */
+[data-theme="dark"] {
+    --fc-topbar-bg: #1e2128;
+    --fc-topbar-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+    --fc-topbar-text: #e1e4e8;
+    --fc-body-bg: #13161a;
+    --fc-content-bg: #1e2128;
+    --fc-text-primary: #e1e4e8;
+    --fc-text-secondary: #8b949e;
+    --fc-border-color: #30363d;
+    --fc-card-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Dark mode - general page content overrides */
+[data-theme="dark"] body {
+    background-color: var(--fc-body-bg) !important;
+    color: var(--fc-text-primary) !important;
+}
+
+[data-theme="dark"] .card,
+[data-theme="dark"] .table-container {
+    background: var(--fc-content-bg) !important;
+    border-color: var(--fc-border-color) !important;
+}
+
+[data-theme="dark"] .card-header {
+    background: linear-gradient(135deg, #2d333b, #22272e) !important;
+}
+
+[data-theme="dark"] .table thead th {
+    background: linear-gradient(135deg, #2d333b, #22272e) !important;
+    color: var(--fc-text-primary) !important;
+}
+
+[data-theme="dark"] .table tbody tr:hover {
+    background-color: rgba(255, 255, 255, 0.03) !important;
+}
+
+[data-theme="dark"] .table tbody td {
+    border-color: var(--fc-border-color) !important;
+    color: var(--fc-text-primary) !important;
+}
+
+[data-theme="dark"] .table tbody tr:nth-child(even) {
+    background-color: rgba(255, 255, 255, 0.02) !important;
+}
+
+[data-theme="dark"] .form-control,
+[data-theme="dark"] .form-select,
+[data-theme="dark"] input[type="text"],
+[data-theme="dark"] input[type="number"],
+[data-theme="dark"] input[type="date"],
+[data-theme="dark"] input[type="email"],
+[data-theme="dark"] input[type="password"],
+[data-theme="dark"] input[type="search"],
+[data-theme="dark"] input[type="tel"],
+[data-theme="dark"] input[type="url"],
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+    background-color: #161b22 !important;
+    color: var(--fc-text-primary) !important;
+    border-color: var(--fc-border-color) !important;
+}
+
+[data-theme="dark"] .modal-content {
+    background-color: var(--fc-content-bg) !important;
+    color: var(--fc-text-primary) !important;
+    border-color: var(--fc-border-color) !important;
+}
+
+[data-theme="dark"] .modal-header,
+[data-theme="dark"] .modal-footer {
+    border-color: var(--fc-border-color) !important;
+}
+
+[data-theme="dark"] h1, [data-theme="dark"] h2,
+[data-theme="dark"] h3, [data-theme="dark"] h4,
+[data-theme="dark"] h5, [data-theme="dark"] h6 {
+    color: var(--fc-text-primary) !important;
+}
+
+[data-theme="dark"] .container {
+    background-color: var(--fc-content-bg) !important;
+    color: var(--fc-text-primary) !important;
+}
+
+[data-theme="dark"] .dropdown-menu {
+    background-color: var(--fc-content-bg) !important;
+    border-color: var(--fc-border-color) !important;
+}
+
+[data-theme="dark"] .dropdown-item {
+    color: var(--fc-text-primary) !important;
+}
+
+[data-theme="dark"] .dropdown-item:hover {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+[data-theme="dark"] .alert {
+    border-color: var(--fc-border-color) !important;
+}
+
+[data-theme="dark"] footer {
+    background-color: #1e2128 !important;
+}
+
+/* Fix footer positioning with sidebar */
+footer {
+    margin-left: var(--fc-sidebar-width);
+}
+
+@media (max-width: 991.98px) {
+    footer {
+        margin-left: 0;
     }
 }

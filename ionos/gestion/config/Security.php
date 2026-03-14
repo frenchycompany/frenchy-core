@@ -16,10 +16,11 @@ class Security
     public static function validateUpload($file, $options = [])
     {
         $defaults = [
-            'max_size' => Config::get('MAX_UPLOAD_SIZE', 5242880), // 5MB
-            'allowed_extensions' => explode(',', Config::get('ALLOWED_EXTENSIONS', 'jpg,jpeg,png,pdf')),
+            'max_size' => Config::get('MAX_UPLOAD_SIZE', 524288000), // 500MB
+            'allowed_extensions' => explode(',', Config::get('ALLOWED_EXTENSIONS', 'jpg,jpeg,png,gif,webp,heic,mp4,mov,webm,avi,mkv,pdf')),
             'allowed_mime_types' => [
-                'image/jpeg', 'image/jpg', 'image/png', 'image/gif',
+                'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/heic',
+                'video/mp4', 'video/quicktime', 'video/webm', 'video/x-msvideo', 'video/x-matroska',
                 'application/pdf',
                 'application/msword',
                 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'

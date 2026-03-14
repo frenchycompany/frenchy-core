@@ -113,6 +113,8 @@ function vf_build_site_config($settings) {
         'airbnb_url' => vf_get($settings, 'airbnb_url',   $p['airbnb_url']    ?? ''),
         'ics_url'    => vf_get($settings, 'ics_url',      $p['ics_url']       ?? ''),
         'matterport' => vf_get($settings, 'matterport_id',$p['matterport_id'] ?? ''),
+        'superhote_planning_url' => vf_get($settings, 'superhote_planning_url', $p['superhote_planning_url'] ?? ''),
+        'recommandations_url'    => vf_get($settings, 'recommandations_url',    $p['recommandations_url']    ?? ''),
         'monogram'   => $p['monogram'] ?? 'FC',
         'year'       => date('Y'),
         'logo'       => 'assets/img/logo.png',
@@ -281,6 +283,8 @@ function vf_seed_from_config($conn) {
     if (!empty($p['airbnb_url']))    $stmt->execute([$p['airbnb_url'], 'airbnb_url']);
     if (!empty($p['ics_url']))       $stmt->execute([$p['ics_url'], 'ics_url']);
     if (!empty($p['matterport_id'])) $stmt->execute([$p['matterport_id'], 'matterport_id']);
+    if (!empty($p['superhote_planning_url'])) $stmt->execute([$p['superhote_planning_url'], 'superhote_planning_url']);
+    if (!empty($p['recommandations_url']))    $stmt->execute([$p['recommandations_url'], 'recommandations_url']);
 
     // Colors
     $color_map = [

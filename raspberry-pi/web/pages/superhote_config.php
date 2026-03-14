@@ -198,9 +198,10 @@ function ensureTablesExist($pdo) {
 
     // Inserer les parametres par defaut
     $defaults = [
-        ['palier_j1_3_pourcent', '25', 'Pourcentage entre plancher et standard pour J1-3'],
-        ['palier_j4_6_pourcent', '50', 'Pourcentage entre plancher et standard pour J4-6'],
-        ['palier_j7_13_pourcent', '75', 'Pourcentage entre plancher et standard pour J7-13'],
+        ['palier_j1_3_pourcent', '20', 'Pourcentage entre plancher et standard pour J1-3'],
+        ['palier_j4_13_pourcent', '40', 'Pourcentage entre plancher et standard pour J4-13'],
+        ['palier_j14_30_pourcent', '60', 'Pourcentage entre plancher et standard pour J14-30'],
+        ['palier_j31_60_pourcent', '80', 'Pourcentage entre plancher et standard pour J31-60'],
         ['jours_generation', '30', 'Nombre de jours a generer'],
         ['scheduled_time', '07:00', 'Heure de mise a jour quotidienne (HH:MM)'],
         ['scheduled_enabled', '1', 'Activer la mise a jour planifiee'],
@@ -417,9 +418,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             case 'save_settings':
                 $settings = [
-                    'palier_j1_3_pourcent' => floatval($_POST['palier_j1_3_pourcent'] ?? 25),
-                    'palier_j4_6_pourcent' => floatval($_POST['palier_j4_6_pourcent'] ?? 50),
-                    'palier_j7_13_pourcent' => floatval($_POST['palier_j7_13_pourcent'] ?? 75),
+                    'palier_j1_3_pourcent' => floatval($_POST['palier_j1_3_pourcent'] ?? 20),
+                    'palier_j4_13_pourcent' => floatval($_POST['palier_j4_13_pourcent'] ?? 40),
+                    'palier_j14_30_pourcent' => floatval($_POST['palier_j14_30_pourcent'] ?? 60),
+                    'palier_j31_60_pourcent' => floatval($_POST['palier_j31_60_pourcent'] ?? 80),
                     'jours_generation' => intval($_POST['jours_generation'] ?? 30),
                 ];
 
@@ -434,7 +436,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             case 'save_schedule':
                 $scheduledTimes = $_POST['scheduled_times'] ?? ['07:00'];
                 $scheduledEnabled = isset($_POST['scheduled_enabled']) ? '1' : '0';
-                $maxWorkers = intval($_POST['max_workers'] ?? 2);
+                $maxWorkers = max(1, min(4, intval($_POST['max_workers'] ?? 2)));
 
                 // Filtrer et valider les heures
                 $validTimes = [];
@@ -556,9 +558,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // Fonction pour calculer le prix selon l'anticipation
 function calculatePrice($prixPlancher, $prixStandard, $joursAvant, $jourSemaine, $weekendPourcent, $dimancheReduction, $settings) {
-    $palierJ1_3 = floatval($settings['palier_j1_3_pourcent'] ?? 25) / 100;
-    $palierJ4_6 = floatval($settings['palier_j4_6_pourcent'] ?? 50) / 100;
-    $palierJ7_13 = floatval($settings['palier_j7_13_pourcent'] ?? 75) / 100;
+    $palierJ1_3 = floatval($settings['palier_j1_3_pourcent'] ?? 20) / 100;
+    $palierJ4_13 = floatval($settings['palier_j4_13_pourcent'] ?? 40) / 100;
+    $palierJ14_30 = floatval($settings['palier_j14_30_pourcent'] ?? 60) / 100;
+    $palierJ31_60 = floatval($settings['palier_j31_60_pourcent'] ?? 80) / 100;
 
     $ecart = $prixStandard - $prixPlancher;
 
@@ -569,15 +572,18 @@ function calculatePrice($prixPlancher, $prixStandard, $joursAvant, $jourSemaine,
     } elseif ($joursAvant <= 3) {
         $prix = $prixPlancher + ($ecart * $palierJ1_3);
         $palier = 'J1-3';
-    } elseif ($joursAvant <= 6) {
-        $prix = $prixPlancher + ($ecart * $palierJ4_6);
-        $palier = 'J4-6';
     } elseif ($joursAvant <= 13) {
-        $prix = $prixPlancher + ($ecart * $palierJ7_13);
-        $palier = 'J7-13';
+        $prix = $prixPlancher + ($ecart * $palierJ4_13);
+        $palier = 'J4-13';
+    } elseif ($joursAvant <= 30) {
+        $prix = $prixPlancher + ($ecart * $palierJ14_30);
+        $palier = 'J14-30';
+    } elseif ($joursAvant <= 60) {
+        $prix = $prixPlancher + ($ecart * $palierJ31_60);
+        $palier = 'J31-60';
     } else {
         $prix = $prixStandard;
-        $palier = 'J14+ (standard)';
+        $palier = 'J60+ (standard)';
     }
 
     // Appliquer majoration weekend (vendredi=5, samedi=6)
@@ -914,10 +920,11 @@ try {
                             <h6>Anticipation (jours avant)</h6>
                             <table class="table table-sm">
                                 <tr><td>J0</td><td>Prix plancher</td></tr>
-                                <tr><td>J1-3</td><td>Plancher + <?= $settings['palier_j1_3_pourcent'] ?? 25 ?>% de l'ecart</td></tr>
-                                <tr><td>J4-6</td><td>Plancher + <?= $settings['palier_j4_6_pourcent'] ?? 50 ?>% de l'ecart</td></tr>
-                                <tr><td>J7-13</td><td>Plancher + <?= $settings['palier_j7_13_pourcent'] ?? 75 ?>% de l'ecart</td></tr>
-                                <tr><td>J14+</td><td>Prix standard</td></tr>
+                                <tr><td>J1-3</td><td>Plancher + <?= $settings['palier_j1_3_pourcent'] ?? 20 ?>% de l'ecart</td></tr>
+                                <tr><td>J4-13</td><td>Plancher + <?= $settings['palier_j4_13_pourcent'] ?? 40 ?>% de l'ecart</td></tr>
+                                <tr><td>J14-30</td><td>Plancher + <?= $settings['palier_j14_30_pourcent'] ?? 60 ?>% de l'ecart</td></tr>
+                                <tr><td>J31-60</td><td>Plancher + <?= $settings['palier_j31_60_pourcent'] ?? 80 ?>% de l'ecart</td></tr>
+                                <tr><td>J60+</td><td>Prix standard</td></tr>
                             </table>
                         </div>
                         <div class="col-md-6">
@@ -1038,41 +1045,51 @@ try {
                         <p class="text-muted small">Pourcentage de l'ecart (standard - plancher) a ajouter au prix plancher</p>
 
                         <div class="row">
-                            <div class="col-md-3">
+                            <div class="col-md-2">
                                 <div class="form-group">
                                     <label>J1-3 (%)</label>
                                     <div class="input-group">
                                         <input type="number" name="palier_j1_3_pourcent" class="form-control"
-                                               value="<?= $settings['palier_j1_3_pourcent'] ?? 25 ?>" min="0" max="100">
+                                               value="<?= $settings['palier_j1_3_pourcent'] ?? 20 ?>" min="0" max="100">
                                         <div class="input-group-append"><span class="input-group-text">%</span></div>
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-2">
                                 <div class="form-group">
-                                    <label>J4-6 (%)</label>
+                                    <label>J4-13 (%)</label>
                                     <div class="input-group">
-                                        <input type="number" name="palier_j4_6_pourcent" class="form-control"
-                                               value="<?= $settings['palier_j4_6_pourcent'] ?? 50 ?>" min="0" max="100">
+                                        <input type="number" name="palier_j4_13_pourcent" class="form-control"
+                                               value="<?= $settings['palier_j4_13_pourcent'] ?? 40 ?>" min="0" max="100">
                                         <div class="input-group-append"><span class="input-group-text">%</span></div>
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-2">
                                 <div class="form-group">
-                                    <label>J7-13 (%)</label>
+                                    <label>J14-30 (%)</label>
                                     <div class="input-group">
-                                        <input type="number" name="palier_j7_13_pourcent" class="form-control"
-                                               value="<?= $settings['palier_j7_13_pourcent'] ?? 75 ?>" min="0" max="100">
+                                        <input type="number" name="palier_j14_30_pourcent" class="form-control"
+                                               value="<?= $settings['palier_j14_30_pourcent'] ?? 60 ?>" min="0" max="100">
                                         <div class="input-group-append"><span class="input-group-text">%</span></div>
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                    <label>J31-60 (%)</label>
+                                    <div class="input-group">
+                                        <input type="number" name="palier_j31_60_pourcent" class="form-control"
+                                               value="<?= $settings['palier_j31_60_pourcent'] ?? 80 ?>" min="0" max="100">
+                                        <div class="input-group-append"><span class="input-group-text">%</span></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
                                 <div class="form-group">
                                     <label>Jours a generer</label>
                                     <input type="number" name="jours_generation" class="form-control"
-                                           value="<?= $settings['jours_generation'] ?? 30 ?>" min="7" max="90">
+                                           value="<?= $settings['jours_generation'] ?? 90 ?>" min="7" max="120">
                                 </div>
                             </div>
                         </div>
@@ -1097,27 +1114,34 @@ try {
                                     </tr>
                                     <tr>
                                         <td>J1-3</td>
-                                        <td>45 + <?= $settings['palier_j1_3_pourcent'] ?? 25 ?>% × 25</td>
-                                        <td><?= 45 + (($settings['palier_j1_3_pourcent'] ?? 25)/100) * 25 ?>€</td>
-                                        <td><?= round((45 + (($settings['palier_j1_3_pourcent'] ?? 25)/100) * 25) * 1.1) ?>€</td>
-                                        <td><?= (45 + (($settings['palier_j1_3_pourcent'] ?? 25)/100) * 25) - 5 ?>€</td>
+                                        <td>45 + <?= $settings['palier_j1_3_pourcent'] ?? 20 ?>% × 25</td>
+                                        <td><?= 45 + (($settings['palier_j1_3_pourcent'] ?? 20)/100) * 25 ?>€</td>
+                                        <td><?= round((45 + (($settings['palier_j1_3_pourcent'] ?? 20)/100) * 25) * 1.1) ?>€</td>
+                                        <td><?= (45 + (($settings['palier_j1_3_pourcent'] ?? 20)/100) * 25) - 5 ?>€</td>
                                     </tr>
                                     <tr>
-                                        <td>J4-6</td>
-                                        <td>45 + <?= $settings['palier_j4_6_pourcent'] ?? 50 ?>% × 25</td>
-                                        <td><?= 45 + (($settings['palier_j4_6_pourcent'] ?? 50)/100) * 25 ?>€</td>
-                                        <td><?= round((45 + (($settings['palier_j4_6_pourcent'] ?? 50)/100) * 25) * 1.1) ?>€</td>
-                                        <td><?= (45 + (($settings['palier_j4_6_pourcent'] ?? 50)/100) * 25) - 5 ?>€</td>
+                                        <td>J4-13</td>
+                                        <td>45 + <?= $settings['palier_j4_13_pourcent'] ?? 40 ?>% × 25</td>
+                                        <td><?= 45 + (($settings['palier_j4_13_pourcent'] ?? 40)/100) * 25 ?>€</td>
+                                        <td><?= round((45 + (($settings['palier_j4_13_pourcent'] ?? 40)/100) * 25) * 1.1) ?>€</td>
+                                        <td><?= (45 + (($settings['palier_j4_13_pourcent'] ?? 40)/100) * 25) - 5 ?>€</td>
                                     </tr>
                                     <tr>
-                                        <td>J7-13</td>
-                                        <td>45 + <?= $settings['palier_j7_13_pourcent'] ?? 75 ?>% × 25</td>
-                                        <td><?= 45 + (($settings['palier_j7_13_pourcent'] ?? 75)/100) * 25 ?>€</td>
-                                        <td><?= round((45 + (($settings['palier_j7_13_pourcent'] ?? 75)/100) * 25) * 1.1) ?>€</td>
-                                        <td><?= (45 + (($settings['palier_j7_13_pourcent'] ?? 75)/100) * 25) - 5 ?>€</td>
+                                        <td>J14-30</td>
+                                        <td>45 + <?= $settings['palier_j14_30_pourcent'] ?? 60 ?>% × 25</td>
+                                        <td><?= 45 + (($settings['palier_j14_30_pourcent'] ?? 60)/100) * 25 ?>€</td>
+                                        <td><?= round((45 + (($settings['palier_j14_30_pourcent'] ?? 60)/100) * 25) * 1.1) ?>€</td>
+                                        <td><?= (45 + (($settings['palier_j14_30_pourcent'] ?? 60)/100) * 25) - 5 ?>€</td>
                                     </tr>
                                     <tr>
-                                        <td>J14+</td>
+                                        <td>J31-60</td>
+                                        <td>45 + <?= $settings['palier_j31_60_pourcent'] ?? 80 ?>% × 25</td>
+                                        <td><?= 45 + (($settings['palier_j31_60_pourcent'] ?? 80)/100) * 25 ?>€</td>
+                                        <td><?= round((45 + (($settings['palier_j31_60_pourcent'] ?? 80)/100) * 25) * 1.1) ?>€</td>
+                                        <td><?= (45 + (($settings['palier_j31_60_pourcent'] ?? 80)/100) * 25) - 5 ?>€</td>
+                                    </tr>
+                                    <tr>
+                                        <td>J60+</td>
                                         <td>70€</td>
                                         <td>70€</td>
                                         <td>77€</td>
@@ -1518,8 +1542,12 @@ try {
                                     <div class="col-md-6">
                                         <div class="form-group">
                                             <label><i class="fas fa-users-cog"></i> Workers paralleles</label>
-                                            <input type="number" name="max_workers" class="form-control"
-                                                   value="<?= intval($settings['max_workers'] ?? 2) ?>" min="1" max="5">
+                                            <select name="max_workers" class="form-control">
+                                                <?php $currentWorkers = intval($settings['max_workers'] ?? 2); ?>
+                                                <?php for ($w = 1; $w <= 4; $w++): ?>
+                                                    <option value="<?= $w ?>" <?= $w === $currentWorkers ? 'selected' : '' ?>><?= $w ?> worker<?= $w > 1 ? 's' : '' ?></option>
+                                                <?php endfor; ?>
+                                            </select>
                                         </div>
                                     </div>
                                     <div class="col-md-6">

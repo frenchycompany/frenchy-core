@@ -15,27 +15,7 @@ if (!($pdo instanceof PDO)) {
 
 $feedback = '';
 
-// Créer la table si elle n'existe pas
-try {
-    $pdo->exec("
-        CREATE TABLE IF NOT EXISTS `sms_automations` (
-          `id` int(11) NOT NULL AUTO_INCREMENT,
-          `nom` varchar(100) NOT NULL,
-          `description` text,
-          `actif` tinyint(1) DEFAULT 1,
-          `declencheur_type` enum('date_arrivee','date_depart','date_reservation') NOT NULL,
-          `declencheur_jours` int(11) DEFAULT 0,
-          `template_name` varchar(50) NOT NULL,
-          `condition_statut` varchar(50) DEFAULT 'confirmée',
-          `flag_field` varchar(50) DEFAULT NULL,
-          `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-          `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-          PRIMARY KEY (`id`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
-    ");
-} catch (PDOException $e) {
-    // Table existe déjà
-}
+// Tables requises : voir db/install_tables.php
 
 // Ajouter la colonne logement_id si elle n'existe pas
 try {
@@ -216,7 +196,7 @@ try {
 // Récupérer la liste des logements
 $logements = [];
 try {
-    $stmt = $pdo->query("SELECT id, nom_du_logement FROM liste_logements ORDER BY nom_du_logement");
+    $stmt = $pdo->query("SELECT id, nom_du_logement FROM liste_logements WHERE actif = 1 ORDER BY nom_du_logement");
     $logements = $stmt->fetchAll();
 } catch (PDOException $e) {
     // Ignorer

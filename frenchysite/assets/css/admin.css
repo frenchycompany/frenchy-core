@@ -453,12 +453,26 @@ body {
     margin-top: .75rem;
 }
 
+.adm-photo-grid--gallery {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: .6rem;
+}
+
 .adm-photo-card {
     position: relative;
     border-radius: 8px;
     overflow: hidden;
     border: 1px solid var(--adm-border);
     background: var(--adm-bg);
+    transition: box-shadow .2s, border-color .2s;
+}
+
+.adm-photo-grid--gallery .adm-photo-card {
+    cursor: grab;
+}
+
+.adm-photo-grid--gallery .adm-photo-card:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,.1);
 }
 
 .adm-photo-card img {
@@ -466,6 +480,10 @@ body {
     height: 100px;
     object-fit: cover;
     display: block;
+}
+
+.adm-photo-grid--gallery .adm-photo-card img {
+    height: 130px;
 }
 
 .adm-photo-info {
@@ -491,12 +509,25 @@ body {
     white-space: nowrap;
 }
 
-.adm-photo-delete {
+/* Photo action buttons (edit + delete) */
+.adm-photo-actions {
     position: absolute;
     top: 4px;
     right: 4px;
-    width: 24px;
-    height: 24px;
+    display: flex;
+    gap: 3px;
+    opacity: 0;
+    transition: opacity var(--adm-transition);
+}
+
+.adm-photo-card:hover .adm-photo-actions {
+    opacity: 1;
+}
+
+.adm-photo-edit,
+.adm-photo-delete {
+    width: 26px;
+    height: 26px;
     border-radius: 50%;
     background: rgba(0,0,0,.55);
     border: none;
@@ -505,12 +536,52 @@ body {
     align-items: center;
     justify-content: center;
     color: white;
-    opacity: 0;
-    transition: opacity var(--adm-transition);
+    transition: background .2s;
 }
 
-.adm-photo-card:hover .adm-photo-delete {
+.adm-photo-edit:hover { background: var(--adm-green); }
+.adm-photo-delete:hover { background: #c0392b; }
+
+/* Legacy: standalone delete buttons (hero, logo, experience) */
+.adm-photo-single .adm-photo-delete {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    opacity: 0;
+}
+.adm-photo-single .adm-photo-card:hover .adm-photo-delete {
     opacity: 1;
+}
+
+/* Drag handle */
+.adm-photo-drag {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: .7rem;
+    color: var(--adm-grey);
+    background: linear-gradient(transparent, rgba(255,255,255,.9));
+    padding: 4px 0 2px;
+    opacity: 0;
+    transition: opacity var(--adm-transition);
+    pointer-events: none;
+}
+
+.adm-photo-card:hover .adm-photo-drag {
+    opacity: 1;
+}
+
+/* Drag states */
+.adm-photo-card.is-dragging {
+    opacity: .35;
+}
+
+.adm-photo-card.drag-over {
+    border-color: var(--adm-green);
+    border-style: dashed;
+    box-shadow: 0 0 0 2px rgba(29, 83, 69, .2);
 }
 
 .adm-photo-empty {
@@ -536,6 +607,181 @@ body {
 /* Large hero card */
 .adm-photo-card--large img {
     height: 200px;
+}
+
+/* ══════════ DROPZONE ══════════ */
+.adm-dropzone {
+    margin-top: 1rem;
+    padding: 1.5rem;
+    border: 2px dashed var(--adm-border);
+    border-radius: var(--adm-radius);
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .5rem;
+    color: var(--adm-brown);
+    font-size: .85rem;
+    transition: border-color .2s, background .2s;
+}
+
+.adm-dropzone svg {
+    color: var(--adm-grey);
+}
+
+.adm-dropzone.is-dragover {
+    border-color: var(--adm-green);
+    background: rgba(29, 83, 69, .04);
+}
+
+.adm-dropzone.is-dragover svg {
+    color: var(--adm-green);
+}
+
+.adm-dropzone-btn {
+    cursor: pointer;
+}
+
+/* ══════════ UPLOAD QUEUE ══════════ */
+.adm-upload-queue {
+    margin-top: .75rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+}
+
+.adm-queue-item {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    padding: .35rem .6rem;
+    border-radius: 6px;
+    background: var(--adm-bg);
+    border: 1px solid var(--adm-border);
+    font-size: .78rem;
+}
+
+.adm-queue-item img {
+    width: 32px;
+    height: 32px;
+    object-fit: cover;
+    border-radius: 4px;
+}
+
+.adm-queue-name {
+    color: var(--adm-dark);
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.adm-queue-status {
+    color: var(--adm-brown);
+    font-weight: 500;
+}
+
+.adm-queue-item.is-done .adm-queue-status {
+    color: var(--adm-green);
+}
+
+.adm-queue-item.is-error .adm-queue-status {
+    color: #c0392b;
+}
+
+/* ══════════ MODAL ══════════ */
+.adm-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 300;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.adm-modal[hidden] {
+    display: none;
+}
+
+.adm-photo-card.is-hidden {
+    opacity: .5;
+}
+
+.adm-badge--muted {
+    background: var(--adm-grey, #999);
+    color: #fff;
+    font-size: .65rem;
+    padding: 1px 6px;
+    border-radius: 4px;
+}
+
+.adm-pick-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: .5rem;
+    max-height: 360px;
+    overflow-y: auto;
+    margin-bottom: 1rem;
+}
+
+.adm-pick-grid .adm-pick-item {
+    cursor: pointer;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 2px solid transparent;
+    transition: border-color .2s;
+}
+
+.adm-pick-grid .adm-pick-item:hover {
+    border-color: var(--adm-green, #1D5345);
+}
+
+.adm-pick-grid .adm-pick-item img {
+    width: 100%;
+    height: 80px;
+    object-fit: cover;
+    display: block;
+}
+
+.adm-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,.5);
+}
+
+.adm-modal-content {
+    position: relative;
+    background: var(--adm-white);
+    border-radius: 12px;
+    padding: 1.5rem;
+    max-width: 420px;
+    width: 90%;
+    box-shadow: 0 12px 40px rgba(0,0,0,.2);
+}
+
+.adm-modal-content h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem;
+    color: var(--adm-green);
+    margin-bottom: 1rem;
+}
+
+.adm-modal-preview {
+    margin-bottom: 1rem;
+}
+
+.adm-modal-preview img {
+    width: 100%;
+    max-height: 200px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid var(--adm-border);
+}
+
+.adm-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: .5rem;
+    margin-top: 1rem;
 }
 
 /* Experience grid (3 slots side by side) */
@@ -641,6 +887,9 @@ body {
     display: flex;
     align-items: center;
     gap: .75rem;
+}
+.adm-upload-preview[hidden] {
+    display: none;
 }
 
 .adm-upload-preview img {
@@ -922,18 +1171,30 @@ body {
         min-height: 36px;
     }
 
-    /* ── Photos : supprimer toujours visible ── */
+    /* ── Photos : actions toujours visibles ── */
     .adm-photo-grid {
         grid-template-columns: repeat(2, 1fr);
         gap: .4rem;
     }
-    .adm-photo-delete {
+    .adm-photo-grid--gallery {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .adm-photo-actions {
         opacity: 1;
+    }
+    .adm-photo-single .adm-photo-delete {
+        opacity: 1;
+    }
+    .adm-photo-edit,
+    .adm-photo-delete {
         width: 28px;
         height: 28px;
     }
     .adm-photo-card img {
         height: 75px;
+    }
+    .adm-photo-grid--gallery .adm-photo-card img {
+        height: 100px;
     }
     .adm-photo-card--large img {
         height: 150px;
@@ -949,6 +1210,24 @@ body {
     }
     .adm-exp-slot .adm-photo-card img {
         height: 90px;
+    }
+    .adm-photo-drag {
+        display: none;
+    }
+    .adm-dropzone {
+        padding: 1rem;
+        font-size: .78rem;
+    }
+    .adm-dropzone svg {
+        width: 24px;
+        height: 24px;
+    }
+    .adm-modal-content {
+        padding: 1rem;
+        width: 95%;
+    }
+    .adm-queue-item {
+        font-size: .72rem;
     }
 
     /* ── Upload ── */
@@ -1035,6 +1314,9 @@ body {
         padding: .6rem .4rem 1.5rem;
     }
     .adm-photo-grid {
+        grid-template-columns: 1fr;
+    }
+    .adm-photo-grid--gallery {
         grid-template-columns: 1fr;
     }
 }

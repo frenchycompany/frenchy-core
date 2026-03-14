@@ -15,176 +15,33 @@ $pdo = $conn;
 $message = '';
 $messageType = '';
 
-// Creer la table si elle n'existe pas
+// Tables requises : voir db/install_tables.php
+
+// Ajouter les colonnes guide_* si elles n'existent pas encore
+$guideColumns = [
+    'guide_tv', 'guide_canape_convertible', 'guide_plaque_cuisson', 'guide_four',
+    'guide_micro_ondes', 'guide_chauffage', 'guide_climatisation', 'guide_machine_cafe',
+    'guide_machine_laver', 'guide_lave_vaisselle', 'guide_seche_linge',
+    'molotov_tv'
+];
+foreach ($guideColumns as $col) {
+    $colType = str_starts_with($col, 'guide_') ? 'TEXT DEFAULT NULL' : 'TINYINT(1) DEFAULT 0';
+    try { $pdo->exec("ALTER TABLE logement_equipements ADD COLUMN $col $colType"); } catch (PDOException $e) { error_log('logement_equipements.php: ' . $e->getMessage()); }
+}
+
+// Inserer les logements manquants
 try {
-    $pdo->exec("
-        CREATE TABLE IF NOT EXISTS logement_equipements (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            logement_id INT NOT NULL,
-            nombre_couchages INT DEFAULT 0,
-            nombre_chambres INT DEFAULT 0,
-            nombre_salles_bain INT DEFAULT 0,
-            superficie_m2 INT DEFAULT 0,
-            etage VARCHAR(50) DEFAULT NULL,
-            ascenseur TINYINT(1) DEFAULT 0,
-            code_wifi VARCHAR(100) DEFAULT NULL,
-            nom_wifi VARCHAR(100) DEFAULT NULL,
-            code_porte VARCHAR(100) DEFAULT NULL,
-            code_boite_cles VARCHAR(100) DEFAULT NULL,
-            instructions_arrivee TEXT DEFAULT NULL,
-            machine_cafe_type VARCHAR(50) DEFAULT 'aucune',
-            machine_cafe_autre VARCHAR(100) DEFAULT NULL,
-            bouilloire TINYINT(1) DEFAULT 0,
-            grille_pain TINYINT(1) DEFAULT 0,
-            micro_ondes TINYINT(1) DEFAULT 0,
-            four TINYINT(1) DEFAULT 0,
-            plaque_cuisson TINYINT(1) DEFAULT 0,
-            plaque_cuisson_type VARCHAR(50) DEFAULT NULL,
-            lave_vaisselle TINYINT(1) DEFAULT 0,
-            refrigerateur TINYINT(1) DEFAULT 0,
-            congelateur TINYINT(1) DEFAULT 0,
-            ustensiles_cuisine TINYINT(1) DEFAULT 0,
-            machine_laver TINYINT(1) DEFAULT 0,
-            seche_linge TINYINT(1) DEFAULT 0,
-            fer_repasser TINYINT(1) DEFAULT 0,
-            table_repasser TINYINT(1) DEFAULT 0,
-            aspirateur TINYINT(1) DEFAULT 0,
-            produits_menage TINYINT(1) DEFAULT 0,
-            tv TINYINT(1) DEFAULT 0,
-            tv_type VARCHAR(100) DEFAULT NULL,
-            tv_pouces INT DEFAULT NULL,
-            netflix TINYINT(1) DEFAULT 0,
-            amazon_prime TINYINT(1) DEFAULT 0,
-            disney_plus TINYINT(1) DEFAULT 0,
-            molotov_tv TINYINT(1) DEFAULT 0,
-            chaines_tv TEXT DEFAULT NULL,
-            enceinte_bluetooth TINYINT(1) DEFAULT 0,
-            console_jeux TINYINT(1) DEFAULT 0,
-            console_jeux_type VARCHAR(100) DEFAULT NULL,
-            livres TINYINT(1) DEFAULT 0,
-            jeux_societe TINYINT(1) DEFAULT 0,
-            canape TINYINT(1) DEFAULT 0,
-            canape_type VARCHAR(100) DEFAULT NULL,
-            canape_convertible TINYINT(1) DEFAULT 0,
-            table_manger TINYINT(1) DEFAULT 0,
-            table_manger_places INT DEFAULT NULL,
-            bureau TINYINT(1) DEFAULT 0,
-            type_lits TEXT DEFAULT NULL,
-            linge_lit_fourni TINYINT(1) DEFAULT 1,
-            serviettes_fournies TINYINT(1) DEFAULT 1,
-            oreillers_supplementaires TINYINT(1) DEFAULT 0,
-            couvertures_supplementaires TINYINT(1) DEFAULT 0,
-            climatisation TINYINT(1) DEFAULT 0,
-            chauffage TINYINT(1) DEFAULT 1,
-            chauffage_type VARCHAR(50) DEFAULT 'electrique',
-            ventilateur TINYINT(1) DEFAULT 0,
-            baignoire TINYINT(1) DEFAULT 0,
-            douche TINYINT(1) DEFAULT 1,
-            seche_cheveux TINYINT(1) DEFAULT 0,
-            produits_toilette TINYINT(1) DEFAULT 0,
-            balcon TINYINT(1) DEFAULT 0,
-            terrasse TINYINT(1) DEFAULT 0,
-            jardin TINYINT(1) DEFAULT 0,
-            parking TINYINT(1) DEFAULT 0,
-            parking_type VARCHAR(50) DEFAULT NULL,
-            barbecue TINYINT(1) DEFAULT 0,
-            salon_jardin TINYINT(1) DEFAULT 0,
-            detecteur_fumee TINYINT(1) DEFAULT 1,
-            detecteur_co TINYINT(1) DEFAULT 0,
-            extincteur TINYINT(1) DEFAULT 0,
-            trousse_secours TINYINT(1) DEFAULT 0,
-            coffre_fort TINYINT(1) DEFAULT 0,
-            lit_bebe TINYINT(1) DEFAULT 0,
-            chaise_haute TINYINT(1) DEFAULT 0,
-            barriere_securite TINYINT(1) DEFAULT 0,
-            jeux_enfants TINYINT(1) DEFAULT 0,
-            animaux_acceptes TINYINT(1) DEFAULT 0,
-            animaux_conditions TEXT DEFAULT NULL,
-            guide_tv TEXT DEFAULT NULL,
-            guide_canape_convertible TEXT DEFAULT NULL,
-            guide_plaque_cuisson TEXT DEFAULT NULL,
-            guide_four TEXT DEFAULT NULL,
-            guide_micro_ondes TEXT DEFAULT NULL,
-            guide_chauffage TEXT DEFAULT NULL,
-            guide_climatisation TEXT DEFAULT NULL,
-            guide_machine_cafe TEXT DEFAULT NULL,
-            guide_machine_laver TEXT DEFAULT NULL,
-            guide_lave_vaisselle TEXT DEFAULT NULL,
-            guide_seche_linge TEXT DEFAULT NULL,
-            fumer_autorise TINYINT(1) DEFAULT 0,
-            fetes_autorisees TINYINT(1) DEFAULT 0,
-            heure_checkin VARCHAR(50) DEFAULT '15:00',
-            heure_checkout VARCHAR(50) DEFAULT '11:00',
-            instructions_depart TEXT DEFAULT NULL,
-            infos_quartier TEXT DEFAULT NULL,
-            numeros_urgence TEXT DEFAULT NULL,
-            notes_supplementaires TEXT DEFAULT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            UNIQUE KEY unique_logement (logement_id)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-    ");
-
-    // Ajouter les colonnes guide_* si elles n'existent pas encore
-    $guideColumns = [
-        'guide_tv', 'guide_canape_convertible', 'guide_plaque_cuisson', 'guide_four',
-        'guide_micro_ondes', 'guide_chauffage', 'guide_climatisation', 'guide_machine_cafe',
-        'guide_machine_laver', 'guide_lave_vaisselle', 'guide_seche_linge',
-        'molotov_tv'
-    ];
-    foreach ($guideColumns as $col) {
-        $colType = str_starts_with($col, 'guide_') ? 'TEXT DEFAULT NULL' : 'TINYINT(1) DEFAULT 0';
-        try { $pdo->exec("ALTER TABLE logement_equipements ADD COLUMN $col $colType"); } catch (PDOException $e) {}
-    }
-
-    // Inserer les logements manquants
     $pdo->exec("
         INSERT IGNORE INTO logement_equipements (logement_id)
         SELECT id FROM liste_logements
     ");
-} catch (PDOException $e) {
-    // Table existe deja ou autre erreur
-}
+} catch (PDOException $e) { error_log('logement_equipements.php: ' . $e->getMessage()); }
 
-// Creer la table des recommandations (partenaires, restaurants, activites)
+// Ajouter colonne ville_id a liste_logements si elle n'existe pas
 try {
-    // Table des villes
-    $pdo->exec("
-        CREATE TABLE IF NOT EXISTS villes (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            nom VARCHAR(100) NOT NULL UNIQUE,
-            description TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-    ");
-
-    // Table des recommandations liees aux villes
-    $pdo->exec("
-        CREATE TABLE IF NOT EXISTS ville_recommandations (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            ville_id INT NOT NULL,
-            categorie ENUM('partenaire', 'restaurant', 'activite') NOT NULL,
-            nom VARCHAR(200) NOT NULL,
-            description TEXT,
-            adresse VARCHAR(255),
-            telephone VARCHAR(50),
-            site_web VARCHAR(255),
-            prix_indicatif VARCHAR(100),
-            note_interne TEXT,
-            ordre INT DEFAULT 0,
-            actif TINYINT(1) DEFAULT 1,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            INDEX idx_ville_categorie (ville_id, categorie),
-            FOREIGN KEY (ville_id) REFERENCES villes(id) ON DELETE CASCADE
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-    ");
-
-    // Ajouter colonne ville_id a liste_logements si elle n'existe pas
     $pdo->exec("ALTER TABLE liste_logements ADD COLUMN ville_id INT NULL");
 } catch (PDOException $e) {
-    // Tables/colonnes existent deja
+    // Colonne existe deja
 }
 
 // Traitement du formulaire
@@ -327,7 +184,7 @@ if ($selectedLogement && !empty($selectedLogement['ville_id'])) {
         $stmt = $pdo->prepare("SELECT * FROM villes WHERE id = ?");
         $stmt->execute([$selectedLogement['ville_id']]);
         $villeLogement = $stmt->fetch(PDO::FETCH_ASSOC);
-    } catch (PDOException $e) {}
+    } catch (PDOException $e) { error_log('logement_equipements.php: ' . $e->getMessage()); }
 
     // Recuperer les recommandations de la ville
     try {

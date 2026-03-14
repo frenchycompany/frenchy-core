@@ -238,7 +238,8 @@ try {
     }
 
 } catch (PDOException $e) {
-    echo "<div class='alert alert-danger'>Erreur de base de données : " . htmlspecialchars($e->getMessage()) . "</div>";
+    error_log('recus.php: ' . $e->getMessage());
+    echo "<div class='alert alert-danger'>Une erreur interne est survenue.</div>";
     $sms_list = [];
     $conversations = [];
     $modems = [];
@@ -1503,9 +1504,6 @@ async function loadAISuggestions(message, sender, reservation) {
 
     const resp = await fetch('sms_ai_suggest.php?' + params.toString());
     const data = await resp.json();
-
-    // Debug: afficher le contexte dans la console
-    console.log('🔍 AI Suggestions Debug:', data.context);
 
     if (data.success && data.suggestions && data.suggestions.length > 0) {
       listEl.innerHTML = '';

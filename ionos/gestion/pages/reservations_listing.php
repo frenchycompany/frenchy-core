@@ -22,7 +22,7 @@ $vue = isset($_GET['vue']) ? $_GET['vue'] : 'logement'; // 'logement', 'liste', 
 // Récupérer tous les logements depuis la table liste_logements
 $logements = [];
 try {
-    $stmt = $pdo->query("SELECT id, nom_du_logement FROM liste_logements ORDER BY nom_du_logement");
+    $stmt = $pdo->query("SELECT id, nom_du_logement FROM liste_logements WHERE actif = 1 ORDER BY nom_du_logement");
     $logements = $stmt->fetchAll();
 } catch (PDOException $e) {
     // Ignorer
@@ -101,7 +101,8 @@ try {
     $stmt->execute($params);
     $reservations = $stmt->fetchAll();
 } catch (PDOException $e) {
-    echo "<div class='alert alert-danger'>Erreur: " . htmlspecialchars($e->getMessage()) . "</div>";
+    error_log('reservations_listing.php: ' . $e->getMessage());
+    echo "<div class='alert alert-danger'>Une erreur interne est survenue.</div>";
 }
 
 // Grouper par logement si vue = logement

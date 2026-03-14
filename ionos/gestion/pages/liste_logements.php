@@ -8,7 +8,8 @@ try {
     $query = $conn->query("SELECT id, nom_du_logement, adresse, code FROM liste_logements WHERE actif = 1 ORDER BY nom_du_logement");
     $logements = $query->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
-    echo "Erreur : " . $e->getMessage();
+    error_log('liste_logements.php: ' . $e->getMessage());
+    echo "Une erreur interne est survenue.";
 }
 ?>
 

@@ -74,14 +74,28 @@
     --z-tooltip: 1070;
 }
 
-/* Dark mode (optionnel) */
+/* Dark mode */
 [data-theme="dark"] {
     --primary-color: #5dbbcc;
+    --primary-dark: #4aacbd;
+    --primary-light: #7dcdd9;
+
     --dark: #1a1d20;
     --light: #2d3135;
-    --white: #1a1d20;
-    --gray-100: #2d3135;
-    --gray-900: #f8f9fa;
+    --white: #1e2128;
+    --gray-100: #22272e;
+    --gray-200: #2d333b;
+    --gray-300: #373e47;
+    --gray-400: #444c56;
+    --gray-500: #6e7681;
+    --gray-600: #8b949e;
+    --gray-700: #c9d1d9;
+    --gray-800: #e1e4e8;
+    --gray-900: #f0f3f6;
+
+    --shadow-sm: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.2);
+    --shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 1rem 3rem rgba(0, 0, 0, 0.4);
 }
 
 /* ============================================

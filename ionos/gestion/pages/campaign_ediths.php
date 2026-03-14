@@ -29,7 +29,8 @@ try {
     $recipients = $stmt->fetchAll();
 
 } catch (PDOException $e) {
-    echo "<div class='alert alert-danger'>Erreur: " . htmlspecialchars($e->getMessage()) . "</div>";
+    error_log('campaign_ediths.php: ' . $e->getMessage());
+    echo "<div class='alert alert-danger'>Une erreur interne est survenue.</div>";
     exit;
 }
 

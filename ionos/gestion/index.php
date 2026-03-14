@@ -4,37 +4,54 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
+require_once __DIR__ . '/includes/env_loader.php';
+require_once __DIR__ . '/db/connection.php';
+
 if (session_status() === PHP_SESSION_NONE) {
-    session_set_cookie_params([
-        'lifetime' => 0,
-        'path'     => '/',
-        'domain'   => '',
-        'secure'   => false,
-        'httponly' => true,
-        'samesite' => 'Strict'
-    ]);
     session_start();
 }
 
-if (!isset($_SESSION['regenerated'])) {
-    session_regenerate_id(true);
-    $_SESSION['regenerated'] = true;
+// Détecter si le nouveau système est disponible (table users)
+$useNewAuth = false;
+try {
+    $conn->query("SELECT 1 FROM users LIMIT 1");
+    $useNewAuth = true;
+} catch (PDOException $e) {
+    // Table users n'existe pas → ancien système
 }
 
-if (!isset($_SESSION['nom_utilisateur']) || !isset($_SESSION['id_intervenant'])) {
-    header("Location: login.php");
-    exit;
-}
-$nom_utilisateur = filter_var($_SESSION['nom_utilisateur'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-$intervenant_id = (int) $_SESSION['id_intervenant'];
-$is_admin = (($_SESSION['role'] ?? '') === 'admin');
+if ($useNewAuth) {
+    require_once __DIR__ . '/includes/Auth.php';
+    $auth = new Auth($conn);
 
-if (empty($_SESSION['csrf_token'])) {
-    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-}
-$csrf_token = $_SESSION['csrf_token'];
+    // Propriétaires → rediriger vers leur portail
+    if ($auth->isProprietaire()) {
+        header('Location: proprietaire/index.php');
+        exit;
+    }
 
-require_once __DIR__ . '/config.php';
+    // Staff/Admin requis pour cette page
+    $auth->requireStaff('login.php');
+
+    $nom_utilisateur = $_SESSION['user_nom'] ?? $_SESSION['nom_utilisateur'] ?? 'Compte';
+    $intervenant_id = (int) ($_SESSION['id_intervenant'] ?? $_SESSION['user_id'] ?? 0);
+    $is_admin = $auth->isAdmin();
+    $csrf_token = $auth->csrfToken();
+} else {
+    // Ancien système : vérifier la session intervenant
+    if (!isset($_SESSION['id_intervenant'])) {
+        header('Location: login.php');
+        exit;
+    }
+    $nom_utilisateur = $_SESSION['nom_utilisateur'] ?? 'Compte';
+    $intervenant_id = (int) ($_SESSION['id_intervenant'] ?? 0);
+    $is_admin = ($_SESSION['role'] ?? '') === 'admin';
+    if (empty($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+    $csrf_token = $_SESSION['csrf_token'];
+}
+
 require_once __DIR__ . '/pages/menu.php';
 
 $today = date('Y-m-d');
@@ -75,6 +92,15 @@ if ($is_admin) {
     $stmt->execute([$today, $intervenant_id, $intervenant_id, $intervenant_id, $intervenant_id]);
 }
 $interventions_jour = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Taches actives par logement (pour afficher sur les interventions)
+$taches_par_logement = [];
+try {
+    $stmtTaches = $conn->query("SELECT logement_id, description, statut FROM todo_list WHERE statut IN ('en attente', 'en cours') ORDER BY date_limite ASC");
+    foreach ($stmtTaches->fetchAll(PDO::FETCH_ASSOC) as $t) {
+        $taches_par_logement[(int)$t['logement_id']][] = $t;
+    }
+} catch (PDOException $e) {}
 
 // Prochaines interventions (7 jours)
 $stmt = $conn->prepare("
@@ -154,82 +180,102 @@ if ($is_admin) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Accueil — FrenchyConciergerie</title>
     <style>
-        .accueil-container { max-width: 900px; margin: 0 auto; padding: 0 10px 40px; }
+        .accueil-container { max-width: 960px; margin: 0 auto; padding: 20px 16px 40px; }
         .welcome-card {
-            background: linear-gradient(135deg, #1976d2, #1565c0);
-            color: #fff; border-radius: 16px; padding: 24px; margin-bottom: 20px;
+            background: linear-gradient(135deg, #17a2b8, #138496);
+            color: #fff; border-radius: 16px; padding: 28px; margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(23, 162, 184, 0.3);
         }
-        .welcome-card h2 { margin: 0 0 6px; font-size: 1.4em; }
-        .welcome-card .paie { font-size: 1.8em; font-weight: 700; }
-        .welcome-card small { opacity: 0.8; }
+        .welcome-card h2 { margin: 0 0 6px; font-size: 1.5em; font-weight: 600; }
+        .welcome-card .paie { font-size: 2em; font-weight: 700; }
+        .welcome-card small { opacity: 0.85; }
 
-        .stat-row { display: flex; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; }
+        .stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px; }
         .stat-card {
-            flex: 1; min-width: 120px; background: #fff; border-radius: 12px;
-            padding: 16px; text-align: center; box-shadow: 0 1px 6px rgba(0,0,0,0.08);
+            background: var(--fc-content-bg, #fff); border-radius: 12px;
+            padding: 18px; text-align: center; box-shadow: var(--fc-card-shadow, 0 2px 8px rgba(0,0,0,0.06));
+            transition: transform 0.2s, box-shadow 0.2s;
         }
-        .stat-card .num { font-size: 1.8em; font-weight: 700; }
-        .stat-card .label { font-size: 0.85em; color: #888; }
+        .stat-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .stat-card .num { font-size: 1.9em; font-weight: 700; }
+        .stat-card .label { font-size: 0.82em; color: var(--fc-text-secondary, #888); margin-top: 4px; }
 
         .section-title {
-            font-weight: 700; font-size: 1.1em; margin: 22px 0 10px;
+            font-weight: 700; font-size: 1.1em; margin: 26px 0 12px;
             display: flex; align-items: center; gap: 8px;
+            color: var(--fc-text-primary, #212529);
         }
-        .section-title i { color: #1976d2; }
+        .section-title i { color: #17a2b8; }
 
         .intervention-card {
-            background: #fff; border-radius: 12px; padding: 16px; margin-bottom: 10px;
-            box-shadow: 0 1px 5px rgba(0,0,0,0.06); border-left: 4px solid #1976d2;
+            background: var(--fc-content-bg, #fff); border-radius: 12px; padding: 18px; margin-bottom: 10px;
+            box-shadow: var(--fc-card-shadow, 0 2px 8px rgba(0,0,0,0.06)); border-left: 4px solid #17a2b8;
+            transition: transform 0.15s, box-shadow 0.15s;
         }
+        .intervention-card:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         .intervention-card.statut-fait { border-left-color: #43a047; opacity: 0.7; }
         .intervention-card.statut-annule { border-left-color: #bbb; opacity: 0.5; }
         .intervention-card.statut-a-verifier { border-left-color: #ff9800; }
-        .intervention-card .logement-name { font-weight: 700; font-size: 1.05em; }
-        .intervention-card .badges { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+        .intervention-card .logement-name { font-weight: 700; font-size: 1.05em; color: var(--fc-text-primary, #212529); }
+        .intervention-card .badges { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
         .intervention-card .badge-role {
-            padding: 3px 10px; border-radius: 20px; font-size: 0.78em; font-weight: 600;
+            padding: 4px 10px; border-radius: 20px; font-size: 0.78em; font-weight: 600;
         }
-        .intervention-card .actions-row { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+        .intervention-card .actions-row { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
         .intervention-card .actions-row a, .intervention-card .actions-row button {
-            padding: 6px 14px; border-radius: 8px; font-size: 0.85em; font-weight: 600;
-            text-decoration: none; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;
+            padding: 7px 16px; border-radius: 8px; font-size: 0.85em; font-weight: 600;
+            text-decoration: none; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;
+            transition: all 0.15s;
         }
         .btn-checkup { background: #e8f5e9; color: #2e7d32; }
-        .btn-checkup:hover { background: #c8e6c9; }
-        .btn-valider { background: #e3f2fd; color: #1565c0; }
-        .btn-valider:hover { background: #bbdefb; }
+        .btn-checkup:hover { background: #c8e6c9; transform: translateY(-1px); }
+        .btn-valider { background: #e0f7fa; color: #00838f; }
+        .btn-valider:hover { background: #b2ebf2; transform: translateY(-1px); }
 
         .next-card {
             display: flex; align-items: center; gap: 12px;
-            background: #fff; border-radius: 10px; padding: 12px 14px; margin-bottom: 6px;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+            background: var(--fc-content-bg, #fff); border-radius: 10px; padding: 13px 16px; margin-bottom: 8px;
+            box-shadow: var(--fc-card-shadow, 0 2px 8px rgba(0,0,0,0.06));
+            transition: transform 0.15s;
         }
+        .next-card:hover { transform: translateX(4px); }
         .next-card .date-badge {
-            background: #e3f2fd; color: #1565c0; border-radius: 8px;
-            padding: 6px 10px; font-weight: 700; font-size: 0.9em; white-space: nowrap;
+            background: #e0f7fa; color: #00838f; border-radius: 8px;
+            padding: 6px 12px; font-weight: 700; font-size: 0.9em; white-space: nowrap;
         }
 
         .checkup-card {
             display: flex; align-items: center; justify-content: space-between;
-            background: #fff3e0; border-radius: 10px; padding: 12px 14px; margin-bottom: 6px;
+            background: #fff3e0; border-radius: 10px; padding: 13px 16px; margin-bottom: 8px;
         }
         .checkup-card a {
-            background: #ff9800; color: #fff; padding: 6px 14px; border-radius: 8px;
+            background: #ff9800; color: #fff; padding: 7px 16px; border-radius: 8px;
             text-decoration: none; font-weight: 600; font-size: 0.85em;
+            transition: background 0.15s;
         }
+        .checkup-card a:hover { background: #f57c00; }
 
         .notif-item {
-            background: #f5f5f5; border-radius: 8px; padding: 10px 12px; margin-bottom: 6px;
-            font-size: 0.9em;
+            background: var(--fc-content-bg, #f5f5f5); border-radius: 10px; padding: 12px 14px; margin-bottom: 8px;
+            font-size: 0.9em; box-shadow: var(--fc-card-shadow, 0 1px 4px rgba(0,0,0,0.04));
+            border-left: 3px solid #17a2b8;
         }
-        .notif-item .notif-date { color: #999; font-size: 0.8em; }
+        .notif-item .notif-date { color: var(--fc-text-secondary, #999); font-size: 0.8em; }
 
-        .empty-state { text-align: center; color: #bbb; padding: 30px; font-size: 0.95em; }
+        .empty-state { text-align: center; color: var(--fc-text-secondary, #bbb); padding: 40px; font-size: 0.95em; }
+
+        /* Dark mode overrides for dashboard */
+        [data-theme="dark"] .welcome-card { box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4); }
+        [data-theme="dark"] .checkup-card { background: rgba(255, 152, 0, 0.15); }
+        [data-theme="dark"] .checkup-card div { color: var(--fc-text-primary, #e1e4e8); }
+        [data-theme="dark"] .btn-checkup { background: rgba(46, 125, 50, 0.15); color: #66bb6a; }
+        [data-theme="dark"] .btn-valider { background: rgba(0, 131, 143, 0.15); color: #4dd0e1; }
 
         @media (max-width: 600px) {
-            .stat-row { gap: 6px; }
-            .stat-card { padding: 12px 8px; }
-            .stat-card .num { font-size: 1.4em; }
+            .accueil-container { padding: 12px 10px 40px; }
+            .stat-row { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+            .stat-card { padding: 14px 10px; }
+            .stat-card .num { font-size: 1.5em; }
         }
     </style>
 </head>
@@ -239,7 +285,7 @@ if ($is_admin) {
     <!-- Welcome -->
     <div class="welcome-card">
         <h2>Bonjour, <?= htmlspecialchars($nom_utilisateur) ?></h2>
-        <small><?= strftime('%A %d %B %Y') ?: date('d/m/Y') ?></small>
+        <small><?= (new IntlDateFormatter('fr_FR', IntlDateFormatter::FULL, IntlDateFormatter::NONE))->format(new DateTime()) ?></small>
         <div class="paie"><?= number_format($paie_mois, 2, ',', ' ') ?> &euro;</div>
         <small>Paie du mois en cours</small>
     </div>
@@ -328,6 +374,20 @@ if ($is_admin) {
             </div>
             <?php endif; ?>
 
+            <?php
+            $taches_logement = $taches_par_logement[(int)$interv['logement_id']] ?? [];
+            if (!empty($taches_logement)):
+            ?>
+            <div style="font-size:0.85em;color:#b71c1c;margin-top:6px;background:#fff8e1;padding:8px 10px;border-radius:6px;border-left:3px solid #ff9800;">
+                <i class="fas fa-tasks"></i> <strong>Taches a faire :</strong>
+                <ul style="margin:4px 0 0 0;padding-left:18px;">
+                <?php foreach ($taches_logement as $tache): ?>
+                    <li><?= htmlspecialchars($tache['description']) ?> <span style="color:#888;font-size:0.85em;">(<?= htmlspecialchars($tache['statut']) ?>)</span></li>
+                <?php endforeach; ?>
+                </ul>
+            </div>
+            <?php endif; ?>
+
             <div class="actions-row">
                 <a href="pages/checkup_logement.php?auto_logement=<?= $interv['logement_id'] ?>" class="btn-checkup">
                     <i class="fas fa-clipboard-check"></i> Checkup
@@ -397,6 +457,65 @@ if ($is_admin) {
         </div>
     <?php endforeach; ?>
     <?php endif; ?>
+
+    <!-- Leads & RDV (admin only) -->
+    <?php if ($is_admin):
+        $leadsChauds = 0;
+        $rdvAujourdhui = [];
+        $leadsRecents = [];
+        try {
+            $leadsChauds = (int)$conn->query("SELECT COUNT(*) FROM prospection_leads WHERE score >= 60 AND statut NOT IN ('converti','perdu')")->fetchColumn();
+            $rdvAujourdhui = $conn->query("SELECT nom, email, telephone, date_rdv, type_rdv, score FROM prospection_leads WHERE date_rdv IS NOT NULL AND DATE(date_rdv) = CURDATE() ORDER BY date_rdv ASC")->fetchAll(PDO::FETCH_ASSOC);
+            $leadsRecents = $conn->query("SELECT nom, email, source, score, created_at FROM prospection_leads ORDER BY created_at DESC LIMIT 5")->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) { error_log('index.php leads widget: ' . $e->getMessage()); }
+
+        if ($leadsChauds > 0 || !empty($rdvAujourdhui) || !empty($leadsRecents)):
+    ?>
+    <div class="section-title"><i class="fas fa-funnel-dollar"></i> Leads & Prospection</div>
+
+    <?php if ($leadsChauds > 0): ?>
+    <div style="background:linear-gradient(135deg,#dc3545,#ff6b6b);color:white;padding:12px 16px;border-radius:10px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
+        <div><i class="fas fa-fire"></i> <strong><?= $leadsChauds ?></strong> lead<?= $leadsChauds > 1 ? 's' : '' ?> chaud<?= $leadsChauds > 1 ? 's' : '' ?></div>
+        <a href="pages/prospection_proprietaires.php" style="color:white;font-size:0.85em">Voir &rarr;</a>
+    </div>
+    <?php endif; ?>
+
+    <?php if (!empty($rdvAujourdhui)): ?>
+    <div style="background:#e3f2fd;padding:12px 16px;border-radius:10px;margin-bottom:10px;border-left:4px solid #1976d2">
+        <strong><i class="fas fa-calendar-check text-primary"></i> RDV aujourd'hui (<?= count($rdvAujourdhui) ?>)</strong>
+        <?php foreach ($rdvAujourdhui as $rdv): ?>
+        <div style="padding:6px 0;border-bottom:1px solid #bbdefb;font-size:0.9em">
+            <strong><?= date('H:i', strtotime($rdv['date_rdv'])) ?></strong>
+            — <?= htmlspecialchars($rdv['nom'] ?? $rdv['email'] ?? 'Sans nom') ?>
+            <?php if ($rdv['telephone']): ?>
+                <a href="tel:<?= htmlspecialchars($rdv['telephone']) ?>" style="margin-left:8px"><i class="fas fa-phone"></i></a>
+            <?php endif; ?>
+        </div>
+        <?php endforeach; ?>
+    </div>
+    <?php endif; ?>
+
+    <?php if (!empty($leadsRecents)): ?>
+    <div style="background:#f5f5f5;padding:12px 16px;border-radius:10px;margin-bottom:10px">
+        <strong><i class="fas fa-users text-secondary"></i> Derniers leads</strong>
+        <?php
+        $sourceIcons = ['simulateur'=>'fa-calculator','formulaire_contact'=>'fa-envelope','landing_page'=>'fa-gift','concurrence'=>'fa-chart-area','rdv_site'=>'fa-calendar-check','recommandation'=>'fa-handshake','demarchage'=>'fa-phone'];
+        foreach ($leadsRecents as $lead):
+            $scoreColor = ($lead['score'] ?? 0) >= 70 ? '#dc3545' : (($lead['score'] ?? 0) >= 45 ? '#ffc107' : '#6c757d');
+        ?>
+        <div style="padding:6px 0;border-bottom:1px solid #e0e0e0;font-size:0.85em;display:flex;align-items:center;gap:8px">
+            <i class="fas <?= $sourceIcons[$lead['source']] ?? 'fa-user' ?> text-muted"></i>
+            <span style="flex:1"><?= htmlspecialchars($lead['nom'] ?? $lead['email'] ?? '-') ?></span>
+            <span style="background:<?= $scoreColor ?>;color:white;padding:2px 8px;border-radius:10px;font-size:0.8em;font-weight:700"><?= $lead['score'] ?? 0 ?></span>
+            <span class="text-muted" style="font-size:0.8em"><?= date('d/m', strtotime($lead['created_at'])) ?></span>
+        </div>
+        <?php endforeach; ?>
+        <div style="text-align:right;margin-top:6px">
+            <a href="pages/prospection_proprietaires.php" style="font-size:0.85em">Voir tout &rarr;</a>
+        </div>
+    </div>
+    <?php endif; ?>
+    <?php endif; endif; ?>
 
 </div>
 </body>

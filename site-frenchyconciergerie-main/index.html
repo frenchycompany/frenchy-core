@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frenchy Conciergerie - Gestion locative Airbnb & Booking dans l'Oise</title>
+    <meta name="description" content="Frenchy Conciergerie : conciergerie Airbnb et gestion locative saisonnière dans la région de Compiègne (Oise). Nous gérons votre bien de A à Z pour optimiser vos revenus.">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bleu-frenchy: #1E3A8A;
+            --bleu-clair: #3B82F6;
+            --rouge-frenchy: #EF4444;
+            --gris-clair: #F3F4F6;
+            --gris-fonce: #1F2937;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--gris-fonce);
+        }
+
+        /* Header */
+        header {
+            background: linear-gradient(135deg, var(--bleu-frenchy) 0%, var(--bleu-clair) 100%);
+            color: white;
+            padding: 2rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: white;
+            padding: 5px;
+        }
+
+        .contact-header {
+            text-align: right;
+        }
+
+        .contact-header h1 {
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .contact-header p {
+            font-size: 1.1rem;
+            opacity: 0.95;
+        }
+
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(135deg, rgba(30, 58, 138, 0.95) 0%, rgba(59, 130, 246, 0.95) 100%),
+                        url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600"><rect fill="%231E3A8A" width="1200" height="600"/><path fill="%233B82F6" opacity="0.1" d="M0 300 Q300 150 600 300 T1200 300 V600 H0 Z"/></svg>');
+            background-size: cover;
+            background-position: center;
+            color: white;
+            padding: 4rem 0;
+            text-align: center;
+        }
+
+        .hero h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .hero p {
+            font-size: 1.3rem;
+            max-width: 800px;
+            margin: 0 auto 2rem;
+        }
+
+        /* Services Section */
+        .services {
+            padding: 4rem 0;
+            background: white;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 2.2rem;
+            color: var(--bleu-frenchy);
+            margin-bottom: 3rem;
+        }
+
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .service-card {
+            background: var(--gris-clair);
+            padding: 2rem;
+            border-radius: 10px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .service-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
+
+        .service-card h3 {
+            color: var(--bleu-frenchy);
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .service-card ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .service-card li {
+            padding: 0.5rem 0;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+
+        .service-card li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: var(--bleu-clair);
+            font-weight: bold;
+        }
+
+        /* Tarifs */
+        .tarifs {
+            padding: 4rem 0;
+            background: var(--gris-clair);
+        }
+
+        .tarif-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .tarif-card {
+            background: white;
+            padding: 2.5rem;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+
+        .tarif-card h3 {
+            color: var(--bleu-frenchy);
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+        }
+
+        .tarif-price {
+            font-size: 3rem;
+            font-weight: bold;
+            color: var(--bleu-clair);
+            margin: 1rem 0;
+        }
+
+        .tarif-description {
+            color: var(--gris-fonce);
+            margin-top: 1rem;
+        }
+
+        /* Avis Section */
+        .avis {
+            padding: 4rem 0;
+            background: white;
+        }
+
+        .avis-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+        }
+
+        .avis-card {
+            background: var(--gris-clair);
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+
+        .avis-card h4 {
+            color: var(--bleu-frenchy);
+            margin-bottom: 0.5rem;
+        }
+
+        .avis-date {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 1rem;
+        }
+
+        .stars {
+            color: #FFA500;
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Informations légales */
+        .legal-info {
+            padding: 3rem 0;
+            background: var(--gris-clair);
+        }
+
+        .legal-box {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            border-left: 4px solid var(--bleu-clair);
+        }
+
+        .legal-box h3 {
+            color: var(--bleu-frenchy);
+            margin-bottom: 1rem;
+        }
+
+        .legal-box p, .legal-box ul {
+            margin-bottom: 0.8rem;
+        }
+
+        .legal-box ul {
+            padding-left: 1.5rem;
+        }
+
+        .highlight {
+            background: #FEF3C7;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+            border-left: 4px solid #F59E0B;
+        }
+
+        .mediateur-box {
+            background: #DBEAFE;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+            border-left: 4px solid var(--bleu-clair);
+        }
+
+        /* Footer */
+        footer {
+            background: var(--bleu-frenchy);
+            color: white;
+            padding: 3rem 0 1rem;
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .footer-section h3 {
+            margin-bottom: 1rem;
+            color: white;
+        }
+
+        .footer-section p, .footer-section a {
+            color: rgba(255,255,255,0.9);
+            text-decoration: none;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        .footer-section a:hover {
+            color: white;
+            text-decoration: underline;
+        }
+
+        .footer-bottom {
+            text-align: center;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255,255,255,0.2);
+            color: rgba(255,255,255,0.8);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h2 {
+                font-size: 2rem;
+            }
+
+            .hero p {
+                font-size: 1.1rem;
+            }
+
+            .section-title {
+                font-size: 1.8rem;
+            }
+
+            .contact-header h1 {
+                font-size: 1.5rem;
+            }
+
+            .tarif-price {
+                font-size: 2.5rem;
+            }
+        }
+
+        .btn-primary {
+            display: inline-block;
+            background: var(--rouge-frenchy);
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: background 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            background: #DC2626;
+        }
+
+        /* Galerie Photos */
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 2rem;
+        }
+
+        .gallery-item {
+            position: relative;
+            overflow: hidden;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .gallery-item:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+        }
+
+        .gallery-image {
+            position: relative;
+            width: 100%;
+            height: 0;
+            padding-bottom: 75%; /* Ratio 4:3 */
+            overflow: hidden;
+        }
+
+        .gallery-image img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .gallery-item:hover .gallery-image img {
+            transform: scale(1.1);
+        }
+
+        .gallery-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to top, rgba(30, 58, 138, 0.95), transparent);
+            color: white;
+            padding: 2rem 1.5rem 1.5rem;
+            transform: translateY(60%);
+            transition: transform 0.3s ease;
+        }
+
+        .gallery-item:hover .gallery-overlay {
+            transform: translateY(0);
+        }
+
+        .gallery-text h3 {
+            font-size: 1.3rem;
+            margin-bottom: 0.5rem;
+            color: white;
+        }
+
+        .gallery-text p {
+            font-size: 0.95rem;
+            opacity: 0.9;
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .gallery-grid {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+            
+            .gallery-overlay {
+                transform: translateY(0);
+                background: linear-gradient(to top, rgba(30, 58, 138, 0.85), transparent);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div class="logo-section">
+                    <img src="frenchyconciergerie.png" alt="Logo Frenchy Conciergerie" class="logo">
+                </div>
+                <div class="contact-header">
+                    <h1>Frenchy Conciergerie</h1>
+                    <p>📍 718 rue de la Louvière, 60126 Longueil-Sainte-Marie</p>
+                    <p>📞 06 47 55 46 78 | ✉️ raphael@frenchycompany.fr</p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <h2>Conciergerie Airbnb & Gestion Locative Saisonnière</h2>
+            <p>Nous gérons votre bien de A à Z pour optimiser vos revenus</p>
+            <a href="#contact" class="btn-primary">Contactez-nous</a>
+        </div>
+    </section>
+
+    <!-- Services Section -->
+    <section class="services" id="services">
+        <div class="container">
+            <h2 class="section-title">Nos Services</h2>
+            
+            <div class="services-grid">
+                <div class="service-card">
+                    <h3>🏠 Gestion Locative Complète</h3>
+                    <p><strong>Activité exercée sous carte Gestion n° CPI 6002 2025 001 000 003</strong></p>
+                    <ul>
+                        <li>Gestion des réservations Airbnb</li>
+                        <li>Collecte des loyers</li>
+                        <li>Accueil et remise des clés</li>
+                        <li>Communication avec les voyageurs</li>
+                        <li>Coordination ménage et maintenance</li>
+                        <li>Gestion des stocks (linge, produits)</li>
+                        <li>Reporting mensuel détaillé</li>
+                    </ul>
+                </div>
+
+                <div class="service-card">
+                    <h3>📢 Publication et Diffusion</h3>
+                    <p><strong>Activité exercée sous carte Transaction n° CPI 6002 2025 001 000 003</strong></p>
+                    <ul>
+                        <li>Création et optimisation des annonces</li>
+                        <li>Photos professionnelles</li>
+                        <li>Diffusion multi-plateformes</li>
+                        <li>Stratégie tarifaire dynamique</li>
+                        <li>Publicité ciblée</li>
+                        <li>Mise en relation avec professionnels</li>
+                    </ul>
+                </div>
+
+                <div class="service-card">
+                    <h3>🎯 Accompagnement Investisseurs</h3>
+                    <p><strong>Conseil personnalisé pour votre projet</strong></p>
+                    <ul>
+                        <li>Étude de rentabilité</li>
+                        <li>Sélection du bien idéal</li>
+                        <li>Aménagement et décoration</li>
+                        <li>Mise en conformité réglementaire</li>
+                        <li>Formation à la gestion Airbnb</li>
+                        <li>Support juridique et fiscal</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Tarifs Section -->
+    <section class="tarifs" id="tarifs">
+        <div class="container">
+            <h2 class="section-title">Tarifs Transparents</h2>
+            
+            <div class="tarif-cards">
+                <div class="tarif-card">
+                    <h3>Logement Équipé</h3>
+                    <div class="tarif-price">24%</div>
+                    <p class="tarif-description"><strong>TTC des revenus locatifs</strong></p>
+                    <p class="tarif-description">Logement meublé et équipé, prêt à accueillir les voyageurs</p>
+                </div>
+
+                <div class="tarif-card">
+                    <h3>Logement Vide</h3>
+                    <div class="tarif-price">36%</div>
+                    <p class="tarif-description"><strong>TTC des revenus locatifs</strong></p>
+                    <p class="tarif-description">Nous prenons en charge l'aménagement et l'équipement complet</p>
+                </div>
+            </div>
+
+            <div class="highlight">
+                <h3>Ce qui est inclus :</h3>
+                <ul>
+                    <li>✓ Gestion complète des réservations</li>
+                    <li>✓ Ménage professionnel entre chaque séjour</li>
+                    <li>✓ Accueil des voyageurs 7j/7</li>
+                    <li>✓ Maintenance et dépannages</li>
+                    <li>✓ Optimisation des revenus</li>
+                    <li>✓ Reporting mensuel détaillé</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <!-- Galerie Photos -->
+    <section class="services" id="galerie">
+        <div class="container">
+            <h2 class="section-title">Nos Logements Gérés</h2>
+            <p style="text-align: center; max-width: 800px; margin: 0 auto 3rem; font-size: 1.1rem; color: var(--gris-fonce);">
+                Découvrez quelques exemples de biens que nous gérons avec passion dans la région de Compiègne. 
+                Chaque logement bénéficie de notre expertise pour offrir une expérience exceptionnelle aux voyageurs.
+            </p>
+            
+            <div class="gallery-grid">
+                <div class="gallery-item">
+                    <div class="gallery-image">
+                        <img src="logement-1.jpg" alt="Appartement 1" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22300%22%3E%3Crect fill=%22%231E3A8A%22 width=%22400%22 height=%22300%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-family=%22Arial%22 font-size=%2220%22 fill=%22white%22%3EAppartement T2 - Centre Compiègne%3C/text%3E%3C/svg%3E'">
+                        <div class="gallery-overlay">
+                            <div class="gallery-text">
+                                <h3>Appartement T2 - Centre Compiègne</h3>
+                                <p>Logement moderne et chaleureux</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="gallery-item">
+                    <div class="gallery-image">
+                        <img src="logement-2.jpg" alt="Appartement 2" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22300%22%3E%3Crect fill=%22%233B82F6%22 width=%22400%22 height=%22300%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-family=%22Arial%22 font-size=%2220%22 fill=%22white%22%3EStudio Cosy - Proche Château%3C/text%3E%3C/svg%3E'">
+                        <div class="gallery-overlay">
+                            <div class="gallery-text">
+                                <h3>Studio Cosy - Proche Château</h3>
+                                <p>Idéal pour voyageurs d'affaires</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="gallery-item">
+                    <div class="gallery-image">
+                        <img src="logement-3.jpg" alt="Appartement 3" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22300%22%3E%3Crect fill=%22%231E3A8A%22 width=%22400%22 height=%22300%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-family=%22Arial%22 font-size=%2220%22 fill=%22white%22%3EMaison T3 - Avec Jardin%3C/text%3E%3C/svg%3E'">
+                        <div class="gallery-overlay">
+                            <div class="gallery-text">
+                                <h3>Maison T3 - Avec Jardin</h3>
+                                <p>Parfait pour familles</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="gallery-item">
+                    <div class="gallery-image">
+                        <img src="logement-4.jpg" alt="Appartement 4" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22300%22%3E%3Crect fill=%22%233B82F6%22 width=%22400%22 height=%22300%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-family=%22Arial%22 font-size=%2220%22 fill=%22white%22%3EAppartement T4 - Vue Dégagée%3C/text%3E%3C/svg%3E'">
+                        <div class="gallery-overlay">
+                            <div class="gallery-text">
+                                <h3>Appartement T4 - Vue Dégagée</h3>
+                                <p>Spacieux et lumineux</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="gallery-item">
+                    <div class="gallery-image">
+                        <img src="logement-5.jpg" alt="Appartement 5" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22300%22%3E%3Crect fill=%22%231E3A8A%22 width=%22400%22 height=%22300%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-family=%22Arial%22 font-size=%2220%22 fill=%22white%22%3ELoft Industriel - Compiègne%3C/text%3E%3C/svg%3E'">
+                        <div class="gallery-overlay">
+                            <div class="gallery-text">
+                                <h3>Loft Industriel - Compiègne</h3>
+                                <p>Design contemporain</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="gallery-item">
+                    <div class="gallery-image">
+                        <img src="logement-6.jpg" alt="Appartement 6" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22300%22%3E%3Crect fill=%22%233B82F6%22 width=%22400%22 height=%22300%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-family=%22Arial%22 font-size=%2220%22 fill=%22white%22%3EDuplex Premium - Centre-Ville%3C/text%3E%3C/svg%3E'">
+                        <div class="gallery-overlay">
+                            <div class="gallery-text">
+                                <h3>Duplex Premium - Centre-Ville</h3>
+                                <p>Standing élevé</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="highlight" style="margin-top: 3rem;">
+                <p style="text-align: center;"><strong>💡 Vous souhaitez confier votre bien à Frenchy Conciergerie ?</strong></p>
+                <p style="text-align: center; margin-top: 1rem;">Notre équipe vous accompagne pour optimiser la rentabilité de votre investissement locatif.</p>
+                <p style="text-align: center; margin-top: 1.5rem;">
+                    <a href="#contact" class="btn-primary">Contactez-nous pour un devis personnalisé</a>
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Nos Distinctions -->
+    <section class="avis" id="distinctions">
+        <div class="container">
+            <h2 class="section-title">Nos Distinctions & Certifications</h2>
+            
+            <div style="text-align: center; margin-bottom: 3rem;">
+                <img src="booking-award.png" alt="Booking.com Traveller Review Awards 2026" style="max-width: 600px; width: 100%; height: auto; margin: 2rem 0;">
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; margin-top: 3rem;">
+                    <div class="service-card" style="text-align: center;">
+                        <div style="font-size: 3rem; margin-bottom: 1rem;">🏆</div>
+                        <h3>Traveller Review Awards 2026</h3>
+                        <p>Distinction Booking.com décernée pour l'excellence de nos services et la satisfaction de nos voyageurs sur l'ensemble de nos logements.</p>
+                    </div>
+                    
+                    <div class="service-card" style="text-align: center;">
+                        <div style="font-size: 3rem; margin-bottom: 1rem;">⭐</div>
+                        <h3>Co-hôte Expérimenté Airbnb</h3>
+                        <p>Statut officiel Airbnb reconnaissant notre expertise dans la gestion de locations saisonnières et notre professionnalisme.</p>
+                    </div>
+                    
+                    <div class="service-card" style="text-align: center;">
+                        <div style="font-size: 3rem; margin-bottom: 1rem;">✓</div>
+                        <h3>Contrôle Qualité Réglementaire</h3>
+                        <p>Notre activité a fait l'objet d'un contrôle qualité approfondi par les autorités compétentes, confirmant notre conformité totale aux réglementations en vigueur.</p>
+                    </div>
+                </div>
+            </div>
+
+            <h2 class="section-title" style="margin-top: 4rem;">Témoignages de Propriétaires</h2>
+            
+            <div class="avis-grid">
+                <div class="avis-card">
+                    <h4>Sophie M.</h4>
+                    <p class="avis-date">Propriétaire - Février 2026</p>
+                    <div class="stars">★★★★★</div>
+                    <p>"Depuis que j'ai confié mon appartement à Frenchy Conciergerie, je n'ai plus à me soucier de rien. L'équipe est ultra professionnelle et mes revenus ont considérablement augmenté. Je recommande vivement !"</p>
+                </div>
+
+                <div class="avis-card">
+                    <h4>Marc D.</h4>
+                    <p class="avis-date">Propriétaire - Janvier 2026</p>
+                    <div class="stars">★★★★★</div>
+                    <p>"Excellent service de gestion locative. Communication irréprochable, reporting détaillé chaque mois. Mon bien est entre de bonnes mains et les résultats sont au rendez-vous."</p>
+                </div>
+
+                <div class="avis-card">
+                    <h4>Catherine L.</h4>
+                    <p class="avis-date">Propriétaire - Février 2026</p>
+                    <div class="stars">★★★★★</div>
+                    <p>"Je suis propriétaire de 2 appartements gérés par Frenchy Conciergerie. Leur accompagnement a été précieux dès le début. Résultats excellents et tranquillité d'esprit garantie !"</p>
+                </div>
+            </div>
+
+            <div class="highlight">
+                <p><strong>Information sur les témoignages :</strong> Les témoignages publiés sur notre site proviennent de propriétaires dont nous gérons actuellement les biens. Ces retours authentiques reflètent leur expérience réelle avec nos services de conciergerie et de gestion locative.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Informations Légales -->
+    <section class="legal-info" id="legal">
+        <div class="container">
+            <h2 class="section-title">Informations Légales</h2>
+
+            <div class="legal-box">
+                <h3>📋 Identité de l'Entreprise</h3>
+                <p><strong>Raison sociale :</strong> SAS FRENCHY CONCIERGERIE</p>
+                <p><strong>Forme juridique :</strong> Société par Actions Simplifiée (SAS)</p>
+                <p><strong>Capital social :</strong> 100 euros</p>
+                <p><strong>Siège social :</strong> 718 rue de la Louvière, 60126 LONGUEIL-SAINTE-MARIE</p>
+                <p><strong>SIRET :</strong> 944 992 528 00017</p>
+                <p><strong>RCS :</strong> Beauvais 944 992 528</p>
+                <p><strong>N° TVA intracommunautaire :</strong> FR15 944992528</p>
+                <p><strong>Présidente :</strong> Madame Laëtitia PIERIN</p>
+                <p><strong>Email :</strong> laetitia@frenchycompany.fr</p>
+                <p><strong>Téléphone :</strong> 07 64 23 86 17</p>
+            </div>
+
+            <div class="legal-box">
+                <h3>🏛️ Cartes Professionnelles</h3>
+                <p><strong>Carte de Transaction Immobilière n° CPI 6002 2025 001 000 003</strong></p>
+                <p>Valable jusqu'au : 23 janvier 2028</p>
+                <p>Délivrée par la CCI de l'Oise</p>
+                <p>Activité : Transactions sur immeubles et fonds de commerce</p>
+                
+                <p style="margin-top: 1.5rem;"><strong>Carte de Gestion Immobilière n° CPI 6002 2025 001 000 003</strong></p>
+                <p>Valable jusqu'au : 22 septembre 2028</p>
+                <p>Délivrée par la CCI de l'Oise</p>
+                <p>Activité : Gestion immobilière - Prestations touristiques</p>
+            </div>
+
+            <div class="legal-box">
+                <h3>🛡️ Garanties Professionnelles</h3>
+                <p><strong>Assurance Responsabilité Civile Professionnelle</strong></p>
+                <p><strong>Compagnie :</strong> GENERALI IARD</p>
+                <p><strong>Siège social :</strong> 2 Rue Pillet-Will, 75009 PARIS</p>
+                <p><strong>N° de contrat :</strong> AL591311 / 31705</p>
+                <p><strong>Date de prise d'effet :</strong> 01/07/2025</p>
+                <p><strong>Validité :</strong> du 01/01/2026 au 31/12/2026</p>
+                <p style="margin-top: 1rem;"><strong>Activités garanties :</strong></p>
+                <ul>
+                    <li>Gestion immobilière</li>
+                    <li>Prestations touristiques</li>
+                    <li>Transaction sur immeubles et fonds de commerce</li>
+                </ul>
+                <p style="margin-top: 1rem;"><em>Conforme à l'Arrêté du 1er Septembre 1972 relatif à la Loi HOGUET n° 70-9 du 2 Janvier 1970 et à la Loi CARREZ 96.1107 du 18 Décembre 1996.</em></p>
+                <p style="margin-top: 1rem;"><strong>Garantie financière :</strong> [En cours d'obtention]</p>
+            </div>
+
+            <div class="mediateur-box">
+                <h3>⚖️ Médiation de la Consommation</h3>
+                <p>Conformément à l'article L.616-1 du Code de la consommation, nous vous informons que tout professionnel communique au consommateur, selon les modalités fixées par décret en Conseil d'État, les coordonnées du ou des médiateurs de la consommation dont il relève.</p>
+                
+                <p style="margin-top: 1rem;"><strong>Médiateur désigné :</strong> GIE IMMOMEDIATEURS</p>
+                <p><strong>Adresse :</strong> 55 Avenue Marceau, 75116 Paris</p>
+                <p><strong>Site internet :</strong> <a href="https://www.immomediateurs.fr" target="_blank" style="color: #3B82F6;">www.immomediateurs.fr</a></p>
+                <p><strong>Email :</strong> contact@immomediateurs.fr</p>
+                
+                <p style="margin-top: 1rem;">En cas de litige, vous pouvez recourir gratuitement à ce service de médiation de la consommation en vue de la résolution amiable du litige qui nous oppose.</p>
+            </div>
+
+            <div class="legal-box">
+                <h3>📝 Conditions Générales</h3>
+                <p><strong>Droit de rétractation :</strong> Conformément aux articles L. 221-18 à L. 221-28 du Code de la consommation, le consommateur dispose d'un délai de quatorze jours pour exercer son droit de rétractation d'un contrat conclu hors établissement ou à distance, sans avoir à motiver sa décision ni à supporter d'autres coûts que ceux prévus aux articles L. 221-23 à L. 221-25.</p>
+                
+                <p style="margin-top: 1rem;"><strong>Informations précontractuelles :</strong> Avant la conclusion de tout contrat, nous fournissons au consommateur, de manière lisible et compréhensible, toutes les informations prévues à l'article L. 221-5 du Code de la consommation, incluant notamment :</p>
+                <ul>
+                    <li>Les caractéristiques essentielles du service</li>
+                    <li>Le prix TTC du service</li>
+                    <li>Les modalités de paiement et d'exécution</li>
+                    <li>L'existence du droit de rétractation</li>
+                    <li>La possibilité de recourir à un médiateur</li>
+                </ul>
+
+                <p style="margin-top: 1rem;"><strong>Formulaire type de rétractation :</strong> Le contrat est accompagné du formulaire type de rétractation mentionné à l'article L. 221-5 du Code de la consommation.</p>
+                
+                <p style="margin-top: 1rem;"><strong>Délai d'exécution :</strong> Le professionnel ne peut recevoir aucun paiement de la part du consommateur avant l'expiration d'un délai de sept jours à compter de la conclusion du contrat hors établissement.</p>
+            </div>
+
+            <div class="legal-box">
+                <h3>🔒 Protection des Données Personnelles</h3>
+                <p>Conformément au Règlement Général sur la Protection des Données (RGPD) et à la loi Informatique et Libertés, vous disposez d'un droit d'accès, de rectification, d'effacement, de limitation du traitement, d'opposition et de portabilité de vos données personnelles.</p>
+                
+                <p style="margin-top: 1rem;">Pour exercer ces droits, vous pouvez nous contacter à l'adresse : laetitia@frenchycompany.fr</p>
+                
+                <p style="margin-top: 1rem;"><strong>Responsable du traitement :</strong> SAS FRENCHY CONCIERGERIE</p>
+                <p><strong>Finalités du traitement :</strong> Gestion de la relation client, exécution des contrats, communication commerciale (avec votre consentement)</p>
+                <p><strong>Durée de conservation :</strong> Les données sont conservées pendant la durée de la relation contractuelle et conformément aux obligations légales de conservation.</p>
+            </div>
+
+            <div class="legal-box">
+                <h3>⚠️ Mentions Importantes</h3>
+                <p><strong>Activité de Transaction :</strong> Nous intervenons en qualité d'intermédiaire dans la publication et la diffusion d'annonces de locations saisonnières. Nous ne sommes pas propriétaires des biens proposés.</p>
+                
+                <p style="margin-top: 1rem;"><strong>Activité de Gestion :</strong> Nous assurons la gestion locative complète des biens qui nous sont confiés par mandat de gestion, incluant la collecte des loyers et la coordination de l'ensemble des prestations.</p>
+                
+                <p style="margin-top: 1rem;"><strong>Vérifications :</strong> La vérification de l'identité des locataires est effectuée par la plateforme Airbnb. Les litiges et réparations suite à des dégradations sont gérés conformément aux conditions générales d'Airbnb et aux garanties souscrites.</p>
+                
+                <p style="margin-top: 1rem;"><strong>Assurance :</strong> Nous recommandons vivement à tous les propriétaires de souscrire une assurance spécifique pour la location saisonnière de leur bien.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section class="services" id="contact">
+        <div class="container">
+            <h2 class="section-title">Contactez-nous</h2>
+            <div style="text-align: center; max-width: 600px; margin: 0 auto;">
+                <p style="font-size: 1.2rem; margin-bottom: 2rem;">Vous avez un projet de location saisonnière ? Parlons-en !</p>
+                
+                <div style="background: var(--gris-clair); padding: 2rem; border-radius: 10px;">
+                    <p><strong>📍 Adresse :</strong><br>718 rue de la Louvière<br>60126 LONGUEIL-SAINTE-MARIE</p>
+                    <p style="margin-top: 1rem;"><strong>📞 Téléphone :</strong><br><a href="tel:0647554678" style="color: var(--bleu-clair); text-decoration: none;">06 47 55 46 78</a></p>
+                    <p style="margin-top: 1rem;"><strong>✉️ Email :</strong><br><a href="mailto:raphael@frenchycompany.fr" style="color: var(--bleu-clair); text-decoration: none;">raphael@frenchycompany.fr</a></p>
+                    
+                    <p style="margin-top: 2rem;"><strong>Horaires :</strong><br>Du lundi au samedi : 9h - 19h<br>Dimanche : sur rendez-vous</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>Frenchy Conciergerie</h3>
+                    <p>Votre partenaire de confiance pour la gestion locative premium dans la région de Compiègne.</p>
+                    <p style="margin-top: 1rem;"><strong>SIRET :</strong> 944 992 528 00017</p>
+                </div>
+
+                <div class="footer-section">
+                    <h3>Nos Services</h3>
+                    <a href="#services">Gestion Locative</a>
+                    <a href="#services">Publication & Diffusion</a>
+                    <a href="#services">Accompagnement Investisseurs</a>
+                    <a href="#tarifs">Nos Tarifs</a>
+                    <a href="#galerie">Nos Logements</a>
+                    <a href="#distinctions">Nos Distinctions</a>
+                </div>
+
+                <div class="footer-section">
+                    <h3>Informations Légales</h3>
+                    <a href="#legal">Mentions Légales</a>
+                    <a href="#legal">Cartes Professionnelles</a>
+                    <a href="#legal">Médiation de la Consommation</a>
+                    <a href="#legal">Protection des Données</a>
+                </div>
+
+                <div class="footer-section">
+                    <h3>Contact</h3>
+                    <p>718 rue de la Louvière<br>60126 LONGUEIL-SAINTE-MARIE</p>
+                    <p>📞 06 47 55 46 78</p>
+                    <p>✉️ raphael@frenchycompany.fr</p>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                <p>&copy; 2026 Frenchy Conciergerie - Tous droits réservés</p>
+                <p style="margin-top: 0.5rem;"><strong>SAS au capital de 100€</strong> - SIRET : 944 992 528 00017 - RCS Beauvais 944 992 528</p>
+                <p style="margin-top: 0.5rem;">TVA intracommunautaire : FR15 944992528</p>
+                <p style="margin-top: 0.5rem;">Carte Transaction n° CPI 6002 2025 001 000 003 | Carte Gestion n° CPI 6002 2025 001 000 003</p>
+                <p style="margin-top: 0.5rem;">Assurance RCP : GENERALI IARD - Police n° AL591311 / 31705</p>
+                <p style="margin-top: 0.5rem; font-size: 0.9rem;">Médiateur de la consommation : GIE IMMOMEDIATEURS - www.immomediateurs.fr</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

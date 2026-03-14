@@ -5,13 +5,12 @@
  */
 include '../config.php';
 include '../pages/menu.php';
+require_once __DIR__ . '/../includes/Auth.php';
 require_once __DIR__ . '/../includes/csrf.php';
 
-// Vérification admin
-if (($_SESSION['role'] ?? '') !== 'admin') {
-    header('Location: ../error.php?message=' . urlencode('Accès réservé aux administrateurs.'));
-    exit;
-}
+// Vérification admin via Auth unifié
+$auth = new Auth($conn);
+$auth->requireAdmin('login.php');
 
 // ============================================================
 // AUTO-MIGRATION : ajout des colonnes manquantes
@@ -290,8 +289,8 @@ $cfg = function($key, $default = '') use ($config) {
                 <div class="config-section">
                     <h5><i class="fas fa-link"></i> Liens rapides</h5>
                     <div class="quick-links">
+                        <a href="gestion_utilisateurs.php"><i class="fas fa-users-cog text-primary"></i> Utilisateurs & Droits</a>
                         <a href="logements.php"><i class="fas fa-home text-primary"></i> Gérer les logements</a>
-                        <a href="intervenants.php"><i class="fas fa-users text-info"></i> Gérer les intervenants</a>
                         <a href="gestion_pages.php"><i class="fas fa-file-circle-plus text-success"></i> Gérer les pages</a>
                         <a href="planning.php"><i class="fas fa-calendar-alt text-warning"></i> Voir le planning</a>
                         <a href="sites.php"><i class="fas fa-globe text-secondary"></i> Sites vitrine</a>

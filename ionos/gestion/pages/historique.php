@@ -84,7 +84,8 @@ if (isset($_GET['api']) && $_GET['api'] === 'reservations_by_phone') {
         exit;
     } catch (Throwable $e) {
         http_response_code(500);
-        echo json_encode(['success'=>false,'message'=>$e->getMessage()]);
+        error_log('historique.php: ' . $e->getMessage());
+        echo json_encode(['success'=>false,'message'=>'Une erreur interne est survenue.']);
         exit;
     }
 }

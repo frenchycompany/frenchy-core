@@ -135,8 +135,8 @@ if ($action === 'upload_photo') {
         exit;
     }
 
-    if ($file['size'] > 5 * 1024 * 1024) {
-        echo json_encode(['success' => false, 'error' => 'Fichier trop volumineux (max 5 Mo)']);
+    if ($file['size'] > 500 * 1024 * 1024) {
+        echo json_encode(['success' => false, 'error' => 'Fichier trop volumineux (max 500 Mo)']);
         exit;
     }
 
@@ -437,6 +437,146 @@ if ($action === 'reorder_blocks') {
             $stmt->execute([$i, (int)$block_id]);
         }
         echo json_encode(['success' => true]);
+    } catch (PDOException $e) {
+        error_log('[VF Admin] ' . $e->getMessage());
+        echo json_encode(['success' => false, 'error' => 'Erreur base de données.']);
+    }
+    exit;
+}
+
+// ═══════════════════════════════════════════
+// Reorder gallery photos
+// ═══════════════════════════════════════════
+if ($action === 'reorder_photos') {
+    $order = json_decode($_POST['order'] ?? '[]', true);
+    if (!is_array($order)) {
+        echo json_encode(['success' => false, 'error' => 'Ordre invalide.']);
+        exit;
+    }
+
+    try {
+        $stmt = $conn->prepare("UPDATE " . vf_table('photos') . " SET sort_order = ? WHERE id = ?");
+        foreach ($order as $i => $photo_id) {
+            $stmt->execute([$i, (int)$photo_id]);
+        }
+        echo json_encode(['success' => true]);
+    } catch (PDOException $e) {
+        error_log('[VF Admin] ' . $e->getMessage());
+        echo json_encode(['success' => false, 'error' => 'Erreur base de données.']);
+    }
+    exit;
+}
+
+// ═══════════════════════════════════════════
+// Update photo metadata (alt_text, is_wide)
+// ═══════════════════════════════════════════
+if ($action === 'update_photo') {
+    $id      = (int)($_POST['photo_id'] ?? 0);
+    $alt     = $_POST['alt_text'] ?? '';
+    $is_wide = (int)($_POST['is_wide'] ?? 0);
+
+    if (!$id) {
+        echo json_encode(['success' => false, 'error' => 'ID photo manquant.']);
+        exit;
+    }
+
+    try {
+        $stmt = $conn->prepare("UPDATE " . vf_table('photos') . " SET alt_text = ?, is_wide = ? WHERE id = ?");
+        $stmt->execute([$alt, $is_wide, $id]);
+        echo json_encode(['success' => true]);
+    } catch (PDOException $e) {
+        error_log('[VF Admin] ' . $e->getMessage());
+        echo json_encode(['success' => false, 'error' => 'Erreur base de données.']);
+    }
+    exit;
+}
+
+// ═══════════════════════════════════════════
+// Assign an existing photo to a slot (e.g. experience vignette)
+// ═══════════════════════════════════════════
+if ($action === 'assign_photo') {
+    $source_id = (int)($_POST['source_photo_id'] ?? 0);
+    $group     = $_POST['photo_group'] ?? '';
+    $pkey      = $_POST['photo_key'] ?? '';
+    $alt       = $_POST['alt_text'] ?? '';
+
+    if (!$source_id || !$group) {
+        echo json_encode(['success' => false, 'error' => 'Paramètres manquants.']);
+        exit;
+    }
+
+    try {
+        // Get source photo info
+        $src = $conn->prepare("SELECT file_path, srcset_json FROM " . vf_table('photos') . " WHERE id = ?");
+        $src->execute([$source_id]);
+        $source = $src->fetch(PDO::FETCH_ASSOC);
+        if (!$source) {
+            echo json_encode(['success' => false, 'error' => 'Photo source introuvable.']);
+            exit;
+        }
+
+        // Check if slot already has a photo
+        if ($pkey !== '') {
+            $check = $conn->prepare("SELECT id FROM " . vf_table('photos') . " WHERE photo_group = ? AND photo_key = ?");
+            $check->execute([$group, $pkey]);
+            $existing = $check->fetch();
+
+            if ($existing) {
+                $stmt = $conn->prepare("UPDATE " . vf_table('photos') . " SET file_path = ?, srcset_json = ?, alt_text = ? WHERE id = ?");
+                $stmt->execute([$source['file_path'], $source['srcset_json'], $alt, $existing['id']]);
+                $photo_id = $existing['id'];
+            } else {
+                $stmt = $conn->prepare("INSERT INTO " . vf_table('photos') . " (photo_group, photo_key, file_path, srcset_json, alt_text, sort_order) VALUES (?, ?, ?, ?, ?, 0)");
+                $stmt->execute([$group, $pkey, $source['file_path'], $source['srcset_json'], $alt]);
+                $photo_id = $conn->lastInsertId();
+            }
+        } else {
+            $stmt = $conn->prepare("INSERT INTO " . vf_table('photos') . " (photo_group, photo_key, file_path, srcset_json, alt_text, sort_order) VALUES (?, ?, ?, ?, ?, 0)");
+            $stmt->execute([$group, $pkey, $source['file_path'], $source['srcset_json'], $alt]);
+            $photo_id = $conn->lastInsertId();
+        }
+
+        echo json_encode(['success' => true, 'id' => $photo_id, 'path' => $source['file_path']]);
+    } catch (PDOException $e) {
+        error_log('[VF Admin] ' . $e->getMessage());
+        echo json_encode(['success' => false, 'error' => 'Erreur base de données.']);
+    }
+    exit;
+}
+
+// ═══════════════════════════════════════════
+// Toggle photo visibility (is_hidden)
+// ═══════════════════════════════════════════
+if ($action === 'toggle_photo_hidden') {
+    $id = (int)($_POST['photo_id'] ?? 0);
+    if (!$id) {
+        echo json_encode(['success' => false, 'error' => 'ID photo manquant.']);
+        exit;
+    }
+
+    try {
+        $stmt = $conn->prepare("UPDATE " . vf_table('photos') . " SET is_hidden = NOT is_hidden WHERE id = ?");
+        $stmt->execute([$id]);
+        $check = $conn->prepare("SELECT is_hidden FROM " . vf_table('photos') . " WHERE id = ?");
+        $check->execute([$id]);
+        $result = $check->fetch(PDO::FETCH_ASSOC);
+        echo json_encode(['success' => true, 'is_hidden' => (int)$result['is_hidden']]);
+    } catch (PDOException $e) {
+        error_log('[VF Admin] ' . $e->getMessage());
+        echo json_encode(['success' => false, 'error' => 'Erreur base de données.']);
+    }
+    exit;
+}
+
+// ═══════════════════════════════════════════
+// List gallery photos (for photo picker)
+// ═══════════════════════════════════════════
+if ($action === 'list_gallery_photos') {
+    try {
+        $stmt = $conn->prepare("SELECT id, file_path, alt_text FROM " . vf_table('photos') . " WHERE photo_group = 'galerie' ORDER BY sort_order ASC");
+        $stmt->execute();
+        $photos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        echo json_encode(['success' => true, 'photos' => $photos]);
     } catch (PDOException $e) {
         error_log('[VF Admin] ' . $e->getMessage());
         echo json_encode(['success' => false, 'error' => 'Erreur base de données.']);

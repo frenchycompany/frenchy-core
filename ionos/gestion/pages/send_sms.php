@@ -118,14 +118,16 @@ try {
 } catch (PDOException $e) {
     echo json_encode([
         'success' => false,
-        'message' => 'Erreur base de données: ' . $e->getMessage()
+        'message' => 'Une erreur interne est survenue.'
     ]);
+    error_log('send_sms.php: ' . $e->getMessage());
     exit;
 } catch (Exception $e) {
     echo json_encode([
         'success' => false,
-        'message' => 'Erreur: ' . $e->getMessage()
+        'message' => 'Une erreur interne est survenue.'
     ]);
+    error_log('send_sms.php: ' . $e->getMessage());
     exit;
 }
 ?>

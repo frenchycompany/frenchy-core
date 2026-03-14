@@ -108,26 +108,28 @@ def traiter_sms_a_envoyer():
 
         # 1) Si la colonne 'modem' est renseignée, on tente ce modem en priorité
         if desired_modem and desired_modem.strip():
-            logging.info(f"➡️ Tentative d'envoi du SMS {sms_id} via {desired_modem}")
-            if envoyer_sms(desired_modem, destinataire, message):
+            # Résoudre le nom du modem en chemin de port (ex: 'modem1' -> '/dev/ttyUSB0')
+            modem_port = modems.get(desired_modem.strip(), desired_modem.strip())
+            logging.info(f"➡️ Tentative d'envoi du SMS {sms_id} via {modem_port} (demandé: {desired_modem})")
+            if envoyer_sms(modem_port, destinataire, message):
                 cursor.execute("""
                     UPDATE sms_outbox
-                    SET status='sent', sent_at=NOW()
+                    SET status='sent', sent_at=NOW(), modem=%s
                     WHERE id=%s
-                """, (sms_id,))
+                """, (modem_port, sms_id))
                 db.commit()
-                logging.info(f"✅ SMS ID {sms_id} envoyé via {desired_modem}.")
+                logging.info(f"✅ SMS ID {sms_id} envoyé via {modem_port}.")
                 envoi_reussi = True
             else:
-                logging.warning(f"❌ Échec de l'envoi via {desired_modem} pour SMS ID {sms_id}.")
+                logging.warning(f"❌ Échec de l'envoi via {modem_port} pour SMS ID {sms_id}.")
 
         # 2) Si le modem désiré est vide ou a échoué, fallback sur tous les modems
         if not envoi_reussi:
             logging.info(f"🔄 Fallback : tentative sur tous les modems pour SMS {sms_id}")
+            tried_port = modems.get(desired_modem.strip(), desired_modem.strip()) if desired_modem and desired_modem.strip() else None
             for m_name, m_port in modems.items():
-                # Si c'est le même que desired_modem, on retente ou on skip ? À toi de voir
-                # if m_port == desired_modem:
-                #     continue  # ne retente pas si déjà échoué
+                if m_port == tried_port:
+                    continue  # déjà tenté ci-dessus
                 if envoyer_sms(m_port, destinataire, message):
                     cursor.execute("""
                         UPDATE sms_outbox

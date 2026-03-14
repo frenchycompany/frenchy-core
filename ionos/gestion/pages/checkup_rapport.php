@@ -43,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_checkup']) && 
         $stmt->execute([$deleteId]);
         $sig = $stmt->fetchColumn();
         if ($sig) { $f = __DIR__ . '/../' . $sig; if (file_exists($f)) @unlink($f); }
-    } catch (PDOException $e) {}
+    } catch (PDOException $e) { error_log('checkup_rapport.php: ' . $e->getMessage()); }
 
     // Supprimer en BDD
     $conn->prepare("DELETE FROM checkup_sessions WHERE id = ?")->execute([$deleteId]);
@@ -107,7 +107,7 @@ try {
     if ($sigRow && !empty($sigRow['video_path'])) {
         $videoPath = $sigRow['video_path'];
     }
-} catch (PDOException $e) {}
+} catch (PDOException $e) { error_log('checkup_rapport.php: ' . $e->getMessage()); }
 ?>
 <!DOCTYPE html>
 <html lang="fr">

@@ -221,10 +221,10 @@ LOG_PATH=logs
 Paramètres recommandés :
 
 ```ini
-upload_max_filesize = 10M
-post_max_size = 10M
+upload_max_filesize = 500M
+post_max_size = 500M
 max_execution_time = 300
-memory_limit = 256M
+memory_limit = 512M
 date.timezone = Europe/Paris
 ```
 

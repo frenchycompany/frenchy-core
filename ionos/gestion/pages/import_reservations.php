@@ -90,7 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['fichier'])) {
                         } elseif (preg_match('/(\d+)\s*$/', $rentalName, $m)) {
                             $logement_id = (int)$m[1];
                         }
-                    } catch (PDOException $e) {}
+                    } catch (PDOException $e) { error_log('import_reservations.php: ' . $e->getMessage()); }
                 }
 
                 $date_res  = $data['booking date'] ?? '';

@@ -76,7 +76,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     echo "<p>❌ Template N'EXISTE PAS dans sms_templates</p>";
                 }
             } catch (PDOException $e) {
-                echo "<p>❌ ERREUR SQL: " . htmlspecialchars($e->getMessage()) . "</p>";
+                error_log('diagnostic_envoi.php: ' . $e->getMessage());
+                echo "<p>Une erreur interne est survenue.</p>";
             }
         }
     }
@@ -100,7 +101,8 @@ try {
         echo "</ul>";
     }
 } catch (PDOException $e) {
-    echo "<p>❌ ERREUR: " . htmlspecialchars($e->getMessage()) . "</p>";
+    error_log('diagnostic_envoi.php: ' . $e->getMessage());
+    echo "<p>Une erreur interne est survenue.</p>";
 }
 
 echo "<hr>";

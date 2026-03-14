@@ -100,6 +100,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_simulation'])) {
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
         $stmt->execute([$email, $telephone, $surface, $capacite, $ville, $centreVille, $fibre, $equipementsSpeciaux, $machineCafe, $machineLaver, $autreEquipement, $tarifNuit, $revenuMensuel]);
+        $simulationId = $conn->lastInsertId();
+
+        // Creer le lead dans le CRM
+        try {
+            $conn->exec("CREATE TABLE IF NOT EXISTS prospection_leads (
+                id INT AUTO_INCREMENT PRIMARY KEY, nom VARCHAR(150), prenom VARCHAR(100),
+                email VARCHAR(255), telephone VARCHAR(30), ville VARCHAR(100),
+                source ENUM('simulateur','formulaire_contact','landing_page','concurrence','demarchage','recommandation','rdv_site','autre') NOT NULL DEFAULT 'autre',
+                score INT DEFAULT 0, surface DECIMAL(10,2), capacite INT,
+                tarif_nuit_estime DECIMAL(10,2), revenu_mensuel_estime DECIMAL(10,2), equipements JSON,
+                statut ENUM('nouveau','contacte','rdv_planifie','rdv_fait','proposition','negocie','converti','perdu') DEFAULT 'nouveau',
+                priorite ENUM('haute','moyenne','basse') DEFAULT 'moyenne',
+                date_rdv DATETIME, type_rdv ENUM('telephone','visio','physique'), message_rdv TEXT,
+                proprietaire_id INT, contrat_id INT, date_premier_contact DATE,
+                date_derniere_interaction DATETIME, prochaine_action TEXT, date_prochaine_action DATE,
+                notes TEXT, legacy_simulation_id INT, legacy_prospect_id INT,
+                host_profile_id VARCHAR(100), nb_annonces INT, note_moyenne DECIMAL(3,2),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                INDEX idx_email (email), INDEX idx_statut (statut), INDEX idx_source (source), INDEX idx_score (score DESC)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+            // Calculer le score
+            $score = 40; // base simulateur
+            if (!empty($email)) $score += 5;
+            if (!empty($telephone)) $score += 15;
+            if ($surface > 50) $score += 5;
+            if ($capacite > 4) $score += 3;
+            if ($revenuMensuel > 2000) $score += 7;
+            $score = min(100, $score);
+
+            $equipJson = json_encode([
+                'centre_ville' => $centreVille, 'fibre' => $fibre,
+                'equipements_speciaux' => $equipementsSpeciaux,
+                'machine_cafe' => $machineCafe, 'machine_laver' => $machineLaver,
+                'autre' => $autreEquipement
+            ]);
+
+            $leadStmt = $conn->prepare("INSERT INTO prospection_leads
+                (email, telephone, ville, source, score, surface, capacite, tarif_nuit_estime, revenu_mensuel_estime, equipements, legacy_simulation_id)
+                VALUES (?, ?, ?, 'simulateur', ?, ?, ?, ?, ?, ?, ?)");
+            $leadStmt->execute([$email, $telephone, $ville, $score, $surface, $capacite, $tarifNuit, $revenuMensuel, $equipJson, $simulationId]);
+        } catch (PDOException $e) {
+            error_log('index.php lead creation: ' . $e->getMessage());
+        }
 
         // Récupérer les settings pour l'email
         $settingsStmt = $conn->query("SELECT setting_key, setting_value FROM FC_settings");
@@ -1500,7 +1545,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['contact_submit'])) {
 
     <script>
     function calculerRevenus() {
-        console.log('Fonction calculerRevenus appelée');
+
 
         const surface = parseFloat(document.getElementById('sim_surface').value) || 0;
         const capacite = parseInt(document.getElementById('sim_capacite').value) || 0;
@@ -1508,7 +1553,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['contact_submit'])) {
         const email = document.getElementById('sim_email').value;
         const telephone = document.getElementById('sim_telephone').value.trim();
 
-        console.log('Données:', {surface, capacite, ville, email, telephone});
+
 
         // Récupération des équipements
         const centreVille = document.getElementById('sim_centre_ville').checked;
@@ -1546,7 +1591,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['contact_submit'])) {
         const tauxOccupationConfig = <?= json_encode(floatval($simulateurConfig['taux_occupation'] ?? 70)) ?> / 100;
         const commissionConfig = <?= json_encode(floatval($simulateurConfig['commission'] ?? 24)) ?> / 100;
 
-        console.log('Config:', {tarifBaseCouchage, majorationM2, coutMenageM2, rotationsMois, tauxOccupationConfig, commissionConfig});
 
         // Majorations équipements (en %) depuis config
         const majorations = {
@@ -1620,7 +1664,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['contact_submit'])) {
         submitBtn.disabled = true;
 
         // Enregistrer la simulation (appel AJAX vers index.php)
-        console.log('Envoi AJAX vers index.php...');
+
         const formData = new URLSearchParams({
             surface: surface,
             capacite: capacite,
@@ -1637,19 +1681,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['contact_submit'])) {
             revenu_mensuel_estime: Math.round(revenuNet),
             save_simulation: 1
         });
-        console.log('Données envoyées:', formData.toString());
-
         fetch('index.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: formData
-        }).then(response => {
-              console.log('Réponse HTTP:', response.status, response.statusText);
-              return response.text();
-          })
+        }).then(response => response.text())
           .then(text => {
-              console.log('Réponse brute:', text);
-              // Retirer le loading
               submitBtn.classList.remove('btn-loading');
               submitBtn.disabled = false;
               submitBtn.textContent = originalText;
@@ -1657,26 +1694,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['contact_submit'])) {
               try {
                   const data = JSON.parse(text);
                   if (data.success) {
-                      console.log('Simulation enregistrée avec ID:', data.id);
-                      // Afficher le message de succès
                       let successMsg = document.getElementById('simulateurSuccess');
                       if (!successMsg) {
                           successMsg = document.createElement('div');
                           successMsg.id = 'simulateurSuccess';
                           successMsg.className = 'success-message';
-                          successMsg.innerHTML = '✅ <strong>Résultats envoyés par email !</strong><br>Vous allez recevoir un récapitulatif détaillé à l\'adresse indiquée.';
+                          const emailVal = formData.get('email') || '';
+                          const telVal = formData.get('telephone') || '';
+                          const rdvParams = new URLSearchParams({email: emailVal, tel: telVal}).toString();
+                          successMsg.innerHTML = '<div style="text-align:center">'
+                              + '<div style="font-size:1.1rem;margin-bottom:15px">✅ <strong>Résultats envoyés par email !</strong><br>Vous allez recevoir un récapitulatif détaillé.</div>'
+                              + '<div style="background:linear-gradient(135deg,#1E3A8A,#3B82F6);padding:20px;border-radius:12px;margin-top:15px">'
+                              + '<p style="color:white;font-size:1.1rem;margin:0 0 12px 0"><strong>Envie d\'en savoir plus ?</strong></p>'
+                              + '<a href="rendez-vous.php?' + rdvParams + '" style="display:inline-block;background:white;color:#1E3A8A;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:700;font-size:1rem;transition:transform 0.2s" onmouseover="this.style.transform=\'scale(1.05)\'" onmouseout="this.style.transform=\'scale(1)\'">'
+                              + '📅 Prendre rendez-vous gratuitement</a>'
+                              + '<p style="color:rgba(255,255,255,0.8);font-size:0.85rem;margin:10px 0 0 0">Echange de 15 min sans engagement</p>'
+                              + '</div></div>';
                           document.getElementById('simulateurResultat').appendChild(successMsg);
                       }
                       successMsg.classList.add('show');
-                  } else {
-                      console.error('Erreur serveur:', data.error);
                   }
               } catch (e) {
-                  console.error('Réponse non-JSON:', text);
+                  // Erreur de parsing silencieuse
               }
           })
-          .catch(error => {
-              console.error('Erreur fetch:', error);
+          .catch(() => {
               submitBtn.classList.remove('btn-loading');
               submitBtn.disabled = false;
               submitBtn.textContent = originalText;

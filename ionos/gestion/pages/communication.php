@@ -20,16 +20,16 @@ $preview_list = [];
 // Récupérer les logements
 $logements = [];
 try {
-    $stmt = $pdo->query("SELECT id, nom_du_logement FROM liste_logements ORDER BY nom_du_logement");
+    $stmt = $pdo->query("SELECT id, nom_du_logement FROM liste_logements WHERE actif = 1 ORDER BY nom_du_logement");
     $logements = $stmt->fetchAll();
-} catch (PDOException $e) {}
+} catch (PDOException $e) { error_log('communication.php: ' . $e->getMessage()); }
 
 // Récupérer les templates
 $templates = [];
 try {
     $stmt = $pdo->query("SELECT id, name, template FROM sms_templates ORDER BY name");
     $templates = $stmt->fetchAll();
-} catch (PDOException $e) {}
+} catch (PDOException $e) { error_log('communication.php: ' . $e->getMessage()); }
 
 // Prévisualiser les destinataires
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['preview'])) {

@@ -6,20 +6,7 @@
 include '../config.php';
 include '../pages/menu.php';
 
-// Creer la table si elle n'existe pas
-$conn->exec("
-    CREATE TABLE IF NOT EXISTS checkup_templates (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        logement_id INT DEFAULT NULL,
-        categorie VARCHAR(50) NOT NULL,
-        nom_item VARCHAR(255) NOT NULL,
-        actif TINYINT(1) DEFAULT 1,
-        ordre INT DEFAULT 0,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        INDEX idx_logement (logement_id),
-        INDEX idx_categorie (categorie)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-");
+// Tables requises : voir db/install_tables.php
 
 $logement_id = isset($_GET['logement_id']) ? (int)$_GET['logement_id'] : null;
 
