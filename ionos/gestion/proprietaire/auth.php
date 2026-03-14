@@ -3,8 +3,8 @@
  * Verification d'authentification proprietaire — inclusion commune
  * Utilise le systeme Auth.php unifie
  */
-require_once __DIR__ . '/../../includes/env_loader.php';
-require_once __DIR__ . '/../../db/connection.php';
+require_once __DIR__ . '/../includes/env_loader.php';
+require_once __DIR__ . '/../db/connection.php';
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -42,7 +42,7 @@ try {
 
 $auth = null;
 if ($useNewAuth) {
-    require_once __DIR__ . '/../../includes/Auth.php';
+    require_once __DIR__ . '/../includes/Auth.php';
     $auth = new Auth($conn);
 }
 

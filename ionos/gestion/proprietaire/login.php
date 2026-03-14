@@ -4,8 +4,8 @@
  * Compatible ancien système (FC_proprietaires) + nouveau (Auth.php / users)
  */
 
-require_once __DIR__ . '/../../includes/env_loader.php';
-require_once __DIR__ . '/../../db/connection.php';
+require_once __DIR__ . '/../includes/env_loader.php';
+require_once __DIR__ . '/../db/connection.php';
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -19,7 +19,7 @@ try {
 } catch (PDOException $e) {}
 
 if ($useNewAuth) {
-    require_once __DIR__ . '/../../includes/Auth.php';
+    require_once __DIR__ . '/../includes/Auth.php';
     $auth = new Auth($conn);
 }
 

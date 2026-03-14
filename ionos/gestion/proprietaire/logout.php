@@ -3,8 +3,8 @@
  * Deconnexion - Espace Proprietaire
  * Compatible ancien et nouveau système
  */
-require_once __DIR__ . '/../../includes/env_loader.php';
-require_once __DIR__ . '/../../db/connection.php';
+require_once __DIR__ . '/../includes/env_loader.php';
+require_once __DIR__ . '/../db/connection.php';
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -13,7 +13,7 @@ if (session_status() === PHP_SESSION_NONE) {
 // Tenter le nouveau système si disponible
 try {
     $conn->query("SELECT 1 FROM users LIMIT 1");
-    require_once __DIR__ . '/../../includes/Auth.php';
+    require_once __DIR__ . '/../includes/Auth.php';
     $auth = new Auth($conn);
     $auth->logout();
 } catch (PDOException $e) {
