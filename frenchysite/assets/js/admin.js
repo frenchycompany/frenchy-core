@@ -492,15 +492,13 @@
         });
     })();
 
-    /* ── Photo Upload ── */
-    document.querySelectorAll('.adm-upload-form').forEach(function (form) {
+    /* ── Photo Upload (single-mode forms: hero, logo, experience) ── */
+    document.querySelectorAll('.adm-upload-form[data-mode="single"]').forEach(function (form) {
         var fileInput = form.querySelector('input[type="file"]');
         var submitBtn = form.querySelector('button[type="submit"]');
         var preview   = form.querySelector('.adm-upload-preview');
         var prevImg   = preview ? preview.querySelector('img') : null;
         var prevName  = preview ? preview.querySelector('.adm-upload-filename') : null;
-        var mode      = form.dataset.mode || 'multi'; // 'single' or 'multi'
-        var btnLabel  = mode === 'single' ? 'Envoyer' : 'Ajouter';
 
         fileInput.addEventListener('change', function () {
             if (fileInput.files.length > 0) {
@@ -524,9 +522,6 @@
             fd.append('photo_key', form.querySelector('input[name="photo_key"]').value);
             fd.append('alt_text', form.querySelector('input[name="alt_text"]').value);
             fd.append('photo', fileInput.files[0]);
-
-            var wideCheck = form.querySelector('input[name="is_wide"]');
-            fd.append('is_wide', wideCheck && wideCheck.checked ? '1' : '0');
             csrfAppend(fd);
 
             submitBtn.disabled = true;
@@ -537,51 +532,310 @@
                 .then(function (r) {
                     if (r.success) {
                         toast('Photo enregistrée');
-
-                        // Find the target grid/container
                         var targetId = form.dataset.target || ('photos-' + form.dataset.group);
                         var grid = document.getElementById(targetId);
 
                         if (grid) {
-                            // Remove "empty" message
                             var empty = grid.querySelector('.adm-photo-empty');
                             if (empty) empty.remove();
 
-                            if (mode === 'single') {
-                                // Replace: remove existing card, add new one
-                                var oldCard = grid.querySelector('.adm-photo-card');
-                                if (oldCard) oldCard.remove();
-                            }
+                            var oldCard = grid.querySelector('.adm-photo-card');
+                            if (oldCard) oldCard.remove();
 
                             var altText = form.querySelector('input[name="alt_text"]').value;
                             var card = document.createElement('div');
-                            card.className = 'adm-photo-card' + (mode === 'single' && form.dataset.group === 'hero' ? ' adm-photo-card--large' : '');
+                            card.className = 'adm-photo-card' + (form.dataset.group === 'hero' ? ' adm-photo-card--large' : '');
                             card.dataset.id = r.id;
                             card.innerHTML =
                                 '<img src="' + r.path + '" alt="' + (altText || '') + '">' +
-                                (mode === 'multi' ? '<div class="adm-photo-info"><span class="adm-photo-name">' + (altText || 'Photo') + '</span></div>' : '') +
                                 '<button type="button" class="adm-photo-delete" data-id="' + r.id + '" title="Supprimer">' +
                                     '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>' +
                                 '</button>';
                             grid.appendChild(card);
                         }
 
-                        // Reset form
                         form.reset();
                         if (preview) preview.hidden = true;
                     } else {
                         toast(r.error || 'Erreur upload', 'error');
                     }
                     submitBtn.disabled = true;
-                    submitBtn.textContent = btnLabel;
+                    submitBtn.textContent = 'Envoyer';
                 })
                 .catch(function () {
                     toast('Erreur réseau', 'error');
                     submitBtn.disabled = false;
-                    submitBtn.textContent = btnLabel;
+                    submitBtn.textContent = 'Envoyer';
                 });
         });
     });
+
+    /* ── Gallery: Multi-file upload with dropzone ── */
+    (function () {
+        var dropzone = document.getElementById('dropzone-galerie');
+        var fileInput = document.getElementById('galerie-file-input');
+        var grid = document.getElementById('photos-galerie');
+        var queue = document.getElementById('upload-queue-galerie');
+        if (!dropzone || !fileInput || !grid) return;
+
+        function uploadFile(file) {
+            var fd = new FormData();
+            fd.append('ajax', '1');
+            fd.append('action', 'upload_photo');
+            fd.append('photo_group', 'galerie');
+            fd.append('photo_key', '');
+            fd.append('alt_text', '');
+            fd.append('is_wide', '0');
+            fd.append('photo', file);
+            csrfAppend(fd);
+
+            // Add queue item
+            var queueItem = document.createElement('div');
+            queueItem.className = 'adm-queue-item';
+            queueItem.innerHTML =
+                '<img src="' + URL.createObjectURL(file) + '" alt="">' +
+                '<span class="adm-queue-name">' + file.name + '</span>' +
+                '<span class="adm-queue-status">Envoi...</span>';
+            queue.hidden = false;
+            queue.appendChild(queueItem);
+
+            return fetch('admin.php', { method: 'POST', body: fd })
+                .then(function (r) { return r.json(); })
+                .then(function (r) {
+                    if (r.success) {
+                        queueItem.querySelector('.adm-queue-status').textContent = 'OK';
+                        queueItem.classList.add('is-done');
+
+                        var empty = grid.querySelector('.adm-photo-empty');
+                        if (empty) empty.remove();
+
+                        var card = document.createElement('div');
+                        card.className = 'adm-photo-card';
+                        card.dataset.id = r.id;
+                        card.draggable = true;
+                        card.innerHTML =
+                            '<img src="' + r.path + '" alt="">' +
+                            '<div class="adm-photo-info"><span class="adm-photo-name">Photo</span></div>' +
+                            '<div class="adm-photo-actions">' +
+                                '<button type="button" class="adm-photo-edit" data-id="' + r.id + '" data-alt="" data-wide="0" title="Modifier">' +
+                                    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>' +
+                                '</button>' +
+                                '<button type="button" class="adm-photo-delete" data-id="' + r.id + '" title="Supprimer">' +
+                                    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>' +
+                                '</button>' +
+                            '</div>' +
+                            '<span class="adm-photo-drag" title="Glisser pour réordonner">&#x2630;</span>';
+                        grid.appendChild(card);
+                    } else {
+                        queueItem.querySelector('.adm-queue-status').textContent = r.error || 'Erreur';
+                        queueItem.classList.add('is-error');
+                    }
+                })
+                .catch(function () {
+                    queueItem.querySelector('.adm-queue-status').textContent = 'Erreur réseau';
+                    queueItem.classList.add('is-error');
+                });
+        }
+
+        function handleFiles(files) {
+            var uploads = [];
+            for (var i = 0; i < files.length; i++) {
+                if (files[i].type.startsWith('image/')) {
+                    uploads.push(uploadFile(files[i]));
+                }
+            }
+            if (uploads.length === 0) {
+                toast('Aucune image valide sélectionnée', 'error');
+                return;
+            }
+            Promise.all(uploads).then(function () {
+                toast(uploads.length + ' photo(s) ajoutée(s)');
+                setTimeout(function () {
+                    queue.innerHTML = '';
+                    queue.hidden = true;
+                }, 2000);
+            });
+        }
+
+        fileInput.addEventListener('change', function () {
+            if (fileInput.files.length > 0) handleFiles(fileInput.files);
+            fileInput.value = '';
+        });
+
+        dropzone.addEventListener('dragover', function (e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'copy';
+            dropzone.classList.add('is-dragover');
+        });
+        dropzone.addEventListener('dragleave', function (e) {
+            if (!dropzone.contains(e.relatedTarget)) {
+                dropzone.classList.remove('is-dragover');
+            }
+        });
+        dropzone.addEventListener('drop', function (e) {
+            e.preventDefault();
+            dropzone.classList.remove('is-dragover');
+            if (e.dataTransfer.files.length > 0) handleFiles(e.dataTransfer.files);
+        });
+    })();
+
+    /* ── Gallery: Drag & drop reorder photos ── */
+    (function () {
+        var grid = document.getElementById('photos-galerie');
+        if (!grid) return;
+        var dragSrc = null;
+
+        grid.addEventListener('dragstart', function (e) {
+            var card = e.target.closest('.adm-photo-card');
+            if (!card) return;
+            dragSrc = card;
+            card.classList.add('is-dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', card.dataset.id);
+        });
+
+        grid.addEventListener('dragover', function (e) {
+            var card = e.target.closest('.adm-photo-card');
+            if (!card || card === dragSrc) return;
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            card.classList.add('drag-over');
+        });
+
+        grid.addEventListener('dragleave', function (e) {
+            var card = e.target.closest('.adm-photo-card');
+            if (card) card.classList.remove('drag-over');
+        });
+
+        grid.addEventListener('drop', function (e) {
+            var target = e.target.closest('.adm-photo-card');
+            if (!target || !dragSrc || target === dragSrc) return;
+            e.preventDefault();
+            target.classList.remove('drag-over');
+
+            var cards = Array.from(grid.querySelectorAll('.adm-photo-card'));
+            var srcIdx = cards.indexOf(dragSrc);
+            var tgtIdx = cards.indexOf(target);
+            if (srcIdx < tgtIdx) {
+                grid.insertBefore(dragSrc, target.nextSibling);
+            } else {
+                grid.insertBefore(dragSrc, target);
+            }
+
+            // Save new order
+            var order = [];
+            grid.querySelectorAll('.adm-photo-card').forEach(function (c) {
+                if (c.dataset.id) order.push(c.dataset.id);
+            });
+            var fd = new FormData();
+            fd.append('ajax', '1');
+            fd.append('action', 'reorder_photos');
+            fd.append('order', JSON.stringify(order));
+            csrfAppend(fd);
+            fetch('admin.php', { method: 'POST', body: fd })
+                .then(function (r) { return r.json(); })
+                .then(function (r) {
+                    if (r.success) toast('Ordre mis à jour');
+                })
+                .catch(function () {});
+        });
+
+        grid.addEventListener('dragend', function (e) {
+            var card = e.target.closest('.adm-photo-card');
+            if (card) card.classList.remove('is-dragging');
+            dragSrc = null;
+        });
+    })();
+
+    /* ── Edit photo modal ── */
+    (function () {
+        var modal     = document.getElementById('modal-edit-photo');
+        var modalImg  = document.getElementById('modal-edit-img');
+        var modalAlt  = document.getElementById('modal-edit-alt');
+        var modalWide = document.getElementById('modal-edit-wide');
+        var modalId   = document.getElementById('modal-edit-id');
+        var btnSave   = document.getElementById('modal-edit-save');
+        var btnCancel = document.getElementById('modal-edit-cancel');
+        var backdrop  = modal ? modal.querySelector('.adm-modal-backdrop') : null;
+        if (!modal) return;
+
+        function openModal(btn) {
+            var card = btn.closest('.adm-photo-card');
+            modalId.value = btn.dataset.id;
+            modalAlt.value = btn.dataset.alt || '';
+            modalWide.checked = btn.dataset.wide === '1';
+            modalImg.src = card ? card.querySelector('img').src : '';
+            modal.hidden = false;
+            modalAlt.focus();
+        }
+
+        function closeModal() {
+            modal.hidden = true;
+        }
+
+        document.addEventListener('click', function (e) {
+            var btn = e.target.closest('.adm-photo-edit');
+            if (btn) openModal(btn);
+        });
+
+        btnCancel.addEventListener('click', closeModal);
+        backdrop.addEventListener('click', closeModal);
+
+        btnSave.addEventListener('click', function () {
+            var id = modalId.value;
+            var alt = modalAlt.value;
+            var wide = modalWide.checked ? '1' : '0';
+
+            var fd = new FormData();
+            fd.append('ajax', '1');
+            fd.append('action', 'update_photo');
+            fd.append('photo_id', id);
+            fd.append('alt_text', alt);
+            fd.append('is_wide', wide);
+            csrfAppend(fd);
+
+            btnSave.disabled = true;
+            fetch('admin.php', { method: 'POST', body: fd })
+                .then(function (r) { return r.json(); })
+                .then(function (r) {
+                    if (r.success) {
+                        toast('Photo mise à jour');
+                        // Update card in DOM
+                        var card = document.querySelector('.adm-photo-card[data-id="' + id + '"]');
+                        if (card) {
+                            var nameEl = card.querySelector('.adm-photo-name');
+                            if (nameEl) nameEl.textContent = alt || 'Photo';
+                            var editBtn = card.querySelector('.adm-photo-edit');
+                            if (editBtn) {
+                                editBtn.dataset.alt = alt;
+                                editBtn.dataset.wide = wide;
+                            }
+                            // Update badge
+                            var badge = card.querySelector('.adm-badge');
+                            if (wide === '1' && !badge) {
+                                var info = card.querySelector('.adm-photo-info');
+                                if (info) {
+                                    var b = document.createElement('span');
+                                    b.className = 'adm-badge';
+                                    b.textContent = 'Grande';
+                                    info.appendChild(b);
+                                }
+                            } else if (wide === '0' && badge) {
+                                badge.remove();
+                            }
+                        }
+                        closeModal();
+                    } else {
+                        toast(r.error || 'Erreur', 'error');
+                    }
+                    btnSave.disabled = false;
+                })
+                .catch(function () {
+                    toast('Erreur réseau', 'error');
+                    btnSave.disabled = false;
+                });
+        });
+    })();
 
     /* ── Delete Photo (event delegation) ── */
     document.addEventListener('click', function (e) {

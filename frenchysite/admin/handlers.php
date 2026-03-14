@@ -444,5 +444,52 @@ if ($action === 'reorder_blocks') {
     exit;
 }
 
+// ═══════════════════════════════════════════
+// Reorder gallery photos
+// ═══════════════════════════════════════════
+if ($action === 'reorder_photos') {
+    $order = json_decode($_POST['order'] ?? '[]', true);
+    if (!is_array($order)) {
+        echo json_encode(['success' => false, 'error' => 'Ordre invalide.']);
+        exit;
+    }
+
+    try {
+        $stmt = $conn->prepare("UPDATE " . vf_table('photos') . " SET sort_order = ? WHERE id = ?");
+        foreach ($order as $i => $photo_id) {
+            $stmt->execute([$i, (int)$photo_id]);
+        }
+        echo json_encode(['success' => true]);
+    } catch (PDOException $e) {
+        error_log('[VF Admin] ' . $e->getMessage());
+        echo json_encode(['success' => false, 'error' => 'Erreur base de données.']);
+    }
+    exit;
+}
+
+// ═══════════════════════════════════════════
+// Update photo metadata (alt_text, is_wide)
+// ═══════════════════════════════════════════
+if ($action === 'update_photo') {
+    $id      = (int)($_POST['photo_id'] ?? 0);
+    $alt     = $_POST['alt_text'] ?? '';
+    $is_wide = (int)($_POST['is_wide'] ?? 0);
+
+    if (!$id) {
+        echo json_encode(['success' => false, 'error' => 'ID photo manquant.']);
+        exit;
+    }
+
+    try {
+        $stmt = $conn->prepare("UPDATE " . vf_table('photos') . " SET alt_text = ?, is_wide = ? WHERE id = ?");
+        $stmt->execute([$alt, $is_wide, $id]);
+        echo json_encode(['success' => true]);
+    } catch (PDOException $e) {
+        error_log('[VF Admin] ' . $e->getMessage());
+        echo json_encode(['success' => false, 'error' => 'Erreur base de données.']);
+    }
+    exit;
+}
+
 echo json_encode(['success' => false, 'error' => 'Action inconnue']);
 exit;

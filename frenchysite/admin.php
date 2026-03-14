@@ -775,20 +775,26 @@ $site_name = htmlspecialchars($site['name']);
             <!-- ── GALERIE ── -->
             <fieldset class="adm-fieldset">
                 <legend>Galerie photos</legend>
-                <p class="adm-photo-help">Les photos de la galerie sur la page d'accueil. Ajoutez autant de photos que vous voulez.</p>
+                <p class="adm-photo-help">Les photos de la galerie sur la page d'accueil. Glissez pour réordonner. Cliquez sur une photo pour modifier sa description.</p>
 
-                <div class="adm-photo-grid" id="photos-galerie">
+                <div class="adm-photo-grid adm-photo-grid--gallery" id="photos-galerie">
                     <?php if (!empty($photos_grouped['galerie'])): ?>
                     <?php foreach ($photos_grouped['galerie'] as $p): ?>
-                    <div class="adm-photo-card" data-id="<?= $p['id'] ?>">
+                    <div class="adm-photo-card" data-id="<?= $p['id'] ?>" draggable="true">
                         <img src="<?= htmlspecialchars($p['file_path']) ?>" alt="<?= htmlspecialchars($p['alt_text']) ?>">
                         <div class="adm-photo-info">
                             <span class="adm-photo-name"><?= htmlspecialchars($p['alt_text'] ?: basename($p['file_path'])) ?></span>
                             <?php if ($p['is_wide']): ?><span class="adm-badge">Grande</span><?php endif; ?>
                         </div>
-                        <button type="button" class="adm-photo-delete" data-id="<?= $p['id'] ?>" title="Supprimer">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                        </button>
+                        <div class="adm-photo-actions">
+                            <button type="button" class="adm-photo-edit" data-id="<?= $p['id'] ?>" data-alt="<?= htmlspecialchars($p['alt_text']) ?>" data-wide="<?= $p['is_wide'] ?>" title="Modifier">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                            </button>
+                            <button type="button" class="adm-photo-delete" data-id="<?= $p['id'] ?>" title="Supprimer">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                            </button>
+                        </div>
+                        <span class="adm-photo-drag" title="Glisser pour réordonner">&#x2630;</span>
                     </div>
                     <?php endforeach; ?>
                     <?php else: ?>
@@ -796,33 +802,52 @@ $site_name = htmlspecialchars($site['name']);
                     <?php endif; ?>
                 </div>
 
-                <form class="adm-upload-form" data-group="galerie" data-mode="multi">
+                <!-- Dropzone -->
+                <div class="adm-dropzone" id="dropzone-galerie">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    <span>Glissez vos images ici ou</span>
+                    <label class="adm-btn adm-btn-outline adm-btn-sm adm-dropzone-btn">
+                        Choisir des images
+                        <input type="file" name="photos" accept="image/jpeg,image/png,image/webp" multiple hidden id="galerie-file-input">
+                    </label>
+                </div>
+
+                <!-- Upload queue -->
+                <div class="adm-upload-queue" id="upload-queue-galerie" hidden></div>
+
+                <form class="adm-upload-form" data-group="galerie" data-mode="multi" id="form-galerie-upload" hidden>
                     <input type="hidden" name="photo_key" value="">
-                    <div class="adm-upload-simple">
-                        <div class="adm-field" style="flex:1">
-                            <label>Description (optionnel)</label>
-                            <input type="text" name="alt_text" class="adm-input adm-input-sm" placeholder="Ex : Vue du jardin, Chambre bleue...">
-                        </div>
-                        <div class="adm-field">
-                            <label class="adm-checkbox">
-                                <input type="checkbox" name="is_wide" value="1">
-                                Grande image
-                            </label>
-                        </div>
-                    </div>
-                    <div class="adm-upload-action">
-                        <label class="adm-btn adm-btn-outline adm-upload-btn">
-                            Choisir une image
-                            <input type="file" name="photo" accept="image/jpeg,image/png,image/webp" hidden>
-                        </label>
-                        <button type="submit" class="adm-btn adm-btn-primary" disabled>Ajouter</button>
-                    </div>
-                    <div class="adm-upload-preview" hidden>
-                        <img src="" alt="Aperçu">
-                        <span class="adm-upload-filename"></span>
-                    </div>
+                    <input type="hidden" name="alt_text" value="">
+                    <input type="hidden" name="is_wide" value="0">
+                    <input type="file" name="photo" accept="image/jpeg,image/png,image/webp" hidden>
                 </form>
             </fieldset>
+
+            <!-- Modal edit photo -->
+            <div class="adm-modal" id="modal-edit-photo" hidden>
+                <div class="adm-modal-backdrop"></div>
+                <div class="adm-modal-content">
+                    <h3>Modifier la photo</h3>
+                    <div class="adm-modal-preview">
+                        <img src="" alt="Aperçu" id="modal-edit-img">
+                    </div>
+                    <div class="adm-field">
+                        <label>Description</label>
+                        <input type="text" class="adm-input" id="modal-edit-alt" placeholder="Ex : Vue du jardin, Chambre bleue...">
+                    </div>
+                    <div class="adm-field">
+                        <label class="adm-checkbox">
+                            <input type="checkbox" id="modal-edit-wide" value="1">
+                            Grande image (occupe 2 colonnes)
+                        </label>
+                    </div>
+                    <div class="adm-modal-actions">
+                        <button type="button" class="adm-btn adm-btn-outline" id="modal-edit-cancel">Annuler</button>
+                        <button type="button" class="adm-btn adm-btn-primary" id="modal-edit-save">Enregistrer</button>
+                    </div>
+                    <input type="hidden" id="modal-edit-id">
+                </div>
+            </div>
 
             <!-- ── GUIDE PHOTOS (from DB guides) ── -->
             <?php foreach ($db_guides as $slug => $g):
