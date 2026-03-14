@@ -9,7 +9,7 @@ $msg_error = '';
 
 // Traitement de la création d'une tâche
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_task'])) {
-    if (!$security->validateCSRFToken($_POST['csrf_token'] ?? '')) {
+    if (!proprio_validate_csrf($_POST['csrf_token'] ?? '')) {
         $msg_error = 'Token de sécurité invalide.';
     } else {
         $task_logement = (int)($_POST['logement_id'] ?? 0);
@@ -83,7 +83,7 @@ if (!empty($logement_ids)) {
         <div class="card" style="margin-bottom:1.5rem;">
             <div class="card-header"><h2><i class="fas fa-plus-circle"></i> Nouvelle tache</h2></div>
             <form method="POST" class="task-form">
-                <?= $security->csrfField() ?>
+                <?= proprio_csrf_field() ?>
                 <div class="form-group">
                     <label for="logement_id">Logement</label>
                     <select name="logement_id" id="logement_id" required>
