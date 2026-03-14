@@ -436,7 +436,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             case 'save_schedule':
                 $scheduledTimes = $_POST['scheduled_times'] ?? ['07:00'];
                 $scheduledEnabled = isset($_POST['scheduled_enabled']) ? '1' : '0';
-                $maxWorkers = intval($_POST['max_workers'] ?? 2);
+                $maxWorkers = max(1, min(4, intval($_POST['max_workers'] ?? 2)));
 
                 // Filtrer et valider les heures
                 $validTimes = [];
@@ -1542,8 +1542,12 @@ try {
                                     <div class="col-md-6">
                                         <div class="form-group">
                                             <label><i class="fas fa-users-cog"></i> Workers paralleles</label>
-                                            <input type="number" name="max_workers" class="form-control"
-                                                   value="<?= intval($settings['max_workers'] ?? 2) ?>" min="1" max="5">
+                                            <select name="max_workers" class="form-control">
+                                                <?php $currentWorkers = intval($settings['max_workers'] ?? 2); ?>
+                                                <?php for ($w = 1; $w <= 4; $w++): ?>
+                                                    <option value="<?= $w ?>" <?= $w === $currentWorkers ? 'selected' : '' ?>><?= $w ?> worker<?= $w > 1 ? 's' : '' ?></option>
+                                                <?php endfor; ?>
+                                            </select>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
