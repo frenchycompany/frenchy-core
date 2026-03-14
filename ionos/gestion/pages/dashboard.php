@@ -79,7 +79,7 @@ try {
         LIMIT 10
     ");
     $prochaines_arrivees = $stmt->fetchAll();
-} catch (PDOException $e) {}
+} catch (PDOException $e) { error_log('dashboard.php: ' . $e->getMessage()); }
 
 // Derniers SMS envoyés
 $derniers_sms = [];
@@ -91,7 +91,7 @@ try {
         LIMIT 5
     ");
     $derniers_sms = $stmt->fetchAll();
-} catch (PDOException $e) {}
+} catch (PDOException $e) { error_log('dashboard.php: ' . $e->getMessage()); }
 ?>
 
 <style>

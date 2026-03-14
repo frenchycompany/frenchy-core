@@ -298,6 +298,9 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                 <a href="checkups.php" class="<?= $currentPage === 'checkups.php' ? 'active' : '' ?>">
                     <span class="icon"><i class="fas fa-clipboard-check"></i></span> Checkups
                 </a>
+                <a href="interventions.php" class="<?= $currentPage === 'interventions.php' ? 'active' : '' ?>">
+                    <span class="icon"><i class="fas fa-broom"></i></span> Interventions
+                </a>
                 <a href="inventaires.php" class="<?= $currentPage === 'inventaires.php' ? 'active' : '' ?>">
                     <span class="icon"><i class="fas fa-boxes-stacked"></i></span> Inventaires
                 </a>

@@ -90,26 +90,57 @@ if ($localHasReservation) {
     }
 }
 
-// Lire les DEPARTS du jour (REMOTE)
+// Charger logements actifs
 try {
-    $sqlDeps = "
-        SELECT 
-            r.id AS resa_id,
-            r.logement_id AS logement_id,
-            DATE(r.date_arrivee) AS date_arrivee,
-            DATE(r.date_depart)  AS date_depart,
-            (COALESCE(r.nb_adultes,0) + COALESCE(r.nb_enfants,0) + COALESCE(r.nb_bebes,0)) AS nb_pers,
-            GREATEST(DATEDIFF(r.date_depart, r.date_arrivee), 0) AS nb_jours
-        FROM reservation r
-        WHERE r.statut = 'confirmée'
-          AND DATE(r.date_depart) = :today
-        ORDER BY r.date_depart ASC
-    ";
-    $stDeps = $pdoRemote->prepare($sqlDeps);
-    $stDeps->execute([':today'=>$today]);
-    $deps = $stDeps->fetchAll(PDO::FETCH_ASSOC);
-} catch (Throwable $e) {
-    jerr(500, 'Erreur SQL lecture départs (REMOTE)', $DEBUG?['ex'=>$e->getMessage()]:[]);
+    $stLog = $conn->query("SELECT id, nom_du_logement, nombre_de_personnes FROM liste_logements WHERE actif = 1");
+    $rows = $stLog->fetchAll(PDO::FETCH_ASSOC);
+    $stLog->closeCursor();
+    foreach ($rows as $lg) {
+        $logements[(int)$lg['id']] = [
+            'nom' => $lg['nom_du_logement'] ?? ('Logement #'.$lg['id']),
+            'capacite' => (int)($lg['nombre_de_personnes'] ?? 0),
+        ];
+    }
+} catch (Throwable $e) { error_log('sync_reservations_today.php: ' . $e->getMessage()); }
+
+$deps = [];
+$arrs = [];
+$sourceLabel = '';
+
+// 1) Lire depuis le REMOTE (RPi) si disponible
+if ($remoteOk) {
+    try {
+        $sqlDeps = "
+            SELECT r.id AS resa_id, r.logement_id, DATE(r.date_arrivee) AS date_arrivee,
+                   DATE(r.date_depart) AS date_depart,
+                   (COALESCE(r.nb_adultes,0)+COALESCE(r.nb_enfants,0)+COALESCE(r.nb_bebes,0)) AS nb_pers,
+                   GREATEST(DATEDIFF(r.date_depart, r.date_arrivee), 0) AS nb_jours
+            FROM reservation r WHERE r.statut = 'confirmée' AND DATE(r.date_depart) = :today
+            ORDER BY r.date_depart ASC
+        ";
+        $stDeps = $pdoRemote->prepare($sqlDeps);
+        $stDeps->execute([':today'=>$today]);
+        $deps = $stDeps->fetchAll(PDO::FETCH_ASSOC);
+        $sourceLabel = 'REMOTE';
+    } catch (Throwable $e) {
+        if ($DEBUG) error_log('sync_today: remote deps error: '.$e->getMessage());
+    }
+
+    try {
+        $sqlArrs = "
+            SELECT r.id AS resa_id, r.logement_id, DATE(r.date_arrivee) AS date_arrivee,
+                   DATE(r.date_depart) AS date_depart,
+                   (COALESCE(r.nb_adultes,0)+COALESCE(r.nb_enfants,0)+COALESCE(r.nb_bebes,0)) AS nb_pers,
+                   GREATEST(DATEDIFF(r.date_depart, r.date_arrivee), 0) AS nb_jours
+            FROM reservation r WHERE r.statut = 'confirmée' AND DATE(r.date_arrivee) = :today
+            ORDER BY r.date_arrivee ASC
+        ";
+        $stArrs = $pdoRemote->prepare($sqlArrs);
+        $stArrs->execute([':today'=>$today]);
+        $arrs = $stArrs->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Throwable $e) {
+        if ($DEBUG) error_log('sync_today: remote arrs error: '.$e->getMessage());
+    }
 }
 
 // Fusionner avec les départs de la base LOCALE (réservations importées via iCal)
@@ -139,7 +170,7 @@ if ($localHasReservation) {
                 $deps[] = $ld;
             }
         }
-    } catch (Throwable $e) { /* table locale incompatible, on ignore */ }
+    } catch (Throwable $e) { error_log('sync_reservations_today.php: ' . $e->getMessage()); }
 }
 
 // Lire les ARRIVÉES du jour (REMOTE)
@@ -190,7 +221,7 @@ if ($localHasReservation) {
                 $arrs[] = $la;
             }
         }
-    } catch (Throwable $e) { /* table locale incompatible, on ignore */ }
+    } catch (Throwable $e) { error_log('sync_reservations_today.php: ' . $e->getMessage()); }
 }
 
 // helper : token si possible
@@ -204,7 +235,7 @@ function ensure_token_if_possible(PDO $c, int $pid, bool $enabled): void {
         $exp = date('Y-m-d H:i:s', strtotime('+7 days'));
         $ins = $c->prepare("INSERT INTO intervention_tokens (intervention_id, token, expires_at) VALUES (?, ?, ?)");
         $ins->execute([$pid, $token, $exp]);
-    } catch (Throwable $e) { /* ignore */ }
+    } catch (Throwable $e) { error_log('sync_reservations_today.php: ' . $e->getMessage()); }
 }
 
 // Prépare les statements LOCAL pour recherche/création
@@ -247,11 +278,31 @@ $insertPlanningArrival = $conn->prepare("
         ".($pl_has_src_id ? ", source_reservation_id" : "")."
         ".($pl_has_src_type ? ", source_type" : "")."
     ) VALUES (
-        :logement_id, :date, :nb_pers, :nb_jours, 'À Faire', :note
+        :logement_id, :date, :nb_pers, :nb_jours, :statut, :note
         ".($pl_has_src_id ? ", :resa_id" : "")."
         ".($pl_has_src_type ? ", 'AUTO_ARRIVAL'" : "")."
     )
 ");
+
+// Dernière intervention sur un logement (pour déterminer si "À Vérifier")
+$findLastIntervention = $conn->prepare("
+    SELECT date FROM planning WHERE logement_id = ? AND date < ? ORDER BY date DESC LIMIT 1
+");
+
+// Set des logements qui ont un départ aujourd'hui (pour savoir si checkout existe)
+$logementsAvecDepart = [];
+foreach ($deps as $d) {
+    $logementsAvecDepart[(int)$d['logement_id']] = true;
+}
+
+// Charger les tâches actives par logement (pour les inclure dans la note)
+$taches_par_logement = [];
+try {
+    $stmtTaches = $conn->query("SELECT logement_id, description FROM todo_list WHERE statut IN ('en attente', 'en cours') ORDER BY date_limite ASC");
+    foreach ($stmtTaches->fetchAll(PDO::FETCH_ASSOC) as $t) {
+        $taches_par_logement[(int)$t['logement_id']][] = $t['description'];
+    }
+} catch (PDOException $e) { error_log('sync_reservations_today.php: ' . $e->getMessage()); }
 
 $report = [
   'departures' => [],
@@ -268,9 +319,34 @@ try {
         $logId   = (int)$r['logement_id'];
         $depart  = $r['date_depart']; // = today
         $nbPers  = max(0, (int)$r['nb_pers']);
+        // Fallback : capacité max du logement si nb_pers inconnu
+        if ($nbPers === 0 && isset($logements[$logId])) {
+            $nbPers = $logements[$logId]['capacite'];
+        }
         $nbJours = max(0, (int)$r['nb_jours']);
         $srcLabel = $r['_source'] ?? 'REMOTE';
-        $note    = "Auto: ménage de sortie (resa #{$resaId}) [{$srcLabel}]";
+        // Note = tâches à faire sur ce logement (si existantes)
+        $note = !empty($taches_par_logement[$logId])
+            ? implode("\n", array_map(fn($t) => "- $t", $taches_par_logement[$logId]))
+            : '';
+
+        // Vérifier d'abord s'il existe déjà UNE intervention ce jour pour ce logement
+        $findAnyToday->execute([$logId, $depart]);
+        $alreadyAny = $findAnyToday->fetch();
+        $findAnyToday->closeCursor();
+        if ($alreadyAny) {
+            $skipped++;
+            $report['departures'][] = [
+                'reservation_id'  => $resaId,
+                'logement_id'     => $logId,
+                'date_depart'     => $depart,
+                'reason'          => 'intervention_already_exists_today',
+                'had_intervention_before' => true,
+                'created_now'     => false,
+                'intervention_id' => (int)$alreadyAny['id'],
+            ];
+            continue;
+        }
 
         $existing = null;
 
@@ -326,9 +402,16 @@ try {
         $logId   = (int)$r['logement_id'];
         $arrivee = $r['date_arrivee']; // = today
         $nbPers  = max(0, (int)$r['nb_pers']);
+        // Fallback : capacité max du logement si nb_pers inconnu
+        if ($nbPers === 0 && isset($logements[$logId])) {
+            $nbPers = $logements[$logId]['capacite'];
+        }
         $nbJours = max(0, (int)$r['nb_jours']);
         $srcLabel = $r['_source'] ?? 'REMOTE';
-        $note    = "Auto: ménage avant arrivée (resa #{$resaId}) [{$srcLabel}]";
+        // Note = tâches à faire sur ce logement (si existantes)
+        $note = !empty($taches_par_logement[$logId])
+            ? implode("\n", array_map(fn($t) => "- $t", $taches_par_logement[$logId]))
+            : '';
 
         // 0) si une intervention existe déjà aujourd'hui pour ce logement (créée manuellement ou via départ), on NE crée PAS.
         $findAnyToday->execute([$logId, $today]);
@@ -368,12 +451,40 @@ try {
         $createdNow = false;
 
         if (!$hadBefore) {
+            // Checkout ce jour → "À Faire"
+            // Pas de checkout → vérifier dernière intervention :
+            //   - ≥ 2 jours → "À Vérifier"
+            //   - < 2 jours → rien (intervention récente, pas besoin)
+            if (isset($logementsAvecDepart[$logId])) {
+                $statut = 'À Faire';
+            } else {
+                $findLastIntervention->execute([$logId, $today]);
+                $lastRow = $findLastIntervention->fetch(PDO::FETCH_ASSOC);
+                $findLastIntervention->closeCursor();
+                if (!$lastRow || (strtotime($today) - strtotime($lastRow['date'])) >= 2 * 86400) {
+                    $statut = 'À Vérifier';
+                } else {
+                    // Intervention récente, pas besoin d'en créer une
+                    $skipped++;
+                    $report['arrivals'][] = [
+                        'reservation_id'         => $resaId,
+                        'logement_id'            => $logId,
+                        'date_arrivee'           => $arrivee,
+                        'had_intervention_before'=> false,
+                        'created_now'            => false,
+                        'intervention_id'        => null,
+                    ];
+                    continue;
+                }
+            }
+
             if (!$DRY_RUN) {
                 $params = [
                     ':logement_id'=>$logId,
                     ':date'=>$today,   // on planifie pour AUJOURD'HUI
                     ':nb_pers'=>$nbPers,
                     ':nb_jours'=>$nbJours,
+                    ':statut'=>$statut,
                     ':note'=>$note,
                 ];
                 if ($pl_has_src_id) $params[':resa_id'] = $resaId;

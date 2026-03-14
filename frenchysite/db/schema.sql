@@ -37,6 +37,7 @@ CREATE TABLE IF NOT EXISTS vf_photos (
     srcset_json   TEXT         DEFAULT NULL,
     alt_text      VARCHAR(300) DEFAULT '',
     is_wide       TINYINT(1)   DEFAULT 0,
+    is_hidden     TINYINT(1)   DEFAULT 0,
     sort_order    INT          DEFAULT 0,
     updated_at    DATETIME     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_group (photo_group)
@@ -92,7 +93,9 @@ INSERT INTO vf_settings (setting_key, setting_value, setting_group, label, field
 ('airbnb_id',    '',   'integrations', 'ID annonce Airbnb',         'text', 1),
 ('airbnb_url',   '',   'integrations', 'Lien Airbnb complet',       'text', 2),
 ('ics_url',      '',   'integrations', 'Lien calendrier iCal (.ics)','text', 3),
-('matterport_id','',   'integrations', 'ID Matterport',             'text', 4)
+('matterport_id','',   'integrations', 'ID Matterport',             'text', 4),
+('superhote_planning_url', '', 'integrations', 'Lien planning Superhôte (iframe)', 'text', 5),
+('recommandations_url',    '', 'integrations', 'Lien page recommandations (public)', 'text', 6)
 ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value);
 
 -- ── Couleurs ──
@@ -159,6 +162,15 @@ INSERT INTO vf_texts (section_key, field_key, field_value, label, field_type, so
 ('reservation', 'title',    'Réserver votre séjour',                               'Titre',     'text', 1),
 ('reservation', 'subtitle', 'Consultez les disponibilités et réservez directement.','Sous-titre','text', 2),
 ('reservation', 'cta',      'Demande spéciale ou événement',                       'Bouton CTA','text', 3),
+
+-- Recommandations
+('recommandations', 'title',    'Nos recommandations',                                     'Titre',     'text', 1),
+('recommandations', 'subtitle', 'Découvrez nos adresses préférées autour du logement.',    'Sous-titre','text', 2),
+('recommandations', 'cta',      'Voir toutes les recommandations',                         'Bouton CTA','text', 3),
+
+-- Planning / Disponibilités
+('planning', 'title',    'Disponibilités',                                                 'Titre',     'text', 1),
+('planning', 'subtitle', 'Consultez le calendrier de disponibilité du logement.',           'Sous-titre','text', 2),
 
 -- Contact
 ('contact', 'title', 'Contact', 'Titre', 'text', 1),

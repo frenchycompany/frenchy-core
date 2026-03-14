@@ -12,12 +12,14 @@
                 data-id="<?= htmlspecialchars($site['airbnb_id']) ?>"
                 data-view="home"
                 data-hide-price="true"
-                style="width:100%;max-width:450px;height:300px;margin:auto;"
+                data-hide-reviews="true"
+                style="width:450px;height:300px;margin:auto;"
             >
-                <a href="https://www.airbnb.fr/rooms/<?= htmlspecialchars($site['airbnb_id']) ?>?guests=1&amp;adults=1&amp;s=66&amp;source=embed_widget">
+                <a href="https://www.airbnb.fr/rooms/<?= htmlspecialchars($site['airbnb_id']) ?>?guests=1&amp;adults=1&amp;s=66&amp;source=embed_widget" rel="nofollow">
                     Voir sur Airbnb
                 </a>
             </div>
+            <script async src="https://www.airbnb.fr/embeddable/airbnb_jssdk"></script>
         </div>
 
         <div class="vf-section-cta">

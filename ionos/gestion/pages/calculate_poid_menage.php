@@ -95,5 +95,6 @@ try {
         }, $details_calcul_temps) // Convertir les détails en secondes pour l'affichage
     ]);
 } catch (PDOException $e) {
-    echo json_encode(['error' => 'Erreur lors du calcul : ' . $e->getMessage()]);
+    error_log('calculate_poid_menage.php: ' . $e->getMessage());
+    echo json_encode(['error' => 'Une erreur interne est survenue.']);
 }

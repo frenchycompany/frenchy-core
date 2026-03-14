@@ -60,90 +60,51 @@ function saveSuperhoteCredentials($pdo, $email, $password) {
 
 $superhoteCredentials = getSuperhoteCredentials($pdo);
 
-// Creer/mettre a jour les tables
-function ensureTablesExist($pdo) {
-    // Table superhote_config (simplifiee)
-    $pdo->exec("CREATE TABLE IF NOT EXISTS `superhote_config` (
-        `id` INT(11) NOT NULL AUTO_INCREMENT,
-        `logement_id` INT(11) NOT NULL,
-        `superhote_property_id` VARCHAR(100) DEFAULT NULL,
-        `superhote_property_name` VARCHAR(255) DEFAULT NULL,
-        `is_active` TINYINT(1) DEFAULT 1,
-        `prix_plancher` DECIMAL(10,2) DEFAULT NULL COMMENT 'Prix minimum (jour 0)',
-        `prix_standard` DECIMAL(10,2) DEFAULT NULL COMMENT 'Prix normal (J+14)',
-        `weekend_pourcent` DECIMAL(5,2) DEFAULT 10 COMMENT 'Majoration weekend en %',
-        `dimanche_reduction` DECIMAL(10,2) DEFAULT 5 COMMENT 'Reduction dimanche en euros',
-        `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        PRIMARY KEY (`id`),
-        UNIQUE KEY `unique_logement` (`logement_id`)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+// Tables requises : voir db/install_tables.php
 
+// Migrations et mises a jour des tables superhote
+function ensureTablesExist($pdo) {
     // Ajouter les nouvelles colonnes si elles n'existent pas
     $columns = ['prix_plancher', 'prix_standard', 'weekend_pourcent', 'dimanche_reduction'];
     foreach ($columns as $col) {
         try {
             $pdo->exec("ALTER TABLE `superhote_config` ADD COLUMN `$col` DECIMAL(10,2) DEFAULT NULL");
-        } catch (PDOException $e) {}
+        } catch (PDOException $e) { error_log('superhote.php: ' . $e->getMessage()); }
     }
 
     // Colonne groupe
     try {
         $pdo->exec("ALTER TABLE `superhote_config` ADD COLUMN `groupe` VARCHAR(100) DEFAULT NULL");
-    } catch (PDOException $e) {}
+    } catch (PDOException $e) { error_log('superhote.php: ' . $e->getMessage()); }
 
     // Colonne nuits_minimum
     try {
         $pdo->exec("ALTER TABLE `superhote_config` ADD COLUMN `nuits_minimum` INT(11) DEFAULT 1 COMMENT 'Nombre minimum de nuits'");
-    } catch (PDOException $e) {}
+    } catch (PDOException $e) { error_log('superhote.php: ' . $e->getMessage()); }
     try {
         $pdo->exec("ALTER TABLE `superhote_groups` ADD COLUMN `nuits_minimum` INT(11) DEFAULT 1 COMMENT 'Nombre minimum de nuits par defaut'");
-    } catch (PDOException $e) {}
-
-    // Table superhote_groups
-    $pdo->exec("CREATE TABLE IF NOT EXISTS `superhote_groups` (
-        `id` INT(11) NOT NULL AUTO_INCREMENT,
-        `nom` VARCHAR(100) NOT NULL,
-        `description` VARCHAR(255) DEFAULT NULL,
-        `logement_reference_id` INT(11) DEFAULT NULL COMMENT 'Logement fictif de reference',
-        `prix_plancher` DECIMAL(10,2) DEFAULT NULL COMMENT 'Prix minimum par defaut (J0)',
-        `prix_standard` DECIMAL(10,2) DEFAULT NULL COMMENT 'Prix normal par defaut (J14+)',
-        `weekend_pourcent` DECIMAL(5,2) DEFAULT 10 COMMENT 'Majoration weekend par defaut en %',
-        `dimanche_reduction` DECIMAL(10,2) DEFAULT 5 COMMENT 'Reduction dimanche par defaut en euros',
-        `is_active` TINYINT(1) DEFAULT 1,
-        `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        PRIMARY KEY (`id`),
-        UNIQUE KEY `unique_nom` (`nom`)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    } catch (PDOException $e) { error_log('superhote.php: ' . $e->getMessage()); }
 
     // Ajouter les colonnes de tarification si elles n'existent pas (migration)
     $groupPricingCols = ['prix_plancher', 'prix_standard', 'weekend_pourcent', 'dimanche_reduction'];
     foreach ($groupPricingCols as $col) {
         try {
             $pdo->exec("ALTER TABLE `superhote_groups` ADD COLUMN `$col` DECIMAL(10,2) DEFAULT NULL");
-        } catch (PDOException $e) {}
+        } catch (PDOException $e) { error_log('superhote.php: ' . $e->getMessage()); }
     }
 
     // Valeurs par defaut
     try {
         $pdo->exec("UPDATE superhote_config SET weekend_pourcent = 10 WHERE weekend_pourcent IS NULL");
         $pdo->exec("UPDATE superhote_config SET dimanche_reduction = 5 WHERE dimanche_reduction IS NULL");
-    } catch (PDOException $e) {}
-
-    // Table superhote_settings (parametres globaux)
-    $pdo->exec("CREATE TABLE IF NOT EXISTS `superhote_settings` (
-        `key_name` VARCHAR(50) NOT NULL,
-        `value` VARCHAR(255) NOT NULL,
-        `description` VARCHAR(255) DEFAULT NULL,
-        PRIMARY KEY (`key_name`)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    } catch (PDOException $e) { error_log('superhote.php: ' . $e->getMessage()); }
 
     // Inserer les parametres par defaut
     $defaults = [
-        ['palier_j1_3_pourcent', '25', 'Pourcentage entre plancher et standard pour J1-3'],
-        ['palier_j4_6_pourcent', '50', 'Pourcentage entre plancher et standard pour J4-6'],
-        ['palier_j7_13_pourcent', '75', 'Pourcentage entre plancher et standard pour J7-13'],
+        ['palier_j1_3_pourcent', '20', 'Pourcentage entre plancher et standard pour J1-3'],
+        ['palier_j4_13_pourcent', '40', 'Pourcentage entre plancher et standard pour J4-13'],
+        ['palier_j14_30_pourcent', '60', 'Pourcentage entre plancher et standard pour J14-30'],
+        ['palier_j31_60_pourcent', '80', 'Pourcentage entre plancher et standard pour J31-60'],
         ['jours_generation', '30', 'Nombre de jours a generer'],
         ['scheduled_time', '07:00', 'Heure de mise a jour quotidienne (HH:MM)'],
         ['scheduled_enabled', '1', 'Activer la mise a jour planifiee'],
@@ -155,31 +116,14 @@ function ensureTablesExist($pdo) {
         $stmt->execute($d);
     }
 
-    // Table superhote_price_updates
-    $pdo->exec("CREATE TABLE IF NOT EXISTS `superhote_price_updates` (
-        `id` INT(11) NOT NULL AUTO_INCREMENT,
-        `logement_id` INT(11) NOT NULL,
-        `superhote_property_id` VARCHAR(100) NOT NULL,
-        `nom_du_logement` VARCHAR(255) DEFAULT NULL,
-        `date_start` DATE NOT NULL,
-        `date_end` DATE NOT NULL,
-        `price` DECIMAL(10,2) NOT NULL,
-        `rule_name` VARCHAR(100) DEFAULT NULL,
-        `status` VARCHAR(20) DEFAULT 'pending',
-        `error_message` TEXT DEFAULT NULL,
-        `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        PRIMARY KEY (`id`),
-        KEY `idx_status` (`status`)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-
     try {
         $pdo->exec("ALTER TABLE `superhote_price_updates` ADD COLUMN `nom_du_logement` VARCHAR(255) DEFAULT NULL");
-    } catch (PDOException $e) {}
+    } catch (PDOException $e) { error_log('superhote.php: ' . $e->getMessage()); }
 }
 
 try {
     ensureTablesExist($pdo);
-} catch (PDOException $e) {}
+} catch (PDOException $e) { error_log('superhote.php: ' . $e->getMessage()); }
 
 // Messages
 $message = '';
@@ -256,7 +200,8 @@ if (isset($_GET['ajax'])) {
                 exit;
         }
     } catch (Exception $e) {
-        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+        error_log('superhote.php: ' . $e->getMessage());
+        echo json_encode(['success' => false, 'error' => 'Une erreur interne est survenue.']);
         exit;
     }
 }
@@ -363,9 +308,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             case 'save_settings':
                 $settings = [
-                    'palier_j1_3_pourcent' => floatval($_POST['palier_j1_3_pourcent'] ?? 25),
-                    'palier_j4_6_pourcent' => floatval($_POST['palier_j4_6_pourcent'] ?? 50),
-                    'palier_j7_13_pourcent' => floatval($_POST['palier_j7_13_pourcent'] ?? 75),
+                    'palier_j1_3_pourcent' => floatval($_POST['palier_j1_3_pourcent'] ?? 20),
+                    'palier_j4_13_pourcent' => floatval($_POST['palier_j4_13_pourcent'] ?? 40),
+                    'palier_j14_30_pourcent' => floatval($_POST['palier_j14_30_pourcent'] ?? 60),
+                    'palier_j31_60_pourcent' => floatval($_POST['palier_j31_60_pourcent'] ?? 80),
                     'jours_generation' => intval($_POST['jours_generation'] ?? 30),
                 ];
 
@@ -380,7 +326,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             case 'save_schedule':
                 $scheduledTimes = $_POST['scheduled_times'] ?? ['07:00'];
                 $scheduledEnabled = isset($_POST['scheduled_enabled']) ? '1' : '0';
-                $maxWorkers = intval($_POST['max_workers'] ?? 2);
+                $maxWorkers = max(1, min(4, intval($_POST['max_workers'] ?? 2)));
+
+                // Sauvegarder max_workers et scheduled_enabled immediatement (independant des heures)
+                $stmt = $pdo->prepare("INSERT INTO superhote_settings (key_name, value) VALUES (?, ?)
+                                      ON DUPLICATE KEY UPDATE value = VALUES(value)");
+                $stmt->execute(['scheduled_enabled', $scheduledEnabled]);
+                $stmt->execute(['max_workers', $maxWorkers]);
 
                 // Filtrer et valider les heures
                 $validTimes = [];
@@ -396,29 +348,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     sort($validTimes);
                     $timesString = implode(',', $validTimes);
 
-                    $stmt = $pdo->prepare("INSERT INTO superhote_settings (key_name, value) VALUES (?, ?)
-                                          ON DUPLICATE KEY UPDATE value = VALUES(value)");
                     $stmt->execute(['scheduled_times', $timesString]);
                     $stmt->execute(['scheduled_time', $validTimes[0]]); // Garder compatibilite
-                    $stmt->execute(['scheduled_enabled', $scheduledEnabled]);
-                    $stmt->execute(['max_workers', $maxWorkers]);
 
                     // Notifier le RPI pour mettre a jour les timers systemd
-                    $rpiUrl = RPI_BASE_URL . '/pages/daemon_api.php?action=update_schedule&times=' . urlencode($timesString);
+                    $rpiUrl = RPI_BASE_URL . '/pages/daemon_api.php?action=update_schedule&times=' . urlencode($timesString) . '&workers=' . $maxWorkers . '&token=' . urlencode(env('CRON_SECRET', ''));
                     @file_get_contents($rpiUrl, false, stream_context_create(['http' => ['timeout' => 5]]));
 
                     $count = count($validTimes);
-                    $message = "Planification sauvegardee! $count mise(s) a jour/jour: " . implode(', ', $validTimes);
+                    $message = "Planification sauvegardee! $count mise(s) a jour/jour: " . implode(', ', $validTimes) . " ($maxWorkers worker" . ($maxWorkers > 1 ? 's' : '') . ")";
                     $messageType = "success";
                 } else {
-                    $message = "Format d'heure invalide (utilisez HH:MM)";
-                    $messageType = "danger";
+                    $message = "Workers mis a jour ($maxWorkers). Attention: format d'heure invalide (utilisez HH:MM)";
+                    $messageType = "warning";
                 }
                 break;
 
             case 'run_now':
                 // Lancer la mise a jour via le RPI (le script est sur le RPI)
-                $rpiUrl = RPI_BASE_URL . '/pages/daemon_api.php?action=run_now';
+                $rpiUrl = RPI_BASE_URL . '/pages/daemon_api.php?action=run_now&token=' . urlencode(env('CRON_SECRET', ''));
                 $ctx = stream_context_create([
                     'http' => [
                         'method' => 'POST',
@@ -490,9 +438,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // Fonction pour calculer le prix selon l'anticipation
 function calculatePrice($prixPlancher, $prixStandard, $joursAvant, $jourSemaine, $weekendPourcent, $dimancheReduction, $settings) {
-    $palierJ1_3 = floatval($settings['palier_j1_3_pourcent'] ?? 25) / 100;
-    $palierJ4_6 = floatval($settings['palier_j4_6_pourcent'] ?? 50) / 100;
-    $palierJ7_13 = floatval($settings['palier_j7_13_pourcent'] ?? 75) / 100;
+    $palierJ1_3 = floatval($settings['palier_j1_3_pourcent'] ?? 20) / 100;
+    $palierJ4_13 = floatval($settings['palier_j4_13_pourcent'] ?? 40) / 100;
+    $palierJ14_30 = floatval($settings['palier_j14_30_pourcent'] ?? 60) / 100;
+    $palierJ31_60 = floatval($settings['palier_j31_60_pourcent'] ?? 80) / 100;
 
     $ecart = $prixStandard - $prixPlancher;
 
@@ -503,15 +452,18 @@ function calculatePrice($prixPlancher, $prixStandard, $joursAvant, $jourSemaine,
     } elseif ($joursAvant <= 3) {
         $prix = $prixPlancher + ($ecart * $palierJ1_3);
         $palier = 'J1-3';
-    } elseif ($joursAvant <= 6) {
-        $prix = $prixPlancher + ($ecart * $palierJ4_6);
-        $palier = 'J4-6';
     } elseif ($joursAvant <= 13) {
-        $prix = $prixPlancher + ($ecart * $palierJ7_13);
-        $palier = 'J7-13';
+        $prix = $prixPlancher + ($ecart * $palierJ4_13);
+        $palier = 'J4-13';
+    } elseif ($joursAvant <= 30) {
+        $prix = $prixPlancher + ($ecart * $palierJ14_30);
+        $palier = 'J14-30';
+    } elseif ($joursAvant <= 60) {
+        $prix = $prixPlancher + ($ecart * $palierJ31_60);
+        $palier = 'J31-60';
     } else {
         $prix = $prixStandard;
-        $palier = 'J14+ (standard)';
+        $palier = 'J60+ (standard)';
     }
 
     // Appliquer majoration weekend (vendredi=5, samedi=6)
@@ -863,10 +815,11 @@ try {
                             <h6>Anticipation (jours avant)</h6>
                             <table class="table table-sm">
                                 <tr><td>J0</td><td>Prix plancher</td></tr>
-                                <tr><td>J1-3</td><td>Plancher + <?= $settings['palier_j1_3_pourcent'] ?? 25 ?>% de l'ecart</td></tr>
-                                <tr><td>J4-6</td><td>Plancher + <?= $settings['palier_j4_6_pourcent'] ?? 50 ?>% de l'ecart</td></tr>
-                                <tr><td>J7-13</td><td>Plancher + <?= $settings['palier_j7_13_pourcent'] ?? 75 ?>% de l'ecart</td></tr>
-                                <tr><td>J14+</td><td>Prix standard</td></tr>
+                                <tr><td>J1-3</td><td>Plancher + <?= $settings['palier_j1_3_pourcent'] ?? 20 ?>% de l'ecart</td></tr>
+                                <tr><td>J4-13</td><td>Plancher + <?= $settings['palier_j4_13_pourcent'] ?? 40 ?>% de l'ecart</td></tr>
+                                <tr><td>J14-30</td><td>Plancher + <?= $settings['palier_j14_30_pourcent'] ?? 60 ?>% de l'ecart</td></tr>
+                                <tr><td>J31-60</td><td>Plancher + <?= $settings['palier_j31_60_pourcent'] ?? 80 ?>% de l'ecart</td></tr>
+                                <tr><td>J60+</td><td>Prix standard</td></tr>
                             </table>
                         </div>
                         <div class="col-md-6">
@@ -989,41 +942,51 @@ try {
                         <p class="text-muted small">Pourcentage de l'ecart (standard - plancher) a ajouter au prix plancher</p>
 
                         <div class="row">
-                            <div class="col-md-3">
+                            <div class="col-md-2">
                                 <div class="form-group">
                                     <label>J1-3 (%)</label>
                                     <div class="input-group">
                                         <input type="number" name="palier_j1_3_pourcent" class="form-control"
-                                               value="<?= $settings['palier_j1_3_pourcent'] ?? 25 ?>" min="0" max="100">
+                                               value="<?= $settings['palier_j1_3_pourcent'] ?? 20 ?>" min="0" max="100">
                                         <div class="input-group-append"><span class="input-group-text">%</span></div>
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-2">
                                 <div class="form-group">
-                                    <label>J4-6 (%)</label>
+                                    <label>J4-13 (%)</label>
                                     <div class="input-group">
-                                        <input type="number" name="palier_j4_6_pourcent" class="form-control"
-                                               value="<?= $settings['palier_j4_6_pourcent'] ?? 50 ?>" min="0" max="100">
+                                        <input type="number" name="palier_j4_13_pourcent" class="form-control"
+                                               value="<?= $settings['palier_j4_13_pourcent'] ?? 40 ?>" min="0" max="100">
                                         <div class="input-group-append"><span class="input-group-text">%</span></div>
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-2">
                                 <div class="form-group">
-                                    <label>J7-13 (%)</label>
+                                    <label>J14-30 (%)</label>
                                     <div class="input-group">
-                                        <input type="number" name="palier_j7_13_pourcent" class="form-control"
-                                               value="<?= $settings['palier_j7_13_pourcent'] ?? 75 ?>" min="0" max="100">
+                                        <input type="number" name="palier_j14_30_pourcent" class="form-control"
+                                               value="<?= $settings['palier_j14_30_pourcent'] ?? 60 ?>" min="0" max="100">
                                         <div class="input-group-append"><span class="input-group-text">%</span></div>
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                    <label>J31-60 (%)</label>
+                                    <div class="input-group">
+                                        <input type="number" name="palier_j31_60_pourcent" class="form-control"
+                                               value="<?= $settings['palier_j31_60_pourcent'] ?? 80 ?>" min="0" max="100">
+                                        <div class="input-group-append"><span class="input-group-text">%</span></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
                                 <div class="form-group">
                                     <label>Jours a generer</label>
                                     <input type="number" name="jours_generation" class="form-control"
-                                           value="<?= $settings['jours_generation'] ?? 30 ?>" min="7" max="90">
+                                           value="<?= $settings['jours_generation'] ?? 90 ?>" min="7" max="120">
                                 </div>
                             </div>
                         </div>
@@ -1048,27 +1011,34 @@ try {
                                     </tr>
                                     <tr>
                                         <td>J1-3</td>
-                                        <td>45 + <?= $settings['palier_j1_3_pourcent'] ?? 25 ?>% × 25</td>
-                                        <td><?= 45 + (($settings['palier_j1_3_pourcent'] ?? 25)/100) * 25 ?>€</td>
-                                        <td><?= round((45 + (($settings['palier_j1_3_pourcent'] ?? 25)/100) * 25) * 1.1) ?>€</td>
-                                        <td><?= (45 + (($settings['palier_j1_3_pourcent'] ?? 25)/100) * 25) - 5 ?>€</td>
+                                        <td>45 + <?= $settings['palier_j1_3_pourcent'] ?? 20 ?>% × 25</td>
+                                        <td><?= 45 + (($settings['palier_j1_3_pourcent'] ?? 20)/100) * 25 ?>€</td>
+                                        <td><?= round((45 + (($settings['palier_j1_3_pourcent'] ?? 20)/100) * 25) * 1.1) ?>€</td>
+                                        <td><?= (45 + (($settings['palier_j1_3_pourcent'] ?? 20)/100) * 25) - 5 ?>€</td>
                                     </tr>
                                     <tr>
-                                        <td>J4-6</td>
-                                        <td>45 + <?= $settings['palier_j4_6_pourcent'] ?? 50 ?>% × 25</td>
-                                        <td><?= 45 + (($settings['palier_j4_6_pourcent'] ?? 50)/100) * 25 ?>€</td>
-                                        <td><?= round((45 + (($settings['palier_j4_6_pourcent'] ?? 50)/100) * 25) * 1.1) ?>€</td>
-                                        <td><?= (45 + (($settings['palier_j4_6_pourcent'] ?? 50)/100) * 25) - 5 ?>€</td>
+                                        <td>J4-13</td>
+                                        <td>45 + <?= $settings['palier_j4_13_pourcent'] ?? 40 ?>% × 25</td>
+                                        <td><?= 45 + (($settings['palier_j4_13_pourcent'] ?? 40)/100) * 25 ?>€</td>
+                                        <td><?= round((45 + (($settings['palier_j4_13_pourcent'] ?? 40)/100) * 25) * 1.1) ?>€</td>
+                                        <td><?= (45 + (($settings['palier_j4_13_pourcent'] ?? 40)/100) * 25) - 5 ?>€</td>
                                     </tr>
                                     <tr>
-                                        <td>J7-13</td>
-                                        <td>45 + <?= $settings['palier_j7_13_pourcent'] ?? 75 ?>% × 25</td>
-                                        <td><?= 45 + (($settings['palier_j7_13_pourcent'] ?? 75)/100) * 25 ?>€</td>
-                                        <td><?= round((45 + (($settings['palier_j7_13_pourcent'] ?? 75)/100) * 25) * 1.1) ?>€</td>
-                                        <td><?= (45 + (($settings['palier_j7_13_pourcent'] ?? 75)/100) * 25) - 5 ?>€</td>
+                                        <td>J14-30</td>
+                                        <td>45 + <?= $settings['palier_j14_30_pourcent'] ?? 60 ?>% × 25</td>
+                                        <td><?= 45 + (($settings['palier_j14_30_pourcent'] ?? 60)/100) * 25 ?>€</td>
+                                        <td><?= round((45 + (($settings['palier_j14_30_pourcent'] ?? 60)/100) * 25) * 1.1) ?>€</td>
+                                        <td><?= (45 + (($settings['palier_j14_30_pourcent'] ?? 60)/100) * 25) - 5 ?>€</td>
                                     </tr>
                                     <tr>
-                                        <td>J14+</td>
+                                        <td>J31-60</td>
+                                        <td>45 + <?= $settings['palier_j31_60_pourcent'] ?? 80 ?>% × 25</td>
+                                        <td><?= 45 + (($settings['palier_j31_60_pourcent'] ?? 80)/100) * 25 ?>€</td>
+                                        <td><?= round((45 + (($settings['palier_j31_60_pourcent'] ?? 80)/100) * 25) * 1.1) ?>€</td>
+                                        <td><?= (45 + (($settings['palier_j31_60_pourcent'] ?? 80)/100) * 25) - 5 ?>€</td>
+                                    </tr>
+                                    <tr>
+                                        <td>J60+</td>
                                         <td>70€</td>
                                         <td>70€</td>
                                         <td>77€</td>
@@ -1474,8 +1444,12 @@ try {
                                     <div class="col-md-6">
                                         <div class="form-group">
                                             <label><i class="fas fa-users-cog"></i> Workers paralleles</label>
-                                            <input type="number" name="max_workers" class="form-control"
-                                                   value="<?= intval($settings['max_workers'] ?? 2) ?>" min="1" max="5">
+                                            <select name="max_workers" class="form-control">
+                                                <?php $currentWorkers = intval($settings['max_workers'] ?? 2); ?>
+                                                <?php for ($w = 1; $w <= 4; $w++): ?>
+                                                    <option value="<?= $w ?>" <?= $w === $currentWorkers ? 'selected' : '' ?>><?= $w ?> worker<?= $w > 1 ? 's' : '' ?></option>
+                                                <?php endfor; ?>
+                                            </select>
                                         </div>
                                     </div>
                                     <div class="col-md-6">

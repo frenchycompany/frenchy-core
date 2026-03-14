@@ -34,7 +34,7 @@ $hasResults = false;
 try {
     $pdo->exec("ALTER TABLE liste_logements ADD COLUMN description TEXT NULL");
 } catch (PDOException $e) {
-    // Colonne existe deja
+    error_log('search.php: ' . $e->getMessage());
 }
 
 if (!empty($q)) {
@@ -68,7 +68,7 @@ if (!empty($q)) {
         $stmt->execute([':q' => $searchTerm]);
         $results['clients'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
         if (!empty($results['clients'])) $hasResults = true;
-    } catch (PDOException $e) {}
+    } catch (PDOException $e) { error_log('search.php: ' . $e->getMessage()); }
 
     // --- Recherche reservations ---
     try {
@@ -89,7 +89,7 @@ if (!empty($q)) {
         $stmt->execute([':q' => $searchTerm]);
         $results['reservations'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
         if (!empty($results['reservations'])) $hasResults = true;
-    } catch (PDOException $e) {}
+    } catch (PDOException $e) { error_log('search.php: ' . $e->getMessage()); }
 
     // --- Recherche logements ---
     try {
@@ -121,7 +121,7 @@ if (!empty($q)) {
             $stmt->execute([':q' => $searchTerm]);
             $results['logements'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
             if (!empty($results['logements'])) $hasResults = true;
-        } catch (PDOException $e2) {}
+        } catch (PDOException $e2) { error_log('search.php: ' . $e2->getMessage()); }
     }
 
     // --- Recherche SMS ---
@@ -154,7 +154,7 @@ if (!empty($q)) {
         usort($results['sms'], fn($a, $b) => strtotime($b['date']) - strtotime($a['date']));
         $results['sms'] = array_slice($results['sms'], 0, 15);
         if (!empty($results['sms'])) $hasResults = true;
-    } catch (PDOException $e) {}
+    } catch (PDOException $e) { error_log('search.php: ' . $e->getMessage()); }
 }
 
 $totalResults = count($results['clients']) + count($results['reservations']) + count($results['logements']) + count($results['sms']);

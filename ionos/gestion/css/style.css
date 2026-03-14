@@ -105,7 +105,11 @@ footer {
     padding: 10px 0;
     position: fixed;
     bottom: 0;
-    width: 100%;
+    left: var(--fc-sidebar-width, 260px);
+    right: 0;
+}
+@media (max-width: 991.98px) {
+    footer { left: 0; }
 }
 
 /* Mobile responsiveness */

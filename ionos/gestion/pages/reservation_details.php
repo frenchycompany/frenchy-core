@@ -42,8 +42,8 @@ try {
         exit;
     }
 } catch (PDOException $e) {
-    // header loaded via menu.php
-    echo "<div class='alert alert-danger'>Erreur : " . htmlspecialchars($e->getMessage()) . "</div>";
+    error_log('reservation_details.php: ' . $e->getMessage());
+    echo "<div class='alert alert-danger'>Une erreur interne est survenue.</div>";
     exit;
 }
 

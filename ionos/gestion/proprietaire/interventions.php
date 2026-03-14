@@ -17,7 +17,7 @@ if (!empty($logement_ids)) {
     } catch (PDOException $e) {}
 
     // Récupération des vidéos associées
-    $uploadDir = __DIR__ . '/../../gestion/OK V2/uploads/';
+    $uploadDir = __DIR__ . '/../OK V2/uploads/';
     foreach ($interventions as &$int) {
         $pattern = $uploadDir . $int['id'] . '_*';
         $files = glob($pattern);
@@ -121,7 +121,7 @@ if (!empty($logement_ids)) {
 <script>
 function openVideo(filename) {
     var player = document.getElementById('videoPlayer');
-    player.src = '../../gestion/OK V2/uploads/' + encodeURIComponent(filename);
+    player.src = '../OK V2/uploads/' + encodeURIComponent(filename);
     document.getElementById('videoOverlay').classList.add('active');
     player.play();
 }

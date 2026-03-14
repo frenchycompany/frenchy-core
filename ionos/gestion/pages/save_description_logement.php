@@ -16,7 +16,8 @@ try {
     $stmt->execute([$logement_id]);
     $existing = $stmt->fetch(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
-    echo "Erreur lors de la vérification : " . $e->getMessage();
+    error_log('save_description_logement.php: ' . $e->getMessage());
+    echo "Une erreur interne est survenue.";
     exit;
 }
 
@@ -47,5 +48,6 @@ try {
         echo "Données insérées avec succès.";
     }
 } catch (PDOException $e) {
-    echo "Erreur lors de la sauvegarde : " . $e->getMessage();
+    error_log('save_description_logement.php: ' . $e->getMessage());
+    echo "Une erreur interne est survenue.";
 }

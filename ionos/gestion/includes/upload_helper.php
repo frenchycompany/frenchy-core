@@ -5,10 +5,12 @@
  */
 
 define('UPLOAD_BASE', realpath(__DIR__ . '/..') . '/uploads');
-define('UPLOAD_MAX_SIZE', 10 * 1024 * 1024); // 10 Mo
-define('UPLOAD_ALLOWED_EXT', ['jpg', 'jpeg', 'png', 'webp', 'heic', 'gif']);
+define('UPLOAD_MAX_SIZE', 500 * 1024 * 1024); // 500 Mo
+define('UPLOAD_ALLOWED_EXT', ['jpg', 'jpeg', 'png', 'webp', 'heic', 'gif', 'mp4', 'mov', 'webm', 'avi', 'mkv', 'pdf']);
 define('UPLOAD_ALLOWED_MIME', [
-    'image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/gif'
+    'image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/gif',
+    'video/mp4', 'video/quicktime', 'video/webm', 'video/x-msvideo', 'video/x-matroska',
+    'application/pdf',
 ]);
 
 /**
@@ -38,8 +40,8 @@ function initUploadDirs(): void {
             '    Require all denied',
             '</FilesMatch>',
             '',
-            '# Autoriser uniquement les images',
-            '<FilesMatch "\.(jpg|jpeg|png|gif|webp|heic|svg)$">',
+            '# Autoriser images, videos et PDF',
+            '<FilesMatch "\.(jpg|jpeg|png|gif|webp|heic|svg|mp4|mov|webm|avi|mkv|pdf)$">',
             '    Require all granted',
             '</FilesMatch>',
             '',

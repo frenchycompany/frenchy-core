@@ -14,7 +14,7 @@ try {
     $pdo = getRpiPdo();
 } catch (Exception $e) {
     error_log('Erreur connexion RPi : ' . $e->getMessage());
-    $rpi_error = $e->getMessage();
+    $rpi_error = 'Une erreur interne est survenue.';
     $pdo = null;
 }
 ?>
@@ -277,7 +277,8 @@ if ($pdo !== null) try {
     }
 
 } catch (PDOException $e) {
-    echo "<div class='alert alert-danger'>Erreur de base de données : " . htmlspecialchars($e->getMessage()) . "</div>";
+    error_log('sms_recus.php: ' . $e->getMessage());
+    echo "<div class='alert alert-danger'>Une erreur interne est survenue.</div>";
     $sms_list = [];
     $conversations = [];
     $modems = [];
@@ -1122,7 +1123,8 @@ const copyText = async (txt) => {
 function formatRelativeTimeJS(dateString) {
     if (!dateString) return '';
     try {
-        const date = new Date(dateString.replace(' ', 'T') + 'Z');
+        const normalized = dateString.includes('T') ? dateString : dateString.replace(' ', 'T') + 'Z';
+        const date = new Date(normalized);
         if (isNaN(date)) throw new Error('Invalid Date');
         const now = new Date();
 
@@ -1155,7 +1157,8 @@ function formatRelativeTimeJS(dateString) {
 function formatDateJS(dateString, formatOptions = { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) {
     if (!dateString) return '';
      try {
-         const date = new Date(dateString.replace(' ', 'T') + 'Z');
+         const normalized = dateString.includes('T') ? dateString : dateString.replace(' ', 'T') + 'Z';
+        const date = new Date(normalized);
          if (isNaN(date)) throw new Error('Invalid Date');
          return date.toLocaleString('fr-FR', { timeZone: "Europe/Paris", ...formatOptions });
      } catch(e) {
@@ -1552,9 +1555,6 @@ async function loadAISuggestions(message, sender, reservation) {
 
     const resp = await fetch('sms_ai_suggest.php?' + params.toString());
     const data = await resp.json();
-
-    // Debug: afficher le contexte dans la console
-    console.log('🔍 AI Suggestions Debug:', data.context);
 
     if (data.success && data.suggestions && data.suggestions.length > 0) {
       listEl.innerHTML = '';

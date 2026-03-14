@@ -4,7 +4,7 @@ include '../pages/menu.php'; // Inclusion du menu
 
 // Récupération de la liste des intervenants pour le <select>
 // Auto-migration : colonne actif pour intervenant
-try { $conn->exec("ALTER TABLE intervenant ADD COLUMN actif TINYINT(1) NOT NULL DEFAULT 1"); } catch (PDOException $e) {}
+try { $conn->exec("ALTER TABLE intervenant ADD COLUMN actif TINYINT(1) NOT NULL DEFAULT 1"); } catch (PDOException $e) { error_log('editer_planning.php: ' . $e->getMessage()); }
 
 $intervStmt = $conn->prepare("SELECT id, nom FROM intervenant WHERE actif = 1 ORDER BY nom");
 $intervStmt->execute();
@@ -24,11 +24,12 @@ $domain = 'https://gestion.frenchyconciergerie.fr';
 try {
     // Construction dynamique de la requête pour filtrer par intervenant si besoin
     $sql = "
-        SELECT 
+        SELECT
             p.id AS intervention_id,
-            l.nom_du_logement, 
-            l.adresse, 
-            l.code, 
+            p.logement_id,
+            l.nom_du_logement,
+            l.adresse,
+            l.code,
             p.nombre_de_personnes,
             p.lit_bebe,
             p.nombre_lits_specifique,
@@ -83,6 +84,15 @@ try {
         LIMIT 1
     ");
 
+    // Charger les taches actives par logement
+    $taches_par_logement = [];
+    try {
+        $stmtTaches = $conn->query("SELECT logement_id, description, statut FROM todo_list WHERE statut IN ('en attente', 'en cours') ORDER BY date_limite ASC");
+        foreach ($stmtTaches->fetchAll(PDO::FETCH_ASSOC) as $t) {
+            $taches_par_logement[(int)$t['logement_id']][] = $t;
+        }
+    } catch (PDOException $e2) { error_log('editer_planning.php: ' . $e2->getMessage()); }
+
     // Génération du texte formaté pour WhatsApp (texte brut, pas de htmlspecialchars)
     $texte_combined = "📅 *Planning des interventions - " . date('d/m/Y', strtotime($date)) . "*\n\n";
 
@@ -112,6 +122,15 @@ try {
 
         if (!empty($intervention['note'])) {
             $texte_combined .= "📝 *Note* : " . $intervention['note'] . "\n";
+        }
+
+        // Taches actives sur ce logement
+        $logId = (int)($intervention['logement_id'] ?? 0);
+        if (!empty($taches_par_logement[$logId])) {
+            $texte_combined .= "⚠️ *Taches a faire* :\n";
+            foreach ($taches_par_logement[$logId] as $tache) {
+                $texte_combined .= "  - " . $tache['description'] . "\n";
+            }
         }
 
         // (La section Intervenants a été retirée)
@@ -243,7 +262,16 @@ try {
                                     echo '<strong>Particularités :</strong> ' . implode(', ', $particul) . '<br>';
                                 }
                                 if (!empty($intervention['note'])) {
-                                    echo '<strong>Note :</strong> <em>' . htmlspecialchars($intervention['note']) . '</em>';
+                                    echo '<strong>Note :</strong> <em>' . htmlspecialchars($intervention['note']) . '</em><br>';
+                                }
+                                $logId = (int)($intervention['logement_id'] ?? 0);
+                                if (!empty($taches_par_logement[$logId])) {
+                                    echo '<div style="margin-top:4px;padding:4px 8px;background:#fff8e1;border-left:3px solid #ff9800;border-radius:4px;">';
+                                    echo '<strong style="color:#e65100;">Taches :</strong><ul style="margin:2px 0;padding-left:16px;">';
+                                    foreach ($taches_par_logement[$logId] as $tache) {
+                                        echo '<li>' . htmlspecialchars($tache['description']) . '</li>';
+                                    }
+                                    echo '</ul></div>';
                                 }
                                 ?>
                             </td>

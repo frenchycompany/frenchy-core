@@ -538,13 +538,6 @@ include '../pages/menu.php';
                 ical_url: $('#ical_url').val()
             };
 
-            // DEBUG: Afficher ce qui va être envoyé
-            console.log('=== FORMULAIRE CONNEXION ===');
-            console.log('ical_url field exists:', $('#ical_url').length > 0);
-            console.log('ical_url value:', $('#ical_url').val());
-            console.log('Full formData:', formData);
-            console.log('==========================');
-
             const action = formData.connection_id ? 'update_connection' : 'add_connection';
             const button = $(this);
             const originalHtml = button.html();

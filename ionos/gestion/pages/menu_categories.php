@@ -9,17 +9,30 @@ if (!isset($menu_categories)) {
         'Logements' => [
             'icon' => 'fa-home',
             'items' => [
-                ['nom' => 'Planning',      'chemin' => 'pages/planning.php',              'icon' => 'fa-calendar-alt'],
                 ['nom' => 'Logements',     'chemin' => 'pages/logements.php',             'icon' => 'fa-building'],
                 ['nom' => 'Propriétaires','chemin' => 'pages/proprietaires.php',        'icon' => 'fa-user-tie'],
                 ['nom' => 'Équipements',   'chemin' => 'pages/logement_equipements.php',  'icon' => 'fa-couch'],
                 ['nom' => 'Descriptions',  'chemin' => 'pages/description_logements.php', 'icon' => 'fa-file-alt'],
                 ['nom' => 'Sites vitrine', 'chemin' => 'pages/sites.php',                 'icon' => 'fa-globe'],
-                ['nom' => 'Machines',      'chemin' => 'pages/machines.php',              'icon' => 'fa-cogs'],
-                ['nom' => 'Checkup',      'chemin' => 'pages/checkup_logement.php',     'icon' => 'fa-clipboard-check'],
-                ['nom' => 'Historique checkups', 'chemin' => 'pages/checkup_historique.php', 'icon' => 'fa-history'],
-                ['nom' => 'Dashboard',    'chemin' => 'pages/checkup_dashboard.php',  'icon' => 'fa-tachometer-alt'],
-                ['nom' => 'Stats checkup','chemin' => 'pages/checkup_statistiques.php','icon' => 'fa-chart-line'],
+            ]
+        ],
+        'Ménage / Interventions' => [
+            'icon' => 'fa-broom',
+            'items' => [
+                ['nom' => 'Planning',             'chemin' => 'pages/planning.php',              'icon' => 'fa-calendar-alt'],
+                ['nom' => 'Éditer planning',      'chemin' => 'pages/editer_planning.php',       'icon' => 'fa-edit'],
+                ['nom' => 'Intervenants',         'chemin' => 'pages/intervenants.php',          'icon' => 'fa-users'],
+                ['nom' => 'Machines',             'chemin' => 'pages/machines.php',              'icon' => 'fa-cogs'],
+                ['nom' => 'Stat. ménage',         'chemin' => 'pages/statistiques_menage.php',   'icon' => 'fa-chart-bar'],
+            ]
+        ],
+        'Checkups' => [
+            'icon' => 'fa-clipboard-check',
+            'items' => [
+                ['nom' => 'Checkup',      'chemin' => 'pages/checkup_logement.php',      'icon' => 'fa-clipboard-check'],
+                ['nom' => 'Historique',   'chemin' => 'pages/checkup_historique.php',     'icon' => 'fa-history'],
+                ['nom' => 'Dashboard',    'chemin' => 'pages/checkup_dashboard.php',      'icon' => 'fa-tachometer-alt'],
+                ['nom' => 'Statistiques', 'chemin' => 'pages/checkup_statistiques.php',   'icon' => 'fa-chart-line'],
             ]
         ],
         'Réservations' => [
@@ -60,17 +73,48 @@ if (!isset($menu_categories)) {
                 ['nom' => 'Facturation',        'chemin' => 'pages/facturation.php',   'icon' => 'fa-file-invoice'],
                 ['nom' => 'Superhôte / Tarifs', 'chemin' => 'pages/superhote.php',     'icon' => 'fa-star'],
                 ['nom' => 'Statistiques',       'chemin' => 'pages/statistiques.php',  'icon' => 'fa-chart-bar'],
-                ['nom' => 'Stat. ménage',       'chemin' => 'pages/statistiques_menage.php', 'icon' => 'fa-broom'],
+            ]
+        ],
+        'Contrats Conciergerie' => [
+            'icon' => 'fa-file-contract',
+            'items' => [
+                ['nom' => 'Créer contrat',        'chemin' => 'pages/create_contract.php',              'icon' => 'fa-file-contract'],
+                ['nom' => 'Contrats générés',     'chemin' => 'pages/contrats_generes.php',             'icon' => 'fa-file-signature'],
+                ['nom' => 'Modèles',              'chemin' => 'pages/list_templates.php',               'icon' => 'fa-file-alt'],
+            ]
+        ],
+        'Contrats Location' => [
+            'icon' => 'fa-house-user',
+            'items' => [
+                ['nom' => 'Créer contrat location',    'chemin' => 'pages/create_location_contract.php',           'icon' => 'fa-house-user'],
+                ['nom' => 'Contrats générés',          'chemin' => 'pages/location_contrats_generes.php',          'icon' => 'fa-file-signature'],
+                ['nom' => 'Modèles location',          'chemin' => 'pages/list_location_templates.php',            'icon' => 'fa-file-alt'],
+                ['nom' => 'Détails logements',         'chemin' => 'pages/location_logement_details.php',          'icon' => 'fa-house-circle-check'],
+            ]
+        ],
+        'Commercial' => [
+            'icon' => 'fa-handshake',
+            'items' => [
+                ['nom' => 'CRM / Leads',       'chemin' => 'pages/prospection_proprietaires.php',  'icon' => 'fa-funnel-dollar'],
+                ['nom' => 'Simulations',       'chemin' => 'pages/simulations.php',                'icon' => 'fa-calculator'],
+                ['nom' => 'Agenda RDV',        'chemin' => 'pages/rdv_agenda.php',                 'icon' => 'fa-calendar-check'],
+                ['nom' => 'Analyse de marché', 'chemin' => 'pages/analyse_marche.php',             'icon' => 'fa-chart-line'],
+                ['nom' => 'Audit LCD',         'chemin' => 'pages/audit_lcd.php',                  'icon' => 'fa-file-circle-check'],
+                ['nom' => 'Concurrence',       'chemin' => 'pages/analyse_concurrence.php',        'icon' => 'fa-chart-area'],
+                ['nom' => 'Relances voyageurs','chemin' => 'pages/relances_voyageurs.php',         'icon' => 'fa-bullhorn'],
+                ['nom' => 'Carnet clients',    'chemin' => 'pages/clients.php',                    'icon' => 'fa-address-book'],
             ]
         ],
         'Outils' => [
             'icon' => 'fa-tools',
             'items' => [
-                ['nom' => 'Analyse de marché', 'chemin' => 'pages/analyse_marche.php',      'icon' => 'fa-chart-line'],
-                ['nom' => 'Concurrence',       'chemin' => 'pages/analyse_concurrence.php', 'icon' => 'fa-chart-area'],
-                ['nom' => 'Carnet clients',    'chemin' => 'pages/clients.php',             'icon' => 'fa-address-book'],
-                ['nom' => 'Villes',            'chemin' => 'pages/villes.php',              'icon' => 'fa-city'],
-                ['nom' => 'Todo',              'chemin' => 'pages/todo.php',                'icon' => 'fa-tasks'],
+                ['nom' => 'Villes',           'chemin' => 'pages/villes.php',                      'icon' => 'fa-city'],
+                ['nom' => 'Recommandations',  'chemin' => 'pages/recommandations_logement.php',    'icon' => 'fa-map-marked-alt'],
+                ['nom' => 'Photos',           'chemin' => 'pages/import_photos_airbnb.php',        'icon' => 'fa-images'],
+                ['nom' => 'Agent dashboard',  'chemin' => 'pages/agent_dashboard.php',             'icon' => 'fa-headset'],
+                ['nom' => 'Todo',             'chemin' => 'pages/todo.php',                        'icon' => 'fa-tasks'],
+                ['nom' => 'Rental United',    'chemin' => 'pages/rental_united.php',               'icon' => 'fa-plug'],
+                ['nom' => 'Coffre-fort',      'chemin' => 'pages/coffre_fort.php',                 'icon' => 'fa-vault'],
             ]
         ],
     ];

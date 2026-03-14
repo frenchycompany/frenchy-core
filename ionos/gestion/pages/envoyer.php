@@ -26,7 +26,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
             echo "<div class='alert alert-success'><i class='fas fa-check-circle'></i> SMS mis en file d'attente pour envoi.</div>";
         } catch (PDOException $e) {
-            echo "<div class='alert alert-danger'><i class='fas fa-exclamation-circle'></i> Erreur : " . htmlspecialchars($e->getMessage()) . "</div>";
+            error_log('envoyer.php: ' . $e->getMessage());
+            echo "<div class='alert alert-danger'><i class='fas fa-exclamation-circle'></i> Une erreur interne est survenue.</div>";
         }
     } else {
         echo "<div class='alert alert-warning'><i class='fas fa-exclamation-triangle'></i> Tous les champs sont obligatoires.</div>";

@@ -29,6 +29,9 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional, Dict, List, Tuple
 
+# Numero de telephone pour les notifications SMS
+SMS_NOTIFICATION_NUMBER = "+33647554678"
+
 # ============================================================================
 # CONFIGURATION
 # ============================================================================
@@ -212,9 +215,10 @@ def calculate_price(prix_plancher: float, prix_standard: float, jours_avant: int
     Returns:
         Tuple (prix, nom_du_palier)
     """
-    palier_j1_3 = float(settings.get("palier_j1_3_pourcent", 25)) / 100
-    palier_j4_6 = float(settings.get("palier_j4_6_pourcent", 50)) / 100
-    palier_j7_13 = float(settings.get("palier_j7_13_pourcent", 75)) / 100
+    palier_j1_3 = float(settings.get("palier_j1_3_pourcent", 20)) / 100
+    palier_j4_13 = float(settings.get("palier_j4_13_pourcent", 40)) / 100
+    palier_j14_30 = float(settings.get("palier_j14_30_pourcent", 60)) / 100
+    palier_j31_60 = float(settings.get("palier_j31_60_pourcent", 80)) / 100
 
     ecart = prix_standard - prix_plancher
 
@@ -225,15 +229,18 @@ def calculate_price(prix_plancher: float, prix_standard: float, jours_avant: int
     elif jours_avant <= 3:
         prix = prix_plancher + (ecart * palier_j1_3)
         palier = "J1-3"
-    elif jours_avant <= 6:
-        prix = prix_plancher + (ecart * palier_j4_6)
-        palier = "J4-6"
     elif jours_avant <= 13:
-        prix = prix_plancher + (ecart * palier_j7_13)
-        palier = "J7-13"
+        prix = prix_plancher + (ecart * palier_j4_13)
+        palier = "J4-13"
+    elif jours_avant <= 30:
+        prix = prix_plancher + (ecart * palier_j14_30)
+        palier = "J14-30"
+    elif jours_avant <= 60:
+        prix = prix_plancher + (ecart * palier_j31_60)
+        palier = "J31-60"
     else:
         prix = prix_standard
-        palier = "J14+"
+        palier = "J60+"
 
     # Majoration weekend (vendredi=5, samedi=6)
     if jour_semaine in (5, 6):
@@ -439,10 +446,8 @@ def run_workers(max_workers: int = 2, use_groups: bool = True) -> Dict:
             for g in groups:
                 logger.info(f"    - {g['groupe_name']}: {g['pending_count']} taches")
 
-        # Lancer les workers
-        # En mode sequentiel (max_workers <= 2), on lance 1 worker a la fois
-        # En mode parallele (max_workers > 2), on peut lancer plusieurs
-        effective_workers = 1 if max_workers <= 2 else max_workers
+        # Lancer les workers avec le nombre configure
+        effective_workers = max(1, max_workers)
 
         cmd = [
             sys.executable,
@@ -512,6 +517,31 @@ def run_workers(max_workers: int = 2, use_groups: bool = True) -> Dict:
 # STEP 4: FINAL STATS
 # ============================================================================
 
+def send_sms(message: str):
+    """Envoie un SMS de notification via la table sms_outbox."""
+    if not SMS_NOTIFICATION_NUMBER or SMS_NOTIFICATION_NUMBER == "+33600000000":
+        return
+
+    db = get_db_connection()
+    if not db:
+        logger.warning("Impossible d'envoyer le SMS: pas de connexion BDD")
+        return
+
+    try:
+        with db.cursor() as cursor:
+            cursor.execute(
+                "INSERT INTO sms_outbox (receiver, message, status, created_at) "
+                "VALUES (%s, %s, 'pending', NOW())",
+                (SMS_NOTIFICATION_NUMBER, message)
+            )
+        db.commit()
+        logger.info(f"SMS de notification envoye: {message}")
+    except Exception as e:
+        logger.error(f"Erreur envoi SMS: {e}")
+    finally:
+        db.close()
+
+
 def get_final_stats() -> Dict:
     """Recupere les statistiques finales."""
     db = get_db_connection()
@@ -540,7 +570,7 @@ def get_final_stats() -> Dict:
 # MAIN
 # ============================================================================
 
-def run_full_update(max_workers: int = 2, use_groups: bool = True) -> Dict:
+def run_full_update(max_workers: int = None, use_groups: bool = True) -> Dict:
     """
     Execute la mise a jour complete.
 
@@ -548,6 +578,13 @@ def run_full_update(max_workers: int = 2, use_groups: bool = True) -> Dict:
         Rapport d'execution
     """
     start_time = datetime.now()
+
+    # Lire max_workers depuis les settings BDD si non specifie en CLI
+    settings = get_settings()
+    if max_workers is None:
+        max_workers = int(settings.get("max_workers", 2))
+    logger.info(f"Workers configures: {max_workers}")
+
     report = {
         "status": "running",
         "started_at": start_time.isoformat(),
@@ -559,6 +596,7 @@ def run_full_update(max_workers: int = 2, use_groups: bool = True) -> Dict:
     logger.info("=" * 60)
     logger.info("MISE A JOUR QUOTIDIENNE SUPERHOTE")
     logger.info(f"Demarrage: {start_time.strftime('%Y-%m-%d %H:%M:%S')}")
+    logger.info(f"Workers: {max_workers}")
     logger.info("=" * 60)
 
     try:
@@ -600,10 +638,21 @@ def run_full_update(max_workers: int = 2, use_groups: bool = True) -> Dict:
         logger.info(f"  Stats finales: {final_stats}")
         logger.info("=" * 60)
 
+        # SMS de confirmation
+        completed = final_stats.get("completed", 0)
+        failed = final_stats.get("failed", 0)
+        pending = final_stats.get("pending", 0)
+
+        if failed == 0:
+            send_sms(f"Superhote OK: {completed} maj appliquees, {pending} en attente")
+        else:
+            send_sms(f"Superhote: {completed} OK, {failed} echecs, {pending} en attente")
+
     except Exception as e:
         report["status"] = "error"
         report["error"] = str(e)
         logger.error(f"Erreur fatale: {e}")
+        send_sms(f"ERREUR Superhote: {e}")
 
     write_status(report)
     return report
@@ -685,8 +734,8 @@ Exemples:
     parser.add_argument(
         "--workers", "-w",
         type=int,
-        default=2,
-        help="Nombre maximum de workers (defaut: 2)"
+        default=None,
+        help="Nombre maximum de workers (defaut: depuis config BDD)"
     )
     parser.add_argument(
         "--no-groups",
@@ -736,7 +785,11 @@ Exemples:
     # Mode workers seuls
     if args.workers_only:
         cleanup_stale_tasks()
-        result = run_workers(args.workers, not args.no_groups)
+        workers = args.workers
+        if workers is None:
+            settings = get_settings()
+            workers = int(settings.get("max_workers", 2))
+        result = run_workers(workers, not args.no_groups)
         print(f"Workers: {result}")
         return
 

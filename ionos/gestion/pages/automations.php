@@ -18,29 +18,7 @@ if (!($pdo instanceof PDO)) {
 $feedback = '';
 $active_tab = $_GET['tab'] ?? 'liste';
 
-// Créer les tables si nécessaire
-try {
-    $pdo->exec("
-        CREATE TABLE IF NOT EXISTS `sms_automations` (
-          `id` int(11) NOT NULL AUTO_INCREMENT,
-          `nom` varchar(100) NOT NULL,
-          `description` text,
-          `actif` tinyint(1) DEFAULT 1,
-          `declencheur_type` enum('date_arrivee','date_depart','date_reservation') NOT NULL,
-          `declencheur_jours` int(11) DEFAULT 0,
-          `template_name` varchar(50) NOT NULL,
-          `condition_statut` varchar(50) DEFAULT 'confirmée',
-          `flag_field` varchar(50) DEFAULT NULL,
-          `logement_id` int(11) DEFAULT NULL,
-          `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-          `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-          PRIMARY KEY (`id`),
-          KEY `idx_logement` (`logement_id`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-    ");
-} catch (PDOException $e) {
-    // Table existe déjà
-}
+// Tables requises : voir db/install_tables.php
 
 // Ajouter colonnes custom_sent si nécessaire
 try {
@@ -56,7 +34,7 @@ try {
         ");
     }
 } catch (PDOException $e) {
-    // Colonnes existent déjà
+    error_log('automations.php: ' . $e->getMessage());
 }
 
 // ===== TRAITEMENT DES ACTIONS =====
@@ -168,21 +146,21 @@ try {
         ORDER BY a.actif DESC, a.created_at DESC
     ");
     $automations = $stmt->fetchAll();
-} catch (PDOException $e) {}
+} catch (PDOException $e) { error_log('automations.php: ' . $e->getMessage()); }
 
 // Logements
 $logements = [];
 try {
-    $stmt = $pdo->query("SELECT id, nom_du_logement FROM liste_logements ORDER BY nom_du_logement");
+    $stmt = $pdo->query("SELECT id, nom_du_logement FROM liste_logements WHERE actif = 1 ORDER BY nom_du_logement");
     $logements = $stmt->fetchAll();
-} catch (PDOException $e) {}
+} catch (PDOException $e) { error_log('automations.php: ' . $e->getMessage()); }
 
 // Templates
 $templates = [];
 try {
     $stmt = $pdo->query("SELECT DISTINCT template_type FROM sms_templates ORDER BY template_type");
     $templates = $stmt->fetchAll(PDO::FETCH_COLUMN);
-} catch (PDOException $e) {}
+} catch (PDOException $e) { error_log('automations.php: ' . $e->getMessage()); }
 
 // Statistiques pour le monitoring
 $stats = [

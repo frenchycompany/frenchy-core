@@ -68,16 +68,36 @@ switch ($tri) {
     default: $sql .= " ORDER BY r.date_arrivee DESC"; break;
 }
 
+// ── Helper : plage de proximité ──
+function getProximite(int $jours): array {
+    if ($jours === 0)        return ['key' => 'jour_meme',  'label' => "Aujourd'hui",    'badge' => 'danger',    'icon' => 'fa-exclamation-circle'];
+    if ($jours >= 1  && $jours <= 3)  return ['key' => 'j1_3',      'label' => 'Imminent (1-3j)', 'badge' => 'warning',   'icon' => 'fa-bolt'];
+    if ($jours >= 4  && $jours <= 13) return ['key' => 'j4_13',     'label' => 'Sous 2 sem.',     'badge' => 'info',      'icon' => 'fa-clock'];
+    if ($jours >= 14 && $jours <= 30) return ['key' => 'j14_30',    'label' => 'Ce mois',         'badge' => 'primary',   'icon' => 'fa-calendar'];
+    if ($jours >= 31 && $jours <= 60) return ['key' => 'j31_60',    'label' => '1-2 mois',        'badge' => 'secondary', 'icon' => 'fa-calendar-alt'];
+    if ($jours > 60)                  return ['key' => 'j60_plus',  'label' => '+60 jours',       'badge' => 'light',     'icon' => 'fa-hourglass-end'];
+    // passé (jours < 0)
+    return ['key' => 'passe', 'label' => 'Passé', 'badge' => 'dark', 'icon' => 'fa-history'];
+}
+
 $reservations = [];
 $stats = ['total' => 0, 'en_cours' => 0, 'a_venir' => 0, 'passees' => 0];
+$statsProx = [
+    'jour_meme' => 0, 'j1_3' => 0, 'j4_13' => 0,
+    'j14_30' => 0, 'j31_60' => 0, 'j60_plus' => 0,
+];
+$filtre_proximite = isset($_GET['proximite']) && $_GET['proximite'] !== '' ? $_GET['proximite'] : null;
+
 try {
     $pdoRpi = getRpiPdo();
     $stmt = $pdoRpi->prepare($sql);
     $stmt->execute($params);
     $reservations = $stmt->fetchAll();
-    // Enrichir avec noms de logements (VPS)
+    // Enrichir avec noms de logements (VPS) + proximité
     foreach ($reservations as &$r) {
         $r['nom_du_logement'] = $logementNames[$r['logement_id'] ?? 0] ?? '';
+        $j = (int)$r['jours_avant_arrivee'];
+        $r['proximite'] = getProximite($j);
     }
     unset($r);
     $stats['total'] = count($reservations);
@@ -85,6 +105,15 @@ try {
         if ($r['jours_avant_arrivee'] > 0) $stats['a_venir']++;
         elseif ($r['jours_avant_arrivee'] <= 0 && ($r['duree_sejour'] + $r['jours_avant_arrivee']) > 0) $stats['en_cours']++;
         else $stats['passees']++;
+        // Compteurs par plage (uniquement réservations à venir + jour même)
+        $proxKey = $r['proximite']['key'];
+        if (isset($statsProx[$proxKey])) $statsProx[$proxKey]++;
+    }
+    // Filtre par proximité si demandé
+    if ($filtre_proximite !== null) {
+        $reservations = array_filter($reservations, function($r) use ($filtre_proximite) {
+            return $r['proximite']['key'] === $filtre_proximite;
+        });
     }
 } catch (PDOException $e) { /* ignore */ }
 
@@ -212,6 +241,10 @@ if ($hasRevenus) {
         .stats-table td { vertical-align: middle; }
         .progress-thin { height: 6px; }
         .tab-content .table { margin-bottom: 0; }
+        .prox-bar .btn { position: relative; font-size: 0.8rem; }
+        .prox-bar .btn .prox-count { position: absolute; top: -6px; right: -6px; font-size: 0.65rem; min-width: 18px; height: 18px; line-height: 18px; padding: 0 4px; border-radius: 9px; }
+        .prox-bar .btn.active { box-shadow: 0 0 0 2px rgba(0,0,0,0.25); }
+        .badge-light { background-color: #e9ecef; color: #495057; }
     </style>
 </head>
 <body>
@@ -578,6 +611,46 @@ if ($hasRevenus) {
         </div>
     </div>
 
+    <!-- ══════ Barre de proximité ══════ -->
+    <div class="card mb-4">
+        <div class="card-body py-2">
+            <div class="d-flex align-items-center flex-wrap gap-2 prox-bar">
+                <span class="text-muted small me-2"><i class="fas fa-clock"></i> Horizon :</span>
+                <?php
+                $proxPlages = [
+                    ['key' => 'jour_meme', 'label' => "Aujourd'hui",  'badge' => 'danger',    'icon' => 'fa-exclamation-circle'],
+                    ['key' => 'j1_3',      'label' => '1-3 jours',    'badge' => 'warning',   'icon' => 'fa-bolt'],
+                    ['key' => 'j4_13',     'label' => '4-13 jours',   'badge' => 'info',      'icon' => 'fa-clock'],
+                    ['key' => 'j14_30',    'label' => '14-30 jours',  'badge' => 'primary',   'icon' => 'fa-calendar'],
+                    ['key' => 'j31_60',    'label' => '31-60 jours',  'badge' => 'secondary', 'icon' => 'fa-calendar-alt'],
+                    ['key' => 'j60_plus',  'label' => '+60 jours',    'badge' => 'light',     'icon' => 'fa-hourglass-end'],
+                ];
+                $currentParams = $_GET;
+                unset($currentParams['proximite']);
+                $baseUrl = 'reservations.php?' . http_build_query($currentParams);
+                ?>
+                <?php foreach ($proxPlages as $pp): ?>
+                    <?php
+                    $cnt = $statsProx[$pp['key']] ?? 0;
+                    $isActive = $filtre_proximite === $pp['key'];
+                    $url = $isActive ? $baseUrl : $baseUrl . '&proximite=' . $pp['key'];
+                    $btnClass = $isActive ? 'btn-' . $pp['badge'] : 'btn-outline-' . $pp['badge'];
+                    if ($pp['badge'] === 'light') $btnClass = $isActive ? 'btn-secondary' : 'btn-outline-secondary';
+                    ?>
+                    <a href="<?= htmlspecialchars($url) ?>" class="btn btn-sm <?= $btnClass ?> <?= $isActive ? 'active' : '' ?>">
+                        <i class="fas <?= $pp['icon'] ?> me-1"></i><?= $pp['label'] ?>
+                        <?php if ($cnt > 0): ?>
+                            <span class="prox-count badge bg-<?= $pp['badge'] === 'light' ? 'dark' : $pp['badge'] ?>"><?= $cnt ?></span>
+                        <?php endif; ?>
+                    </a>
+                <?php endforeach; ?>
+                <?php if ($filtre_proximite !== null): ?>
+                    <a href="<?= htmlspecialchars($baseUrl) ?>" class="btn btn-sm btn-outline-dark ms-2" title="Tout afficher"><i class="fas fa-times"></i></a>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+
     <!-- Tableau -->
     <div class="card">
         <div class="card-body p-0">
@@ -592,6 +665,7 @@ if ($hasRevenus) {
                             <th>Arrivée</th>
                             <th>Départ</th>
                             <th>Durée</th>
+                            <th>Proximité</th>
                             <th>Plateforme</th>
                             <th>Statut</th>
                             <th>SMS</th>
@@ -613,6 +687,14 @@ if ($hasRevenus) {
                             <td><?= date('d/m/Y', strtotime($r['date_arrivee'])) ?></td>
                             <td><?= date('d/m/Y', strtotime($r['date_depart'])) ?></td>
                             <td><span class="badge bg-secondary"><?= $r['duree_sejour'] ?>n</span></td>
+                            <td>
+                                <?php $prox = $r['proximite']; ?>
+                                <?php if ($prox['key'] !== 'passe'): ?>
+                                    <span class="badge bg-<?= $prox['badge'] ?><?= $prox['badge'] === 'light' ? ' text-dark' : '' ?>">
+                                        <i class="fas <?= $prox['icon'] ?> me-1"></i><?= $prox['label'] ?>
+                                    </span>
+                                <?php endif; ?>
+                            </td>
                             <td><small><?= htmlspecialchars($r['plateforme'] ?? '') ?></small></td>
                             <td>
                                 <?php if (($r['statut'] ?? '') === 'confirmée'): ?>
@@ -631,7 +713,7 @@ if ($hasRevenus) {
                         </tr>
                     <?php endforeach; ?>
                     <?php if (empty($reservations)): ?>
-                        <tr><td colspan="10" class="text-center text-muted py-4">Aucune réservation trouvée.</td></tr>
+                        <tr><td colspan="11" class="text-center text-muted py-4">Aucune réservation trouvée.</td></tr>
                     <?php endif; ?>
                     </tbody>
                 </table>

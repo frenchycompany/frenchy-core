@@ -7,40 +7,7 @@ include '../config.php';
 include '../pages/menu.php';
 require_once __DIR__ . '/../includes/rpi_bridge.php';
 
-// Creer les tables si elles n'existent pas
-try {
-    $pdo->exec("
-        CREATE TABLE IF NOT EXISTS villes (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            nom VARCHAR(100) NOT NULL UNIQUE,
-            description TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-    ");
-    $pdo->exec("
-        CREATE TABLE IF NOT EXISTS ville_recommandations (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            ville_id INT NOT NULL,
-            categorie ENUM('partenaire', 'restaurant', 'activite') NOT NULL,
-            nom VARCHAR(200) NOT NULL,
-            description TEXT,
-            adresse VARCHAR(255),
-            telephone VARCHAR(50),
-            site_web VARCHAR(255),
-            prix_indicatif VARCHAR(100),
-            note_interne TEXT,
-            ordre INT DEFAULT 0,
-            actif TINYINT(1) DEFAULT 1,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            INDEX idx_ville_categorie (ville_id, categorie),
-            FOREIGN KEY (ville_id) REFERENCES villes(id) ON DELETE CASCADE
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-    ");
-} catch (PDOException $e) {
-    // Tables existent deja
-}
+// Tables requises : voir db/install_tables.php
 
 // Ajouter colonne ville_id a liste_logements si elle n'existe pas
 try {
@@ -222,7 +189,7 @@ try {
             ORDER BY v.nom
         ");
         $villes = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    } catch (PDOException $e2) {}
+    } catch (PDOException $e2) { error_log('villes.php: ' . $e2->getMessage()); }
 }
 
 // Recuperer la ville selectionnee
@@ -241,7 +208,7 @@ if (isset($_GET['id'])) {
                 $recommandations[$row['categorie']][] = $row;
             }
         }
-    } catch (PDOException $e) {}
+    } catch (PDOException $e) { error_log('villes.php: ' . $e->getMessage()); }
 }
 ?>
 

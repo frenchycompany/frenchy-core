@@ -32,10 +32,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } catch (PDOException $e) {
                 if (!empty($_SERVER['HTTP_X_REQUESTED_WITH'])) {
                     http_response_code(500);
-                    echo json_encode(['error' => $e->getMessage()]);
+                    error_log('todo.php: ' . $e->getMessage());
+                    echo json_encode(['error' => 'Une erreur interne est survenue.']);
                     exit;
                 }
-                $feedback = '<div class="alert alert-danger">Erreur : ' . htmlspecialchars($e->getMessage()) . '</div>';
+                error_log('todo.php: ' . $e->getMessage());
+                $feedback = '<div class="alert alert-danger">Une erreur interne est survenue.</div>';
             }
         }
     }
@@ -56,7 +58,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt->execute([$logement_id ?: null, $description, $date_limite, $responsable, $prix_vente]);
                 $feedback = '<div class="alert alert-success alert-dismissible fade show">Tâche ajoutée.<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
             } catch (PDOException $e) {
-                $feedback = '<div class="alert alert-danger">Erreur : ' . htmlspecialchars($e->getMessage()) . '</div>';
+                error_log('todo.php: ' . $e->getMessage());
+                $feedback = '<div class="alert alert-danger">Une erreur interne est survenue.</div>';
             }
         }
     }
@@ -78,7 +81,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt->execute([$logement_id ?: null, $description, $date_limite, $responsable, $prix_vente, $task_id]);
                 $feedback = '<div class="alert alert-success alert-dismissible fade show">Tâche mise à jour.<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
             } catch (PDOException $e) {
-                $feedback = '<div class="alert alert-danger">Erreur : ' . htmlspecialchars($e->getMessage()) . '</div>';
+                error_log('todo.php: ' . $e->getMessage());
+                $feedback = '<div class="alert alert-danger">Une erreur interne est survenue.</div>';
             }
         }
     }
@@ -90,7 +94,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $conn->prepare("DELETE FROM todo_list WHERE id = ?")->execute([$task_id]);
             $feedback = '<div class="alert alert-success alert-dismissible fade show">Tâche supprimée.<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
         } catch (PDOException $e) {
-            $feedback = '<div class="alert alert-danger">Erreur : ' . htmlspecialchars($e->getMessage()) . '</div>';
+            error_log('todo.php: ' . $e->getMessage());
+            $feedback = '<div class="alert alert-danger">Une erreur interne est survenue.</div>';
         }
     }
 }
@@ -104,7 +109,7 @@ $status_filter   = isset($_GET['statut']) && $_GET['statut'] !== '' ? $_GET['sta
 // ============================================================
 // DONNÉES
 // ============================================================
-$logements = $conn->query("SELECT id, nom_du_logement FROM liste_logements ORDER BY nom_du_logement")->fetchAll(PDO::FETCH_ASSOC);
+$logements = $conn->query("SELECT id, nom_du_logement FROM liste_logements WHERE actif = 1 ORDER BY nom_du_logement")->fetchAll(PDO::FETCH_ASSOC);
 $intervenants = $conn->query("SELECT id, nom FROM intervenant WHERE actif = 1 ORDER BY nom")->fetchAll(PDO::FETCH_ASSOC);
 
 // Tâches avec filtres

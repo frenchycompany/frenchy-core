@@ -73,6 +73,14 @@ try {
         }
     } catch (PDOException $e) { }
 
+    // Migration: add is_hidden column if missing
+    try {
+        $cols = $conn->query("SHOW COLUMNS FROM " . vf_table('photos') . " LIKE 'is_hidden'")->fetchAll();
+        if (empty($cols)) {
+            $conn->exec("ALTER TABLE " . vf_table('photos') . " ADD COLUMN is_hidden TINYINT(1) DEFAULT 0 AFTER is_wide");
+        }
+    } catch (PDOException $e) { }
+
     // Migration: create guides tables if missing
     try {
         $gt = $conn->query("SHOW TABLES LIKE '" . vf_table('guides') . "'")->fetchAll();
@@ -91,6 +99,31 @@ try {
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                 INDEX idx_guide (guide_slug)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+        }
+    } catch (PDOException $e) { }
+
+    // Migration: add superhote_planning_url and recommandations_url settings
+    try {
+        $check_sh = $conn->prepare("SELECT setting_key FROM " . vf_table('settings') . " WHERE setting_key = 'superhote_planning_url'");
+        $check_sh->execute();
+        if (!$check_sh->fetch()) {
+            $ins = $conn->prepare("INSERT IGNORE INTO " . vf_table('settings') . " (setting_key, setting_value, setting_group, label, field_type, sort_order) VALUES (?, ?, ?, ?, 'text', ?)");
+            $ins->execute(['superhote_planning_url', '', 'integrations', 'Lien planning Superhôte (iframe)', 5]);
+            $ins->execute(['recommandations_url', '', 'integrations', 'Lien page recommandations (public)', 6]);
+        }
+    } catch (PDOException $e) { }
+
+    // Migration: add recommandations and planning section texts
+    try {
+        $check_reco = $conn->prepare("SELECT id FROM " . vf_table('texts') . " WHERE section_key = 'recommandations' LIMIT 1");
+        $check_reco->execute();
+        if (!$check_reco->fetch()) {
+            $ins = $conn->prepare("INSERT IGNORE INTO " . vf_table('texts') . " (section_key, field_key, field_value, label, field_type, sort_order) VALUES (?, ?, ?, ?, ?, ?)");
+            $ins->execute(['recommandations', 'title', 'Nos recommandations', 'Titre', 'text', 1]);
+            $ins->execute(['recommandations', 'subtitle', 'Découvrez nos adresses préférées autour du logement.', 'Sous-titre', 'text', 2]);
+            $ins->execute(['recommandations', 'cta', 'Voir toutes les recommandations', 'Bouton CTA', 'text', 3]);
+            $ins->execute(['planning', 'title', 'Disponibilités', 'Titre', 'text', 1]);
+            $ins->execute(['planning', 'subtitle', 'Consultez le calendrier de disponibilité du logement.', 'Sous-titre', 'text', 2]);
         }
     } catch (PDOException $e) { }
 
@@ -727,21 +760,12 @@ $site_name = htmlspecialchars($site['name']);
                             <p class="adm-photo-empty">Pas d'image</p>
                             <?php endif; ?>
                         </div>
-                        <form class="adm-upload-form" data-group="experience" data-mode="single" data-target="photos-experience-<?= $exp_key ?>">
-                            <input type="hidden" name="photo_key" value="<?= $exp_key ?>">
-                            <input type="hidden" name="alt_text" value="<?= htmlspecialchars($exp_label) ?>">
-                            <div class="adm-upload-action">
-                                <label class="adm-btn adm-btn-outline adm-btn-sm adm-upload-btn">
-                                    <?= $exp_photo ? 'Remplacer' : 'Ajouter' ?>
-                                    <input type="file" name="photo" accept="image/jpeg,image/png,image/webp" hidden>
-                                </label>
-                                <button type="submit" class="adm-btn adm-btn-primary adm-btn-sm" disabled>Envoyer</button>
-                            </div>
-                            <div class="adm-upload-preview" hidden>
-                                <img src="" alt="Aperçu">
-                                <span class="adm-upload-filename"></span>
-                            </div>
-                        </form>
+                        <div class="adm-upload-action">
+                            <button type="button" class="adm-btn adm-btn-outline adm-btn-sm adm-pick-from-gallery" data-group="experience" data-key="<?= $exp_key ?>" data-alt="<?= htmlspecialchars($exp_label) ?>" data-target="photos-experience-<?= $exp_key ?>">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                                Choisir depuis la galerie
+                            </button>
+                        </div>
                     </div>
                     <?php endforeach; ?>
                 </div>
@@ -750,20 +774,30 @@ $site_name = htmlspecialchars($site['name']);
             <!-- ── GALERIE ── -->
             <fieldset class="adm-fieldset">
                 <legend>Galerie photos</legend>
-                <p class="adm-photo-help">Les photos de la galerie sur la page d'accueil. Ajoutez autant de photos que vous voulez.</p>
+                <p class="adm-photo-help">Les photos de la galerie sur la page d'accueil. Glissez pour réordonner. Cliquez sur une photo pour modifier sa description.</p>
 
-                <div class="adm-photo-grid" id="photos-galerie">
+                <div class="adm-photo-grid adm-photo-grid--gallery" id="photos-galerie">
                     <?php if (!empty($photos_grouped['galerie'])): ?>
                     <?php foreach ($photos_grouped['galerie'] as $p): ?>
-                    <div class="adm-photo-card" data-id="<?= $p['id'] ?>">
+                    <div class="adm-photo-card<?= !empty($p['is_hidden']) ? ' is-hidden' : '' ?>" data-id="<?= $p['id'] ?>" draggable="true">
                         <img src="<?= htmlspecialchars($p['file_path']) ?>" alt="<?= htmlspecialchars($p['alt_text']) ?>">
                         <div class="adm-photo-info">
                             <span class="adm-photo-name"><?= htmlspecialchars($p['alt_text'] ?: basename($p['file_path'])) ?></span>
                             <?php if ($p['is_wide']): ?><span class="adm-badge">Grande</span><?php endif; ?>
+                            <?php if (!empty($p['is_hidden'])): ?><span class="adm-badge adm-badge--muted">Masquée</span><?php endif; ?>
                         </div>
-                        <button type="button" class="adm-photo-delete" data-id="<?= $p['id'] ?>" title="Supprimer">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                        </button>
+                        <div class="adm-photo-actions">
+                            <button type="button" class="adm-photo-toggle-hidden" data-id="<?= $p['id'] ?>" title="<?= !empty($p['is_hidden']) ? 'Rendre visible' : 'Masquer de la galerie' ?>">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><?= !empty($p['is_hidden']) ? '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>' : '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>' ?></svg>
+                            </button>
+                            <button type="button" class="adm-photo-edit" data-id="<?= $p['id'] ?>" data-alt="<?= htmlspecialchars($p['alt_text']) ?>" data-wide="<?= $p['is_wide'] ?>" title="Modifier">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                            </button>
+                            <button type="button" class="adm-photo-delete" data-id="<?= $p['id'] ?>" title="Supprimer">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                            </button>
+                        </div>
+                        <span class="adm-photo-drag" title="Glisser pour réordonner">&#x2630;</span>
                     </div>
                     <?php endforeach; ?>
                     <?php else: ?>
@@ -771,33 +805,70 @@ $site_name = htmlspecialchars($site['name']);
                     <?php endif; ?>
                 </div>
 
-                <form class="adm-upload-form" data-group="galerie" data-mode="multi">
+                <!-- Dropzone -->
+                <div class="adm-dropzone" id="dropzone-galerie">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    <span>Glissez vos images ici ou</span>
+                    <label class="adm-btn adm-btn-outline adm-btn-sm adm-dropzone-btn">
+                        Choisir des images
+                        <input type="file" name="photos" accept="image/jpeg,image/png,image/webp" multiple hidden id="galerie-file-input">
+                    </label>
+                </div>
+
+                <!-- Upload queue -->
+                <div class="adm-upload-queue" id="upload-queue-galerie" hidden></div>
+
+                <form class="adm-upload-form" data-group="galerie" data-mode="multi" id="form-galerie-upload" hidden>
                     <input type="hidden" name="photo_key" value="">
-                    <div class="adm-upload-simple">
-                        <div class="adm-field" style="flex:1">
-                            <label>Description (optionnel)</label>
-                            <input type="text" name="alt_text" class="adm-input adm-input-sm" placeholder="Ex : Vue du jardin, Chambre bleue...">
-                        </div>
-                        <div class="adm-field">
-                            <label class="adm-checkbox">
-                                <input type="checkbox" name="is_wide" value="1">
-                                Grande image
-                            </label>
-                        </div>
-                    </div>
-                    <div class="adm-upload-action">
-                        <label class="adm-btn adm-btn-outline adm-upload-btn">
-                            Choisir une image
-                            <input type="file" name="photo" accept="image/jpeg,image/png,image/webp" hidden>
-                        </label>
-                        <button type="submit" class="adm-btn adm-btn-primary" disabled>Ajouter</button>
-                    </div>
-                    <div class="adm-upload-preview" hidden>
-                        <img src="" alt="Aperçu">
-                        <span class="adm-upload-filename"></span>
-                    </div>
+                    <input type="hidden" name="alt_text" value="">
+                    <input type="hidden" name="is_wide" value="0">
+                    <input type="file" name="photo" accept="image/jpeg,image/png,image/webp" hidden>
                 </form>
             </fieldset>
+
+            <!-- Modal edit photo -->
+            <div class="adm-modal" id="modal-edit-photo" hidden>
+                <div class="adm-modal-backdrop"></div>
+                <div class="adm-modal-content">
+                    <h3>Modifier la photo</h3>
+                    <div class="adm-modal-preview">
+                        <img src="" alt="Aperçu" id="modal-edit-img">
+                    </div>
+                    <div class="adm-field">
+                        <label>Description</label>
+                        <input type="text" class="adm-input" id="modal-edit-alt" placeholder="Ex : Vue du jardin, Chambre bleue...">
+                    </div>
+                    <div class="adm-field">
+                        <label class="adm-checkbox">
+                            <input type="checkbox" id="modal-edit-wide" value="1">
+                            Grande image (occupe 2 colonnes)
+                        </label>
+                    </div>
+                    <div class="adm-modal-actions">
+                        <button type="button" class="adm-btn adm-btn-outline" id="modal-edit-cancel">Annuler</button>
+                        <button type="button" class="adm-btn adm-btn-primary" id="modal-edit-save">Enregistrer</button>
+                    </div>
+                    <input type="hidden" id="modal-edit-id">
+                </div>
+            </div>
+
+            <!-- Modal pick photo from gallery -->
+            <div class="adm-modal" id="modal-pick-photo" hidden>
+                <div class="adm-modal-backdrop"></div>
+                <div class="adm-modal-content" style="max-width:600px">
+                    <h3>Choisir depuis la galerie</h3>
+                    <div class="adm-pick-grid" id="pick-grid">
+                        <p class="adm-photo-empty">Chargement...</p>
+                    </div>
+                    <div class="adm-modal-actions">
+                        <button type="button" class="adm-btn adm-btn-outline" id="modal-pick-cancel">Annuler</button>
+                    </div>
+                    <input type="hidden" id="pick-group">
+                    <input type="hidden" id="pick-key">
+                    <input type="hidden" id="pick-alt">
+                    <input type="hidden" id="pick-target">
+                </div>
+            </div>
 
             <!-- ── GUIDE PHOTOS (from DB guides) ── -->
             <?php foreach ($db_guides as $slug => $g):

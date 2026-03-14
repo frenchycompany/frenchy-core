@@ -48,7 +48,7 @@ try {
 
 // 3) Logements LOCAL (liste_logements)
 try {
-    $localLogements = $conn->query("SELECT id, nom_du_logement FROM liste_logements ORDER BY id")
+    $localLogements = $conn->query("SELECT id, nom_du_logement FROM liste_logements WHERE actif = 1 ORDER BY id")
         ->fetchAll(PDO::FETCH_ASSOC);
     $localIds = array_column($localLogements, 'id');
     $diag['local_logements'] = $localLogements;
@@ -68,7 +68,7 @@ try {
             $pdoRemote->query("SELECT 1 FROM `$t` LIMIT 1");
             $remoteLogTable = $t;
             break;
-        } catch (Throwable $e) {}
+        } catch (Throwable $e) { error_log('diag_sync.php: ' . $e->getMessage()); }
     }
     if ($remoteLogTable) {
         $remoteLogements = $pdoRemote->query("SELECT * FROM `$remoteLogTable` ORDER BY id")

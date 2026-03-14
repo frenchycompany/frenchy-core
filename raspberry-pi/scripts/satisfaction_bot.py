@@ -283,11 +283,9 @@ def send_sms_via_gammu(to, text, creator="Bot"):
         sm.Terminate()
         logging.info(f"✅ SMS complet envoyé à {to}")
         return True
-    except gammu.GammuException as e:
-        logging.error(f"❌ Erreur Gammu lors de l'envoi à {to}: {e} (Code: {e.errorcode})")
-        return False
     except Exception as e:
-        logging.error(f"❌ Erreur inattendue dans send_sms_via_gammu: {e}")
+        # python-gammu <0.41 : gammu.GammuException ; >=0.41 : gammu.GSMError
+        logging.error(f"❌ Erreur Gammu lors de l'envoi à {to}: {e}")
         return False
 
 # --- 4) Traitement des conversations (MODIFIÉ POUR FALLBACK UNIQUEMENT) ---

@@ -79,7 +79,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         echo "<div style='color:green;'>✅ Objet ajouté avec succès.</div>";
 
     } catch (Exception $e) {
-        echo "<div style='color:red;'>❌ Erreur : " . htmlspecialchars($e->getMessage()) . "</div>";
+        error_log('ajouter_objet.php: ' . $e->getMessage());
+        echo "<div style='color:red;'>Une erreur interne est survenue.</div>";
     }
 }
 ?>
@@ -172,7 +173,7 @@ tr:last-child td {
     <select name="logement_id" required>
         <?php
         try {
-            $logements = $conn->query("SELECT id, nom_du_logement FROM liste_logements")->fetchAll(PDO::FETCH_ASSOC);
+            $logements = $conn->query("SELECT id, nom_du_logement FROM liste_logements WHERE actif = 1")->fetchAll(PDO::FETCH_ASSOC);
             foreach ($logements as $logement) {
                 echo "<option value='{$logement['id']}'>{$logement['nom_du_logement']}</option>";
             }

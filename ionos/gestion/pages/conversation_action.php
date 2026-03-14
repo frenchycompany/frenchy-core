@@ -87,5 +87,6 @@ try {
             echo json_encode(['success' => false, 'error' => 'Action inconnue: ' . $action]);
     }
 } catch (PDOException $e) {
-    echo json_encode(['success' => false, 'error' => 'Erreur: ' . $e->getMessage()]);
+    error_log('conversation_action.php: ' . $e->getMessage());
+    echo json_encode(['success' => false, 'error' => 'Une erreur interne est survenue.']);
 }

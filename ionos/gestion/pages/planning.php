@@ -17,12 +17,12 @@ $is_admin = ($_SESSION['role'] === 'admin');
 // Auto-migration : colonne actif pour intervenant
 try {
     $conn->exec("ALTER TABLE intervenant ADD COLUMN actif TINYINT(1) NOT NULL DEFAULT 1");
-} catch (PDOException $e) { /* colonne existe déjà */ }
+} catch (PDOException $e) { error_log('planning.php: ' . $e->getMessage()); }
 
 // Auto-migration : colonnes checkup pour planning
-try { $conn->exec("ALTER TABLE planning ADD COLUMN checkup_planifie TINYINT(1) NOT NULL DEFAULT 0 AFTER bonus"); } catch (PDOException $e) {}
-try { $conn->exec("ALTER TABLE planning ADD COLUMN checkup_prix DECIMAL(10,2) DEFAULT 50.00 AFTER checkup_planifie"); } catch (PDOException $e) {}
-try { $conn->exec("ALTER TABLE planning ADD COLUMN checkup_intervenant_id INT DEFAULT NULL AFTER checkup_prix"); } catch (PDOException $e) {}
+try { $conn->exec("ALTER TABLE planning ADD COLUMN checkup_planifie TINYINT(1) NOT NULL DEFAULT 0 AFTER bonus"); } catch (PDOException $e) { error_log('planning.php: ' . $e->getMessage()); }
+try { $conn->exec("ALTER TABLE planning ADD COLUMN checkup_prix DECIMAL(10,2) DEFAULT 50.00 AFTER checkup_planifie"); } catch (PDOException $e) { error_log('planning.php: ' . $e->getMessage()); }
+try { $conn->exec("ALTER TABLE planning ADD COLUMN checkup_intervenant_id INT DEFAULT NULL AFTER checkup_prix"); } catch (PDOException $e) { error_log('planning.php: ' . $e->getMessage()); }
 
 // ---------------------------------------------------------------------
 // BONUS/COMPTA : enregistre le bonus fixe 10€ (5€ pour F1, 5€ pour F2)
@@ -175,7 +175,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['bulk_update'])) {
         try {
             $delC = $conn->prepare("DELETE FROM comptabilite WHERE source_typeIndex='intervention' AND source_idIndex=?");
             $delC->execute([$id]);
-        } catch (Throwable $e) {}
+        } catch (Throwable $e) { error_log('planning.php: ' . $e->getMessage()); }
 
         $stmt = $conn->prepare("DELETE FROM planning WHERE id = ?");
         $stmt->execute([$id]);
@@ -205,6 +205,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['bulk_update'])) {
         if ($nombre_de_jours_reservation < 0) {
             die("Erreur : Le nombre de jours réservés doit être positif ou nul.");
         }
+
+        // Vérification doublon : même logement + même date
+        $checkDup = $conn->prepare("SELECT id FROM planning WHERE logement_id = ? AND date = ? LIMIT 1");
+        $checkDup->execute([$logement_id, $date]);
+        if ($checkDup->fetch()) {
+            $nomLog = $conn->prepare("SELECT nom_du_logement FROM liste_logements WHERE id = ?");
+            $nomLog->execute([$logement_id]);
+            $nomL = $nomLog->fetchColumn() ?: 'Logement #'.$logement_id;
+            $error_message = "Une intervention existe déjà pour " . htmlspecialchars($nomL) . " le " . htmlspecialchars($date) . ". Doublon non créé.";
+        } else {
 
         // 1) Insertion planning
         $stmt = $conn->prepare("
@@ -275,9 +285,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['bulk_update'])) {
         $logNom->execute([$logement_id]);
         $nomLogement = $logNom->fetchColumn() ?: 'Logement';
 
-        echo '<div class="alert alert-info">';
-        echo 'Lien de validation : <a href="' . htmlspecialchars($validation_link) . '" target="_blank">' . htmlspecialchars($validation_link) . '</a>';
-        echo '</div>';
+        // Stocker les messages en session pour affichage après redirect
+        $_SESSION['flash_messages'] = [];
+        $_SESSION['flash_messages'][] = [
+            'type' => 'info',
+            'html' => 'Lien de validation : <a href="' . htmlspecialchars($validation_link) . '" target="_blank">' . htmlspecialchars($validation_link) . '</a>'
+        ];
 
         // Creer le checkup + WhatsApp si checkup planifie
         if ($checkup_planifie) {
@@ -315,14 +328,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['bulk_update'])) {
             }
             $whatsUrl .= '?text=' . rawurlencode($whatsMsg);
 
-            echo '<div class="alert alert-success">';
-            echo '<i class="fas fa-clipboard-check"></i> <strong>Checkup cree et attribue</strong>';
-            if ($ckNom) echo ' a <strong>' . htmlspecialchars($ckNom) . '</strong>';
-            echo ' (' . number_format($checkup_prix, 2, ',', ' ') . ' &euro;)<br>';
-            echo '<a href="' . htmlspecialchars($checkup_link) . '" target="_blank" class="btn btn-sm btn-success mt-1"><i class="fas fa-clipboard-check"></i> Voir le Checkup</a> ';
-            echo '<a href="' . htmlspecialchars($whatsUrl) . '" target="_blank" class="btn btn-sm mt-1" style="background:#25D366;color:#fff;"><i class="fab fa-whatsapp"></i> Envoyer par WhatsApp</a>';
-            echo '</div>';
+            $ckHtml = '<i class="fas fa-clipboard-check"></i> <strong>Checkup cree et attribue</strong>';
+            if ($ckNom) $ckHtml .= ' a <strong>' . htmlspecialchars($ckNom) . '</strong>';
+            $ckHtml .= ' (' . number_format($checkup_prix, 2, ',', ' ') . ' &euro;)<br>';
+            $ckHtml .= '<a href="' . htmlspecialchars($checkup_link) . '" target="_blank" class="btn btn-sm btn-success mt-1"><i class="fas fa-clipboard-check"></i> Voir le Checkup</a> ';
+            $ckHtml .= '<a href="' . htmlspecialchars($whatsUrl) . '" target="_blank" class="btn btn-sm mt-1" style="background:#25D366;color:#fff;"><i class="fab fa-whatsapp"></i> Envoyer par WhatsApp</a>';
+
+            $_SESSION['flash_messages'][] = ['type' => 'success', 'html' => $ckHtml];
         }
+
+        // Redirect POST-Redirect-GET pour éviter les doublons au refresh
+        $redirectUrl = 'planning.php?date_debut=' . urlencode($date) . '&date_fin=' . urlencode($date);
+        header('Location: ' . $redirectUrl);
+        exit;
+        } // fin else (pas de doublon)
     }
 }
 
@@ -443,6 +462,16 @@ $charges = $chargeStmt->fetchAll(PDO::FETCH_ASSOC);
 <div class="container mt-4">
     <h2>Gestion du Planning</h2>
 
+    <?php if (!empty($error_message)): ?>
+        <div class="alert alert-danger"><i class="fas fa-exclamation-triangle"></i> <?= $error_message ?></div>
+    <?php endif; ?>
+    <?php if (!empty($_SESSION['flash_messages'])): ?>
+        <?php foreach ($_SESSION['flash_messages'] as $flash): ?>
+            <div class="alert alert-<?= htmlspecialchars($flash['type']) ?>"><?= $flash['html'] ?></div>
+        <?php endforeach; ?>
+        <?php unset($_SESSION['flash_messages']); ?>
+    <?php endif; ?>
+
     <form method="GET" action="planning.php" class="mb-4">
         <div class="row g-3">
             <div class="col-md-3">
@@ -509,6 +538,7 @@ $charges = $chargeStmt->fetchAll(PDO::FETCH_ASSOC);
                 <option value="Annulé">Annulé</option>
             </select>
             <button id="bulk_update_btn" type="button" class="btn btn-success">Appliquer aux sélectionnées</button>
+            <button id="bulk_delete_btn" type="button" class="btn btn-danger ml-2">Supprimer les sélectionnées</button>
         </div>
     </div>
     <?php endif; ?>
@@ -713,7 +743,7 @@ $charges = $chargeStmt->fetchAll(PDO::FETCH_ASSOC);
 
     <?php if ($is_admin): ?>
     <h3>Créer une nouvelle intervention</h3>
-    <form method="POST" action="">
+    <form method="POST" action="" id="form_ajouter" onsubmit="if(this.dataset.submitted){return false;}this.dataset.submitted='1';this.querySelector('button[type=submit]').disabled=true;">
         <input type="hidden" name="action" value="ajouter">
         <div class="form-row">
             <div class="form-group col-md-6">
@@ -967,10 +997,6 @@ $charges = $chargeStmt->fetchAll(PDO::FETCH_ASSOC);
         const new_status = document.getElementById("bulk_status").value;
         const ids = Array.from(document.querySelectorAll("input.bulk_checkbox:checked")).map(cb => cb.value);
 
-        console.log("DEBUG - IDs sélectionnés:", ids);
-        console.log("DEBUG - Statut sélectionné:", new_status);
-        console.log("DEBUG - Données envoyées:", { intervention_ids: ids, new_status: new_status });
-
         if (ids.length === 0) {
           alert("Veuillez sélectionner au moins une intervention.");
           return;
@@ -1024,6 +1050,43 @@ $charges = $chargeStmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     refreshSelectAllState();
+
+    const bulkDelBtn = document.getElementById("bulk_delete_btn");
+    if (bulkDelBtn) {
+      bulkDelBtn.addEventListener("click", function () {
+        const ids = Array.from(document.querySelectorAll("input.bulk_checkbox:checked")).map(cb => cb.value);
+        if (ids.length === 0) {
+          alert("Veuillez sélectionner au moins une intervention.");
+          return;
+        }
+        if (!confirm("Confirmer la suppression de " + ids.length + " intervention(s) ?")) return;
+
+        $.ajax({
+          url: 'bulk_delete.php',
+          type: 'POST',
+          contentType: 'application/json',
+          dataType: 'json',
+          data: JSON.stringify({ intervention_ids: ids }),
+          success: function (response) {
+            if (response.status === 'success') {
+              (response.deleted_ids || []).forEach(function (id) {
+                $("#row_" + id).fadeOut(300, function() { $(this).remove(); });
+              });
+              showToast("Suppression réussie (" + (response.deleted_count || 0) + " intervention(s)).");
+            } else {
+              showToast("Erreur : " + (response.message || "Échec de la suppression."), 'error');
+            }
+          },
+          error: function (xhr) {
+            let msg = "Erreur lors de la suppression.";
+            if (xhr && xhr.responseText) {
+              try { const j = JSON.parse(xhr.responseText); if (j.message) msg = j.message; } catch(e) {}
+            }
+            showToast(msg, 'error');
+          }
+        });
+      });
+    }
   });
 </script>
 <script>

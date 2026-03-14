@@ -75,8 +75,9 @@ superhote_price_updates (
 -- Paramètres globaux
 superhote_settings (
     key_name, value
-    -- palier_j1_3_pourcent (25), palier_j4_6_pourcent (50),
-    -- palier_j7_13_pourcent (75), jours_generation (30)
+    -- palier_j1_3_pourcent (20), palier_j4_13_pourcent (40),
+    -- palier_j14_30_pourcent (60), palier_j31_60_pourcent (80),
+    -- jours_generation (90)
 )
 ```
 

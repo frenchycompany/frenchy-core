@@ -37,6 +37,7 @@ $hero_img = vf_photo_url($db_photos, 'hero', 'hero',
 if (!empty($db_photos['galerie'])) {
     $galerie_items = [];
     foreach ($db_photos['galerie'] as $p) {
+        if (!empty($p['is_hidden'])) continue;
         $galerie_items[] = [
             'url'    => $p['file_path'],
             'alt'    => $p['alt_text'],
@@ -102,10 +103,7 @@ $active_sections = vf_get_active_sections($settings);
     <!-- CSS vars dynamiques (couleurs + typo depuis la BDD — override les defaults) -->
     <style><?= $css_vars ?></style>
 
-    <!-- Airbnb SDK -->
-    <?php if (!empty($site['airbnb_id'])): ?>
-    <script async src="https://www.airbnb.fr/embeddable/airbnb_jssdk"></script>
-    <?php endif; ?>
+    <!-- Airbnb SDK chargé dans sections/reservation.php après le widget -->
 </head>
 <body>
 

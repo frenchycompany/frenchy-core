@@ -83,6 +83,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $stmt = $conn->prepare("UPDATE intervenant SET nom = ?, numero = ?, role1 = ?, role2 = ?, role3 = ?, nom_utilisateur = ? WHERE id = ?");
                         $stmt->execute([$nom, $numero, $role1, $role2, $role3, $username, $intervenant_id]);
                     }
+
+                    // Sync vers la table users (système d'auth unifié)
+                    $stmtUser = $conn->prepare("SELECT id FROM users WHERE legacy_intervenant_id = ?");
+                    $stmtUser->execute([$intervenant_id]);
+                    $linkedUser = $stmtUser->fetch(PDO::FETCH_ASSOC);
+                    if ($linkedUser) {
+                        $userFields = "nom = ?, numero = ?, role1 = ?, role2 = ?, role3 = ?";
+                        $userValues = [$nom, $numero, $role1, $role2, $role3];
+                        if (!empty($password)) {
+                            $userFields .= ", password_hash = ?";
+                            $userValues[] = password_hash($password, PASSWORD_ARGON2ID, [
+                                'memory_cost' => 65536, 'time_cost' => 4, 'threads' => 3
+                            ]);
+                        }
+                        if (!empty($username) && filter_var($username, FILTER_VALIDATE_EMAIL)) {
+                            $userFields .= ", email = ?";
+                            $userValues[] = trim(strtolower($username));
+                        }
+                        $userValues[] = $linkedUser['id'];
+                        $conn->prepare("UPDATE users SET $userFields WHERE id = ?")->execute($userValues);
+                    }
+
                     $feedback = '<div class="alert alert-success alert-dismissible fade show">Intervenant mis à jour.<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
                 } else {
                     // Création
@@ -93,6 +115,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $stmt = $conn->prepare("INSERT INTO intervenant (nom, numero, role1, role2, role3, nom_utilisateur, mot_de_passe) VALUES (?, ?, ?, ?, ?, ?, ?)");
                         $stmt->execute([$nom, $numero, $role1, $role2, $role3, $username, $hash]);
                         $intervenant_id = $conn->lastInsertId();
+
+                        // Créer aussi dans la table users si un email est fourni
+                        if (!empty($username) && filter_var($username, FILTER_VALIDATE_EMAIL)) {
+                            $userHash = password_hash($password, PASSWORD_ARGON2ID, [
+                                'memory_cost' => 65536, 'time_cost' => 4, 'threads' => 3
+                            ]);
+                            $stmtUser = $conn->prepare(
+                                "INSERT INTO users (email, password_hash, nom, role, numero, role1, role2, role3, legacy_intervenant_id, actif)
+                                 VALUES (?, ?, ?, 'staff', ?, ?, ?, ?, ?, 1)"
+                            );
+                            $stmtUser->execute([
+                                trim(strtolower($username)), $userHash, $nom,
+                                $numero, $role1, $role2, $role3, $intervenant_id
+                            ]);
+                        }
+
                         $feedback = '<div class="alert alert-success alert-dismissible fade show">Intervenant créé.<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
                     }
                 }

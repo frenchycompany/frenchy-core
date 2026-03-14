@@ -33,7 +33,8 @@ try {
     $recipients = $stmt->fetchAll();
 
 } catch (PDOException $e) {
-    echo "<div class='alert alert-danger'><i class='fas fa-exclamation-triangle'></i> Erreur: " . htmlspecialchars($e->getMessage()) . "</div>";
+    error_log('campaigns_edit.php: ' . $e->getMessage());
+    echo "<div class='alert alert-danger'><i class='fas fa-exclamation-triangle'></i> Une erreur interne est survenue.</div>";
     return;
 }
 

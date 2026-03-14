@@ -34,10 +34,11 @@ CREATE TABLE IF NOT EXISTS `superhote_settings` (
 
 -- Inserer les parametres par defaut
 INSERT IGNORE INTO `superhote_settings` (`key_name`, `value`, `description`) VALUES
-    ('palier_j1_3_pourcent', '25', 'Pourcentage entre plancher et standard pour J1-3'),
-    ('palier_j4_6_pourcent', '50', 'Pourcentage entre plancher et standard pour J4-6'),
-    ('palier_j7_13_pourcent', '75', 'Pourcentage entre plancher et standard pour J7-13'),
-    ('jours_generation', '30', 'Nombre de jours a generer');
+    ('palier_j1_3_pourcent', '20', 'Pourcentage entre plancher et standard pour J1-3'),
+    ('palier_j4_13_pourcent', '40', 'Pourcentage entre plancher et standard pour J4-13'),
+    ('palier_j14_30_pourcent', '60', 'Pourcentage entre plancher et standard pour J14-30'),
+    ('palier_j31_60_pourcent', '80', 'Pourcentage entre plancher et standard pour J31-60'),
+    ('jours_generation', '90', 'Nombre de jours a generer');
 
 -- --------------------------------------------------------
 -- 3. Ajouter colonne nom_du_logement a superhote_price_updates
@@ -70,8 +71,9 @@ ALTER TABLE `superhote_price_updates`
 --
 -- superhote_settings: Parametres globaux
 --   - palier_j1_3_pourcent: % entre plancher et standard pour J1-3
---   - palier_j4_6_pourcent: % entre plancher et standard pour J4-6
---   - palier_j7_13_pourcent: % entre plancher et standard pour J7-13
+--   - palier_j4_13_pourcent: % entre plancher et standard pour J4-13
+--   - palier_j14_30_pourcent: % entre plancher et standard pour J14-30
+--   - palier_j31_60_pourcent: % entre plancher et standard pour J31-60
 --   - jours_generation: Nombre de jours a generer
 --
 -- superhote_price_updates: File d'attente (inchange)

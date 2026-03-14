@@ -4,6 +4,7 @@
  */
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/includes/functions.php';
+require_once __DIR__ . '/gestion/includes/lead_scoring.php';
 
 $settings = getAllSettings($conn);
 $message = '';
@@ -62,7 +63,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
             ]);
 
             if ($result) {
-                echo json_encode(['success' => true, 'id' => $conn->lastInsertId()]);
+                $simulationId = $conn->lastInsertId();
+
+                // Creer automatiquement un lead dans le CRM
+                try {
+                    $checkStmt = $conn->prepare("SELECT id FROM prospection_leads WHERE legacy_simulation_id = ?");
+                    $checkStmt->execute([$simulationId]);
+                    if (!$checkStmt->fetch()) {
+                        createLead($conn, [
+                            'source'                => 'simulateur',
+                            'email'                 => $email,
+                            'ville'                 => $ville,
+                            'surface'               => $surface,
+                            'capacite'              => $capacite,
+                            'tarif_nuit_estime'     => $tarifNuitEstime,
+                            'revenu_mensuel_estime' => $revenuMensuelEstime,
+                            'legacy_simulation_id'  => $simulationId,
+                        ]);
+                    }
+                } catch (PDOException $e) {
+                    error_log("simulateur.php auto-lead AJAX error: " . $e->getMessage());
+                }
+
+                echo json_encode(['success' => true, 'id' => $simulationId]);
             } else {
                 echo json_encode(['success' => false, 'error' => 'Insert failed: ' . implode(', ', $stmt->errorInfo())]);
             }
@@ -151,8 +174,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             $stmt = $conn->prepare("INSERT INTO FC_simulations (email, surface, capacite, ville, tarif_nuit_estime, revenu_mensuel_estime) VALUES (?, ?, ?, ?, ?, ?)");
             $stmt->execute([$email, $surface, $capacite, $_POST['ville'], $tarifNuit, $revenuNetMensuel]);
+            $simulationId = $conn->lastInsertId();
+
+            // Creer automatiquement un lead dans le CRM
+            $checkStmt = $conn->prepare("SELECT id FROM prospection_leads WHERE legacy_simulation_id = ?");
+            $checkStmt->execute([$simulationId]);
+            if (!$checkStmt->fetch()) {
+                createLead($conn, [
+                    'source'                => 'simulateur',
+                    'email'                 => $email,
+                    'ville'                 => $_POST['ville'],
+                    'surface'               => $surface,
+                    'capacite'              => $capacite,
+                    'tarif_nuit_estime'     => $tarifNuit,
+                    'revenu_mensuel_estime' => $revenuNetMensuel,
+                    'legacy_simulation_id'  => $simulationId,
+                ]);
+            }
         } catch (PDOException $e) {
             // Table n'existe peut-être pas encore, on continue
+            error_log("simulateur.php auto-lead form error: " . $e->getMessage());
         }
     }
 }

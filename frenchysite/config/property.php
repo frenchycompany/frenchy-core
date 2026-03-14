@@ -35,6 +35,8 @@ return [
     'airbnb_url'    => '',          // Lien complet Airbnb (ex: https://www.airbnb.fr/rooms/...)
     'ics_url'       => '',          // Lien calendrier iCal (.ics) pour la synchro
     'matterport_id' => '',
+    'superhote_planning_url' => '', // Lien planning Superhôte (iframe embed)
+    'recommandations_url'    => '', // Lien public vers la page de recommandations
 
     // ══════════ Couleurs par défaut ══════════
     'colors' => [
@@ -62,6 +64,8 @@ return [
         'experience'  => ['label' => 'L\'expérience', 'nav' => 'L\'expérience'],
         'galerie'     => ['label' => 'Galerie',       'nav' => 'Galerie'],
         'visite'      => ['label' => 'Visite 360°',   'nav' => 'Visite 360°'],
+        'recommandations' => ['label' => 'Recommandations', 'nav' => 'Recommandations'],
+        'planning'    => ['label' => 'Disponibilités', 'nav' => 'Disponibilités'],
         'reservation' => ['label' => 'Réservation',   'nav' => 'Réserver', 'id' => 'reserver'],
         'contact'     => ['label' => 'Contact',       'nav' => 'Contact'],
     ],
