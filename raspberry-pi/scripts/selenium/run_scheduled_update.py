@@ -570,7 +570,7 @@ def get_final_stats() -> Dict:
 # MAIN
 # ============================================================================
 
-def run_full_update(max_workers: int = 2, use_groups: bool = True) -> Dict:
+def run_full_update(max_workers: int = None, use_groups: bool = True) -> Dict:
     """
     Execute la mise a jour complete.
 
@@ -578,6 +578,13 @@ def run_full_update(max_workers: int = 2, use_groups: bool = True) -> Dict:
         Rapport d'execution
     """
     start_time = datetime.now()
+
+    # Lire max_workers depuis les settings BDD si non specifie en CLI
+    settings = get_settings()
+    if max_workers is None:
+        max_workers = int(settings.get("max_workers", 2))
+    logger.info(f"Workers configures: {max_workers}")
+
     report = {
         "status": "running",
         "started_at": start_time.isoformat(),
@@ -589,6 +596,7 @@ def run_full_update(max_workers: int = 2, use_groups: bool = True) -> Dict:
     logger.info("=" * 60)
     logger.info("MISE A JOUR QUOTIDIENNE SUPERHOTE")
     logger.info(f"Demarrage: {start_time.strftime('%Y-%m-%d %H:%M:%S')}")
+    logger.info(f"Workers: {max_workers}")
     logger.info("=" * 60)
 
     try:
@@ -726,8 +734,8 @@ Exemples:
     parser.add_argument(
         "--workers", "-w",
         type=int,
-        default=2,
-        help="Nombre maximum de workers (defaut: 2)"
+        default=None,
+        help="Nombre maximum de workers (defaut: depuis config BDD)"
     )
     parser.add_argument(
         "--no-groups",
@@ -777,7 +785,11 @@ Exemples:
     # Mode workers seuls
     if args.workers_only:
         cleanup_stale_tasks()
-        result = run_workers(args.workers, not args.no_groups)
+        workers = args.workers
+        if workers is None:
+            settings = get_settings()
+            workers = int(settings.get("max_workers", 2))
+        result = run_workers(workers, not args.no_groups)
         print(f"Workers: {result}")
         return
 
