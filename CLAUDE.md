@@ -64,9 +64,8 @@ cd raspberry-pi && composer install
 
 ## Points de vigilance
 
-- **Credentials hardcodes** : `ionos/admin/index.php` (admin password), `ionos/db/connection.php` (DB password fallback), `ionos/cdansmaville/` (Google API keys). A migrer vers .env
-- **Fichiers install.php** : Presents dans `frenchysite/`, `ionos/db/`, `ionos/install site/`. A supprimer apres deploiement
+- **Credentials hardcodes** : `ionos/db/connection.php` (DB password fallback). A migrer vers .env
 - **Chemins hardcodes** : References a `/home/raphael/` dans certains scripts Python
-- **Dual-DB** : Le systeme utilise deux bases de donnees separees. Voir MIGRATION_PLAN.md pour la consolidation prevue
+- **Dual-DB** : Le systeme utilise deux bases de donnees separees (IONOS + RPI)
 - **Pas de tests automatises** : Aucun test unitaire ou d'integration
 - **Pas de CI/CD** : Aucun pipeline configure
