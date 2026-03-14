@@ -820,6 +820,10 @@ button {
     justify-content: center;
 }
 
+.vf-lightbox[hidden] {
+    display: none;
+}
+
 .vf-lightbox-backdrop {
     position: absolute;
     inset: 0;
