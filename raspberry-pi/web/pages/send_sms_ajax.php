@@ -1,6 +1,5 @@
 <?php
 // Endpoint AJAX pour l'envoi de SMS depuis le modal
-error_reporting(E_ALL);
 ini_set('display_errors', 0); // Ne pas afficher les erreurs dans la réponse JSON
 
 require_once '../includes/db.php';

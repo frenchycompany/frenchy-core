@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 // Forcer affichage erreurs AVANT tout include pour diagnostiquer les 500 vides
 ini_set('display_errors', '1');
-error_reporting(E_ALL);
 
 header('Content-Type: application/json; charset=utf-8');
 date_default_timezone_set('Europe/Paris');

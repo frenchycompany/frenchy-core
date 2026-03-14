@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 // IMPORTANT : ne pas afficher les notices/warings pour ne pas casser le JSON retourné
 ini_set('display_errors', '0');
-error_reporting(E_ALL);
 
 header('Content-Type: application/json; charset=utf-8');
 

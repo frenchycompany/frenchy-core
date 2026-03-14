@@ -1,8 +1,6 @@
 <?php
 // Activer l'affichage des erreurs
-ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
 
 // Connexion à la BDD + lib QR
 require_once '../db/connection.php';

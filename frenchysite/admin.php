@@ -13,7 +13,11 @@ $property = vf_load_property();
 
 // ── Auth ──
 $admin_user = getenv('ADMIN_USER') ?: 'admin';
-$admin_pass = getenv('ADMIN_PASS') ?: 'admin2025';
+$admin_pass = getenv('ADMIN_PASS');
+if (!$admin_pass) {
+    error_log('ADMIN_PASS non configuré dans les variables d\'environnement');
+    die('Configuration incomplète. Veuillez définir ADMIN_PASS dans le fichier .env.');
+}
 
 // Login
 if (isset($_POST['login'])) {

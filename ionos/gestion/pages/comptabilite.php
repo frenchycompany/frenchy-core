@@ -5,9 +5,7 @@ include '../config.php'; // Connexion à la base de données
 include '../pages/menu.php'; // Inclusion du menu
 
 // Activer les erreurs PHP pour débogage (à désactiver en production)
-ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
 
 // Configurer la locale pour afficher les mois en français
 setlocale(LC_TIME, 'fr_FR.UTF-8');

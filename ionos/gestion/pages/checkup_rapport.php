@@ -4,21 +4,6 @@
  * Affiche le bilan complet du checkup avec les problemes signales
  */
 
-// Debug : attraper les erreurs fatales silencieuses en production
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
-register_shutdown_function(function() {
-    $error = error_get_last();
-    if ($error && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
-        http_response_code(500);
-        echo '<pre style="background:#fdd;padding:20px;margin:20px;border:2px solid #c00;border-radius:8px;">';
-        echo "<b>Erreur fatale :</b> {$error['message']}\n";
-        echo "Fichier : {$error['file']}\n";
-        echo "Ligne : {$error['line']}\n";
-        echo '</pre>';
-    }
-});
-
 include '../config.php';
 include '../pages/menu.php';
 
@@ -27,14 +12,16 @@ $session_id = isset($_GET['session_id']) ? intval($_GET['session_id']) : 0;
 
 // Suppression admin
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_checkup']) && $isAdmin) {
+    validateCsrfToken();
     $deleteId = (int)$_POST['delete_checkup'];
 
-    // Supprimer les fichiers photos
+    // Supprimer les fichiers photos (avec protection path traversal)
+    $baseDir = realpath(__DIR__ . '/../');
     $stmt = $conn->prepare("SELECT photo_path FROM checkup_items WHERE session_id = ? AND photo_path IS NOT NULL AND photo_path != ''");
     $stmt->execute([$deleteId]);
     foreach ($stmt->fetchAll(PDO::FETCH_COLUMN) as $photo) {
-        $f = __DIR__ . '/../' . $photo;
-        if (file_exists($f)) @unlink($f);
+        $f = realpath(__DIR__ . '/../' . $photo);
+        if ($f && strpos($f, $baseDir . DIRECTORY_SEPARATOR) === 0) @unlink($f);
     }
 
     // Supprimer la signature
@@ -42,7 +29,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_checkup']) && 
         $stmt = $conn->prepare("SELECT signature_path FROM checkup_sessions WHERE id = ?");
         $stmt->execute([$deleteId]);
         $sig = $stmt->fetchColumn();
-        if ($sig) { $f = __DIR__ . '/../' . $sig; if (file_exists($f)) @unlink($f); }
+        if ($sig) {
+            $f = realpath(__DIR__ . '/../' . $sig);
+            if ($f && strpos($f, $baseDir . DIRECTORY_SEPARATOR) === 0) @unlink($f);
+        }
     } catch (PDOException $e) { error_log('checkup_rapport.php: ' . $e->getMessage()); }
 
     // Supprimer en BDD
@@ -588,6 +578,7 @@ try {
         <h4><i class="fas fa-exclamation-triangle"></i> Supprimer ce checkup ?</h4>
         <p>Cette action est irreversible. Le checkup, ses items, photos et signature seront definitivement supprimes.</p>
         <form method="POST" id="deleteForm">
+            <?php echoCsrfField(); ?>
             <input type="hidden" name="delete_checkup" id="deleteCheckupId" value="">
             <div class="modal-btns">
                 <button type="button" class="btn-cancel" onclick="closeDeleteModal()">Annuler</button>

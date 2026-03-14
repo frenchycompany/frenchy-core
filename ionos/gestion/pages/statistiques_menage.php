@@ -5,8 +5,6 @@ include '../pages/menu.php';   // menu de navigation
 
 // Mode exception + affichage des erreurs PDO
 $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
 
 // Récupération des filtres
 $filters = [];

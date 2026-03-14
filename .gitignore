@@ -6,6 +6,7 @@
 # Configuration sensible
 config/config.ini
 raspberry-pi/config/config.ini
+**/config_superhote.ini
 
 # Logs
 logs/
@@ -42,3 +43,8 @@ venv/
 # Selenium
 raspberry-pi/scripts/selenium/chromedriver
 raspberry-pi/scripts/selenium/screenshots/
+
+# Fichiers backup et dumps
+*.sql
+*.phpko
+*.inisav
