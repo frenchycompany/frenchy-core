@@ -45,8 +45,9 @@ function jok(array $data) {
     exit;
 }
 
-// auth
-if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
+// auth (compatible ancien système $_SESSION['role'] et nouveau $_SESSION['user_role'])
+$sessionRole = $_SESSION['role'] ?? $_SESSION['user_role'] ?? '';
+if ($sessionRole !== 'admin' && $sessionRole !== 'super_admin' && $sessionRole !== 'gestionnaire') {
     jerr(403, 'Accès refusé (admin requis).');
 }
 
@@ -266,7 +267,7 @@ try {
             ".($pl_has_src_id ? ", source_reservation_id" : "")."
             ".($pl_has_src_type ? ", source_type" : "")."
         ) VALUES (
-            :logement_id, :date, :nb_pers, :nb_jours, 'A Faire', :note
+            :logement_id, :date, :nb_pers, :nb_jours, :statut, :note
             ".($pl_has_src_id ? ", :resa_id" : "")."
             ".($pl_has_src_type ? ", 'AUTO_VERIF'" : "")."
         )
