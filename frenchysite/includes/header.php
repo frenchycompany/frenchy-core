@@ -36,6 +36,13 @@
         <a href="#reserver" class="vf-btn vf-btn-primary vf-header-cta">Réserver</a>
         <?php endif; ?>
 
+        <!-- Search toggle -->
+        <button class="vf-search-toggle" id="vf-search-toggle" aria-label="Rechercher" title="Rechercher">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+        </button>
+
         <!-- Mobile menu toggle -->
         <button class="vf-menu-toggle" id="vf-menu-toggle" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="vf-nav">
             <svg class="vf-menu-icon vf-menu-icon--open" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
