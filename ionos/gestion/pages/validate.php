@@ -146,8 +146,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = "Erreur upload vidéo.";
     } else {
         $ext = strtolower(pathinfo($_FILES['video']['name'], PATHINFO_EXTENSION));
-        if (!in_array($ext, ['mp4','mov','avi','webm'])) {
-            $errors[] = "Format vidéo non supporté.";
+        $allowedExts = ['mp4','mov','avi','webm','mkv','3gp','m4v','mlpr','mts','wmv','flv','mpg','mpeg'];
+        if (!in_array($ext, $allowedExts)) {
+            $errors[] = "Format vidéo non supporté ($ext).";
         }
     }
     if ($hasReservation && isset($_POST['send_sms'])) {
@@ -162,8 +163,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!is_writable($uploadDir)) {
             @chmod($uploadDir, 0775);
         }
-        $filename = $rec['intervention_id'] . '_' . time() . '.' . $ext;
-        if (is_writable($uploadDir) && move_uploaded_file($_FILES['video']['tmp_name'], $uploadDir . $filename)) {
+        $baseName = $rec['intervention_id'] . '_' . time();
+        $origFile = $baseName . '.' . $ext;
+        $filename = $baseName . '.mp4'; // Le fichier final sera toujours en MP4
+        if (is_writable($uploadDir) && move_uploaded_file($_FILES['video']['tmp_name'], $uploadDir . $origFile)) {
+
+            // Conversion en MP4 si le format d'origine n'est pas déjà mp4
+            if ($ext !== 'mp4') {
+                $input  = escapeshellarg($uploadDir . $origFile);
+                $output = escapeshellarg($uploadDir . $filename);
+                // -movflags +faststart = lecture streaming immédiate
+                exec("ffmpeg -i $input -c:v libx264 -preset fast -crf 28 -c:a aac -movflags +faststart -y $output 2>&1", $ffOut, $ffCode);
+                if ($ffCode === 0 && file_exists($uploadDir . $filename)) {
+                    // Supprime le fichier original
+                    @unlink($uploadDir . $origFile);
+                } else {
+                    // Fallback : on garde le fichier original tel quel
+                    $filename = $origFile;
+                }
+            }
 
             // Marque le token utilisé et met à jour le planning
             $conn->prepare("UPDATE intervention_tokens SET used=1 WHERE id=?")

@@ -4,7 +4,7 @@
 // ?f=fichier&raw=1 → sert le fichier vidéo avec support Range (streaming)
 
 $file = basename($_GET['f'] ?? '');
-if (!$file || !preg_match('/^\d+_\d+\.(mp4|mov|avi|webm)$/i', $file)) {
+if (!$file || !preg_match('/^\d+_\d+\.\w+$/i', $file)) {
     http_response_code(404);
     die('Vidéo introuvable.');
 }
