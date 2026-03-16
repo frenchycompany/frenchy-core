@@ -359,9 +359,10 @@ document.addEventListener('DOMContentLoaded',function(){fcUpdateDarkIcon();fcRes
                     }
                     var html='';
                     data.results.forEach(function(item,i){
+                        var icon=item.icon?'<i class="fas '+escHtml(item.icon)+' me-1"></i>':'';
                         html+='<a class="fc-sr-item" href="'+escHtml(item.url)+'" data-idx="'+i+'">'
                             +'<span class="fc-sr-badge fc-sr-badge--'+escHtml(item.type)+'">'+escHtml(item.type_label)+'</span>'
-                            +'<span class="fc-sr-title">'+escHtml(item.title)+'</span>'
+                            +'<span class="fc-sr-title">'+icon+escHtml(item.title)+'</span>'
                             +'<span class="fc-sr-sub">'+escHtml(item.subtitle||'')+'</span>'
                             +'</a>';
                     });

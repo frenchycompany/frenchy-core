@@ -40,15 +40,105 @@ try {
     error_log('search.php: ' . $e->getMessage());
 }
 
+// --- Recherche pages/outils du menu ---
+require_once __DIR__ . '/menu_categories.php';
+$page_keywords = [
+    'proprietaires.php' => 'propriétaire propriétaires owner bailleur bailleurs',
+    'logements.php' => 'logement logements appartement maison bien biens',
+    'logement_equipements.php' => 'équipement équipements wifi digicode clé clés',
+    'planning.php' => 'planning ménage intervention interventions',
+    'editer_planning.php' => 'planning éditer modifier intervention ménage',
+    'intervenants.php' => 'intervenant intervenants femme ménage agent agents équipe',
+    'reservations.php' => 'réservation réservations booking résa listing',
+    'calendrier.php' => 'calendrier planning disponibilité disponibilités',
+    'comptabilite.php' => 'comptabilité comptes paiement paiements argent finance',
+    'facturation.php' => 'facture factures facturation propriétaire',
+    'create_contract.php' => 'contrat conciergerie créer nouveau propriétaire',
+    'contrats_generes.php' => 'contrat contrats générés conciergerie propriétaire',
+    'create_location_contract.php' => 'contrat location bail créer locataire',
+    'location_contrats_generes.php' => 'contrat contrats location bail générés',
+    'prospection_proprietaires.php' => 'lead leads prospection propriétaire CRM commercial',
+    'simulations.php' => 'simulation simuler rentabilité revenu propriétaire',
+    'clients.php' => 'client clients voyageur voyageurs carnet',
+    'sms_recus.php' => 'sms message messages reçus',
+    'sms_envoyer.php' => 'sms envoyer message',
+    'sms_templates.php' => 'sms template modèle message',
+    'sms_automations.php' => 'sms automatisation auto robot',
+    'checkup_logement.php' => 'checkup vérification état logement',
+    'inventaire.php' => 'inventaire objet objets stock',
+    'superhote.php' => 'tarif tarifs prix superhôte',
+    'statistiques.php' => 'statistique statistiques stats chiffres',
+    'coffre_fort.php' => 'coffre-fort coffre document documents sécurisé',
+    'todo.php' => 'todo tâche tâches à faire',
+    'rdv_agenda.php' => 'rendez-vous rdv agenda',
+    'sync_ical.php' => 'sync ical calendrier synchronisation',
+    'occupation.php' => 'occupation taux remplissage',
+    'admin_site_conciergerie.php' => 'site vitrine conciergerie marketing',
+    'sites.php' => 'site sites vitrine logement',
+    'description_logements.php' => 'description annonce texte logement',
+    'machines.php' => 'machine machines laverie lave-linge',
+    'villes.php' => 'ville villes commune',
+    'import_photos_airbnb.php' => 'photo photos image airbnb',
+    'relances_voyageurs.php' => 'relance relances voyageur avis',
+    'analyse_marche.php' => 'analyse marché concurrence prix',
+    'audit_lcd.php' => 'audit lcd location courte durée réglementation',
+    'analyse_concurrence.php' => 'concurrence concurrent benchmark',
+];
+
+$matched_pages = [];
+if (!empty($q)) {
+    $qLower = mb_strtolower($q);
+    foreach ($menu_categories as $cat_name => $cat) {
+        foreach ($cat['items'] as $item) {
+            $filename = basename($item['chemin']);
+            $searchable = mb_strtolower($item['nom'] . ' ' . $cat_name . ' ' . ($page_keywords[$filename] ?? ''));
+            if (mb_strpos($searchable, $qLower) !== false) {
+                $matched_pages[] = [
+                    'nom' => $item['nom'],
+                    'chemin' => $item['chemin'],
+                    'icon' => $item['icon'] ?? 'fa-file',
+                    'categorie' => $cat_name
+                ];
+            }
+        }
+    }
+}
+
 if (!empty($q)) {
     $searchTerm = '%' . $q . '%';
     $phoneNormalized = normalizePhone($q);
 
+    // Normalisation téléphone pour recherche flexible
+    $phoneDigits = preg_replace('/[^0-9+]/', '', $q);
+    $phoneVariants = [];
+    if (strlen($phoneDigits) >= 4) {
+        $phoneVariants[] = '%' . $phoneDigits . '%';
+        if (strlen($phoneDigits) === 10 && $phoneDigits[0] === '0') {
+            $phoneVariants[] = '%+33' . substr($phoneDigits, 1) . '%';
+            $phoneVariants[] = '%0033' . substr($phoneDigits, 1) . '%';
+        }
+        if (substr($phoneDigits, 0, 3) === '+33') {
+            $phoneVariants[] = '%0' . substr($phoneDigits, 3) . '%';
+        }
+        if (substr($phoneDigits, 0, 4) === '0033') {
+            $phoneVariants[] = '%0' . substr($phoneDigits, 4) . '%';
+        }
+    }
+    $stripped_col = "REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(r.telephone,' ',''),'.',''),'-',''),'(',''),')','')";
+
     // --- Recherche clients (par telephone) ---
     try {
+        // Construire clause téléphone normalisée
+        $extraPhone = '';
+        $phoneBindings = [];
+        foreach ($phoneVariants as $i => $pv) {
+            $extraPhone .= " OR $stripped_col LIKE :pv$i";
+            $phoneBindings[":pv$i"] = $pv;
+        }
+
         $sql = "
             SELECT
-                REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(r.telephone,' ',''),'.',''),'-',''),'(',''),')','') as phone_clean,
+                $stripped_col as phone_clean,
                 COUNT(*) as nb_resa,
                 MAX(r.date_arrivee) as last_arrivee,
                 GROUP_CONCAT(DISTINCT CONCAT(TRIM(COALESCE(r.prenom,'')), ' ', TRIM(COALESCE(r.nom,''))) SEPARATOR ', ') as names,
@@ -58,17 +148,20 @@ if (!empty($q)) {
               AND r.telephone <> ''
               AND (
                   r.telephone LIKE :q
-                  OR r.prenom LIKE :q
-                  OR r.nom LIKE :q
-                  OR r.email LIKE :q
-                  OR CONCAT(r.prenom, ' ', r.nom) LIKE :q
+                  OR r.prenom LIKE :q2
+                  OR r.nom LIKE :q3
+                  OR r.email LIKE :q4
+                  OR CONCAT(r.prenom, ' ', r.nom) LIKE :q5
+                  $extraPhone
               )
             GROUP BY phone_clean
             ORDER BY nb_resa DESC
             LIMIT 10
         ";
         $stmt = $pdo->prepare($sql);
-        $stmt->execute([':q' => $searchTerm]);
+        $bindings = [':q' => $searchTerm, ':q2' => $searchTerm, ':q3' => $searchTerm, ':q4' => $searchTerm, ':q5' => $searchTerm];
+        foreach ($phoneBindings as $k => $v) $bindings[$k] = $v;
+        $stmt->execute($bindings);
         $results['clients'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
         if (!empty($results['clients'])) $hasResults = true;
     } catch (PDOException $e) { error_log('search.php: ' . $e->getMessage()); }
@@ -215,7 +308,8 @@ if (!empty($q)) {
     } catch (PDOException $e) { error_log('search.php: ' . $e->getMessage()); }
 }
 
-$totalResults = count($results['clients']) + count($results['reservations']) + count($results['logements']) + count($results['proprietaires']) + count($results['intervenants']) + count($results['leads']) + count($results['sms']);
+$totalResults = count($matched_pages) + count($results['clients']) + count($results['reservations']) + count($results['logements']) + count($results['proprietaires']) + count($results['intervenants']) + count($results['leads']) + count($results['sms']);
+if (!empty($matched_pages)) $hasResults = true;
 ?>
 
 <!-- Header de page -->
@@ -264,6 +358,28 @@ $totalResults = count($results['clients']) + count($results['reservations']) + c
             <i class="fas fa-info-circle"></i>
             <strong><?= $totalResults ?> resultat(s)</strong> trouve(s) pour "<?= e($q) ?>"
         </div>
+
+        <?php if (!empty($matched_pages)): ?>
+            <!-- Pages / Outils correspondants -->
+            <div class="card shadow-sm mb-4" style="border-left: 4px solid #6c757d;">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-compass text-secondary"></i> Pages & outils
+                        <span class="badge text-bg-secondary"><?= count($matched_pages) ?></span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex flex-wrap gap-2">
+                        <?php foreach ($matched_pages as $pg): ?>
+                            <a href="<?= e($pg['chemin']) ?>" class="btn btn-outline-secondary btn-sm">
+                                <i class="fas <?= e($pg['icon']) ?>"></i> <?= e($pg['nom']) ?>
+                                <small class="text-muted ms-1">(<?= e($pg['categorie']) ?>)</small>
+                            </a>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            </div>
+        <?php endif; ?>
 
         <div class="row">
             <!-- Colonne gauche : Clients et Reservations -->

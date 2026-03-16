@@ -707,6 +707,7 @@ footer {
 .fc-sr-badge--sms         { background: #f8d7da; color: #721c24; }
 .fc-sr-badge--lead        { background: #fde2c8; color: #7c4700; }
 .fc-sr-badge--comptabilite { background: #d5e8d4; color: #2d6a2e; }
+.fc-sr-badge--page        { background: #e8eaed; color: #3c4043; }
 
 .fc-sr-title {
     font-size: .875rem;
