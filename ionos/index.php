@@ -302,6 +302,17 @@ function sectionActive($key) {
     return $sectionsActives[$key] ?? true;
 }
 
+// Charger la config RGPD personnalisée
+$rgpdConfig = [];
+try {
+    $stmtRgpd = $conn->query("SELECT config_key, config_value FROM FC_rgpd_config");
+    while ($row = $stmtRgpd->fetch(PDO::FETCH_ASSOC)) {
+        $rgpdConfig[$row['config_key']] = $row['config_value'];
+    }
+} catch (PDOException $e) {
+    // Table n'existe pas encore, on utilise les textes par défaut
+}
+
 // Récupération de la config du simulateur
 $simulateurConfig = [
     'tarif_base_couchage' => 15,
@@ -1889,6 +1900,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['contact_submit'])) {
         <div class="container">
             <h2 class="section-title">Informations Légales</h2>
 
+            <?php if (!empty($rgpdConfig['mentions_legales'])): ?>
+            <div class="legal-box"><?= $rgpdConfig['mentions_legales'] ?></div>
+            <?php else: ?>
             <div class="legal-box">
                 <h3>Identité de l'Entreprise</h3>
                 <p><strong>Raison sociale :</strong> SAS FRENCHY CONCIERGERIE</p>
@@ -1936,6 +1950,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['contact_submit'])) {
                     </p>
                 </div>
             </div>
+            <?php endif; ?>
         </div>
     </section>
     <?php endif; ?>
@@ -1945,6 +1960,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['contact_submit'])) {
         <div class="container">
             <h2 class="section-title">Politique de Confidentialité</h2>
 
+            <?php if (!empty($rgpdConfig['politique_confidentialite'])): ?>
+            <div class="privacy-content"><?= $rgpdConfig['politique_confidentialite'] ?></div>
+            <?php else: ?>
             <div class="privacy-content">
                 <p><strong>Dernière mise à jour :</strong> <?= date('d/m/Y') ?></p>
 
@@ -2048,6 +2066,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['contact_submit'])) {
                     <p style="margin-top: 0.5rem;"><a href="mailto:<?= e($settings['email_legal'] ?? $settings['email'] ?? '') ?>" class="btn-primary" style="display: inline-block; margin-top: 0.5rem;">📧 <?= e($settings['email_legal'] ?? $settings['email'] ?? '') ?></a></p>
                 </div>
             </div>
+            <?php endif; ?>
         </div>
     </section>
 

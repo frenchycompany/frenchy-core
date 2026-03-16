@@ -1,5 +1,15 @@
 <?php
 /** RGPD Configuration — Page FC Admin */
+
+// Charger les settings du site pour pré-remplir les champs légaux
+$siteSettings = [];
+try {
+    $stmtS = $conn->query("SELECT setting_key, setting_value FROM FC_settings");
+    while ($row = $stmtS->fetch(PDO::FETCH_ASSOC)) {
+        $siteSettings[$row['setting_key']] = $row['setting_value'];
+    }
+} catch (PDOException $e) {}
+
 try {
     $conn->exec("CREATE TABLE IF NOT EXISTS FC_rgpd_config (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -19,8 +29,8 @@ try {
         'duree_conservation_contacts' => '36',
         'duree_conservation_simulations' => '24',
         'duree_conservation_visites' => '13',
-        'responsable_traitement' => '',
-        'email_dpo' => '',
+        'responsable_traitement' => $siteSettings['presidente'] ?? '',
+        'email_dpo' => $siteSettings['email_legal'] ?? '',
     ];
     foreach ($rgpdDefaults as $key => $val) {
         $conn->prepare("INSERT IGNORE INTO FC_rgpd_config (config_key, config_value) VALUES (?, ?)")->execute([$key, $val]);
@@ -32,8 +42,37 @@ try {
     }
 } catch (PDOException $e) { $rgpdConfig = []; }
 ?>
+
+<!-- Infos légales actuelles du site (lecture seule, rappel) -->
+<div class="card shadow-sm mb-3">
+    <div class="card-header bg-secondary text-white">
+        <h6 class="mb-0"><i class="fas fa-building"></i> Informations legales actuelles du site
+            <small class="text-light">(modifiables dans Parametres)</small>
+        </h6>
+    </div>
+    <div class="card-body">
+        <div class="row g-2">
+            <div class="col-md-4"><strong>Raison sociale :</strong> <?= e($siteSettings['site_nom'] ?? 'Non renseigne') ?></div>
+            <div class="col-md-4"><strong>Forme juridique :</strong> <?= e($siteSettings['forme_juridique'] ?? 'Non renseigne') ?></div>
+            <div class="col-md-4"><strong>Capital :</strong> <?= e($siteSettings['capital'] ?? 'Non renseigne') ?></div>
+            <div class="col-md-4"><strong>SIRET :</strong> <?= e($siteSettings['siret'] ?? 'Non renseigne') ?></div>
+            <div class="col-md-4"><strong>RCS :</strong> <?= e($siteSettings['rcs'] ?? 'Non renseigne') ?></div>
+            <div class="col-md-4"><strong>TVA intra :</strong> <?= e($siteSettings['tva_intra'] ?? 'Non renseigne') ?></div>
+            <div class="col-md-4"><strong>Presidente :</strong> <?= e($siteSettings['presidente'] ?? 'Non renseigne') ?></div>
+            <div class="col-md-4"><strong>Email legal :</strong> <?= e($siteSettings['email_legal'] ?? 'Non renseigne') ?></div>
+            <div class="col-md-4"><strong>Tel legal :</strong> <?= e($siteSettings['telephone_legal'] ?? 'Non renseigne') ?></div>
+            <div class="col-md-6"><strong>Carte Transaction :</strong> <?= e($siteSettings['carte_transaction'] ?? 'Non renseigne') ?></div>
+            <div class="col-md-6"><strong>Carte Gestion :</strong> <?= e($siteSettings['carte_gestion'] ?? 'Non renseigne') ?></div>
+        </div>
+        <div class="mt-2">
+            <a href="?fc_page=settings" class="btn btn-outline-secondary btn-sm"><i class="fas fa-cog"></i> Modifier dans Parametres</a>
+        </div>
+    </div>
+</div>
+
 <form method="POST">
     <?= fcCsrfField() ?>
+
     <div class="card shadow-sm mb-3">
         <div class="card-header bg-warning text-dark"><h6 class="mb-0"><i class="fas fa-cookie-bite"></i> Bandeau Cookies</h6></div>
         <div class="card-body">
@@ -55,19 +94,26 @@ try {
             </div>
         </div>
     </div>
+
     <div class="card shadow-sm mb-3">
-        <div class="card-header bg-info text-white"><h6 class="mb-0"><i class="fas fa-file-alt"></i> Textes legaux</h6></div>
+        <div class="card-header bg-info text-white"><h6 class="mb-0"><i class="fas fa-file-alt"></i> Textes legaux personnalises</h6></div>
         <div class="card-body">
-            <div class="mb-3">
-                <label class="form-label">Politique de confidentialite</label>
-                <textarea name="rgpd[politique_confidentialite]" class="form-control" rows="8" style="font-family:monospace"><?= e($rgpdConfig['politique_confidentialite'] ?? '') ?></textarea>
+            <div class="alert alert-info mb-3">
+                <i class="fas fa-info-circle"></i>
+                Si ces champs sont vides, le site affiche les textes par defaut (mentions legales et politique de confidentialite standards).
+                Remplissez-les uniquement si vous souhaitez personnaliser le contenu.
             </div>
             <div class="mb-3">
-                <label class="form-label">Mentions legales</label>
-                <textarea name="rgpd[mentions_legales]" class="form-control" rows="8" style="font-family:monospace"><?= e($rgpdConfig['mentions_legales'] ?? '') ?></textarea>
+                <label class="form-label">Mentions legales (HTML autorise)</label>
+                <textarea name="rgpd[mentions_legales]" class="form-control" rows="10" style="font-family:monospace"><?= e($rgpdConfig['mentions_legales'] ?? '') ?></textarea>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Politique de confidentialite (HTML autorise)</label>
+                <textarea name="rgpd[politique_confidentialite]" class="form-control" rows="10" style="font-family:monospace"><?= e($rgpdConfig['politique_confidentialite'] ?? '') ?></textarea>
             </div>
         </div>
     </div>
+
     <div class="card shadow-sm mb-3">
         <div class="card-header bg-danger text-white"><h6 class="mb-0"><i class="fas fa-database"></i> Conservation des donnees</h6></div>
         <div class="card-body">
@@ -80,5 +126,6 @@ try {
             </div>
         </div>
     </div>
+
     <button type="submit" name="save_rgpd" class="btn btn-primary"><i class="fas fa-save"></i> Enregistrer la configuration RGPD</button>
 </form>
