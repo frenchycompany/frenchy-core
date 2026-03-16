@@ -215,15 +215,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 logementInfoBody.innerHTML = buildInfoList(infoItems);
 
                 if (contractType === 'location') {
-                    const hasDetails = data.detail_description_logement || data.detail_equipements || data.detail_heure_arrivee;
-                    if (hasDetails) {
+                    // Proprietaire + details pour location
+                    var locationExtra = [];
+                    if (data.proprietaire_nom || data.proprietaire_prenom) {
+                        locationExtra.push({label: 'Proprietaire', value: ((data.proprietaire_prenom || '') + ' ' + (data.proprietaire_nom || '')).trim()});
+                        if (data.proprietaire_societe) locationExtra.push({label: 'Societe', value: data.proprietaire_societe});
+                        if (data.proprietaire_adresse) locationExtra.push({label: 'Adresse proprio', value: [data.proprietaire_adresse, data.proprietaire_adresse_ligne2].filter(Boolean).join(', ')});
+                        if (data.proprietaire_code_postal || data.proprietaire_ville) locationExtra.push({label: 'Ville proprio', value: [data.proprietaire_code_postal, data.proprietaire_ville].filter(Boolean).join(' ')});
+                        if (data.proprietaire_email) locationExtra.push({label: 'Email proprio', value: data.proprietaire_email});
+                        if (data.proprietaire_telephone) locationExtra.push({label: 'Tel proprio', value: data.proprietaire_telephone});
+                        if (data.proprietaire_siret) locationExtra.push({label: 'SIRET', value: data.proprietaire_siret});
+                    }
+                    if (data.detail_heure_arrivee) locationExtra.push({label: 'Arrivee', value: data.detail_heure_arrivee});
+                    if (data.detail_heure_depart) locationExtra.push({label: 'Depart', value: data.detail_heure_depart});
+                    if (data.detail_depot_garantie) locationExtra.push({label: 'Garantie', value: data.detail_depot_garantie + ' EUR'});
+                    if (data.detail_taxe_sejour_par_nuit) locationExtra.push({label: 'Taxe/nuit', value: data.detail_taxe_sejour_par_nuit + ' EUR'});
+
+                    if (locationExtra.length > 0) {
                         extraInfoCard.style.display = 'block';
-                        extraInfoBody.innerHTML = buildInfoList([
-                            {label: 'Arrivee', value: data.detail_heure_arrivee},
-                            {label: 'Depart', value: data.detail_heure_depart},
-                            {label: 'Garantie', value: data.detail_depot_garantie ? data.detail_depot_garantie + ' EUR' : ''},
-                            {label: 'Taxe/nuit', value: data.detail_taxe_sejour_par_nuit ? data.detail_taxe_sejour_par_nuit + ' EUR' : ''},
-                        ]);
+                        extraInfoBody.innerHTML = buildInfoList(locationExtra);
                     } else { extraInfoCard.style.display = 'none'; }
                 } else {
                     if (data.proprietaire_nom || data.proprietaire_prenom) {

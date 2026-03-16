@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS location_contract_fields (
     description VARCHAR(255) NOT NULL,
     input_type ENUM('text', 'number', 'textarea', 'date', 'select') DEFAULT 'text',
     options TEXT DEFAULT NULL,
-    field_group ENUM('voyageur', 'reservation', 'logement', 'autre') DEFAULT 'autre',
+    field_group ENUM('voyageur', 'reservation', 'logement', 'proprietaire', 'autre') DEFAULT 'autre',
     sort_order INT DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -91,6 +91,17 @@ INSERT IGNORE INTO location_contract_fields (field_name, description, input_type
 ('heure_arrivee', 'Heure d\'arrivee', 'text', 'logement', 300),
 ('heure_depart', 'Heure de depart', 'text', 'logement', 310),
 ('conditions_annulation', 'Conditions d\'annulation', 'textarea', 'logement', 320),
+-- Proprietaire (auto-fill depuis FC_proprietaires)
+('proprietaire_nom_complet', 'Nom complet du proprietaire', 'text', 'proprietaire', 500),
+('proprietaire_email', 'Email du proprietaire', 'text', 'proprietaire', 510),
+('proprietaire_telephone', 'Telephone du proprietaire', 'text', 'proprietaire', 520),
+('proprietaire_adresse', 'Adresse du proprietaire (ligne 1)', 'text', 'proprietaire', 530),
+('proprietaire_adresse_ligne2', 'Adresse du proprietaire (ligne 2)', 'text', 'proprietaire', 540),
+('proprietaire_code_postal', 'Code postal du proprietaire', 'text', 'proprietaire', 550),
+('proprietaire_ville', 'Ville du proprietaire', 'text', 'proprietaire', 560),
+('proprietaire_adresse_complete', 'Adresse complete du proprietaire', 'text', 'proprietaire', 570),
+('proprietaire_societe', 'Societe du proprietaire', 'text', 'proprietaire', 580),
+('proprietaire_siret', 'SIRET du proprietaire', 'text', 'proprietaire', 590),
 -- Autre
-('date_contrat', 'Date du contrat', 'date', 'autre', 400),
-('lieu_signature', 'Lieu de signature', 'text', 'autre', 410);
+('date_contrat', 'Date du contrat', 'date', 'autre', 600),
+('lieu_signature', 'Lieu de signature', 'text', 'autre', 610);
