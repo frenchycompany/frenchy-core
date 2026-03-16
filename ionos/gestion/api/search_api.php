@@ -309,4 +309,37 @@ try {
     }
 } catch (PDOException $e) { error_log('search_api clients: ' . $e->getMessage()); }
 
+// --- SMS (conversations) ---
+try {
+    require_once __DIR__ . '/../includes/rpi_db.php';
+    $pdoSms = getRpiPdo();
+
+    $phoneBind = [];
+    $phoneWhere = $isPhoneSearch ? phoneWhereClause('sender', 'sp', $phoneBind, $phoneVariants) : '';
+    $sql = "
+        SELECT sender AS phone, message, received_at,
+               COUNT(*) AS nb_messages
+        FROM sms_in
+        WHERE sender LIKE :q1 OR message LIKE :q2
+           " . ($phoneWhere ? " OR $phoneWhere" : "") . "
+        GROUP BY sender
+        ORDER BY MAX(received_at) DESC LIMIT :lim
+    ";
+    $stmt = $pdoSms->prepare($sql);
+    $stmt->bindValue(':q1', $searchTerm);
+    $stmt->bindValue(':q2', $searchTerm);
+    foreach ($phoneBind as $k => $v) $stmt->bindValue($k, $v);
+    $stmt->bindValue(':lim', $limit, PDO::PARAM_INT);
+    $stmt->execute();
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $results[] = [
+            'type' => 'sms',
+            'type_label' => 'SMS',
+            'title' => $row['phone'],
+            'subtitle' => $row['nb_messages'] . ' message(s) · ' . mb_substr($row['message'] ?? '', 0, 50),
+            'url' => 'pages/sms_recus.php?view=conversations&sender=' . urlencode($row['phone'])
+        ];
+    }
+} catch (Exception $e) { error_log('search_api sms: ' . $e->getMessage()); }
+
 echo json_encode(['results' => $results, 'query' => $q]);
