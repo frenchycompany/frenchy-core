@@ -1172,6 +1172,59 @@ $fcPages = [
                     </div>
                 </div>
             </div>
+            <div class="card shadow-sm mb-3">
+                <div class="card-header bg-info text-white"><h6 class="mb-0"><i class="fas fa-font"></i> Textes du site</h6></div>
+                <div class="card-body">
+                    <p class="text-muted mb-3">Modifiez les titres et textes affichés sur chaque section du site. Laissez vide pour garder le texte par défaut.</p>
+
+                    <h6 class="text-primary mt-3 mb-2">Hero (Bannière)</h6>
+                    <div class="row g-3">
+                        <div class="col-md-6"><label class="form-label">Description sous le slogan</label><input type="text" name="settings[site_description]" class="form-control" value="<?= e($settings['site_description'] ?? '') ?>" placeholder="Nous gérons votre bien de A à Z pour optimiser vos revenus"></div>
+                        <div class="col-md-6"><label class="form-label">Bouton CTA</label><input type="text" name="settings[hero_cta]" class="form-control" value="<?= e($settings['hero_cta'] ?? '') ?>" placeholder="Contactez-nous"></div>
+                    </div>
+
+                    <h6 class="text-primary mt-4 mb-2">Titres des sections</h6>
+                    <div class="row g-3">
+                        <div class="col-md-4"><label class="form-label">Services</label><input type="text" name="settings[titre_services]" class="form-control" value="<?= e($settings['titre_services'] ?? '') ?>" placeholder="Nos Services"></div>
+                        <div class="col-md-4"><label class="form-label">Tarifs</label><input type="text" name="settings[titre_tarifs]" class="form-control" value="<?= e($settings['titre_tarifs'] ?? '') ?>" placeholder="Tarifs Transparents"></div>
+                        <div class="col-md-4"><label class="form-label">Simulateur</label><input type="text" name="settings[titre_simulateur]" class="form-control" value="<?= e($settings['titre_simulateur'] ?? '') ?>" placeholder="Estimez vos Revenus Locatifs"></div>
+                        <div class="col-md-4"><label class="form-label">Logements</label><input type="text" name="settings[titre_logements]" class="form-control" value="<?= e($settings['titre_logements'] ?? '') ?>" placeholder="Nos Logements Gérés"></div>
+                        <div class="col-md-4"><label class="form-label">Distinctions</label><input type="text" name="settings[titre_distinctions]" class="form-control" value="<?= e($settings['titre_distinctions'] ?? '') ?>" placeholder="Nos Distinctions & Certifications"></div>
+                        <div class="col-md-4"><label class="form-label">Avis</label><input type="text" name="settings[titre_avis]" class="form-control" value="<?= e($settings['titre_avis'] ?? '') ?>" placeholder="Témoignages de Propriétaires"></div>
+                        <div class="col-md-4"><label class="form-label">Blog</label><input type="text" name="settings[titre_blog]" class="form-control" value="<?= e($settings['titre_blog'] ?? '') ?>" placeholder="Nos Actualités"></div>
+                        <div class="col-md-4"><label class="form-label">Contact</label><input type="text" name="settings[titre_contact]" class="form-control" value="<?= e($settings['titre_contact'] ?? '') ?>" placeholder="Contactez-nous"></div>
+                    </div>
+
+                    <h6 class="text-primary mt-4 mb-2">Sous-titres et descriptions</h6>
+                    <div class="row g-3">
+                        <div class="col-md-6"><label class="form-label">Sous-titre simulateur</label><input type="text" name="settings[sous_titre_simulateur]" class="form-control" value="<?= e($settings['sous_titre_simulateur'] ?? '') ?>" placeholder="Découvrez le potentiel de votre bien..."></div>
+                        <div class="col-md-6"><label class="form-label">Sous-titre blog</label><input type="text" name="settings[sous_titre_blog]" class="form-control" value="<?= e($settings['sous_titre_blog'] ?? '') ?>" placeholder="Conseils, astuces et actualités..."></div>
+                        <div class="col-md-6"><label class="form-label">Sous-titre contact</label><input type="text" name="settings[sous_titre_contact]" class="form-control" value="<?= e($settings['sous_titre_contact'] ?? '') ?>" placeholder="Vous avez un projet de location saisonnière ?"></div>
+                        <div class="col-md-6"><label class="form-label">Description footer</label><input type="text" name="settings[footer_description]" class="form-control" value="<?= e($settings['footer_description'] ?? '') ?>" placeholder="Votre partenaire de confiance..."></div>
+                        <div class="col-12"><label class="form-label">Sous-titre logements</label><textarea name="settings[sous_titre_logements]" class="form-control" rows="2" placeholder="Découvrez quelques exemples de biens que nous gérons..."><?= e($settings['sous_titre_logements'] ?? '') ?></textarea></div>
+                    </div>
+
+                    <h6 class="text-primary mt-4 mb-2">Tarifs — "Ce qui est inclus"</h6>
+                    <div class="row g-3">
+                        <div class="col-md-4"><label class="form-label">Titre</label><input type="text" name="settings[titre_inclus_tarifs]" class="form-control" value="<?= e($settings['titre_inclus_tarifs'] ?? '') ?>" placeholder="Ce qui est inclus :"></div>
+                        <div class="col-md-8"><label class="form-label">Elements (un par ligne)</label><textarea name="settings[inclus_tarifs]" class="form-control" rows="4" placeholder="Gestion complète des réservations&#10;Ménage professionnel entre chaque séjour&#10;..."><?= e($settings['inclus_tarifs'] ?? '') ?></textarea></div>
+                    </div>
+
+                    <h6 class="text-primary mt-4 mb-2">Disclaimers</h6>
+                    <div class="row g-3">
+                        <div class="col-12"><label class="form-label">Disclaimer services</label><textarea name="settings[disclaimer_services]" class="form-control" rows="2" placeholder="Les informations présentées sur ce site sont fournies à titre informatif..."><?= e($settings['disclaimer_services'] ?? '') ?></textarea></div>
+                        <div class="col-12"><label class="form-label">Disclaimer avis</label><textarea name="settings[disclaimer_avis]" class="form-control" rows="2" placeholder="Les témoignages publiés sur notre site proviennent de propriétaires..."><?= e($settings['disclaimer_avis'] ?? '') ?></textarea></div>
+                    </div>
+
+                    <h6 class="text-primary mt-4 mb-2">CTA Logements</h6>
+                    <div class="row g-3">
+                        <div class="col-md-4"><label class="form-label">Titre CTA</label><input type="text" name="settings[cta_logements_titre]" class="form-control" value="<?= e($settings['cta_logements_titre'] ?? '') ?>" placeholder="Vous souhaitez confier votre bien ?"></div>
+                        <div class="col-md-4"><label class="form-label">Texte CTA</label><input type="text" name="settings[cta_logements_texte]" class="form-control" value="<?= e($settings['cta_logements_texte'] ?? '') ?>" placeholder="Notre équipe vous accompagne..."></div>
+                        <div class="col-md-4"><label class="form-label">Bouton CTA</label><input type="text" name="settings[cta_logements_bouton]" class="form-control" value="<?= e($settings['cta_logements_bouton'] ?? '') ?>" placeholder="Contactez-nous pour un devis personnalisé"></div>
+                    </div>
+                </div>
+            </div>
+
             <button type="submit" name="update_settings" class="btn btn-primary"><i class="fas fa-save"></i> Enregistrer</button>
         </form>
 
