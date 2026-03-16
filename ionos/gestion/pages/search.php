@@ -26,6 +26,9 @@ $results = [
     'clients' => [],
     'reservations' => [],
     'logements' => [],
+    'proprietaires' => [],
+    'intervenants' => [],
+    'leads' => [],
     'sms' => []
 ];
 $hasResults = false;
@@ -124,6 +127,61 @@ if (!empty($q)) {
         } catch (PDOException $e2) { error_log('search.php: ' . $e2->getMessage()); }
     }
 
+    // --- Recherche proprietaires ---
+    try {
+        $sql = "
+            SELECT *
+            FROM FC_proprietaires
+            WHERE nom LIKE :q1
+               OR prenom LIKE :q2
+               OR email LIKE :q3
+               OR telephone LIKE :q4
+               OR COALESCE(societe, '') LIKE :q5
+               OR CONCAT(prenom, ' ', nom) LIKE :q6
+            ORDER BY nom
+            LIMIT 10
+        ";
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([':q1' => $searchTerm, ':q2' => $searchTerm, ':q3' => $searchTerm, ':q4' => $searchTerm, ':q5' => $searchTerm, ':q6' => $searchTerm]);
+        $results['proprietaires'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        if (!empty($results['proprietaires'])) $hasResults = true;
+    } catch (PDOException $e) { error_log('search.php proprietaires: ' . $e->getMessage()); }
+
+    // --- Recherche intervenants ---
+    try {
+        $sql = "
+            SELECT *
+            FROM intervenant
+            WHERE nom LIKE :q1
+               OR COALESCE(telephone, '') LIKE :q2
+               OR COALESCE(email, '') LIKE :q3
+            ORDER BY nom
+            LIMIT 10
+        ";
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([':q1' => $searchTerm, ':q2' => $searchTerm, ':q3' => $searchTerm]);
+        $results['intervenants'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        if (!empty($results['intervenants'])) $hasResults = true;
+    } catch (PDOException $e) { error_log('search.php intervenants: ' . $e->getMessage()); }
+
+    // --- Recherche leads/prospection ---
+    try {
+        $sql = "
+            SELECT *
+            FROM prospection_leads
+            WHERE nom LIKE :q1
+               OR COALESCE(email, '') LIKE :q2
+               OR COALESCE(telephone, '') LIKE :q3
+               OR COALESCE(adresse, '') LIKE :q4
+            ORDER BY created_at DESC
+            LIMIT 10
+        ";
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([':q1' => $searchTerm, ':q2' => $searchTerm, ':q3' => $searchTerm, ':q4' => $searchTerm]);
+        $results['leads'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        if (!empty($results['leads'])) $hasResults = true;
+    } catch (PDOException $e) { error_log('search.php leads: ' . $e->getMessage()); }
+
     // --- Recherche SMS ---
     try {
         // SMS recus
@@ -157,7 +215,7 @@ if (!empty($q)) {
     } catch (PDOException $e) { error_log('search.php: ' . $e->getMessage()); }
 }
 
-$totalResults = count($results['clients']) + count($results['reservations']) + count($results['logements']) + count($results['sms']);
+$totalResults = count($results['clients']) + count($results['reservations']) + count($results['logements']) + count($results['proprietaires']) + count($results['intervenants']) + count($results['leads']) + count($results['sms']);
 ?>
 
 <!-- Header de page -->
@@ -166,7 +224,7 @@ $totalResults = count($results['clients']) + count($results['reservations']) + c
         <h1 class="display-4">
             <i class="fas fa-search text-primary"></i> Recherche globale
         </h1>
-        <p class="lead text-muted">Recherchez dans les clients, reservations, logements et SMS</p>
+        <p class="lead text-muted">Recherchez dans les clients, réservations, logements, propriétaires, intervenants, leads et SMS</p>
     </div>
 </div>
 
@@ -356,6 +414,103 @@ $totalResults = count($results['clients']) + count($results['reservations']) + c
                                     </div>
                                 </div>
                             <?php endforeach; ?>
+                        </div>
+                    </div>
+                <?php endif; ?>
+
+                <?php if (!empty($results['proprietaires'])): ?>
+                    <!-- Resultats Proprietaires -->
+                    <div class="card shadow-sm mb-4" style="border-left: 4px solid #6f42c1;">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fas fa-user-tie" style="color:#6f42c1"></i> Propriétaires
+                                <span class="badge" style="background:#6f42c1;color:#fff"><?= count($results['proprietaires']) ?></span>
+                            </h5>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <thead><tr><th>Nom</th><th>Email</th><th>Téléphone</th><th>Société</th><th>Actions</th></tr></thead>
+                                    <tbody>
+                                        <?php foreach ($results['proprietaires'] as $prop): ?>
+                                            <tr>
+                                                <td><?= e(trim(($prop['prenom'] ?? '') . ' ' . ($prop['nom'] ?? ''))) ?></td>
+                                                <td><small><?= e($prop['email'] ?? '-') ?></small></td>
+                                                <td><code><?= e($prop['telephone'] ?? '-') ?></code></td>
+                                                <td><small><?= e($prop['societe'] ?? '-') ?></small></td>
+                                                <td>
+                                                    <a href="proprietaires.php?id=<?= $prop['id'] ?>" class="btn btn-sm btn-outline-primary">
+                                                        <i class="fas fa-eye"></i> Fiche
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                <?php endif; ?>
+
+                <?php if (!empty($results['intervenants'])): ?>
+                    <!-- Resultats Intervenants -->
+                    <div class="card shadow-sm mb-4" style="border-left: 4px solid #17a2b8;">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fas fa-hard-hat text-info"></i> Intervenants
+                                <span class="badge text-bg-info"><?= count($results['intervenants']) ?></span>
+                            </h5>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <thead><tr><th>Nom</th><th>Rôle</th><th>Téléphone</th><th>Email</th></tr></thead>
+                                    <tbody>
+                                        <?php foreach ($results['intervenants'] as $inter): ?>
+                                            <tr>
+                                                <td><?= e($inter['nom']) ?></td>
+                                                <td><span class="badge text-bg-secondary"><?= e($inter['role'] ?? '-') ?></span></td>
+                                                <td><code><?= e($inter['telephone'] ?? '-') ?></code></td>
+                                                <td><small><?= e($inter['email'] ?? '-') ?></small></td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                <?php endif; ?>
+
+                <?php if (!empty($results['leads'])): ?>
+                    <!-- Resultats Leads -->
+                    <div class="card shadow-sm mb-4" style="border-left: 4px solid #fd7e14;">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fas fa-bullseye" style="color:#fd7e14"></i> Leads / Prospection
+                                <span class="badge" style="background:#fd7e14;color:#fff"><?= count($results['leads']) ?></span>
+                            </h5>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <thead><tr><th>Nom</th><th>Email</th><th>Téléphone</th><th>Statut</th><th>Actions</th></tr></thead>
+                                    <tbody>
+                                        <?php foreach ($results['leads'] as $lead): ?>
+                                            <tr>
+                                                <td><?= e($lead['nom']) ?></td>
+                                                <td><small><?= e($lead['email'] ?? '-') ?></small></td>
+                                                <td><code><?= e($lead['telephone'] ?? '-') ?></code></td>
+                                                <td><span class="badge text-bg-secondary"><?= e($lead['statut'] ?? '-') ?></span></td>
+                                                <td>
+                                                    <a href="prospection_proprietaires.php?id=<?= $lead['id'] ?>" class="btn btn-sm btn-outline-warning">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 <?php endif; ?>

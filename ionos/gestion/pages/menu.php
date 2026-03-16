@@ -245,6 +245,20 @@ foreach ($pages_accessibles as $page) {
     <button class="fc-hamburger" onclick="fcToggleSidebar()" aria-label="Menu">
         <i class="fas fa-bars"></i>
     </button>
+    <!-- Search bar -->
+    <div class="fc-topbar-search">
+        <form action="<?= BASE_URL ?>pages/search.php" method="GET" class="fc-search-form" id="fcSearchForm">
+            <i class="fas fa-search fc-search-icon"></i>
+            <input type="text" name="q" class="fc-search-input" id="fcSearchInput"
+                   placeholder="Rechercher..." autocomplete="off"
+                   aria-label="Recherche globale">
+            <kbd class="fc-search-kbd" id="fcSearchKbd">Ctrl+K</kbd>
+        </form>
+        <div class="fc-search-dropdown" id="fcSearchDropdown" hidden>
+            <div class="fc-search-results" id="fcSearchResults"></div>
+        </div>
+    </div>
+
     <div class="fc-topbar-right">
         <?php if (function_exists('langSelector')): ?>
             <div class="fc-topbar-item"><?= langSelector() ?></div>
@@ -305,4 +319,80 @@ function fcToggleDropdown(btn){
     setTimeout(function(){document.addEventListener('click',function h(e){if(!btn.parentElement.contains(e.target)){m.classList.remove('show');document.removeEventListener('click',h);}});},0);
 }
 document.addEventListener('DOMContentLoaded',function(){fcUpdateDarkIcon();fcRestoreNav();});
+
+// ── Global Search (topbar) ──
+(function(){
+    var input=document.getElementById('fcSearchInput');
+    var dropdown=document.getElementById('fcSearchDropdown');
+    var results=document.getElementById('fcSearchResults');
+    var form=document.getElementById('fcSearchForm');
+    var kbd=document.getElementById('fcSearchKbd');
+    if(!input||!dropdown||!results)return;
+
+    var debounceTimer=null;
+    var activeIdx=-1;
+    var baseUrl=form.action.replace('search.php','');
+
+    function show(){dropdown.hidden=false;}
+    function hide(){dropdown.hidden=true;activeIdx=-1;}
+
+    input.addEventListener('focus',function(){
+        if(input.value.trim().length>=2)show();
+        if(kbd)kbd.style.display='none';
+    });
+    input.addEventListener('blur',function(){
+        setTimeout(hide,200);
+        if(kbd&&!input.value)kbd.style.display='';
+    });
+
+    input.addEventListener('input',function(){
+        clearTimeout(debounceTimer);
+        var q=input.value.trim();
+        if(q.length<2){hide();results.innerHTML='';return;}
+        debounceTimer=setTimeout(function(){
+            fetch(baseUrl+'api/search_api.php?q='+encodeURIComponent(q))
+                .then(function(r){return r.json();})
+                .then(function(data){
+                    if(!data.results||data.results.length===0){
+                        results.innerHTML='<div class="fc-sr-empty">Aucun résultat pour «&nbsp;'+escHtml(q)+'&nbsp;»</div>';
+                        show();return;
+                    }
+                    var html='';
+                    data.results.forEach(function(item,i){
+                        html+='<a class="fc-sr-item" href="'+escHtml(item.url)+'" data-idx="'+i+'">'
+                            +'<span class="fc-sr-badge fc-sr-badge--'+escHtml(item.type)+'">'+escHtml(item.type_label)+'</span>'
+                            +'<span class="fc-sr-title">'+escHtml(item.title)+'</span>'
+                            +'<span class="fc-sr-sub">'+escHtml(item.subtitle||'')+'</span>'
+                            +'</a>';
+                    });
+                    html+='<a class="fc-sr-all" href="'+baseUrl+'pages/search.php?q='+encodeURIComponent(q)+'"><i class="fas fa-search"></i> Voir tous les résultats</a>';
+                    results.innerHTML=html;
+                    activeIdx=-1;
+                    show();
+                })
+                .catch(function(){});
+        },250);
+    });
+
+    // Keyboard nav
+    input.addEventListener('keydown',function(e){
+        var items=results.querySelectorAll('.fc-sr-item');
+        if(e.key==='Escape'){hide();input.blur();return;}
+        if(e.key==='ArrowDown'){e.preventDefault();activeIdx=Math.min(activeIdx+1,items.length-1);highlightItem(items);}
+        else if(e.key==='ArrowUp'){e.preventDefault();activeIdx=Math.max(activeIdx-1,0);highlightItem(items);}
+        else if(e.key==='Enter'&&activeIdx>=0&&items[activeIdx]){e.preventDefault();items[activeIdx].click();}
+    });
+
+    function highlightItem(items){
+        items.forEach(function(it,i){it.classList.toggle('active',i===activeIdx);});
+        if(items[activeIdx])items[activeIdx].scrollIntoView({block:'nearest'});
+    }
+
+    // Ctrl+K shortcut
+    document.addEventListener('keydown',function(e){
+        if((e.ctrlKey||e.metaKey)&&e.key==='k'){e.preventDefault();input.focus();input.select();}
+    });
+
+    function escHtml(s){var d=document.createElement('div');d.appendChild(document.createTextNode(s||''));return d.innerHTML;}
+})();
 </script>
