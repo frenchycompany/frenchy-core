@@ -3,10 +3,10 @@
  * Recherche globale - Recherche unifiee dans tout le systeme
  * Telephone, nom, logement, reference reservation, email
  */
-// DB loaded via config.php
+include __DIR__ . '/../config.php';
+include __DIR__ . '/../pages/menu.php';
 require_once __DIR__ . '/../includes/rpi_db.php';
 $pdo = getRpiPdo();
-// header loaded via menu.php
 
 function e($s) { return htmlspecialchars($s ?? '', ENT_QUOTES, 'UTF-8'); }
 
