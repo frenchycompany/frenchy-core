@@ -62,7 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_details'])) {
 // Recuperer les logements actifs
 $logements = [];
 try {
-    $stmt = $conn->query("SELECT id, nom_du_logement, adresse, ville FROM liste_logements WHERE actif = 1 ORDER BY nom_du_logement");
+    $stmt = $conn->query("SELECT id, nom_du_logement, adresse, adresse_ligne2, code_postal, ville FROM liste_logements WHERE actif = 1 ORDER BY nom_du_logement");
     $logements = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) { error_log('location_logement_details.php: ' . $e->getMessage()); }
 
@@ -116,7 +116,7 @@ $selectedDetails = $allDetails[$selected_id] ?? null;
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
                                     <strong><?= htmlspecialchars($l['nom_du_logement']) ?></strong>
-                                    <br><small class="<?= $isSelected ? 'text-white-50' : 'text-muted' ?>"><?= htmlspecialchars($l['adresse'] ?? '') ?> <?= htmlspecialchars($l['ville'] ?? '') ?></small>
+                                    <br><small class="<?= $isSelected ? 'text-white-50' : 'text-muted' ?>"><?= htmlspecialchars($l['adresse'] ?? '') ?><?php if (!empty($l['code_postal']) || !empty($l['ville'])): ?>, <?= htmlspecialchars(trim(($l['code_postal'] ?? '') . ' ' . ($l['ville'] ?? ''))) ?><?php endif; ?></small>
                                 </div>
                                 <?php if ($hasDetails): ?>
                                     <span class="badge bg-success"><i class="fas fa-check"></i></span>

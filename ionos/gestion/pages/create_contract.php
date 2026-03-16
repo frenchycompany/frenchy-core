@@ -204,8 +204,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 logementInfoCard.style.display = 'block';
                 const infoItems = [
                     {label: 'Nom', value: data.nom_du_logement},
-                    {label: 'Adresse', value: data.adresse},
-                    {label: 'Ville', value: data.ville},
+                    {label: 'Adresse', value: [data.adresse, data.adresse_ligne2].filter(Boolean).join(', ')},
+                    {label: 'Ville', value: [data.code_postal, data.ville].filter(Boolean).join(' ')},
                     {label: 'Type', value: data.type_logement},
                     {label: 'Capacite', value: data.capacite ? data.capacite + ' pers.' : ''},
                 ];
@@ -231,6 +231,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         extraInfoBody.innerHTML = buildInfoList([
                             {label: 'Nom', value: (data.proprietaire_prenom || '') + ' ' + (data.proprietaire_nom || '')},
                             {label: 'Societe', value: data.proprietaire_societe},
+                            {label: 'Adresse', value: [data.proprietaire_adresse, data.proprietaire_adresse_ligne2].filter(Boolean).join(', ')},
+                            {label: 'Ville', value: [data.proprietaire_code_postal, data.proprietaire_ville].filter(Boolean).join(' ')},
                             {label: 'Email', value: data.proprietaire_email},
                             {label: 'Tel', value: data.proprietaire_telephone},
                             {label: 'Commission', value: data.proprietaire_commission ? data.proprietaire_commission + '%' : ''},
@@ -245,7 +247,9 @@ document.addEventListener('DOMContentLoaded', function() {
     function applyAutoFill(data) {
         const computed = Object.assign({}, data);
         computed['proprietaire_fullname'] = ((data.proprietaire_prenom || '') + ' ' + (data.proprietaire_nom || '')).trim();
-        computed['description_logement'] = [data.type_logement, data.adresse, data.ville].filter(Boolean).join(', ');
+        computed['adresse_complete'] = [data.adresse, data.adresse_ligne2, data.code_postal, data.ville].filter(Boolean).join(', ');
+        computed['proprietaire_adresse_complete'] = [data.proprietaire_adresse, data.proprietaire_adresse_ligne2, data.proprietaire_code_postal, data.proprietaire_ville].filter(Boolean).join(', ');
+        computed['description_logement'] = [data.type_logement, data.adresse, data.code_postal, data.ville].filter(Boolean).join(', ');
         computed['date_contrat'] = document.getElementById('date_contrat') ? document.getElementById('date_contrat').value : '';
 
         dynamicFields.querySelectorAll('[data-autofill]').forEach(field => {

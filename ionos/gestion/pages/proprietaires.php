@@ -21,9 +21,20 @@ try {
     if (!in_array('actif', $cols)) {
         $conn->exec("ALTER TABLE FC_proprietaires ADD COLUMN actif TINYINT(1) DEFAULT 1");
     }
+    // Champs adresse structurée
+    $addrCols = [
+        'adresse_ligne2' => "VARCHAR(255) DEFAULT NULL AFTER adresse",
+        'code_postal'    => "VARCHAR(10) DEFAULT NULL AFTER adresse_ligne2",
+        'ville'          => "VARCHAR(100) DEFAULT NULL AFTER code_postal",
+    ];
+    foreach ($addrCols as $col => $def) {
+        if (!in_array($col, $cols)) {
+            $conn->exec("ALTER TABLE FC_proprietaires ADD COLUMN $col $def");
+        }
+    }
     // Nouveaux champs proprietaire
     $newCols = [
-        'societe'       => "VARCHAR(255) DEFAULT NULL AFTER adresse",
+        'societe'       => "VARCHAR(255) DEFAULT NULL AFTER ville",
         'siret'         => "VARCHAR(20) DEFAULT NULL AFTER societe",
         'rib_iban'      => "VARCHAR(40) DEFAULT NULL AFTER siret",
         'rib_bic'       => "VARCHAR(15) DEFAULT NULL AFTER rib_iban",
@@ -64,6 +75,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $email      = trim($_POST['email'] ?? '');
         $telephone  = trim($_POST['telephone'] ?? '');
         $adresse    = trim($_POST['adresse'] ?? '');
+        $adresse_ligne2 = trim($_POST['adresse_ligne2'] ?? '');
+        $code_postal = trim($_POST['code_postal'] ?? '');
+        $ville      = trim($_POST['ville'] ?? '');
         $societe    = trim($_POST['societe'] ?? '');
         $siret      = trim($_POST['siret'] ?? '');
         $rib_iban   = trim($_POST['rib_iban'] ?? '');
@@ -84,8 +98,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             try {
                 if ($prop_id > 0) {
                     // Mise à jour — mot de passe optionnel
-                    $sql = "UPDATE FC_proprietaires SET nom=?, prenom=?, email=?, telephone=?, adresse=?, societe=?, siret=?, rib_iban=?, rib_bic=?, rib_banque=?, commission=?, notes=?";
-                    $params = [$nom, $prenom ?: null, $email, $telephone ?: null, $adresse ?: null, $societe ?: null, $siret ?: null, $rib_iban ?: null, $rib_bic ?: null, $rib_banque ?: null, $commission, $notes ?: null];
+                    $sql = "UPDATE FC_proprietaires SET nom=?, prenom=?, email=?, telephone=?, adresse=?, adresse_ligne2=?, code_postal=?, ville=?, societe=?, siret=?, rib_iban=?, rib_bic=?, rib_banque=?, commission=?, notes=?";
+                    $params = [$nom, $prenom ?: null, $email, $telephone ?: null, $adresse ?: null, $adresse_ligne2 ?: null, $code_postal ?: null, $ville ?: null, $societe ?: null, $siret ?: null, $rib_iban ?: null, $rib_bic ?: null, $rib_banque ?: null, $commission, $notes ?: null];
                     if (!empty($password)) {
                         $sql .= ", password_hash=?";
                         $params[] = password_hash($password, PASSWORD_DEFAULT);
@@ -96,8 +110,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $stmt->execute($params);
                     $feedback = '<div class="alert alert-success">Propriétaire mis à jour.</div>';
                 } else {
-                    $stmt = $conn->prepare("INSERT INTO FC_proprietaires (nom, prenom, email, telephone, adresse, societe, siret, rib_iban, rib_bic, rib_banque, commission, notes, password_hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                    $stmt->execute([$nom, $prenom ?: null, $email, $telephone ?: null, $adresse ?: null, $societe ?: null, $siret ?: null, $rib_iban ?: null, $rib_bic ?: null, $rib_banque ?: null, $commission, $notes ?: null, password_hash($password, PASSWORD_DEFAULT)]);
+                    $stmt = $conn->prepare("INSERT INTO FC_proprietaires (nom, prenom, email, telephone, adresse, adresse_ligne2, code_postal, ville, societe, siret, rib_iban, rib_bic, rib_banque, commission, notes, password_hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                    $stmt->execute([$nom, $prenom ?: null, $email, $telephone ?: null, $adresse ?: null, $adresse_ligne2 ?: null, $code_postal ?: null, $ville ?: null, $societe ?: null, $siret ?: null, $rib_iban ?: null, $rib_bic ?: null, $rib_banque ?: null, $commission, $notes ?: null, password_hash($password, PASSWORD_DEFAULT)]);
                     $prop_id = $conn->lastInsertId();
                     $feedback = '<div class="alert alert-success">Propriétaire créé.</div>';
                 }
@@ -324,8 +338,22 @@ $nb_inactifs = count($proprietaires) - $nb_actifs;
                                 <input type="tel" class="form-control" name="telephone" id="m_telephone">
                             </div>
                             <div class="mb-3">
-                                <label class="form-label">Adresse</label>
-                                <textarea class="form-control" name="adresse" id="m_adresse" rows="2"></textarea>
+                                <label class="form-label">Adresse ligne 1</label>
+                                <input type="text" class="form-control" name="adresse" id="m_adresse" placeholder="N° et rue">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Adresse ligne 2</label>
+                                <input type="text" class="form-control" name="adresse_ligne2" id="m_adresse_ligne2" placeholder="Bâtiment, appartement, étage...">
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-4">
+                                    <label class="form-label">Code postal</label>
+                                    <input type="text" class="form-control" name="code_postal" id="m_code_postal" placeholder="60000" maxlength="10">
+                                </div>
+                                <div class="col-8">
+                                    <label class="form-label">Ville</label>
+                                    <input type="text" class="form-control" name="ville" id="m_ville" placeholder="Compiègne">
+                                </div>
                             </div>
 
                             <hr>
@@ -399,7 +427,7 @@ $nb_inactifs = count($proprietaires) - $nb_actifs;
 
 <script>
 function resetModal() {
-    ['m_id','m_nom','m_prenom','m_email','m_password','m_telephone','m_adresse',
+    ['m_id','m_nom','m_prenom','m_email','m_password','m_telephone','m_adresse','m_adresse_ligne2','m_code_postal','m_ville',
      'm_societe','m_siret','m_rib_iban','m_rib_bic','m_rib_banque','m_commission','m_notes'
     ].forEach(id => { const el = document.getElementById(id); if(el) el.value = id === 'm_id' ? '0' : ''; });
     document.querySelectorAll('.logement-check').forEach(c => c.checked = false);
@@ -420,6 +448,9 @@ function editProprio(p) {
     document.getElementById('m_password').value = '';
     document.getElementById('m_telephone').value = p.telephone || '';
     document.getElementById('m_adresse').value = p.adresse || '';
+    document.getElementById('m_adresse_ligne2').value = p.adresse_ligne2 || '';
+    document.getElementById('m_code_postal').value = p.code_postal || '';
+    document.getElementById('m_ville').value = p.ville || '';
     document.getElementById('m_societe').value = p.societe || '';
     document.getElementById('m_siret').value = p.siret || '';
     document.getElementById('m_rib_iban').value = p.rib_iban || '';
