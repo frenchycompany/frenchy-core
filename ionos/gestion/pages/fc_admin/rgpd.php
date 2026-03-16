@@ -10,6 +10,138 @@ try {
     }
 } catch (PDOException $e) {}
 
+// Helper pour accéder aux settings
+$s = function($key, $default = '') use ($siteSettings) {
+    return $siteSettings[$key] ?? $default;
+};
+
+// Générer le HTML par défaut des mentions légales depuis les settings actuels
+$defaultMentions = '<h3>Identité de l\'Entreprise</h3>
+<p><strong>Raison sociale :</strong> SAS ' . htmlspecialchars($s('site_nom', 'FRENCHY CONCIERGERIE')) . '</p>
+<p><strong>Forme juridique :</strong> ' . htmlspecialchars($s('forme_juridique', 'Société par Actions Simplifiée (SAS)')) . '</p>
+<p><strong>Capital social :</strong> ' . htmlspecialchars($s('capital', '100 euros')) . '</p>
+<p><strong>Siège social :</strong> ' . htmlspecialchars($s('adresse')) . '</p>
+<p><strong>SIRET :</strong> ' . htmlspecialchars($s('siret')) . '</p>
+<p><strong>RCS :</strong> ' . htmlspecialchars($s('rcs')) . '</p>
+<p><strong>N° TVA intracommunautaire :</strong> ' . htmlspecialchars($s('tva_intra')) . '</p>
+<p><strong>Présidente :</strong> ' . htmlspecialchars($s('presidente')) . '</p>
+<p><strong>Email :</strong> ' . htmlspecialchars($s('email_legal')) . '</p>
+<p><strong>Téléphone :</strong> ' . htmlspecialchars($s('telephone_legal')) . '</p>
+
+<h3>Cartes Professionnelles</h3>
+<p><strong>Carte de Transaction Immobilière n° ' . htmlspecialchars($s('carte_transaction')) . '</strong></p>
+<p>Délivrée par la CCI de l\'Oise</p>
+<p>Activité : Transactions sur immeubles et fonds de commerce</p>
+<p><strong>Carte de Gestion Immobilière n° ' . htmlspecialchars($s('carte_gestion')) . '</strong></p>
+<p>Délivrée par la CCI de l\'Oise</p>
+<p>Activité : Gestion immobilière - Prestations touristiques</p>
+
+<h3>Médiation de la Consommation</h3>
+<p>Conformément aux articles L.611-1 et suivants et R.612-1 et suivants du Code de la consommation, nous vous informons que tout consommateur a le droit de recourir gratuitement à un médiateur de la consommation en vue de la résolution amiable d\'un litige l\'opposant à un professionnel.</p>
+<p><strong>Médiateur désigné :</strong> GIE IMMOMEDIATEURS</p>
+<p><strong>Adresse :</strong> 55 Avenue Marceau, 75116 Paris</p>
+<p><strong>Site internet :</strong> <a href="https://www.immomediateurs.fr" target="_blank">www.immomediateurs.fr</a></p>
+<p><strong>Email :</strong> <a href="mailto:contact@immomediateurs.fr">contact@immomediateurs.fr</a></p>
+<p>Avant de saisir le médiateur, vous devez d\'abord contacter notre service client par email à <a href="mailto:' . htmlspecialchars($s('email_legal', $s('email'))) . '">' . htmlspecialchars($s('email_legal', $s('email'))) . '</a> pour tenter de résoudre votre litige à l\'amiable. En cas d\'échec ou d\'absence de réponse dans un délai de 2 mois, vous pourrez saisir le médiateur.</p>';
+
+$emailLegal = htmlspecialchars($s('email_legal', $s('email')));
+$defaultPolitique = '<p><strong>Dernière mise à jour :</strong> ' . date('d/m/Y') . '</p>
+
+<p>La société <strong>' . htmlspecialchars($s('site_nom', 'FRENCHY CONCIERGERIE')) . '</strong> (ci-après « nous », « notre » ou « la Société ») s\'engage à protéger la vie privée des utilisateurs de son site web et de ses services. Cette politique de confidentialité explique comment nous collectons, utilisons et protégeons vos données personnelles, conformément au Règlement Général sur la Protection des Données (RGPD - Règlement UE 2016/679).</p>
+
+<h3>1. Responsable du traitement</h3>
+<p>Le responsable du traitement des données personnelles est :</p>
+<ul>
+    <li><strong>Société :</strong> SAS ' . htmlspecialchars($s('site_nom', 'FRENCHY CONCIERGERIE')) . '</li>
+    <li><strong>Siège social :</strong> ' . htmlspecialchars($s('adresse')) . '</li>
+    <li><strong>SIRET :</strong> ' . htmlspecialchars($s('siret')) . '</li>
+    <li><strong>Email DPO/Contact :</strong> <a href="mailto:' . $emailLegal . '">' . $emailLegal . '</a></li>
+</ul>
+
+<h3>2. Données collectées</h3>
+<p>Nous collectons les catégories de données suivantes :</p>
+<ul>
+    <li><strong>Données d\'identification :</strong> nom, prénom, adresse email, numéro de téléphone</li>
+    <li><strong>Données relatives à votre bien :</strong> localisation, surface, équipements (via le simulateur de revenus)</li>
+    <li><strong>Données de navigation :</strong> adresse IP, cookies, pages visitées, durée de visite (avec votre consentement)</li>
+    <li><strong>Données de correspondance :</strong> messages envoyés via le formulaire de contact</li>
+</ul>
+
+<h3>3. Finalités du traitement</h3>
+<p>Vos données sont traitées pour les finalités suivantes :</p>
+<ul>
+    <li>Répondre à vos demandes de contact et de renseignement</li>
+    <li>Vous fournir un avis de valeur locative personnalisé (simulateur)</li>
+    <li>Gérer la relation commerciale et les contrats de conciergerie</li>
+    <li>Vous envoyer des communications marketing (avec votre consentement)</li>
+    <li>Améliorer nos services et notre site web</li>
+    <li>Respecter nos obligations légales</li>
+</ul>
+
+<h3>4. Base légale du traitement</h3>
+<p>Le traitement de vos données repose sur :</p>
+<ul>
+    <li><strong>Votre consentement :</strong> pour l\'envoi de newsletters et la collecte de cookies non essentiels</li>
+    <li><strong>L\'exécution d\'un contrat :</strong> pour la gestion des services de conciergerie</li>
+    <li><strong>L\'intérêt légitime :</strong> pour améliorer nos services et répondre à vos demandes</li>
+    <li><strong>Les obligations légales :</strong> pour conserver certaines données fiscales et comptables</li>
+</ul>
+
+<h3>5. Durée de conservation</h3>
+<p>Nous conservons vos données personnelles pendant :</p>
+<ul>
+    <li><strong>Données de contact/simulation :</strong> 3 ans après le dernier contact</li>
+    <li><strong>Données clients actifs :</strong> pendant la durée de la relation contractuelle + 5 ans</li>
+    <li><strong>Données comptables :</strong> 10 ans conformément aux obligations fiscales</li>
+    <li><strong>Cookies :</strong> 13 mois maximum</li>
+</ul>
+
+<h3>6. Destinataires des données</h3>
+<p>Vos données peuvent être transmises à :</p>
+<ul>
+    <li>Notre équipe interne pour le traitement de vos demandes</li>
+    <li>Notre hébergeur web (dans l\'UE)</li>
+    <li>Nos prestataires de services (ménage, maintenance) - uniquement les données nécessaires</li>
+    <li>Les autorités compétentes en cas d\'obligation légale</li>
+</ul>
+<p>Nous ne vendons jamais vos données à des tiers.</p>
+
+<h3>7. Vos droits</h3>
+<p>Conformément au RGPD, vous disposez des droits suivants :</p>
+<ul>
+    <li><strong>Droit d\'accès :</strong> obtenir une copie de vos données personnelles</li>
+    <li><strong>Droit de rectification :</strong> corriger vos données inexactes ou incomplètes</li>
+    <li><strong>Droit à l\'effacement :</strong> demander la suppression de vos données</li>
+    <li><strong>Droit à la limitation :</strong> limiter le traitement de vos données</li>
+    <li><strong>Droit à la portabilité :</strong> recevoir vos données dans un format structuré</li>
+    <li><strong>Droit d\'opposition :</strong> vous opposer au traitement de vos données</li>
+    <li><strong>Droit de retirer votre consentement :</strong> à tout moment, sans affecter la légalité du traitement antérieur</li>
+</ul>
+<p>Pour exercer vos droits, contactez-nous à : <a href="mailto:' . $emailLegal . '">' . $emailLegal . '</a></p>
+<p>Vous pouvez également introduire une réclamation auprès de la <strong>CNIL</strong> : <a href="https://www.cnil.fr" target="_blank">www.cnil.fr</a></p>
+
+<h3>8. Cookies</h3>
+<p>Notre site utilise des cookies pour :</p>
+<ul>
+    <li><strong>Cookies essentiels :</strong> fonctionnement du site (sessions, sécurité)</li>
+    <li><strong>Cookies analytiques :</strong> mesure d\'audience et amélioration du site (avec consentement)</li>
+    <li><strong>Cookies marketing :</strong> personnalisation des publicités (avec consentement)</li>
+</ul>
+
+<h3>9. Sécurité</h3>
+<p>Nous mettons en œuvre des mesures techniques et organisationnelles appropriées pour protéger vos données :</p>
+<ul>
+    <li>Chiffrement SSL/TLS des communications</li>
+    <li>Accès restreint aux données personnelles</li>
+    <li>Sauvegardes régulières</li>
+    <li>Mise à jour des systèmes de sécurité</li>
+</ul>
+
+<h3>10. Modifications</h3>
+<p>Nous nous réservons le droit de modifier cette politique de confidentialité à tout moment. Toute modification sera publiée sur cette page avec une nouvelle date de mise à jour.</p>
+
+<p><strong>Des questions sur vos données ?</strong> Contactez notre responsable de la protection des données : <a href="mailto:' . $emailLegal . '">' . $emailLegal . '</a></p>';
+
 try {
     $conn->exec("CREATE TABLE IF NOT EXISTS FC_rgpd_config (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -29,8 +161,8 @@ try {
         'duree_conservation_contacts' => '36',
         'duree_conservation_simulations' => '24',
         'duree_conservation_visites' => '13',
-        'responsable_traitement' => $siteSettings['presidente'] ?? '',
-        'email_dpo' => $siteSettings['email_legal'] ?? '',
+        'responsable_traitement' => $s('presidente'),
+        'email_dpo' => $s('email_legal'),
     ];
     foreach ($rgpdDefaults as $key => $val) {
         $conn->prepare("INSERT IGNORE INTO FC_rgpd_config (config_key, config_value) VALUES (?, ?)")->execute([$key, $val]);
@@ -41,6 +173,10 @@ try {
         $rgpdConfig[$row['config_key']] = $row['config_value'];
     }
 } catch (PDOException $e) { $rgpdConfig = []; }
+
+// Si les textareas sont vides en BDD, montrer le texte par défaut du site
+$displayMentions = !empty($rgpdConfig['mentions_legales']) ? $rgpdConfig['mentions_legales'] : $defaultMentions;
+$displayPolitique = !empty($rgpdConfig['politique_confidentialite']) ? $rgpdConfig['politique_confidentialite'] : $defaultPolitique;
 ?>
 
 <!-- Infos légales actuelles du site (lecture seule, rappel) -->
@@ -96,20 +232,26 @@ try {
     </div>
 
     <div class="card shadow-sm mb-3">
-        <div class="card-header bg-info text-white"><h6 class="mb-0"><i class="fas fa-file-alt"></i> Textes legaux personnalises</h6></div>
+        <div class="card-header bg-info text-white"><h6 class="mb-0"><i class="fas fa-file-alt"></i> Mentions legales</h6></div>
         <div class="card-body">
             <div class="alert alert-info mb-3">
                 <i class="fas fa-info-circle"></i>
-                Si ces champs sont vides, le site affiche les textes par defaut (mentions legales et politique de confidentialite standards).
-                Remplissez-les uniquement si vous souhaitez personnaliser le contenu.
+                Le texte ci-dessous est pre-rempli avec le contenu actuel du site. Modifiez-le et enregistrez pour appliquer vos changements.
+                Le format HTML est accepte.
             </div>
             <div class="mb-3">
-                <label class="form-label">Mentions legales (HTML autorise)</label>
-                <textarea name="rgpd[mentions_legales]" class="form-control" rows="10" style="font-family:monospace"><?= e($rgpdConfig['mentions_legales'] ?? '') ?></textarea>
+                <label class="form-label fw-bold">Mentions legales</label>
+                <textarea name="rgpd[mentions_legales]" class="form-control" rows="15" style="font-family:monospace; font-size: 0.85rem"><?= e($displayMentions) ?></textarea>
             </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-header bg-info text-white"><h6 class="mb-0"><i class="fas fa-shield-alt"></i> Politique de confidentialite</h6></div>
+        <div class="card-body">
             <div class="mb-3">
-                <label class="form-label">Politique de confidentialite (HTML autorise)</label>
-                <textarea name="rgpd[politique_confidentialite]" class="form-control" rows="10" style="font-family:monospace"><?= e($rgpdConfig['politique_confidentialite'] ?? '') ?></textarea>
+                <label class="form-label fw-bold">Politique de confidentialite</label>
+                <textarea name="rgpd[politique_confidentialite]" class="form-control" rows="20" style="font-family:monospace; font-size: 0.85rem"><?= e($displayPolitique) ?></textarea>
             </div>
         </div>
     </div>
