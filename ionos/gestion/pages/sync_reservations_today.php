@@ -64,6 +64,21 @@ function column_exists(PDO $c, string $t, string $col): bool {
 
 $today = date('Y-m-d');
 
+// Auto-migration : ajouter les colonnes manquantes à reservation si la table existe
+$pdo_for_migration = $pdoRemote ?: $conn;
+if (table_exists($pdo_for_migration, 'reservation')) {
+    $cols_to_add = [
+        'nb_adultes' => 'INT DEFAULT 0',
+        'nb_enfants' => 'INT DEFAULT 0',
+        'nb_bebes'   => 'INT DEFAULT 0',
+    ];
+    foreach ($cols_to_add as $col => $def) {
+        if (!column_exists($pdo_for_migration, 'reservation', $col)) {
+            try { $pdo_for_migration->exec("ALTER TABLE reservation ADD COLUMN $col $def"); } catch (Throwable $e) {}
+        }
+    }
+}
+
 // vérif REMOTE (si disponible)
 $remoteOk = false;
 if ($pdoRemote && table_exists($pdoRemote, 'reservation')) {
