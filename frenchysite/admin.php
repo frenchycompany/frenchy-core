@@ -5,6 +5,10 @@
  * Guides dynamiques gérés depuis la BDD (vf_guides + vf_guide_blocks).
  */
 
+// Activer le reporting d'erreurs pour diagnostiquer les pages blanches
+error_reporting(E_ALL);
+ini_set('display_errors', '1');
+
 require_once __DIR__ . '/db/connection.php';
 require_once __DIR__ . '/db/helpers.php';
 require_once __DIR__ . '/admin/auth.php';
