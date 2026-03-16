@@ -15,7 +15,6 @@ $initial_sender = $_GET['sender'] ?? '';
 </head>
 <body>
 <?php include '../pages/menu.php'; ?>
-?>
 
 <div class="container-fluid mt-4">
 
