@@ -1302,12 +1302,14 @@ a.vf-contact-value:hover {
     align-items: center;
     justify-content: center;
     background: none;
-    border: none;
+    border: 1px solid var(--vf-stroke);
     cursor: pointer;
     color: var(--vf-brown);
-    padding: .4rem;
-    border-radius: 50%;
+    width: 42px;
+    height: 42px;
+    border-radius: var(--radius-sm);
     transition: color var(--transition), background var(--transition);
+    flex-shrink: 0;
 }
 .vf-search-toggle:hover {
     color: var(--vf-green);
