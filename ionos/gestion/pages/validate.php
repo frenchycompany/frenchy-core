@@ -173,7 +173,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             // Envoi SMS éventuel
             if ($sendSms) {
-                $videoUrl   = 'https://gestion.frenchyconciergerie.fr/uploads/' . $filename;
+                $videoUrl   = 'https://gestion.frenchyconciergerie.fr/video.php?f=' . urlencode($filename);
                 $smsText    = "Bonne nouvelle 😊, votre logement est prêt ! Voici la vidéo du logement : {$videoUrl}, si besoin n'hésitez pas à me contacter au +33647554678 Raphael - Frenchy conciergerie";
                 $stmtSms = $pdoSms->prepare(
                     "INSERT INTO sms_outbox (receiver, message, modem, status) VALUES (:recv, :msg, :modem, 'pending')"
