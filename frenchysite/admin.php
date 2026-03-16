@@ -708,6 +708,10 @@ $site_name = htmlspecialchars($site['name']);
                             <?= $hero_photo ? 'Remplacer l\'image' : 'Choisir une image' ?>
                             <input type="file" name="photo" accept="image/jpeg,image/png,image/webp" hidden>
                         </label>
+                        <button type="button" class="adm-btn adm-btn-outline adm-btn-sm adm-pick-from-gallery" data-group="hero" data-key="hero" data-alt="Image principale" data-target="photos-hero">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="vertical-align:-2px;margin-right:4px"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+                            Choisir depuis la galerie
+                        </button>
                         <button type="submit" class="adm-btn adm-btn-primary" disabled>Envoyer</button>
                     </div>
                     <div class="adm-upload-preview" hidden>

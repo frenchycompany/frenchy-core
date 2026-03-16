@@ -916,7 +916,7 @@
                             if (oldCard) oldCard.remove();
 
                             var card = document.createElement('div');
-                            card.className = 'adm-photo-card';
+                            card.className = 'adm-photo-card' + (pickGroup.value === 'hero' ? ' adm-photo-card--large' : '');
                             card.dataset.id = r.id;
                             card.innerHTML =
                                 '<img src="' + r.path + '" alt="' + (pickAlt.value || '') + '">' +
