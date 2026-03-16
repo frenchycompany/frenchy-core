@@ -268,6 +268,155 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && fcCsrfCheck()) {
         }
         $feedback = "<div class='alert alert-success'>Configuration RGPD enregistrée.</div>";
     }
+
+    // Codes d'invitation avis
+    if (isset($_POST['generate_code'])) {
+        $codeEmail = trim($_POST['code_email'] ?? '');
+        $codeNom = trim($_POST['code_nom'] ?? '');
+        $codeAdresse = trim($_POST['code_adresse'] ?? '');
+        if (!empty($codeEmail) && !empty($codeNom)) {
+            try {
+                $conn->exec("CREATE TABLE IF NOT EXISTS FC_avis_codes (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    code VARCHAR(20) UNIQUE NOT NULL,
+                    email VARCHAR(255) NOT NULL,
+                    nom_proprietaire VARCHAR(255) NOT NULL,
+                    adresse_bien VARCHAR(255),
+                    used TINYINT(1) DEFAULT 0,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    used_at TIMESTAMP NULL
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+                $code = strtoupper(substr(md5(random_bytes(16)), 0, 6));
+                $conn->prepare("INSERT INTO FC_avis_codes (code, email, nom_proprietaire, adresse_bien) VALUES (?, ?, ?, ?)")->execute([$code, $codeEmail, $codeNom, $codeAdresse]);
+
+                // Envoyer par email
+                $nomSite = $settings['site_nom'] ?? 'Frenchy Conciergerie';
+                $emailSite = $settings['email'] ?? 'contact@frenchyconciergerie.fr';
+                $lienAvis = 'https://frenchyconciergerie.fr/avis.php';
+                $sujetEmail = "Votre code pour donner votre avis - $nomSite";
+                $corpsEmail = "<!DOCTYPE html><html><body style='font-family:Arial,sans-serif;max-width:600px;margin:0 auto;'>
+                    <div style='background:linear-gradient(135deg,#1E3A8A,#3B82F6);padding:30px;text-align:center;'><h1 style='color:white;margin:0;'>$nomSite</h1></div>
+                    <div style='padding:30px;background:#f9f9f9;'>
+                        <h2 style='color:#1E3A8A;'>Bonjour " . htmlspecialchars($codeNom) . ",</h2>
+                        <p>Nous souhaitons recueillir votre avis sur nos services.</p>
+                        <div style='background:white;border:2px dashed #1E3A8A;padding:20px;margin:25px 0;text-align:center;border-radius:10px;'>
+                            <p style='margin:0 0 10px;color:#666;'>Votre code personnel :</p>
+                            <p style='font-size:2rem;font-weight:bold;letter-spacing:8px;color:#1E3A8A;margin:0;'>$code</p>
+                        </div>
+                        <div style='text-align:center;margin:25px 0;'>
+                            <a href='$lienAvis' style='display:inline-block;background:#1E3A8A;color:white;padding:15px 30px;text-decoration:none;border-radius:8px;font-weight:bold;'>Donner mon avis</a>
+                        </div>
+                    </div></body></html>";
+                $headers = "MIME-Version:1.0\r\nContent-type:text/html;charset=UTF-8\r\nFrom:$nomSite <$emailSite>\r\nReply-To:$emailSite\r\n";
+                $emailSent = @mail($codeEmail, $sujetEmail, $corpsEmail, $headers);
+
+                // Envoyer aussi par SMS si le système SMS est dispo
+                try {
+                    $smsMsg = "Bonjour $codeNom, votre code pour donner votre avis sur $nomSite : $code - Rendez-vous sur $lienAvis";
+                    // Vérifier si on a un numéro de téléphone dans les contacts/simulations
+                    $stmtTel = $conn->prepare("SELECT telephone FROM FC_contacts WHERE email = ? AND telephone IS NOT NULL AND telephone != '' LIMIT 1");
+                    $stmtTel->execute([$codeEmail]);
+                    $telRow = $stmtTel->fetch(PDO::FETCH_ASSOC);
+                    if ($telRow && !empty($telRow['telephone'])) {
+                        $conn->prepare("INSERT INTO sms_outbox (numero, message, statut) VALUES (?, ?, 'a_envoyer')")->execute([$telRow['telephone'], $smsMsg]);
+                    }
+                } catch (PDOException $e) { /* SMS optionnel */ }
+
+                $feedback = $emailSent
+                    ? "<div class='alert alert-success'>Code <strong>$code</strong> généré et email envoyé à <strong>" . e($codeEmail) . "</strong>.</div>"
+                    : "<div class='alert alert-warning'>Code <strong>$code</strong> généré. Email non envoyé — communiquez le code manuellement.</div>";
+            } catch (PDOException $e) {
+                $feedback = "<div class='alert alert-danger'>Erreur : " . e($e->getMessage()) . "</div>";
+            }
+        }
+    }
+    if (isset($_POST['delete_code'])) {
+        try {
+            $conn->prepare("DELETE FROM FC_avis_codes WHERE id = ?")->execute([$_POST['code_id']]);
+            $feedback = "<div class='alert alert-info'>Code supprimé.</div>";
+        } catch (PDOException $e) {}
+    }
+
+    // Envoi email individuel
+    if (isset($_POST['send_email'])) {
+        $to = $_POST['email_to'];
+        $subject = $_POST['email_subject'];
+        $body = $_POST['email_body'];
+        $fromName = $settings['site_nom'] ?? 'Frenchy Conciergerie';
+        $fromEmail = $settings['email'] ?? 'contact@frenchyconciergerie.fr';
+        $headers = "From: $fromName <$fromEmail>\r\nReply-To: $fromEmail\r\nContent-Type: text/html; charset=UTF-8\r\n";
+        $htmlBody = "<!DOCTYPE html><html><body style='font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;'>
+            <div style='background:linear-gradient(135deg,#1E3A8A,#3B82F6);padding:20px;text-align:center;border-radius:10px 10px 0 0;'><h1 style='color:white;margin:0;'>" . htmlspecialchars($fromName) . "</h1></div>
+            <div style='background:#f9fafb;padding:30px;border:1px solid #e5e7eb;border-top:none;'>" . nl2br(htmlspecialchars($body)) . "</div>
+            <div style='background:#1E3A8A;color:white;padding:15px;text-align:center;font-size:12px;border-radius:0 0 10px 10px;'>
+                <p style='margin:0;'>" . htmlspecialchars($settings['adresse'] ?? '') . "</p>
+                <p style='margin:5px 0 0;'>" . htmlspecialchars($settings['telephone'] ?? '') . " | " . htmlspecialchars($fromEmail) . "</p>
+            </div></body></html>";
+        if (mail($to, $subject, $htmlBody, $headers)) {
+            try {
+                $conn->exec("CREATE TABLE IF NOT EXISTS FC_emails_sent (id INT AUTO_INCREMENT PRIMARY KEY, email_to VARCHAR(255), subject VARCHAR(255), body TEXT, sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+                $conn->prepare("INSERT INTO FC_emails_sent (email_to, subject, body) VALUES (?, ?, ?)")->execute([$to, $subject, $body]);
+            } catch (PDOException $e) {}
+            $feedback = "<div class='alert alert-success'>Email envoyé à $to.</div>";
+        } else {
+            $feedback = "<div class='alert alert-danger'>Erreur lors de l'envoi.</div>";
+        }
+    }
+
+    // Newsletter
+    if (isset($_POST['send_newsletter'])) {
+        $subject = $_POST['newsletter_subject'];
+        $body = $_POST['newsletter_body'];
+        $recipients = [];
+        if (isset($_POST['to_simulations'])) {
+            try { $stmt = $conn->query("SELECT DISTINCT email FROM FC_simulations"); while ($r = $stmt->fetch()) $recipients[] = $r['email']; } catch (PDOException $e) {}
+        }
+        if (isset($_POST['to_contacts'])) {
+            try { $stmt = $conn->query("SELECT DISTINCT email FROM FC_contacts"); while ($r = $stmt->fetch()) $recipients[] = $r['email']; } catch (PDOException $e) {}
+        }
+        $recipients = array_unique($recipients);
+        $fromName = $settings['site_nom'] ?? 'Frenchy Conciergerie';
+        $fromEmail = $settings['email'] ?? 'contact@frenchyconciergerie.fr';
+        $sent = 0;
+        foreach ($recipients as $to) {
+            $headers = "From: $fromName <$fromEmail>\r\nReply-To: $fromEmail\r\nContent-Type: text/html; charset=UTF-8\r\n";
+            $htmlBody = "<!DOCTYPE html><html><body style='font-family:Arial,sans-serif;max-width:600px;margin:0 auto;'>
+                <div style='background:linear-gradient(135deg,#1E3A8A,#3B82F6);padding:20px;text-align:center;border-radius:10px 10px 0 0;'><h1 style='color:white;margin:0;'>" . htmlspecialchars($fromName) . "</h1></div>
+                <div style='background:#f9fafb;padding:30px;border:1px solid #e5e7eb;border-top:none;'>" . nl2br(htmlspecialchars($body)) . "</div>
+                <div style='background:#1E3A8A;color:white;padding:15px;text-align:center;font-size:12px;border-radius:0 0 10px 10px;'>
+                    <p style='margin:0;'>" . htmlspecialchars($settings['adresse'] ?? '') . "</p>
+                    <p style='margin:10px 0 0;font-size:10px;opacity:0.8;'>Pour vous désabonner, répondez STOP</p>
+                </div></body></html>";
+            if (mail($to, $subject, $htmlBody, $headers)) $sent++;
+            usleep(100000);
+        }
+        $feedback = "<div class='alert alert-success'>Newsletter envoyée à $sent destinataire(s).</div>";
+    }
+
+    // Users FC
+    if (isset($_POST['add_fc_user'])) {
+        $username = trim($_POST['new_username'] ?? '');
+        $email = trim($_POST['new_email'] ?? '');
+        $password = $_POST['new_password'] ?? '';
+        $fcRole = $_POST['new_role'] ?? 'viewer';
+        if (!empty($username) && !empty($email) && !empty($password)) {
+            try {
+                $passwordHash = password_hash($password, PASSWORD_ARGON2ID);
+                $conn->prepare("INSERT INTO FC_users (username, email, password_hash, role, nom, prenom) VALUES (?, ?, ?, ?, ?, ?)")->execute([$username, $email, $passwordHash, $fcRole, $_POST['new_nom'] ?? '', $_POST['new_prenom'] ?? '']);
+                $feedback = "<div class='alert alert-success'>Utilisateur créé.</div>";
+            } catch (PDOException $e) {
+                $feedback = "<div class='alert alert-danger'>Erreur : utilisateur ou email déjà existant.</div>";
+            }
+        }
+    }
+    if (isset($_POST['delete_fc_user'])) {
+        $conn->prepare("DELETE FROM FC_users WHERE id = ?")->execute([$_POST['user_id']]);
+        $feedback = "<div class='alert alert-info'>Utilisateur supprimé.</div>";
+    }
+    if (isset($_POST['toggle_fc_user'])) {
+        $conn->prepare("UPDATE FC_users SET actif = NOT actif WHERE id = ?")->execute([$_POST['user_id']]);
+        $feedback = "<div class='alert alert-info'>Statut modifié.</div>";
+    }
 }
 
 // ── Load data ──
@@ -319,7 +468,11 @@ $fcPages = [
     'blog' => ['icon' => 'fa-newspaper', 'label' => 'Blog'],
     'simulations' => ['icon' => 'fa-chart-line', 'label' => 'Simulations'],
     'contacts' => ['icon' => 'fa-envelope', 'label' => 'Messages'],
+    'newsletter' => ['icon' => 'fa-paper-plane', 'label' => 'Newsletter'],
+    'analytics' => ['icon' => 'fa-chart-bar', 'label' => 'Analytics'],
     'simulateur_config' => ['icon' => 'fa-calculator', 'label' => 'Simulateur'],
+    'rgpd' => ['icon' => 'fa-shield-alt', 'label' => 'RGPD'],
+    'users' => ['icon' => 'fa-users-cog', 'label' => 'Utilisateurs'],
     'parametres' => ['icon' => 'fa-cog', 'label' => 'Paramètres'],
 ];
 ?>
@@ -469,6 +622,7 @@ $fcPages = [
                                     <td><?= e($service['titre']) ?></td>
                                     <td><?= $service['actif'] ? '<span class="badge bg-success">Oui</span>' : '<span class="badge bg-secondary">Non</span>' ?></td>
                                     <td>
+                                        <button type="button" class="btn btn-outline-warning btn-sm" onclick="openEditModal('service', <?= htmlspecialchars(json_encode($service), ENT_QUOTES) ?>)"><i class="fas fa-edit"></i></button>
                                         <form method="POST" style="display:inline" onsubmit="return confirm('Supprimer ?')">
                                             <?= fcCsrfField() ?>
                                             <input type="hidden" name="service_id" value="<?= $service['id'] ?>">
@@ -520,6 +674,7 @@ $fcPages = [
                                     <td><strong><?= number_format($tarif['montant'] ?? $tarif['pourcentage'] ?? 0, 2) ?><?= ($tarif['type_tarif'] ?? 'pourcentage') === 'euro' ? ' &euro;' : ' %' ?></strong></td>
                                     <td><?= $tarif['actif'] ? '<span class="badge bg-success">Oui</span>' : '<span class="badge bg-secondary">Non</span>' ?></td>
                                     <td>
+                                        <button type="button" class="btn btn-outline-warning btn-sm" onclick="openEditModal('tarif', <?= htmlspecialchars(json_encode($tarif), ENT_QUOTES) ?>)"><i class="fas fa-edit"></i></button>
                                         <form method="POST" style="display:inline" onsubmit="return confirm('Supprimer ?')">
                                             <?= fcCsrfField() ?>
                                             <input type="hidden" name="tarif_id" value="<?= $tarif['id'] ?>">
@@ -654,6 +809,50 @@ $fcPages = [
             </div>
         </div>
 
+        <!-- ═══════ CODES INVITATION AVIS ═══════ -->
+        <?php
+        $avisCodes = [];
+        try {
+            $conn->exec("CREATE TABLE IF NOT EXISTS FC_avis_codes (
+                id INT AUTO_INCREMENT PRIMARY KEY, code VARCHAR(20) UNIQUE NOT NULL, email VARCHAR(255) NOT NULL,
+                nom_proprietaire VARCHAR(255) NOT NULL, adresse_bien VARCHAR(255),
+                used TINYINT(1) DEFAULT 0, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, used_at TIMESTAMP NULL
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+            $avisCodes = $conn->query("SELECT * FROM FC_avis_codes ORDER BY created_at DESC LIMIT 30")->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {}
+        ?>
+        <div class="card shadow-sm mt-3">
+            <div class="card-header bg-info text-white"><h6 class="mb-0"><i class="fas fa-ticket-alt"></i> Codes d'invitation pour avis (SMS + Email)</h6></div>
+            <div class="card-body">
+                <form method="POST" class="row g-2 mb-3 align-items-end">
+                    <?= fcCsrfField() ?>
+                    <div class="col-md-3"><label class="form-label">Email *</label><input type="email" name="code_email" class="form-control" required></div>
+                    <div class="col-md-3"><label class="form-label">Nom proprietaire *</label><input type="text" name="code_nom" class="form-control" required></div>
+                    <div class="col-md-3"><label class="form-label">Adresse du bien</label><input type="text" name="code_adresse" class="form-control"></div>
+                    <div class="col-md-3"><button type="submit" name="generate_code" class="btn btn-info w-100"><i class="fas fa-paper-plane"></i> Generer &amp; Envoyer</button></div>
+                </form>
+                <div class="alert alert-info py-2"><small><i class="fas fa-info-circle"></i> Le code est envoye par email et par SMS (si un numero est associe dans les contacts).</small></div>
+                <?php if (!empty($avisCodes)): ?>
+                <table class="table table-sm table-hover mb-0">
+                    <thead><tr><th>Code</th><th>Email</th><th>Nom</th><th>Adresse</th><th>Utilise</th><th>Date</th><th></th></tr></thead>
+                    <tbody>
+                    <?php foreach ($avisCodes as $ac): ?>
+                        <tr class="<?= $ac['used'] ? 'table-success' : '' ?>">
+                            <td><code class="fs-6"><?= e($ac['code']) ?></code></td>
+                            <td><small><?= e($ac['email']) ?></small></td>
+                            <td><small><?= e($ac['nom_proprietaire']) ?></small></td>
+                            <td><small><?= e($ac['adresse_bien'] ?? '-') ?></small></td>
+                            <td><?= $ac['used'] ? '<span class="badge bg-success">Oui</span>' : '<span class="badge bg-warning text-dark">Non</span>' ?></td>
+                            <td><small><?= date('d/m/Y H:i', strtotime($ac['created_at'])) ?></small></td>
+                            <td><form method="POST" style="display:inline" onsubmit="return confirm('Supprimer ?')"><?= fcCsrfField() ?><input type="hidden" name="code_id" value="<?= $ac['id'] ?>"><button type="submit" name="delete_code" class="btn btn-outline-danger btn-sm"><i class="fas fa-trash"></i></button></form></td>
+                        </tr>
+                    <?php endforeach; ?>
+                    </tbody>
+                </table>
+                <?php endif; ?>
+            </div>
+        </div>
+
         <?php elseif ($page === 'distinctions'): ?>
         <!-- ═══════ DISTINCTIONS ═══════ -->
         <div class="row g-3">
@@ -686,7 +885,10 @@ $fcPages = [
                                     <td style="font-size:1.5rem"><?= $d['icone'] ?></td>
                                     <td><?= e($d['titre']) ?></td>
                                     <td><?= $d['actif'] ? '<span class="badge bg-success">Oui</span>' : '<span class="badge bg-secondary">Non</span>' ?></td>
-                                    <td><form method="POST" style="display:inline" onsubmit="return confirm('Supprimer ?')"><?= fcCsrfField() ?><input type="hidden" name="distinction_id" value="<?= $d['id'] ?>"><button type="submit" name="delete_distinction" class="btn btn-outline-danger btn-sm"><i class="fas fa-trash"></i></button></form></td>
+                                    <td>
+                                        <button type="button" class="btn btn-outline-warning btn-sm" onclick="openEditModal('distinction', <?= htmlspecialchars(json_encode($d), ENT_QUOTES) ?>)"><i class="fas fa-edit"></i></button>
+                                        <form method="POST" style="display:inline" onsubmit="return confirm('Supprimer ?')"><?= fcCsrfField() ?><input type="hidden" name="distinction_id" value="<?= $d['id'] ?>"><button type="submit" name="delete_distinction" class="btn btn-outline-danger btn-sm"><i class="fas fa-trash"></i></button></form>
+                                    </td>
                                 </tr>
                             <?php endforeach; ?>
                             </tbody>
@@ -810,6 +1012,7 @@ $fcPages = [
                                 </form>
                             </td>
                             <td>
+                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="openEmailModal('<?= e($sim['email']) ?>', 'Votre simulation Frenchy Conciergerie')"><i class="fas fa-envelope"></i></button>
                                 <form method="POST" style="display:inline" onsubmit="return confirm('Supprimer ?')"><?= fcCsrfField() ?><input type="hidden" name="simulation_id" value="<?= $sim['id'] ?>"><button type="submit" name="delete_simulation" class="btn btn-outline-danger btn-sm"><i class="fas fa-trash"></i></button></form>
                             </td>
                         </tr>
@@ -860,6 +1063,7 @@ $fcPages = [
                                 <?php else: ?>
                                     <form method="POST" style="display:inline"><?= fcCsrfField() ?><input type="hidden" name="contact_id" value="<?= $contact['id'] ?>"><button type="submit" name="archive_contact" class="btn btn-outline-secondary btn-sm"><i class="fas fa-archive"></i></button></form>
                                 <?php endif; ?>
+                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="openEmailModal('<?= e($contact['email']) ?>', 'Re: <?= e(addslashes($contact['sujet'] ?: '')) ?>')"><i class="fas fa-reply"></i></button>
                                 <form method="POST" style="display:inline" onsubmit="return confirm('Supprimer ?')"><?= fcCsrfField() ?><input type="hidden" name="contact_id" value="<?= $contact['id'] ?>"><button type="submit" name="delete_contact" class="btn btn-outline-danger btn-sm"><i class="fas fa-trash"></i></button></form>
                             </td>
                         </tr>
@@ -925,7 +1129,10 @@ $fcPages = [
                                     <td><?= e($ville['ville']) ?></td>
                                     <td><strong><?= number_format($ville['majoration_percent'], 2) ?>%</strong></td>
                                     <td><?= $ville['actif'] ? '<span class="badge bg-success">Oui</span>' : '<span class="badge bg-secondary">Non</span>' ?></td>
-                                    <td><form method="POST" style="display:inline" onsubmit="return confirm('Supprimer ?')"><?= fcCsrfField() ?><input type="hidden" name="ville_id" value="<?= $ville['id'] ?>"><button type="submit" name="delete_ville" class="btn btn-outline-danger btn-sm"><i class="fas fa-trash"></i></button></form></td>
+                                    <td>
+                                        <button type="button" class="btn btn-outline-warning btn-sm" onclick="openEditModal('ville', <?= htmlspecialchars(json_encode($ville), ENT_QUOTES) ?>)"><i class="fas fa-edit"></i></button>
+                                        <form method="POST" style="display:inline" onsubmit="return confirm('Supprimer ?')"><?= fcCsrfField() ?><input type="hidden" name="ville_id" value="<?= $ville['id'] ?>"><button type="submit" name="delete_ville" class="btn btn-outline-danger btn-sm"><i class="fas fa-trash"></i></button></form>
+                                    </td>
                                 </tr>
                             <?php endforeach; ?>
                             </tbody>
@@ -968,6 +1175,121 @@ $fcPages = [
             <button type="submit" name="update_settings" class="btn btn-primary"><i class="fas fa-save"></i> Enregistrer</button>
         </form>
 
+        <?php elseif ($page === 'newsletter'): ?>
+        <!-- ═══════ NEWSLETTER ═══════ -->
+        <?php include __DIR__ . '/fc_admin/newsletter.php'; ?>
+
+        <?php elseif ($page === 'analytics'): ?>
+        <!-- ═══════ ANALYTICS ═══════ -->
+        <?php include __DIR__ . '/fc_admin/analytics.php'; ?>
+
+        <?php elseif ($page === 'rgpd'): ?>
+        <!-- ═══════ RGPD ═══════ -->
+        <?php include __DIR__ . '/fc_admin/rgpd.php'; ?>
+
+        <?php elseif ($page === 'users'): ?>
+        <!-- ═══════ UTILISATEURS ═══════ -->
+        <?php include __DIR__ . '/fc_admin/users.php'; ?>
+
         <?php endif; ?>
     </div>
 </div>
+
+<!-- ═══════ MODAL EDIT (services, tarifs, distinctions, villes) ═══════ -->
+<div class="modal fade" id="editModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
+    <div class="modal-header"><h5 class="modal-title" id="editModalTitle">Modifier</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <form method="POST" id="editForm">
+        <?= fcCsrfField() ?>
+        <div class="modal-body" id="editModalBody"></div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+            <button type="submit" class="btn btn-warning" id="editModalSubmit">Enregistrer</button>
+        </div>
+    </form>
+</div></div></div>
+
+<!-- ═══════ MODAL EMAIL ═══════ -->
+<div class="modal fade" id="emailModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
+    <div class="modal-header bg-primary text-white"><h5 class="modal-title"><i class="fas fa-envelope"></i> Envoyer un email</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+    <form method="POST">
+        <?= fcCsrfField() ?>
+        <div class="modal-body">
+            <div class="mb-2"><label class="form-label">Destinataire</label><input type="email" name="email_to" id="emailModalTo" class="form-control" required></div>
+            <div class="mb-2"><label class="form-label">Sujet</label><input type="text" name="email_subject" id="emailModalSubject" class="form-control" required></div>
+            <div class="mb-2"><label class="form-label">Message</label><textarea name="email_body" class="form-control" rows="6" required></textarea></div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+            <button type="submit" name="send_email" class="btn btn-primary"><i class="fas fa-paper-plane"></i> Envoyer</button>
+        </div>
+    </form>
+</div></div></div>
+
+<script>
+function openEmailModal(email, subject) {
+    document.getElementById('emailModalTo').value = email || '';
+    document.getElementById('emailModalSubject').value = subject || '';
+    new bootstrap.Modal(document.getElementById('emailModal')).show();
+}
+
+function openEditModal(type, data) {
+    var title = '', body = '', submitName = '';
+    var csrf = '<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>';
+
+    if (type === 'service') {
+        title = 'Modifier le service';
+        submitName = 'edit_service';
+        var items = '';
+        try { items = JSON.parse(data.liste_items || '[]').join("\n"); } catch(e) { items = data.liste_items || ''; }
+        body = '<input type="hidden" name="service_id" value="'+data.id+'">'
+            + '<div class="mb-2"><label class="form-label">Titre</label><input type="text" name="titre" class="form-control" value="'+esc(data.titre)+'" required></div>'
+            + '<div class="mb-2"><label class="form-label">Icone (emoji)</label><input type="text" name="icone" class="form-control" value="'+esc(data.icone)+'"></div>'
+            + '<div class="mb-2"><label class="form-label">Info carte</label><input type="text" name="carte_info" class="form-control" value="'+esc(data.carte_info || '')+'"></div>'
+            + '<div class="mb-2"><label class="form-label">Description</label><textarea name="description" class="form-control" rows="2">'+esc(data.description || '')+'</textarea></div>'
+            + '<div class="mb-2"><label class="form-label">Prestations (une/ligne)</label><textarea name="liste_items" class="form-control" rows="4">'+esc(items)+'</textarea></div>'
+            + '<div class="row mb-2"><div class="col"><label class="form-label">Ordre</label><input type="number" name="ordre" class="form-control" value="'+(data.ordre||0)+'"></div>'
+            + '<div class="col"><label class="form-label">Actif</label><div class="form-check mt-2"><input class="form-check-input" type="checkbox" name="actif" '+(data.actif == 1 ? 'checked' : '')+'></div></div></div>';
+    } else if (type === 'tarif') {
+        title = 'Modifier le tarif';
+        submitName = 'edit_tarif';
+        body = '<input type="hidden" name="tarif_id" value="'+data.id+'">'
+            + '<div class="mb-2"><label class="form-label">Titre</label><input type="text" name="titre" class="form-control" value="'+esc(data.titre)+'" required></div>'
+            + '<div class="row mb-2"><div class="col"><label class="form-label">Montant</label><input type="number" step="0.01" name="montant" class="form-control" value="'+(data.montant||data.pourcentage||0)+'"></div>'
+            + '<div class="col"><label class="form-label">Type</label><select name="type_tarif" class="form-select"><option value="pourcentage" '+((data.type_tarif||'pourcentage')==='pourcentage'?'selected':'')+'>%</option><option value="euro" '+((data.type_tarif)==='euro'?'selected':'')+'>Euro</option></select></div></div>'
+            + '<div class="mb-2"><label class="form-label">Description</label><input type="text" name="description" class="form-control" value="'+esc(data.description || '')+'"></div>'
+            + '<div class="mb-2"><label class="form-label">Details</label><textarea name="details" class="form-control" rows="2">'+esc(data.details || '')+'</textarea></div>'
+            + '<div class="row mb-2"><div class="col"><label class="form-label">Ordre</label><input type="number" name="ordre" class="form-control" value="'+(data.ordre||0)+'"></div>'
+            + '<div class="col"><label class="form-label">Actif</label><div class="form-check mt-2"><input class="form-check-input" type="checkbox" name="actif" '+(data.actif == 1 ? 'checked' : '')+'></div></div></div>';
+    } else if (type === 'distinction') {
+        title = 'Modifier la distinction';
+        submitName = 'edit_distinction';
+        body = '<input type="hidden" name="distinction_id" value="'+data.id+'">'
+            + '<div class="mb-2"><label class="form-label">Titre</label><input type="text" name="titre" class="form-control" value="'+esc(data.titre)+'" required></div>'
+            + '<div class="mb-2"><label class="form-label">Icone</label><input type="text" name="icone" class="form-control" value="'+esc(data.icone)+'"></div>'
+            + '<div class="mb-2"><label class="form-label">Description</label><textarea name="description" class="form-control" rows="3">'+esc(data.description || '')+'</textarea></div>'
+            + '<div class="mb-2"><label class="form-label">Image</label><input type="text" name="image" class="form-control" value="'+esc(data.image || '')+'"></div>'
+            + '<div class="row mb-2"><div class="col"><label class="form-label">Ordre</label><input type="number" name="ordre" class="form-control" value="'+(data.ordre||0)+'"></div>'
+            + '<div class="col"><label class="form-label">Actif</label><div class="form-check mt-2"><input class="form-check-input" type="checkbox" name="actif" '+(data.actif == 1 ? 'checked' : '')+'></div></div></div>';
+    } else if (type === 'ville') {
+        title = 'Modifier la ville';
+        submitName = 'edit_ville';
+        body = '<input type="hidden" name="ville_id" value="'+data.id+'">'
+            + '<div class="mb-2"><label class="form-label">Ville</label><input type="text" name="ville" class="form-control" value="'+esc(data.ville)+'" required></div>'
+            + '<div class="mb-2"><label class="form-label">Majoration (%)</label><input type="number" step="0.01" name="majoration_percent" class="form-control" value="'+(data.majoration_percent||0)+'"></div>'
+            + '<div class="row mb-2"><div class="col"><label class="form-label">Ordre</label><input type="number" name="ordre" class="form-control" value="'+(data.ordre||0)+'"></div>'
+            + '<div class="col"><label class="form-label">Actif</label><div class="form-check mt-2"><input class="form-check-input" type="checkbox" name="actif" '+(data.actif == 1 ? 'checked' : '')+'></div></div></div>';
+    }
+
+    document.getElementById('editModalTitle').textContent = title;
+    document.getElementById('editModalBody').innerHTML = body;
+    document.getElementById('editModalSubmit').setAttribute('name', submitName);
+    new bootstrap.Modal(document.getElementById('editModal')).show();
+}
+
+function esc(s) {
+    if (s === null || s === undefined) return '';
+    var d = document.createElement('div');
+    d.textContent = String(s);
+    return d.innerHTML.replace(/"/g, '&quot;');
+}
+</script>

@@ -901,8 +901,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['bridge_admin'])) {
             $siteUrl = $stmt->fetchColumn();
 
             if ($siteUrl) {
-                $adminUrl = rtrim($siteUrl, '/') . '/admin.php?bridge_token=' . urlencode($token);
-                header('Location: ' . $adminUrl);
+                // Redirect to embedded wrapper page (keeps gestion sidebar)
+                $embedUrl = 'index.php?page=pages/site_admin_embed.php&site_id=' . $siteId . '&bridge_token=' . urlencode($token);
+                header('Location: ' . $embedUrl);
                 exit;
             }
         } catch (PDOException $e) {
