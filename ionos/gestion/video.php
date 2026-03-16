@@ -1,5 +1,8 @@
 <?php
 // video.php — Page publique de visualisation vidéo d'intervention
+// ?f=fichier       → affiche la page avec le player
+// ?f=fichier&raw=1 → sert le fichier vidéo avec support Range (streaming)
+
 $file = basename($_GET['f'] ?? '');
 if (!$file || !preg_match('/^\d+_\d+\.(mp4|mov|avi|webm)$/i', $file)) {
     http_response_code(404);
@@ -13,14 +16,51 @@ if (!file_exists($path)) {
 }
 
 $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
-$mime = [
-    'mp4'  => 'video/mp4',
-    'mov'  => 'video/quicktime',
-    'avi'  => 'video/x-msvideo',
-    'webm' => 'video/webm',
-][$ext] ?? 'video/mp4';
 
-$videoUrl = 'uploads/' . rawurlencode($file);
+// ─────────────────────────────────────────────────────────────────────────────
+// Mode raw : sert le fichier vidéo avec support Range (requis pour <video>)
+// On force video/mp4 même pour les .mov car les navigateurs le lisent mieux
+// ─────────────────────────────────────────────────────────────────────────────
+if (isset($_GET['raw'])) {
+    $size = filesize($path);
+    $mime = 'video/mp4'; // mp4 est compris par tous les navigateurs
+
+    header('Content-Type: ' . $mime);
+    header('Accept-Ranges: bytes');
+    header('Content-Disposition: inline');
+
+    // Support HTTP Range pour le streaming
+    if (isset($_SERVER['HTTP_RANGE'])) {
+        preg_match('/bytes=(\d+)-(\d*)/', $_SERVER['HTTP_RANGE'], $matches);
+        $start = (int)$matches[1];
+        $end   = $matches[2] !== '' ? (int)$matches[2] : $size - 1;
+        $length = $end - $start + 1;
+
+        http_response_code(206);
+        header("Content-Range: bytes $start-$end/$size");
+        header("Content-Length: $length");
+
+        $fp = fopen($path, 'rb');
+        fseek($fp, $start);
+        $remaining = $length;
+        while ($remaining > 0 && !feof($fp)) {
+            $chunk = min(8192, $remaining);
+            echo fread($fp, $chunk);
+            $remaining -= $chunk;
+            flush();
+        }
+        fclose($fp);
+    } else {
+        header("Content-Length: $size");
+        readfile($path);
+    }
+    exit;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Mode page : affiche le player vidéo
+// ─────────────────────────────────────────────────────────────────────────────
+$videoUrl = 'video.php?f=' . urlencode($file) . '&raw=1';
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -99,12 +139,17 @@ $videoUrl = 'uploads/' . rawurlencode($file);
     </div>
     <div class="video-container">
       <video controls playsinline preload="metadata">
-        <source src="<?= htmlspecialchars($videoUrl, ENT_QUOTES, 'UTF-8') ?>" type="<?= $mime ?>">
+        <source src="<?= htmlspecialchars($videoUrl, ENT_QUOTES, 'UTF-8') ?>" type="video/mp4">
         Votre navigateur ne supporte pas la lecture vidéo.
         <a href="<?= htmlspecialchars($videoUrl, ENT_QUOTES, 'UTF-8') ?>">Télécharger la vidéo</a>
       </video>
     </div>
     <div class="footer">
+      <p style="margin-bottom:12px;">
+        <a href="uploads/<?= htmlspecialchars(rawurlencode($file), ENT_QUOTES, 'UTF-8') ?>" download>
+          Télécharger la vidéo
+        </a>
+      </p>
       <div class="logo">Frenchy Conciergerie</div>
       <p>Un souci ? Contactez-nous :<br>
         <a href="tel:+33647554678">06 47 55 46 78</a> — Raphaël
