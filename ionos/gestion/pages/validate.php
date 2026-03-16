@@ -176,7 +176,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $videoUrl   = 'https://gestion.frenchyconciergerie.fr/uploads/' . $filename;
                 $smsText    = "Bonne nouvelle 😊, votre logement est prêt ! Voici la vidéo du logement : {$videoUrl}, si besoin n'hésitez pas à me contacter au +33647554678 Raphael - Frenchy conciergerie";
                 $stmtSms = $pdoSms->prepare(
-                    "INSERT INTO sms_outbox (receiver, message, modem) VALUES (:recv, :msg, :modem)"
+                    "INSERT INTO sms_outbox (receiver, message, modem, status) VALUES (:recv, :msg, :modem, 'pending')"
                 );
                 $stmtSms->execute([
                     ':recv'  => $clientPhone,
@@ -290,7 +290,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
           <?php if ($hasReservation): ?>
             <div class="form-check mb-3">
-              <input type="checkbox" name="send_sms" id="send_sms" class="form-check-input">
+              <input type="checkbox" name="send_sms" id="send_sms" class="form-check-input" checked>
               <label for="send_sms" class="form-check-label">
                 Envoyer un SMS au client (<?= e($clientPhone) ?>)
               </label>
