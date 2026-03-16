@@ -14,6 +14,7 @@ if (!isset($menu_categories)) {
                 ['nom' => 'Équipements',   'chemin' => 'pages/logement_equipements.php',  'icon' => 'fa-couch'],
                 ['nom' => 'Descriptions',  'chemin' => 'pages/description_logements.php', 'icon' => 'fa-file-alt'],
                 ['nom' => 'Sites vitrine', 'chemin' => 'pages/sites.php',                 'icon' => 'fa-globe'],
+                ['nom' => 'Site conciergerie', 'chemin' => 'pages/admin_site_conciergerie.php', 'icon' => 'fa-bullhorn'],
             ]
         ],
         'Ménage / Interventions' => [

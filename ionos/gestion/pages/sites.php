@@ -602,7 +602,7 @@ function deploySite($frenchysiteSource, $deployPath, $dbPrefix, $siteName, $loge
         . "DB_NAME={$dbName}\n"
         . "DB_USER={$dbUser}\n"
         . "DB_PASS={$dbPass}\n\n"
-        . "ADMIN_USER=admin\n"
+        . "ADMIN_USER=admin@frenchy.local\n"
         . "ADMIN_PASS={$adminPass}\n\n"
         . "APP_DEBUG=false\n";
 
@@ -739,7 +739,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_site'])) {
                             ':site_name'      => $siteName,
                             ':site_url'       => $siteUrl,
                             ':deploy_path'    => $deployPath,
-                            ':admin_user'     => 'admin',
+                            ':admin_user'     => 'admin@frenchy.local',
                             ':admin_pass_hash' => $passHash,
                         ]);
 
@@ -754,7 +754,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_site'])) {
                                 Dossier : <code>{$deployPath}</code> " . ($deployOk ? '✅' : '❌ fichiers absents !') . "<br>
                                 Source : <code>{$frenchysiteSource}</code><br>
                                 URL : <a href='{$siteUrl}' target='_blank'>{$siteUrl}</a><br>
-                                Admin : <a href='{$siteUrl}/admin.php' target='_blank'>{$siteUrl}/admin.php</a> (admin / {$admin_pass})
+                                Admin : <a href='{$siteUrl}/admin.php' target='_blank'>{$siteUrl}/admin.php</a> (admin@frenchy.local / {$admin_pass})
                             </small>
                         </div>";
                     } catch (Exception $e) {
@@ -1010,7 +1010,7 @@ foreach ($sites as $site) {
                         <input type="text" class="form-control" id="admin_pass" name="admin_pass"
                                value="admin2025" placeholder="Mot de passe admin du site">
                         <div class="form-text">
-                            Identifiants : <code>admin</code> / ce mot de passe
+                            Identifiants : <code>admin@frenchy.local</code> / ce mot de passe
                         </div>
                     </div>
 
