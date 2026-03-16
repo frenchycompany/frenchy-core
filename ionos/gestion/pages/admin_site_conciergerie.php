@@ -1163,12 +1163,16 @@ $fcPages = [
                 <div class="card-header bg-secondary text-white"><h6 class="mb-0">Informations légales</h6></div>
                 <div class="card-body">
                     <div class="row g-3">
-                        <div class="col-md-4"><label class="form-label">Forme juridique</label><input type="text" name="settings[forme_juridique]" class="form-control" value="<?= e($settings['forme_juridique'] ?? '') ?>"></div>
+                        <div class="col-md-4"><label class="form-label">Forme juridique</label><input type="text" name="settings[forme_juridique]" class="form-control" value="<?= e($settings['forme_juridique'] ?? '') ?>" placeholder="Société par Actions Simplifiée (SAS)"></div>
+                        <div class="col-md-4"><label class="form-label">Capital social</label><input type="text" name="settings[capital]" class="form-control" value="<?= e($settings['capital'] ?? '') ?>" placeholder="1000 euros"></div>
                         <div class="col-md-4"><label class="form-label">SIRET</label><input type="text" name="settings[siret]" class="form-control" value="<?= e($settings['siret'] ?? '') ?>"></div>
                         <div class="col-md-4"><label class="form-label">RCS</label><input type="text" name="settings[rcs]" class="form-control" value="<?= e($settings['rcs'] ?? '') ?>"></div>
-                        <div class="col-md-4"><label class="form-label">N° TVA</label><input type="text" name="settings[tva_intra]" class="form-control" value="<?= e($settings['tva_intra'] ?? '') ?>"></div>
+                        <div class="col-md-4"><label class="form-label">N° TVA intracommunautaire</label><input type="text" name="settings[tva_intra]" class="form-control" value="<?= e($settings['tva_intra'] ?? '') ?>"></div>
                         <div class="col-md-4"><label class="form-label">Président(e)</label><input type="text" name="settings[presidente]" class="form-control" value="<?= e($settings['presidente'] ?? '') ?>"></div>
                         <div class="col-md-4"><label class="form-label">Email légal</label><input type="email" name="settings[email_legal]" class="form-control" value="<?= e($settings['email_legal'] ?? '') ?>"></div>
+                        <div class="col-md-4"><label class="form-label">Téléphone légal</label><input type="text" name="settings[telephone_legal]" class="form-control" value="<?= e($settings['telephone_legal'] ?? '') ?>"></div>
+                        <div class="col-md-4"><label class="form-label">Carte Transaction Immobilière n°</label><input type="text" name="settings[carte_transaction]" class="form-control" value="<?= e($settings['carte_transaction'] ?? '') ?>"></div>
+                        <div class="col-md-4"><label class="form-label">Carte Gestion Immobilière n°</label><input type="text" name="settings[carte_gestion]" class="form-control" value="<?= e($settings['carte_gestion'] ?? '') ?>"></div>
                     </div>
                 </div>
             </div>
