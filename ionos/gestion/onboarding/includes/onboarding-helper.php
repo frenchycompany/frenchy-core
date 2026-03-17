@@ -44,6 +44,12 @@ function onboarding_create_tables($conn) {
         ascenseur TINYINT(1) DEFAULT 0,
         parking TINYINT(1) DEFAULT 0,
         photos JSON,
+        annonce_existante TINYINT(1) DEFAULT 0,
+        annonce_plateformes JSON,
+        annonce_url_airbnb VARCHAR(500),
+        annonce_url_booking VARCHAR(500),
+        annonce_url_autre VARCHAR(500),
+        experience_location VARCHAR(50),
         prenom VARCHAR(100),
         nom VARCHAR(100),
         email VARCHAR(255),
@@ -213,6 +219,8 @@ function onboarding_save_step($conn, $token, $etape, $data) {
         'adresse', 'complement_adresse', 'code_postal', 'ville', 'pays',
         'latitude', 'longitude', 'typologie', 'superficie', 'nb_pieces',
         'nb_couchages', 'etage', 'ascenseur', 'parking', 'photos',
+        'annonce_existante', 'annonce_plateformes', 'annonce_url_airbnb',
+        'annonce_url_booking', 'annonce_url_autre', 'experience_location',
         // Etape 2
         'prenom', 'nom', 'email', 'telephone', 'societe', 'siret',
         // Etape 3
@@ -230,7 +238,7 @@ function onboarding_save_step($conn, $token, $etape, $data) {
     foreach ($data as $key => $value) {
         if (!in_array($key, $allowed_fields)) continue;
         // JSON fields
-        if (in_array($key, ['photos', 'equipements', 'options_supplementaires']) && is_array($value)) {
+        if (in_array($key, ['photos', 'equipements', 'options_supplementaires', 'annonce_plateformes']) && is_array($value)) {
             $value = json_encode($value, JSON_UNESCAPED_UNICODE);
         }
         $sets[] = "`$key` = ?";
@@ -587,9 +595,34 @@ function onboarding_finalize($conn, $token) {
             .     "<td style='padding:6px 12px;border-bottom:1px solid #eee;'>" . htmlspecialchars($request['telephone'] ?? '') . "</td></tr>"
             . "<tr><td style='padding:6px 12px;border-bottom:1px solid #eee;color:#888;'>Societe</td>"
             .     "<td style='padding:6px 12px;border-bottom:1px solid #eee;'>" . htmlspecialchars($request['societe'] ?? '-') . "</td></tr>"
-            . "<tr><td style='padding:6px 12px;color:#888;'>Options</td>"
-            .     "<td style='padding:6px 12px;'>" . htmlspecialchars($request['options_supplementaires'] ?? 'Aucune') . "</td></tr>"
-            . "</table>";
+            . "<tr><td style='padding:6px 12px;border-bottom:1px solid #eee;color:#888;'>Options</td>"
+            .     "<td style='padding:6px 12px;border-bottom:1px solid #eee;'>" . htmlspecialchars($request['options_supplementaires'] ?? 'Aucune') . "</td></tr>";
+
+        // Annonce existante
+        $annonceExistante = (int)($request['annonce_existante'] ?? 0);
+        $anncPlat = json_decode($request['annonce_plateformes'] ?? '[]', true) ?: [];
+        $expLabels = ['jamais' => 'Jamais', 'moins_1an' => '< 1 an', '1_3ans' => '1-3 ans', '3_5ans' => '3-5 ans', 'plus_5ans' => '5+ ans'];
+
+        $adminMessage .= "<tr><td style='padding:6px 12px;border-bottom:1px solid #eee;color:#888;'>Annonce existante</td>"
+            . "<td style='padding:6px 12px;border-bottom:1px solid #eee;font-weight:700;color:" . ($annonceExistante ? '#28a745' : '#dc3545') . ";'>"
+            . ($annonceExistante ? 'Oui — ' . htmlspecialchars(implode(', ', array_map('ucfirst', $anncPlat))) : 'Non (premier lancement)') . "</td></tr>";
+
+        if (!empty($request['annonce_url_airbnb'])) {
+            $adminMessage .= "<tr><td style='padding:6px 12px;border-bottom:1px solid #eee;color:#888;'>Airbnb</td>"
+                . "<td style='padding:6px 12px;border-bottom:1px solid #eee;'><a href='" . htmlspecialchars($request['annonce_url_airbnb']) . "'>" . htmlspecialchars($request['annonce_url_airbnb']) . "</a></td></tr>";
+        }
+        if (!empty($request['annonce_url_booking'])) {
+            $adminMessage .= "<tr><td style='padding:6px 12px;border-bottom:1px solid #eee;color:#888;'>Booking</td>"
+                . "<td style='padding:6px 12px;border-bottom:1px solid #eee;'><a href='" . htmlspecialchars($request['annonce_url_booking']) . "'>" . htmlspecialchars($request['annonce_url_booking']) . "</a></td></tr>";
+        }
+        if (!empty($request['annonce_url_autre'])) {
+            $adminMessage .= "<tr><td style='padding:6px 12px;border-bottom:1px solid #eee;color:#888;'>Autre lien</td>"
+                . "<td style='padding:6px 12px;border-bottom:1px solid #eee;'><a href='" . htmlspecialchars($request['annonce_url_autre']) . "'>" . htmlspecialchars($request['annonce_url_autre']) . "</a></td></tr>";
+        }
+        $adminMessage .= "<tr><td style='padding:6px 12px;color:#888;'>Experience</td>"
+            . "<td style='padding:6px 12px;'>" . htmlspecialchars($expLabels[$request['experience_location'] ?? ''] ?? 'Non renseignee') . "</td></tr>";
+
+        $adminMessage .= "</table>";
 
         if (!empty($request['code_parrain'])) {
             $adminMessage .= "<br><span style='color:#28a745;font-weight:700;'>Parraine par : " . htmlspecialchars($request['code_parrain']) . "</span>";

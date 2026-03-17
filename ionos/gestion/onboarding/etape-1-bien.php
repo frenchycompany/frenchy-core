@@ -106,6 +106,68 @@ onboarding_header(1, 'Votre bien', $request);
         </div>
     </div>
 
+    <!-- Annonce existante -->
+    <div class="mb-3 mt-4">
+        <label class="form-label fw-bold"><i class="fas fa-bullhorn"></i> Avez-vous deja une annonce en ligne ?</label>
+        <div class="d-flex gap-3 mb-2">
+            <div class="form-check">
+                <input class="form-check-input" type="radio" name="annonce_existante" id="annonce_oui" value="1"
+                    <?= ($request['annonce_existante'] ?? 0) ? 'checked' : '' ?>>
+                <label class="form-check-label" for="annonce_oui">Oui</label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="radio" name="annonce_existante" id="annonce_non" value="0"
+                    <?= !($request['annonce_existante'] ?? 0) ? 'checked' : '' ?>>
+                <label class="form-check-label" for="annonce_non">Non, c'est mon premier lancement</label>
+            </div>
+        </div>
+    </div>
+
+    <?php $plateformes = json_decode($request['annonce_plateformes'] ?? '[]', true) ?: []; ?>
+    <div id="annonceDetails" style="display: <?= ($request['annonce_existante'] ?? 0) ? 'block' : 'none' ?>;">
+        <div class="mb-3">
+            <label class="form-label fw-bold">Sur quelle(s) plateforme(s) ?</label>
+            <div class="d-flex flex-wrap gap-2">
+                <?php foreach (['airbnb' => 'Airbnb', 'booking' => 'Booking.com', 'abritel' => 'Abritel/VRBO', 'leboncoin' => 'Leboncoin', 'autre' => 'Autre'] as $pVal => $pLabel): ?>
+                <div class="form-check">
+                    <input class="form-check-input plateforme-check" type="checkbox" id="plat_<?= $pVal ?>" value="<?= $pVal ?>"
+                        <?= in_array($pVal, $plateformes) ? 'checked' : '' ?>>
+                    <label class="form-check-label" for="plat_<?= $pVal ?>"><?= $pLabel ?></label>
+                </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+
+        <div class="mb-3" id="urlAirbnbBlock" style="display: <?= in_array('airbnb', $plateformes) ? 'block' : 'none' ?>;">
+            <label for="annonce_url_airbnb" class="form-label">Lien de votre annonce Airbnb</label>
+            <input type="url" class="form-control" id="annonce_url_airbnb" name="annonce_url_airbnb"
+                   placeholder="https://www.airbnb.fr/rooms/..."
+                   value="<?= htmlspecialchars($request['annonce_url_airbnb'] ?? '') ?>">
+        </div>
+        <div class="mb-3" id="urlBookingBlock" style="display: <?= in_array('booking', $plateformes) ? 'block' : 'none' ?>;">
+            <label for="annonce_url_booking" class="form-label">Lien de votre annonce Booking</label>
+            <input type="url" class="form-control" id="annonce_url_booking" name="annonce_url_booking"
+                   placeholder="https://www.booking.com/hotel/..."
+                   value="<?= htmlspecialchars($request['annonce_url_booking'] ?? '') ?>">
+        </div>
+        <div class="mb-3" id="urlAutreBlock" style="display: <?= (in_array('abritel', $plateformes) || in_array('leboncoin', $plateformes) || in_array('autre', $plateformes)) ? 'block' : 'none' ?>;">
+            <label for="annonce_url_autre" class="form-label">Lien autre plateforme</label>
+            <input type="url" class="form-control" id="annonce_url_autre" name="annonce_url_autre"
+                   placeholder="https://..."
+                   value="<?= htmlspecialchars($request['annonce_url_autre'] ?? '') ?>">
+        </div>
+
+        <div class="mb-3">
+            <label for="experience_location" class="form-label fw-bold">Depuis combien de temps louez-vous ?</label>
+            <select class="form-select" id="experience_location" name="experience_location">
+                <option value="">-- Choisir --</option>
+                <?php foreach (['jamais' => 'Jamais encore', 'moins_1an' => 'Moins d\'un an', '1_3ans' => '1 a 3 ans', '3_5ans' => '3 a 5 ans', 'plus_5ans' => 'Plus de 5 ans'] as $eVal => $eLabel): ?>
+                    <option value="<?= $eVal ?>" <?= ($request['experience_location'] ?? '') === $eVal ? 'selected' : '' ?>><?= $eLabel ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+    </div>
+
     <!-- Photos -->
     <div class="mb-3">
         <label class="form-label fw-bold"><i class="fas fa-camera"></i> Photos du bien</label>
@@ -153,12 +215,31 @@ function handleFiles(files) {
     });
 }
 
+// Annonce existante — toggle
+document.querySelectorAll('input[name="annonce_existante"]').forEach(r => {
+    r.addEventListener('change', () => {
+        document.getElementById('annonceDetails').style.display = r.value === '1' && r.checked ? 'block' : 'none';
+    });
+});
+// Plateformes — toggle URL fields
+document.querySelectorAll('.plateforme-check').forEach(cb => {
+    cb.addEventListener('change', () => {
+        const checked = [...document.querySelectorAll('.plateforme-check:checked')].map(c => c.value);
+        document.getElementById('urlAirbnbBlock').style.display = checked.includes('airbnb') ? 'block' : 'none';
+        document.getElementById('urlBookingBlock').style.display = checked.includes('booking') ? 'block' : 'none';
+        document.getElementById('urlAutreBlock').style.display = (checked.includes('abritel') || checked.includes('leboncoin') || checked.includes('autre')) ? 'block' : 'none';
+    });
+});
+
 // Form submit
 document.getElementById('step1Form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = document.getElementById('nextBtn');
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sauvegarde...';
+
+    const annonceExistante = document.getElementById('annonce_oui').checked ? 1 : 0;
+    const plateformes = [...document.querySelectorAll('.plateforme-check:checked')].map(c => c.value);
 
     const data = {
         adresse: document.getElementById('adresse').value,
@@ -172,6 +253,12 @@ document.getElementById('step1Form').addEventListener('submit', async (e) => {
         etage: document.getElementById('etage').value,
         ascenseur: document.getElementById('ascenseur').checked ? 1 : 0,
         parking: document.getElementById('parking').checked ? 1 : 0,
+        annonce_existante: annonceExistante,
+        annonce_plateformes: annonceExistante ? plateformes : [],
+        annonce_url_airbnb: annonceExistante ? (document.getElementById('annonce_url_airbnb').value || '') : '',
+        annonce_url_booking: annonceExistante ? (document.getElementById('annonce_url_booking').value || '') : '',
+        annonce_url_autre: annonceExistante ? (document.getElementById('annonce_url_autre').value || '') : '',
+        experience_location: document.getElementById('experience_location').value,
     };
 
     const result = await saveStep(1, data);

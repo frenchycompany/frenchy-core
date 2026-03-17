@@ -87,6 +87,39 @@ onboarding_header(6, 'Recapitulatif', $request);
             <span class="recap-label">Equipements</span>
             <span class="recap-value"><?= $nbEquip ?> selectionne(s)</span>
         </div>
+        <?php
+        $annonceExistante = (int)($request['annonce_existante'] ?? 0);
+        $plateformes = json_decode($request['annonce_plateformes'] ?? '[]', true) ?: [];
+        $expLabels = ['jamais' => 'Jamais encore', 'moins_1an' => 'Moins d\'un an', '1_3ans' => '1 a 3 ans', '3_5ans' => '3 a 5 ans', 'plus_5ans' => 'Plus de 5 ans'];
+        ?>
+        <div class="recap-row">
+            <span class="recap-label">Annonce existante</span>
+            <span class="recap-value"><?= $annonceExistante ? 'Oui — ' . htmlspecialchars(implode(', ', array_map('ucfirst', $plateformes))) : 'Non (premier lancement)' ?></span>
+        </div>
+        <?php if (!empty($request['annonce_url_airbnb'])): ?>
+        <div class="recap-row">
+            <span class="recap-label">Airbnb</span>
+            <span class="recap-value"><a href="<?= htmlspecialchars($request['annonce_url_airbnb']) ?>" target="_blank" style="font-size:0.85em;">Voir l'annonce <i class="fas fa-external-link-alt"></i></a></span>
+        </div>
+        <?php endif; ?>
+        <?php if (!empty($request['annonce_url_booking'])): ?>
+        <div class="recap-row">
+            <span class="recap-label">Booking</span>
+            <span class="recap-value"><a href="<?= htmlspecialchars($request['annonce_url_booking']) ?>" target="_blank" style="font-size:0.85em;">Voir l'annonce <i class="fas fa-external-link-alt"></i></a></span>
+        </div>
+        <?php endif; ?>
+        <?php if (!empty($request['annonce_url_autre'])): ?>
+        <div class="recap-row">
+            <span class="recap-label">Autre</span>
+            <span class="recap-value"><a href="<?= htmlspecialchars($request['annonce_url_autre']) ?>" target="_blank" style="font-size:0.85em;">Voir l'annonce <i class="fas fa-external-link-alt"></i></a></span>
+        </div>
+        <?php endif; ?>
+        <?php if (!empty($request['experience_location'])): ?>
+        <div class="recap-row">
+            <span class="recap-label">Experience</span>
+            <span class="recap-value"><?= htmlspecialchars($expLabels[$request['experience_location']] ?? $request['experience_location']) ?></span>
+        </div>
+        <?php endif; ?>
     </div>
 
     <!-- Proprietaire -->
