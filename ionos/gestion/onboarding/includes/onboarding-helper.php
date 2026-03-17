@@ -560,6 +560,40 @@ function onboarding_finalize($conn, $token) {
 
     error_log("onboarding: finalise OK — proprio=$proprietaire_id logement=$logement_id");
 
+    // 8. Notifier l'admin (email + base) — non bloquant
+    try {
+        require_once __DIR__ . '/../../includes/notifications.php';
+        $nomComplet = trim(($request['prenom'] ?? '') . ' ' . ($request['nom'] ?? ''));
+        $logementNom = $request['adresse'] ?? $request['nom_logement'] ?? 'Nouveau logement';
+        $lien = "https://gestion.frenchyconciergerie.fr/pages/proprietaire_detail.php?id=$proprietaire_id";
+        sendNotification(
+            $conn,
+            'onboarding_termine',
+            "Nouveau proprietaire : $nomComplet",
+            "L'onboarding de <strong>" . htmlspecialchars($nomComplet) . "</strong> est termine.<br>"
+                . "Logement : <strong>" . htmlspecialchars($logementNom) . "</strong><br>"
+                . "Email : " . htmlspecialchars($request['email'] ?? '') . "<br>"
+                . "Tel : " . htmlspecialchars($request['telephone'] ?? ''),
+            $lien
+        );
+    } catch (\Throwable $e) {
+        error_log('onboarding notification email: ' . $e->getMessage());
+    }
+
+    // 9. SMS fallback vers le numero admin — non bloquant
+    try {
+        $adminPhone = function_exists('env') ? env('ADMIN_PHONE', null) : null;
+        if ($adminPhone) {
+            $nomComplet = trim(($request['prenom'] ?? '') . ' ' . ($request['nom'] ?? ''));
+            $smsMsg = "Nouveau client onboarde : $nomComplet — " . ($request['telephone'] ?? '') . ". Voir le dashboard pour details.";
+            $conn->prepare(
+                "INSERT INTO sms_outbox (receiver, message, modem, status) VALUES (?, ?, 'modem1', 'pending')"
+            )->execute([$adminPhone, $smsMsg]);
+        }
+    } catch (\Throwable $e) {
+        error_log('onboarding notification sms: ' . $e->getMessage());
+    }
+
     return [
         'proprietaire_id' => $proprietaire_id,
         'logement_id' => $logement_id,
