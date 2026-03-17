@@ -564,16 +564,42 @@ function onboarding_finalize($conn, $token) {
     try {
         require_once __DIR__ . '/../../includes/notifications.php';
         $nomComplet = trim(($request['prenom'] ?? '') . ' ' . ($request['nom'] ?? ''));
-        $logementNom = $request['adresse'] ?? $request['nom_logement'] ?? 'Nouveau logement';
+        $logementNom = $nom_logement;
+        $packLabel = onboarding_get_packs()[$request['pack'] ?? 'autonome']['label'] ?? 'Autonome';
+        $commBase = $request['commission_base'] ?? 10;
         $lien = "https://gestion.frenchyconciergerie.fr/pages/proprietaire_detail.php?id=$proprietaire_id";
+
+        $adminMessage = "L'onboarding de <strong>" . htmlspecialchars($nomComplet) . "</strong> est termine.<br><br>"
+            . "<table style='border-collapse:collapse;width:100%;'>"
+            . "<tr><td style='padding:6px 12px;border-bottom:1px solid #eee;color:#888;'>Pack</td>"
+            .     "<td style='padding:6px 12px;border-bottom:1px solid #eee;font-weight:700;'>" . htmlspecialchars($packLabel) . "</td></tr>"
+            . "<tr><td style='padding:6px 12px;border-bottom:1px solid #eee;color:#888;'>Commission</td>"
+            .     "<td style='padding:6px 12px;border-bottom:1px solid #eee;font-weight:700;'>" . htmlspecialchars($commBase) . "%</td></tr>"
+            . "<tr><td style='padding:6px 12px;border-bottom:1px solid #eee;color:#888;'>Logement</td>"
+            .     "<td style='padding:6px 12px;border-bottom:1px solid #eee;'>" . htmlspecialchars($logementNom) . "</td></tr>"
+            . "<tr><td style='padding:6px 12px;border-bottom:1px solid #eee;color:#888;'>Adresse</td>"
+            .     "<td style='padding:6px 12px;border-bottom:1px solid #eee;'>" . htmlspecialchars($adresse_complete) . "</td></tr>"
+            . "<tr><td style='padding:6px 12px;border-bottom:1px solid #eee;color:#888;'>Typologie</td>"
+            .     "<td style='padding:6px 12px;border-bottom:1px solid #eee;'>" . htmlspecialchars($request['typologie'] ?? '-') . "</td></tr>"
+            . "<tr><td style='padding:6px 12px;border-bottom:1px solid #eee;color:#888;'>Email</td>"
+            .     "<td style='padding:6px 12px;border-bottom:1px solid #eee;'>" . htmlspecialchars($request['email'] ?? '') . "</td></tr>"
+            . "<tr><td style='padding:6px 12px;border-bottom:1px solid #eee;color:#888;'>Telephone</td>"
+            .     "<td style='padding:6px 12px;border-bottom:1px solid #eee;'>" . htmlspecialchars($request['telephone'] ?? '') . "</td></tr>"
+            . "<tr><td style='padding:6px 12px;border-bottom:1px solid #eee;color:#888;'>Societe</td>"
+            .     "<td style='padding:6px 12px;border-bottom:1px solid #eee;'>" . htmlspecialchars($request['societe'] ?? '-') . "</td></tr>"
+            . "<tr><td style='padding:6px 12px;color:#888;'>Options</td>"
+            .     "<td style='padding:6px 12px;'>" . htmlspecialchars($request['options_supplementaires'] ?? 'Aucune') . "</td></tr>"
+            . "</table>";
+
+        if (!empty($request['code_parrain'])) {
+            $adminMessage .= "<br><span style='color:#28a745;font-weight:700;'>Parraine par : " . htmlspecialchars($request['code_parrain']) . "</span>";
+        }
+
         sendNotification(
             $conn,
             'onboarding_termine',
-            "Nouveau proprietaire : $nomComplet",
-            "L'onboarding de <strong>" . htmlspecialchars($nomComplet) . "</strong> est termine.<br>"
-                . "Logement : <strong>" . htmlspecialchars($logementNom) . "</strong><br>"
-                . "Email : " . htmlspecialchars($request['email'] ?? '') . "<br>"
-                . "Tel : " . htmlspecialchars($request['telephone'] ?? ''),
+            "Nouveau proprietaire : $nomComplet ($packLabel — {$commBase}%)",
+            $adminMessage,
             $lien
         );
     } catch (\Throwable $e) {

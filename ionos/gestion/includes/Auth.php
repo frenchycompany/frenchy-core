@@ -8,7 +8,7 @@
  * - ionos/admin/index.php (admin hardcodé)
  * - ionos/includes/security.php (classe Security pour proprios)
  *
- * Rôles disponibles : super_admin, gestionnaire, femme_de_menage, proprietaire, voyageur
+ * Rôles disponibles : super_admin, gestionnaire, concierge, femme_de_menage, proprietaire, voyageur
  */
 
 class Auth
@@ -177,10 +177,10 @@ class Auth
         $_SESSION['user_role']   = $user['role'];
 
         // Compatibilité avec l'ancien système staff
-        if (in_array($user['role'], ['super_admin', 'gestionnaire', 'femme_de_menage'])) {
+        if (in_array($user['role'], ['super_admin', 'gestionnaire', 'concierge', 'femme_de_menage'])) {
             $_SESSION['id_intervenant'] = $user['legacy_intervenant_id'] ?? $user['id'];
             $_SESSION['nom_utilisateur'] = $user['nom'];
-            $_SESSION['role'] = ($user['role'] === 'femme_de_menage') ? 'user' : 'admin';
+            $_SESSION['role'] = in_array($user['role'], ['femme_de_menage', 'concierge']) ? 'user' : 'admin';
         }
 
         // Compatibilité avec l'ancien système propriétaire
@@ -295,13 +295,21 @@ class Auth
     {
         $role = $this->role();
         // Ancien système : tout intervenant connecté est staff
-        if (in_array($role, ['femme_de_menage', 'gestionnaire', 'super_admin'])) {
+        if (in_array($role, ['femme_de_menage', 'concierge', 'gestionnaire', 'super_admin'])) {
             return true;
         }
         if (isset($_SESSION['id_intervenant'])) {
             return true;
         }
         return false;
+    }
+
+    /**
+     * Vérifie si l'utilisateur courant est concierge (ou supérieur).
+     */
+    public function isConcierge(): bool
+    {
+        return $this->hasRole('concierge');
     }
 
     /**
@@ -326,8 +334,9 @@ class Auth
     public function hasRole(string $role): bool
     {
         $hierarchy = [
-            'super_admin' => 5,
-            'gestionnaire' => 4,
+            'super_admin' => 6,
+            'gestionnaire' => 5,
+            'concierge' => 4,
             'femme_de_menage' => 3,
             'proprietaire' => 2,
             'voyageur' => 1,
@@ -337,7 +346,7 @@ class Auth
         $requiredLevel = $hierarchy[$role] ?? 99;
 
         // Pour les rôles internes, la hiérarchie s'applique
-        if (in_array($role, ['femme_de_menage', 'gestionnaire', 'super_admin'])) {
+        if (in_array($role, ['femme_de_menage', 'concierge', 'gestionnaire', 'super_admin'])) {
             return $userLevel >= $requiredLevel;
         }
 
@@ -402,7 +411,7 @@ class Auth
     public function getRedirectUrl(): string
     {
         $role = $this->role();
-        if (in_array($role, ['super_admin', 'gestionnaire', 'femme_de_menage'])) {
+        if (in_array($role, ['super_admin', 'gestionnaire', 'concierge', 'femme_de_menage'])) {
             return 'index.php';
         }
         if ($role === 'proprietaire') {
