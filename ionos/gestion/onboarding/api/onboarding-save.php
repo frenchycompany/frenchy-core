@@ -89,13 +89,8 @@ if (!empty($errors)) {
     exit;
 }
 
-// Sauvegarder l'etape
-$saved = onboarding_save_step($conn, $token, $etape, $input);
-
-if (!$saved) {
-    echo json_encode(['success' => false, 'error' => 'Erreur de sauvegarde']);
-    exit;
-}
+// Sauvegarder l'etape (peut retourner false si pas de champs a sauvegarder, ex: etape 6)
+onboarding_save_step($conn, $token, $etape, $input);
 
 // Si etape 6 + finalize → creer le proprietaire et le logement
 $result = ['success' => true, 'etape' => $etape];
@@ -110,12 +105,12 @@ if ($etape === 6 && !empty($input['finalize'])) {
             $result['code_parrainage'] = $finalized['code_parrainage'];
         } else {
             $result['success'] = false;
-            $result['error'] = 'Erreur lors de la finalisation';
+            $result['error'] = 'Erreur lors de la finalisation (deja termine?)';
         }
     } catch (Exception $e) {
-        error_log('onboarding finalize error: ' . $e->getMessage());
+        error_log('onboarding finalize error: ' . $e->getMessage() . ' | trace: ' . $e->getTraceAsString());
         $result['success'] = false;
-        $result['error'] = 'Erreur interne lors de la finalisation';
+        $result['error'] = 'Erreur: ' . $e->getMessage();
     }
 }
 

@@ -423,106 +423,124 @@ function onboarding_finalize($conn, $token) {
     $request = onboarding_load($conn, $token);
     if (!$request || $request['statut'] === 'termine') return false;
 
-    // 1. Creer le proprietaire dans FC_proprietaires
-    $stmt = $conn->prepare("
-        INSERT INTO FC_proprietaires (nom, prenom, email, telephone, societe, siret, commission, actif)
-        VALUES (?, ?, ?, ?, ?, ?, ?, 1)
-    ");
-    $stmt->execute([
+    // S'assurer que les colonnes existent dans FC_proprietaires
+    try {
+        $cols = array_column($conn->query("SHOW COLUMNS FROM FC_proprietaires")->fetchAll(), 'Field');
+    } catch (PDOException $e) {
+        error_log('onboarding_finalize: FC_proprietaires missing: ' . $e->getMessage());
+        throw new Exception('Table FC_proprietaires introuvable');
+    }
+
+    // 1. Creer le proprietaire — adapter les colonnes disponibles
+    $insertCols = ['nom', 'prenom', 'email', 'telephone', 'actif'];
+    $insertVals = [
         $request['nom'],
         $request['prenom'],
         $request['email'],
         $request['telephone'],
-        $request['societe'],
-        $request['siret'],
-        $request['commission_base'],
-    ]);
+        1,
+    ];
+    // Colonnes optionnelles
+    foreach (['societe', 'siret', 'commission'] as $optCol) {
+        if (in_array($optCol, $cols)) {
+            $insertCols[] = $optCol;
+            $insertVals[] = $optCol === 'commission' ? $request['commission_base'] : $request[$optCol];
+        }
+    }
+    $placeholders = implode(',', array_fill(0, count($insertCols), '?'));
+    $colsList = implode(',', $insertCols);
+    $stmt = $conn->prepare("INSERT INTO FC_proprietaires ($colsList) VALUES ($placeholders)");
+    $stmt->execute($insertVals);
     $proprietaire_id = $conn->lastInsertId();
+    error_log("onboarding: proprietaire cree ID=$proprietaire_id");
 
-    // 2. Creer le logement dans liste_logements
+    // 2. Creer le logement — verifier que proprietaire_id existe
     $nom_logement = ($request['typologie'] ?? 'Bien') . ' ' . ($request['ville'] ?? '');
-    $stmt = $conn->prepare("
-        INSERT INTO liste_logements (nom_du_logement, adresse, proprietaire_id)
-        VALUES (?, ?, ?)
-    ");
     $adresse_complete = implode(', ', array_filter([
         $request['adresse'],
         $request['complement_adresse'],
         $request['code_postal'],
         $request['ville'],
     ]));
-    $stmt->execute([$nom_logement, $adresse_complete, $proprietaire_id]);
+
+    $logCols = array_column($conn->query("SHOW COLUMNS FROM liste_logements")->fetchAll(), 'Field');
+    if (in_array('proprietaire_id', $logCols)) {
+        $stmt = $conn->prepare("INSERT INTO liste_logements (nom_du_logement, adresse, proprietaire_id) VALUES (?, ?, ?)");
+        $stmt->execute([$nom_logement, $adresse_complete, $proprietaire_id]);
+    } else {
+        $stmt = $conn->prepare("INSERT INTO liste_logements (nom_du_logement, adresse) VALUES (?, ?)");
+        $stmt->execute([$nom_logement, $adresse_complete]);
+    }
     $logement_id = $conn->lastInsertId();
+    error_log("onboarding: logement cree ID=$logement_id");
 
     // 3. Creer la config commission
-    $stmt = $conn->prepare("
-        INSERT INTO proprietaire_commission_config
-        (proprietaire_id, pack, commission_base, options, equipement_fourni)
-        VALUES (?, ?, ?, ?, ?)
-    ");
-    $stmt->execute([
-        $proprietaire_id,
-        $request['pack'] ?? 'autonome',
-        $request['commission_base'] ?? 10,
-        $request['options_supplementaires'],
-        ($request['pack'] === 'cle_en_main') ? 1 : 0,
-    ]);
-
-    // 4. Gerer le parrainage
-    if (!empty($request['code_parrain'])) {
-        $stmtP = $conn->prepare("
-            SELECT cp.proprietaire_id
-            FROM codes_parrainage cp
-            WHERE cp.code = ? AND cp.actif = 1
+    try {
+        $stmt = $conn->prepare("
+            INSERT INTO proprietaire_commission_config
+            (proprietaire_id, pack, commission_base, commission_effective, options, equipement_fourni)
+            VALUES (?, ?, ?, ?, ?, ?)
         ");
-        $stmtP->execute([$request['code_parrain']]);
-        $parrain = $stmtP->fetch(PDO::FETCH_ASSOC);
-        if ($parrain) {
-            // Creer le parrainage
-            $conn->prepare("
-                INSERT INTO parrainages (parrain_id, filleul_id, code_utilise, statut, active_depuis)
-                VALUES (?, ?, ?, 'actif', NOW())
-            ")->execute([$parrain['proprietaire_id'], $proprietaire_id, $request['code_parrain']]);
+        $commBase = $request['commission_base'] ?? 10;
+        $stmt->execute([
+            $proprietaire_id,
+            $request['pack'] ?? 'autonome',
+            $commBase,
+            $commBase, // effective = base au debut
+            $request['options_supplementaires'] ?? null,
+            ($request['pack'] === 'cle_en_main') ? 1 : 0,
+        ]);
+    } catch (PDOException $e) {
+        error_log('onboarding commission config: ' . $e->getMessage());
+        // Non bloquant
+    }
 
-            // Incrementer le compteur
-            $conn->prepare("UPDATE codes_parrainage SET nb_utilisations = nb_utilisations + 1 WHERE code = ?")
-                ->execute([$request['code_parrain']]);
+    // 4. Gerer le parrainage (non bloquant)
+    if (!empty($request['code_parrain'])) {
+        try {
+            $stmtP = $conn->prepare("SELECT proprietaire_id FROM codes_parrainage WHERE code = ? AND actif = 1");
+            $stmtP->execute([$request['code_parrain']]);
+            $parrain = $stmtP->fetch(PDO::FETCH_ASSOC);
+            if ($parrain) {
+                $conn->prepare("
+                    INSERT INTO parrainages (parrain_id, filleul_id, code_utilise, statut, active_depuis)
+                    VALUES (?, ?, ?, 'actif', NOW())
+                ")->execute([$parrain['proprietaire_id'], $proprietaire_id, $request['code_parrain']]);
 
-            // Calculer la reduction du parrain
-            $stmtNb = $conn->prepare("SELECT COUNT(*) FROM parrainages WHERE parrain_id = ? AND statut = 'actif'");
-            $stmtNb->execute([$parrain['proprietaire_id']]);
-            $nb_filleuls = (int)$stmtNb->fetchColumn();
-            $reduction = min($nb_filleuls * 1.0, 5.0); // max -5%
+                $conn->prepare("UPDATE codes_parrainage SET nb_utilisations = nb_utilisations + 1 WHERE code = ?")
+                    ->execute([$request['code_parrain']]);
 
-            $conn->prepare("
-                UPDATE proprietaire_commission_config
-                SET reduction_parrainage = ?
-                WHERE proprietaire_id = ?
-            ")->execute([$reduction, $parrain['proprietaire_id']]);
+                $stmtNb = $conn->prepare("SELECT COUNT(*) FROM parrainages WHERE parrain_id = ? AND statut = 'actif'");
+                $stmtNb->execute([$parrain['proprietaire_id']]);
+                $reduction = min((int)$stmtNb->fetchColumn() * 1.0, 5.0);
+                $conn->prepare("UPDATE proprietaire_commission_config SET reduction_parrainage = ?, commission_effective = GREATEST(5, commission_base - ?) WHERE proprietaire_id = ?")
+                    ->execute([$reduction, $reduction, $parrain['proprietaire_id']]);
+            }
+        } catch (PDOException $e) {
+            error_log('onboarding parrainage: ' . $e->getMessage());
         }
     }
 
-    // 5. Generer le code parrainage du nouveau proprio
+    // 5. Generer le code parrainage du nouveau proprio (non bloquant)
     $code = 'FRENCHY' . strtoupper(substr($request['prenom'] ?? 'X', 0, 4)) . $proprietaire_id;
-    $conn->prepare("
-        INSERT INTO codes_parrainage (proprietaire_id, code) VALUES (?, ?)
-    ")->execute([$proprietaire_id, $code]);
+    try {
+        $conn->prepare("INSERT INTO codes_parrainage (proprietaire_id, code) VALUES (?, ?)")
+            ->execute([$proprietaire_id, $code]);
+    } catch (PDOException $e) {
+        error_log('onboarding code parrainage: ' . $e->getMessage());
+    }
 
-    // 6. Creer les taches automatiques
-    $tasks = ['create_proprietaire', 'create_logement', 'generate_site', 'sms_bienvenue', 'setup_superhote'];
-    $stmtTask = $conn->prepare("
-        INSERT INTO onboarding_tasks (request_id, type, statut) VALUES (?, ?, 'done')
-    ");
-    // Les 2 premieres sont deja faites
-    $stmtTask->execute([$request['id'], 'create_proprietaire']);
-    $stmtTask->execute([$request['id'], 'create_logement']);
-    // Les autres sont en pending
-    $stmtTaskP = $conn->prepare("
-        INSERT INTO onboarding_tasks (request_id, type, statut) VALUES (?, ?, 'pending')
-    ");
-    $stmtTaskP->execute([$request['id'], 'generate_site']);
-    $stmtTaskP->execute([$request['id'], 'sms_bienvenue']);
-    $stmtTaskP->execute([$request['id'], 'setup_superhote']);
+    // 6. Creer les taches automatiques (non bloquant)
+    try {
+        $stmtTask = $conn->prepare("INSERT INTO onboarding_tasks (request_id, type, statut) VALUES (?, ?, ?)");
+        $stmtTask->execute([$request['id'], 'create_proprietaire', 'done']);
+        $stmtTask->execute([$request['id'], 'create_logement', 'done']);
+        $stmtTask->execute([$request['id'], 'generate_site', 'pending']);
+        $stmtTask->execute([$request['id'], 'sms_bienvenue', 'pending']);
+        $stmtTask->execute([$request['id'], 'setup_superhote', 'pending']);
+    } catch (PDOException $e) {
+        error_log('onboarding tasks: ' . $e->getMessage());
+    }
 
     // 7. Marquer comme termine
     $conn->prepare("
@@ -530,6 +548,8 @@ function onboarding_finalize($conn, $token) {
         SET statut = 'termine', progression = 100, proprietaire_id = ?, logement_id = ?, completed_at = NOW()
         WHERE token = ?
     ")->execute([$proprietaire_id, $logement_id, $token]);
+
+    error_log("onboarding: finalise OK — proprio=$proprietaire_id logement=$logement_id");
 
     return [
         'proprietaire_id' => $proprietaire_id,
