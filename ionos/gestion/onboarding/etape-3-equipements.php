@@ -109,16 +109,8 @@ onboarding_header(3, 'Equipements', $request);
 </form>
 
 <script>
-// Toggle checkbox visual
+// Toggle checkbox visual — use 'change' event only (label already toggles the checkbox)
 document.querySelectorAll('.equip-item').forEach(item => {
-    item.addEventListener('click', (e) => {
-        if (e.target.tagName === 'INPUT') return; // Let native checkbox handle it
-        const cb = item.querySelector('input[type=checkbox]');
-        cb.checked = !cb.checked;
-        item.classList.toggle('checked', cb.checked);
-        updateCount();
-    });
-    // Sync initial state
     const cb = item.querySelector('input[type=checkbox]');
     cb.addEventListener('change', () => {
         item.classList.toggle('checked', cb.checked);
