@@ -432,6 +432,10 @@ function onboarding_finalize($conn, $token) {
     }
 
     // 1. Creer le proprietaire — adapter les colonnes disponibles
+    // Generer un mot de passe temporaire (le proprio le changera a la premiere connexion)
+    $tempPassword = bin2hex(random_bytes(8));
+    $passwordHash = password_hash($tempPassword, PASSWORD_DEFAULT);
+
     $insertCols = ['nom', 'prenom', 'email', 'telephone', 'actif'];
     $insertVals = [
         $request['nom'],
@@ -440,6 +444,11 @@ function onboarding_finalize($conn, $token) {
         $request['telephone'],
         1,
     ];
+    // password_hash obligatoire
+    if (in_array('password_hash', $cols)) {
+        $insertCols[] = 'password_hash';
+        $insertVals[] = $passwordHash;
+    }
     // Colonnes optionnelles
     foreach (['societe', 'siret', 'commission'] as $optCol) {
         if (in_array($optCol, $cols)) {
