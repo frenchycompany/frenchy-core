@@ -580,7 +580,68 @@ function onboarding_finalize($conn, $token) {
         error_log('onboarding notification email: ' . $e->getMessage());
     }
 
-    // 9. SMS fallback vers le numero admin — non bloquant
+    // 9. Email de bienvenue au client — non bloquant
+    try {
+        $clientEmail = $request['email'] ?? null;
+        if ($clientEmail) {
+            $prenom = htmlspecialchars($request['prenom'] ?? '');
+            $nomComplet = htmlspecialchars(trim(($request['prenom'] ?? '') . ' ' . ($request['nom'] ?? '')));
+            $packs = onboarding_get_packs();
+            $packLabel = htmlspecialchars($packs[$request['pack'] ?? 'autonome']['label'] ?? 'Autonome');
+            $loginUrl = 'https://gestion.frenchyconciergerie.fr/proprietaire/login.php';
+
+            $subject = "Bienvenue chez Frenchy, $prenom !";
+            $headers = "From: Frenchy Conciergerie <noreply@frenchyconciergerie.fr>\r\n";
+            $headers .= "Reply-To: contact@frenchyconciergerie.fr\r\n";
+            $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
+
+            $htmlBody = "
+            <div style='font-family:Arial,sans-serif;max-width:600px;margin:0 auto;'>
+                <div style='background:linear-gradient(135deg,#1a1a2e,#16213e);color:#fff;padding:30px;border-radius:12px 12px 0 0;text-align:center;'>
+                    <h1 style='margin:0 0 5px;font-size:24px;'>Bienvenue chez Frenchy !</h1>
+                    <p style='margin:0;opacity:0.8;'>Votre inscription est confirmee</p>
+                </div>
+                <div style='background:#fff;padding:25px;border:1px solid #eee;'>
+                    <p>Bonjour <strong>$prenom</strong>,</p>
+                    <p>Merci pour votre confiance ! Votre bien est en cours d'activation avec le pack <strong>$packLabel</strong>.</p>
+
+                    <div style='background:#f8f9fa;border-radius:8px;padding:15px;margin:20px 0;'>
+                        <h3 style='margin:0 0 10px;font-size:16px;color:#1a1a2e;'>Vos identifiants temporaires</h3>
+                        <p style='margin:5px 0;'>Email : <strong>" . htmlspecialchars($clientEmail) . "</strong></p>
+                        <p style='margin:5px 0;'>Mot de passe : <strong>$tempPassword</strong></p>
+                        <p style='margin:10px 0 0;font-size:12px;color:#666;'>Pensez a changer votre mot de passe a la premiere connexion.</p>
+                    </div>
+
+                    <div style='text-align:center;margin:25px 0;'>
+                        <a href='$loginUrl' style='display:inline-block;padding:14px 30px;background:#28a745;color:#fff;text-decoration:none;border-radius:8px;font-weight:bold;font-size:16px;'>Acceder a mon dashboard</a>
+                    </div>
+
+                    <h3 style='font-size:16px;color:#1a1a2e;'>Prochaines etapes :</h3>
+                    <ol style='color:#333;line-height:1.8;'>
+                        <li>Creation de votre email @frenchyconciergerie.fr (sous 24h)</li>
+                        <li>Generation de votre site vitrine personnalise</li>
+                        <li>Prise de RDV pour la seance photo / optimisation</li>
+                        <li>Activation de la tarification dynamique</li>
+                    </ol>
+
+                    <p style='color:#666;font-size:13px;margin-top:20px;'>
+                        Une question ? Repondez directement a cet email ou appelez-nous.<br>
+                        Code parrainage : <strong>$code</strong> — partagez-le pour reduire votre commission !
+                    </p>
+                </div>
+                <div style='background:#f1f1f1;padding:15px;text-align:center;border-radius:0 0 12px 12px;font-size:12px;color:#999;'>
+                    Frenchy Conciergerie — Gestion locative courte duree
+                </div>
+            </div>";
+
+            @mail($clientEmail, $subject, $htmlBody, $headers);
+            error_log("onboarding: email bienvenue envoye a $clientEmail");
+        }
+    } catch (\Throwable $e) {
+        error_log('onboarding email client: ' . $e->getMessage());
+    }
+
+    // 10. SMS fallback vers le numero admin — non bloquant
     try {
         $adminPhone = function_exists('env') ? env('ADMIN_PHONE', null) : null;
         if ($adminPhone) {
