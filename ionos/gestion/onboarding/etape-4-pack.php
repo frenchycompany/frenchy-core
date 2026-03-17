@@ -2,8 +2,7 @@
 /**
  * Etape 4 : Choix du pack (10% / 20% / 30%) — Commission configurable
  */
-require_once __DIR__ . '/../includes/env_loader.php';
-require_once __DIR__ . '/../db/connection.php';
+require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/includes/onboarding-helper.php';
 
 $token = $_GET['token'] ?? null;

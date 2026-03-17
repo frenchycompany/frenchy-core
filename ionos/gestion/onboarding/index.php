@@ -3,8 +3,7 @@
  * Frenchy Self Boarding — Landing Page
  * "Louez votre bien sans vous prendre la tete"
  */
-require_once __DIR__ . '/../includes/env_loader.php';
-require_once __DIR__ . '/../db/connection.php';
+require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/includes/onboarding-helper.php';
 
 // Si token existant, reprendre le parcours

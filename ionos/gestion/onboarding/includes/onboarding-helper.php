@@ -15,19 +15,146 @@ function onboarding_ensure_tables($conn) {
     try {
         $conn->query("SELECT 1 FROM onboarding_requests LIMIT 1");
     } catch (PDOException $e) {
-        $sqlFile = __DIR__ . '/../../db/migrations/003_onboarding_commission_parrainage.sql';
-        if (file_exists($sqlFile)) {
-            $sql = file_get_contents($sqlFile);
-            // Executer chaque statement separement
-            $statements = array_filter(array_map('trim', explode(';', $sql)));
-            foreach ($statements as $stmt) {
-                if (empty($stmt) || strpos($stmt, '--') === 0) continue;
-                try {
-                    $conn->exec($stmt);
-                } catch (PDOException $ex) {
-                    error_log('onboarding migration: ' . $ex->getMessage());
-                }
-            }
+        // Tables manquantes — les creer inline (plus fiable que parser le .sql)
+        onboarding_create_tables($conn);
+    }
+}
+
+function onboarding_create_tables($conn) {
+    $tables = [];
+
+    $tables[] = "CREATE TABLE IF NOT EXISTS onboarding_requests (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        token VARCHAR(64) NOT NULL UNIQUE,
+        etape_courante TINYINT DEFAULT 1,
+        statut ENUM('brouillon','en_cours','termine','abandonne') DEFAULT 'brouillon',
+        progression TINYINT DEFAULT 0,
+        adresse TEXT,
+        complement_adresse VARCHAR(255),
+        code_postal VARCHAR(10),
+        ville VARCHAR(100),
+        pays VARCHAR(50) DEFAULT 'France',
+        latitude DECIMAL(10,7),
+        longitude DECIMAL(10,7),
+        typologie ENUM('studio','T1','T2','T3','T4','T5+','maison','villa') DEFAULT NULL,
+        superficie INT,
+        nb_pieces INT DEFAULT 1,
+        nb_couchages INT DEFAULT 2,
+        etage VARCHAR(20),
+        ascenseur TINYINT(1) DEFAULT 0,
+        parking TINYINT(1) DEFAULT 0,
+        photos JSON,
+        prenom VARCHAR(100),
+        nom VARCHAR(100),
+        email VARCHAR(255),
+        telephone VARCHAR(20),
+        societe VARCHAR(255),
+        siret VARCHAR(20),
+        equipements JSON,
+        description_bien TEXT,
+        pack ENUM('autonome','serenite','cle_en_main') DEFAULT 'autonome',
+        commission_base DECIMAL(5,2) DEFAULT 10.00,
+        options_supplementaires JSON,
+        prix_souhaite DECIMAL(10,2),
+        prix_min DECIMAL(10,2),
+        prix_max DECIMAL(10,2),
+        accepte_prix_dynamique TINYINT(1) DEFAULT 1,
+        conditions_acceptees TINYINT(1) DEFAULT 0,
+        rgpd_accepte TINYINT(1) DEFAULT 0,
+        signature_date DATETIME,
+        proprietaire_id INT,
+        logement_id INT,
+        code_parrain VARCHAR(30),
+        source VARCHAR(50),
+        ip_address VARCHAR(45),
+        user_agent TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        completed_at DATETIME,
+        INDEX idx_email (email),
+        INDEX idx_statut (statut),
+        INDEX idx_token (token)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
+
+    $tables[] = "CREATE TABLE IF NOT EXISTS proprietaire_commission_config (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        proprietaire_id INT NOT NULL,
+        pack ENUM('autonome','serenite','cle_en_main') DEFAULT 'autonome',
+        commission_base DECIMAL(5,2) DEFAULT 10.00,
+        reduction_parrainage DECIMAL(5,2) DEFAULT 0.00,
+        commission_effective DECIMAL(5,2) DEFAULT 10.00,
+        options JSON DEFAULT NULL,
+        services_inclus JSON,
+        equipement_fourni TINYINT(1) DEFAULT 0,
+        budget_equipement DECIMAL(10,2) DEFAULT 0,
+        notes_admin TEXT,
+        modifie_par INT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY uk_proprietaire (proprietaire_id),
+        INDEX idx_pack (pack)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
+
+    $tables[] = "CREATE TABLE IF NOT EXISTS codes_parrainage (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        proprietaire_id INT NOT NULL,
+        code VARCHAR(30) NOT NULL UNIQUE,
+        nb_utilisations INT DEFAULT 0,
+        max_utilisations INT DEFAULT NULL,
+        actif TINYINT(1) DEFAULT 1,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_code (code),
+        INDEX idx_proprio (proprietaire_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
+
+    $tables[] = "CREATE TABLE IF NOT EXISTS parrainages (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        parrain_id INT NOT NULL,
+        filleul_id INT NOT NULL,
+        code_utilise VARCHAR(30),
+        reduction_parrain DECIMAL(5,2) DEFAULT 1.00,
+        avantage_filleul VARCHAR(100) DEFAULT 'photos_pro_offertes',
+        statut ENUM('en_attente','actif','expire','annule') DEFAULT 'en_attente',
+        active_depuis DATETIME,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_parrain (parrain_id),
+        INDEX idx_filleul (filleul_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
+
+    $tables[] = "CREATE TABLE IF NOT EXISTS onboarding_tasks (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        request_id INT NOT NULL,
+        type VARCHAR(50) NOT NULL,
+        statut ENUM('pending','processing','done','error','skipped') DEFAULT 'pending',
+        result JSON,
+        error_message TEXT,
+        retry_count TINYINT DEFAULT 0,
+        executed_at DATETIME,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_request (request_id),
+        INDEX idx_statut (statut)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
+
+    $tables[] = "CREATE TABLE IF NOT EXISTS frenchy_score (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        logement_id INT NOT NULL,
+        score_global TINYINT DEFAULT 50,
+        score_annonce TINYINT DEFAULT 50,
+        score_reactivite TINYINT DEFAULT 50,
+        score_satisfaction TINYINT DEFAULT 50,
+        score_prix TINYINT DEFAULT 50,
+        score_entretien TINYINT DEFAULT 50,
+        badge VARCHAR(50),
+        conseil_ia TEXT,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY uk_logement (logement_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
+
+    foreach ($tables as $sql) {
+        try {
+            $conn->exec($sql);
+        } catch (PDOException $ex) {
+            error_log('onboarding table creation: ' . $ex->getMessage());
         }
     }
 }

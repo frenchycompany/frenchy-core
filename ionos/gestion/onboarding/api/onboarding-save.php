@@ -6,9 +6,16 @@
 header('Content-Type: application/json; charset=utf-8');
 ini_set('display_errors', 0);
 
+// Ne pas demarrer de session HTML/redirect depuis l'API
 require_once __DIR__ . '/../../includes/env_loader.php';
 require_once __DIR__ . '/../../db/connection.php';
 require_once __DIR__ . '/../includes/onboarding-helper.php';
+
+if (!$conn) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'error' => 'Erreur connexion DB']);
+    exit;
+}
 
 $input = json_decode(file_get_contents('php://input'), true);
 if (!$input || empty($input['token'])) {

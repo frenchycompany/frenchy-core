@@ -2,8 +2,7 @@
 /**
  * Etape 6 : Recap + validation finale
  */
-require_once __DIR__ . '/../includes/env_loader.php';
-require_once __DIR__ . '/../db/connection.php';
+require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/includes/onboarding-helper.php';
 
 $token = $_GET['token'] ?? null;
