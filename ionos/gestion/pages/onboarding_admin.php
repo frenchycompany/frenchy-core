@@ -36,6 +36,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+    // Toggle une tache done/pending
+    if (isset($_POST['toggle_task'])) {
+        $taskId = (int) $_POST['task_id'];
+        try {
+            $stmt = $conn->prepare("SELECT statut FROM onboarding_tasks WHERE id = ?");
+            $stmt->execute([$taskId]);
+            $current = $stmt->fetchColumn();
+            $newStatut = ($current === 'done') ? 'pending' : 'done';
+            $conn->prepare("UPDATE onboarding_tasks SET statut = ? WHERE id = ?")->execute([$newStatut, $taskId]);
+            $feedback = '<div class="alert alert-success alert-dismissible fade show">Tache mise a jour.<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+        } catch (PDOException $e) {
+            $feedback = '<div class="alert alert-danger">Erreur : ' . htmlspecialchars($e->getMessage()) . '</div>';
+        }
+    }
+
     // Supprimer un brouillon
     if (isset($_POST['supprimer'])) {
         $id = (int) $_POST['request_id'];
@@ -92,6 +107,7 @@ try {
 
 // Detail ?
 $detail = null;
+$detailTasks = [];
 if (isset($_GET['detail'])) {
     $detailId = (int)$_GET['detail'];
     try {
@@ -99,6 +115,13 @@ if (isset($_GET['detail'])) {
         $stmt->execute([$detailId]);
         $detail = $stmt->fetch(PDO::FETCH_ASSOC);
     } catch (PDOException $e) {}
+    if ($detail) {
+        try {
+            $stmt = $conn->prepare("SELECT * FROM onboarding_tasks WHERE request_id = ? ORDER BY id");
+            $stmt->execute([$detail['id']]);
+            $detailTasks = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {}
+    }
 }
 
 $statusColors = [
@@ -292,6 +315,38 @@ $expLabels = ['jamais' => 'Jamais', 'moins_1an' => '< 1 an', '1_3ans' => '1-3 an
                         <div class="detail-row"><span>Termine le</span><span><?= $d['completed_at'] ? date('d/m/Y H:i', strtotime($d['completed_at'])) : '-' ?></span></div>
                         <div class="detail-row"><span>IP</span><span style="font-size:0.8em;"><?= htmlspecialchars($d['ip_address'] ?? '-') ?></span></div>
                     </div>
+
+                    <!-- Taches post-onboarding -->
+                    <?php if (!empty($detailTasks)): ?>
+                    <div class="detail-section">
+                        <h6><i class="fas fa-tasks text-warning"></i> Taches post-onboarding</h6>
+                        <?php
+                        $taskLabels = [
+                            'create_proprietaire' => 'Creation proprietaire',
+                            'create_logement' => 'Creation logement',
+                            'generate_site' => 'Generation site vitrine',
+                            'sms_bienvenue' => 'SMS de bienvenue',
+                            'setup_superhote' => 'Config Superhote',
+                        ];
+                        foreach ($detailTasks as $task):
+                            $isDone = $task['statut'] === 'done';
+                        ?>
+                        <div class="d-flex justify-content-between align-items-center py-2" style="border-bottom:1px solid #eee;">
+                            <span style="font-size:0.9em;">
+                                <i class="fas <?= $isDone ? 'fa-check-circle text-success' : 'fa-circle text-muted' ?>"></i>
+                                <?= htmlspecialchars($taskLabels[$task['type']] ?? $task['type']) ?>
+                            </span>
+                            <form method="POST" class="d-inline">
+                                <?php echoCsrfField(); ?>
+                                <input type="hidden" name="task_id" value="<?= (int)$task['id'] ?>">
+                                <button type="submit" name="toggle_task" class="btn btn-sm <?= $isDone ? 'btn-outline-secondary' : 'btn-success' ?>" title="<?= $isDone ? 'Remettre en attente' : 'Marquer fait' ?>">
+                                    <i class="fas <?= $isDone ? 'fa-undo' : 'fa-check' ?>"></i>
+                                </button>
+                            </form>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                    <?php endif; ?>
 
                     <!-- Actions -->
                     <?php if ($d['statut'] === 'abandonne'): ?>

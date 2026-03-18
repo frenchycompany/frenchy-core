@@ -166,6 +166,9 @@ function proprioSidebar($proprietaire, $currentPage, $has_sites) {
                 <span class="icon"><i class="fas fa-globe"></i></span> Sites vitrine
             </a>
             <?php endif; ?>
+            <a href="coffre_fort.php" class="<?= $currentPage === 'coffre_fort.php' ? 'active' : '' ?>">
+                <span class="icon"><i class="fas fa-vault"></i></span> Coffre-fort
+            </a>
             <div class="nav-separator"></div>
             <a href="profil.php" class="<?= $currentPage === 'profil.php' ? 'active' : '' ?>">
                 <span class="icon"><i class="fas fa-user"></i></span> Mon profil

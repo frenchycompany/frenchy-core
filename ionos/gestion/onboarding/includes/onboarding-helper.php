@@ -553,8 +553,22 @@ function onboarding_finalize($conn, $token) {
         $stmtTask->execute([$request['id'], 'create_proprietaire', 'done']);
         $stmtTask->execute([$request['id'], 'create_logement', 'done']);
         $stmtTask->execute([$request['id'], 'generate_site', 'pending']);
-        $stmtTask->execute([$request['id'], 'sms_bienvenue', 'pending']);
         $stmtTask->execute([$request['id'], 'setup_superhote', 'pending']);
+        // SMS bienvenue : envoyer directement via sms_outbox
+        $clientPhone = $request['telephone'] ?? null;
+        if ($clientPhone) {
+            $prenomSms = $request['prenom'] ?? 'Bonjour';
+            $smsMsg = "Bienvenue chez Frenchy, $prenomSms ! Votre bien est en cours d'activation. "
+                . "Connectez-vous sur gestion.frenchyconciergerie.fr/proprietaire/ avec votre email. "
+                . "A bientot ! — L'equipe Frenchy";
+            $conn->prepare(
+                "INSERT INTO sms_outbox (receiver, message, modem, status) VALUES (?, ?, 'modem1', 'pending')"
+            )->execute([$clientPhone, $smsMsg]);
+            $stmtTask->execute([$request['id'], 'sms_bienvenue', 'done']);
+            error_log("onboarding: SMS bienvenue insere dans sms_outbox pour $clientPhone");
+        } else {
+            $stmtTask->execute([$request['id'], 'sms_bienvenue', 'pending']);
+        }
     } catch (PDOException $e) {
         error_log('onboarding tasks: ' . $e->getMessage());
     }
