@@ -29,8 +29,14 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional, Dict, List, Tuple
 
-# Numero de telephone pour les notifications SMS
-SMS_NOTIFICATION_NUMBER = "+33647554678"
+# Numero de telephone pour les notifications SMS (lu depuis config.ini)
+def _get_sms_number():
+    config = configparser.ConfigParser()
+    config.read(Path(__file__).parent.parent.parent / "config" / "config.ini")
+    number = config.get("FALLBACK", "numero_admin", fallback="+33647554678").strip()
+    return number if number and number != "+33XXXXXXXXX" else "+33647554678"
+
+SMS_NOTIFICATION_NUMBER = _get_sms_number()
 
 # ============================================================================
 # CONFIGURATION
