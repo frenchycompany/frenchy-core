@@ -58,6 +58,25 @@ function saveSuperhoteCredentials($pdo, $email, $password) {
 
 $superhoteCredentials = getSuperhoteCredentials($pdo);
 
+/**
+ * Envoie une notification SMS via sms_outbox (traite par le cron)
+ */
+function sendPricingSms($pdo, $message) {
+    $phone = function_exists('env') ? env('ADMIN_PHONE', '') : '';
+    if (empty($phone) || $phone === '+33600000000' || $phone === '+33XXXXXXXXX') {
+        error_log('superhote.php: ADMIN_PHONE non configure, SMS non envoye');
+        return false;
+    }
+    try {
+        $stmt = $pdo->prepare("INSERT INTO sms_outbox (receiver, message, status, created_at) VALUES (?, ?, 'pending', NOW())");
+        $stmt->execute([$phone, $message]);
+        return true;
+    } catch (PDOException $e) {
+        error_log('superhote.php SMS: ' . $e->getMessage());
+        return false;
+    }
+}
+
 // Tables requises : voir db/install_tables.php
 
 // Migrations et mises a jour des tables superhote
@@ -378,6 +397,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if (!empty($rpiData['success'])) {
                         $message = "Mise a jour lancee sur le RPI. Consultez les logs pour suivre la progression.";
                         $messageType = "success";
+                        $pendingCount = $pdo->query("SELECT COUNT(*) FROM superhote_price_updates WHERE status = 'pending'")->fetchColumn();
+                        sendPricingSms($pdo, "Superhote: mise a jour lancee (tous logements). $pendingCount prix en attente.");
                     } else {
                         $message = "Reponse RPI: " . ($rpiData['error'] ?? 'Erreur inconnue');
                         $messageType = "warning";
@@ -385,6 +406,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 } else {
                     $message = "Impossible de contacter le RPI. Lancez manuellement depuis " . RPI_BASE_URL . "/pages/superhote_config.php";
                     $messageType = "danger";
+                }
+                break;
+
+            case 'generate_and_run_one':
+                // Generer les prix pour UN logement puis lancer le worker
+                $logementId = intval($_POST['logement_id'] ?? 0);
+                if ($logementId > 0) {
+                    $generated = generatePricesForLogement($pdo, $logementId);
+                    $logName = '';
+                    try {
+                        $stmt = $pdo->prepare("SELECT nom_du_logement FROM liste_logements WHERE id = ?");
+                        $stmt->execute([$logementId]);
+                        $logName = $stmt->fetchColumn() ?: "ID $logementId";
+                    } catch (PDOException $e) { $logName = "ID $logementId"; }
+
+                    // Lancer le worker sur le RPI
+                    $rpiUrl = RPI_BASE_URL . '/pages/daemon_api.php?action=run_now&token=' . urlencode(env('CRON_SECRET', ''));
+                    $ctx = stream_context_create([
+                        'http' => [
+                            'method' => 'POST',
+                            'timeout' => 10,
+                            'header' => "Content-Type: application/x-www-form-urlencoded\r\n",
+                        ]
+                    ]);
+                    $rpiResponse = @file_get_contents($rpiUrl, false, $ctx);
+                    $rpiOk = ($rpiResponse !== false && !empty(json_decode($rpiResponse, true)['success']));
+
+                    if ($rpiOk) {
+                        $message = "$generated prix generes et worker lance pour $logName!";
+                        $messageType = "success";
+                        sendPricingSms($pdo, "Superhote: $generated prix generes + worker lance pour $logName.");
+                    } else {
+                        $message = "$generated prix generes pour $logName, mais impossible de contacter le RPI pour lancer le worker.";
+                        $messageType = "warning";
+                        sendPricingSms($pdo, "Superhote: $generated prix generes pour $logName (worker RPI indisponible).");
+                    }
+                } else {
+                    $message = "Veuillez selectionner un logement.";
+                    $messageType = "warning";
                 }
                 break;
 
@@ -411,14 +471,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $generated = generateAllPrices($pdo);
                 $message = "$generated mises a jour de prix generees!";
                 $messageType = "success";
+                $nbLogements = $pdo->query("SELECT COUNT(*) FROM superhote_config WHERE is_active = 1")->fetchColumn();
+                sendPricingSms($pdo, "Superhote: $generated prix generes pour $nbLogements logements. En attente d'application.");
                 break;
 
             case 'generate_one':
                 $logementId = intval($_POST['logement_id'] ?? 0);
                 if ($logementId > 0) {
                     $generated = generatePricesForLogement($pdo, $logementId);
-                    $message = "$generated mises a jour generees!";
+                    $logName = '';
+                    try {
+                        $stmt = $pdo->prepare("SELECT nom_du_logement FROM liste_logements WHERE id = ?");
+                        $stmt->execute([$logementId]);
+                        $logName = $stmt->fetchColumn() ?: "ID $logementId";
+                    } catch (PDOException $e) { $logName = "ID $logementId"; }
+                    $message = "$generated mises a jour generees pour $logName!";
                     $messageType = "success";
+                    sendPricingSms($pdo, "Superhote: $generated prix generes pour $logName. En attente d'application.");
                 }
                 break;
 
@@ -790,8 +859,15 @@ try {
                                         <form method="POST" class="d-inline">
                                             <input type="hidden" name="action" value="generate_one">
                                             <input type="hidden" name="logement_id" value="<?= $log['id'] ?>">
-                                            <button type="submit" class="btn btn-sm btn-success" title="Generer les prix">
+                                            <button type="submit" class="btn btn-sm btn-outline-success" title="Generer les prix (queue)">
                                                 <i class="fas fa-magic"></i>
+                                            </button>
+                                        </form>
+                                        <form method="POST" class="d-inline" onsubmit="return confirm('Generer + lancer le worker pour ce logement?')">
+                                            <input type="hidden" name="action" value="generate_and_run_one">
+                                            <input type="hidden" name="logement_id" value="<?= $log['id'] ?>">
+                                            <button type="submit" class="btn btn-sm btn-success" title="Generer + appliquer maintenant">
+                                                <i class="fas fa-rocket"></i>
                                             </button>
                                         </form>
                                         <?php endif; ?>
@@ -1471,10 +1547,37 @@ try {
                             <h6><i class="fas fa-play-circle"></i> Execution manuelle</h6>
                             <p class="text-muted small">Lancer une mise a jour immediate sans attendre l'heure planifiee.</p>
 
-                            <form method="POST" onsubmit="return confirm('Lancer la mise a jour maintenant?')">
+                            <!-- Mise a jour d'UN logement -->
+                            <div class="card border-primary mb-3">
+                                <div class="card-body py-2">
+                                    <form method="POST" onsubmit="return confirm('Generer les prix et lancer le worker pour ce logement?')">
+                                        <input type="hidden" name="action" value="generate_and_run_one">
+                                        <label class="small fw-bold mb-1"><i class="fas fa-home"></i> Mettre a jour UN logement</label>
+                                        <div class="d-flex gap-2">
+                                            <select name="logement_id" class="form-select form-select-sm" required>
+                                                <option value="">-- Choisir un logement --</option>
+                                                <?php foreach ($logements as $log):
+                                                    if (empty($log['superhote_property_id']) || !($log['superhote_active'] ?? 0)) continue;
+                                                    $effP = $log['groupe_prix_plancher'] ?? $log['prix_plancher'];
+                                                    $effS = $log['groupe_prix_standard'] ?? $log['prix_standard'];
+                                                    if (empty($effP) || empty($effS)) continue;
+                                                ?>
+                                                <option value="<?= $log['id'] ?>"><?= htmlspecialchars($log['nom_du_logement'] ?? 'N/A') ?> (<?= number_format($effP, 0) ?>-<?= number_format($effS, 0) ?>€)</option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                            <button type="submit" class="btn btn-sm btn-primary flex-shrink-0">
+                                                <i class="fas fa-rocket"></i> Lancer
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+
+                            <!-- Mise a jour de TOUS les logements -->
+                            <form method="POST" onsubmit="return confirm('Lancer la mise a jour de TOUS les logements?')">
                                 <input type="hidden" name="action" value="run_now">
                                 <button type="submit" class="btn btn-success">
-                                    <i class="fas fa-rocket"></i> Lancer maintenant
+                                    <i class="fas fa-rocket"></i> Lancer tous les logements
                                 </button>
                                 <button type="button" class="btn btn-outline-secondary" onclick="refreshScheduleStatus()">
                                     <i class="fas fa-sync"></i> Actualiser
