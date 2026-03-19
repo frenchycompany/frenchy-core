@@ -1,658 +1,329 @@
 <?php
 /**
- * coffre_fort.php — Coffre-fort numérique Frenchy Conciergerie
- * Page principale : 2FA, listing, upload
+ * coffre_fort.php — Coffre-fort admin — Vue par proprietaire
+ * Acces direct pour super_admin/admin (pas de 2FA)
  */
-
 require_once __DIR__ . '/../config.php';
-require_once __DIR__ . '/../includes/Auth.php';
+include __DIR__ . '/menu.php';
+require_once __DIR__ . '/../includes/csrf.php';
 require_once __DIR__ . '/../includes/coffre_fort_helper.php';
 
-$auth = new Auth($conn);
-$auth->requireAdmin('../login.php');
-
-$csrf_token = $auth->csrfToken();
-$userId = $_SESSION['user_id'] ?? $_SESSION['id_intervenant'] ?? 0;
-$userNom = $_SESSION['user_nom'] ?? $_SESSION['nom_utilisateur'] ?? 'Admin';
-$coffre = new CoffreFort($conn);
-
-// Récupérer le numéro de téléphone de l'utilisateur
-$userPhone = '';
-try {
-    $stmtUser = $conn->prepare("SELECT telephone FROM users WHERE id = ?");
-    $stmtUser->execute([$userId]);
-    $userPhone = $stmtUser->fetchColumn() ?: '';
-} catch (PDOException $e) {
-    // Table users n'existe pas — pas de téléphone disponible
+if (($_SESSION['role'] ?? '') !== 'admin') {
+    header("Location: ../error.php?message=" . urlencode('Accès réservé aux administrateurs.'));
+    exit;
 }
 
-$message = '';
-$messageType = '';
+$userId = $_SESSION['user_id'] ?? $_SESSION['id_intervenant'] ?? 0;
+$coffre = new CoffreFort($conn);
+$feedback = '';
 
-// ========================================================
+// Proprio selectionne ?
+$selectedProprio = isset($_GET['proprio']) ? (int)$_GET['proprio'] : null;
+
+// ============================================================
 // ACTIONS POST
-// ========================================================
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && $auth->validateCsrf()) {
+// ============================================================
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    validateCsrfToken();
     $action = $_POST['action'] ?? '';
 
-    // Envoi du code 2FA
-    if ($action === 'envoyer_2fa') {
-        $phone = $userPhone;
-        if (!$phone) {
-            $message = 'Aucun numéro de téléphone configuré pour votre compte.';
-            $messageType = 'error';
-        } else {
-            $result = $coffre->envoyer2FA($userId, $phone);
-            if ($result['success']) {
-                $message = 'Code envoyé par SMS. Valable 5 minutes.';
-                $messageType = 'success';
-                $_SESSION['coffre_2fa_pending'] = true;
-            } else {
-                $message = $result['error'] ?? 'Erreur lors de l\'envoi du SMS.';
-                $messageType = 'error';
-            }
-        }
-    }
-
-    // Vérification du code 2FA
-    if ($action === 'verifier_2fa') {
-        $code = trim($_POST['code'] ?? '');
-        $result = $coffre->verifier2FA($userId, $code);
+    if ($action === 'upload' && $selectedProprio && isset($_FILES['fichier']) && $_FILES['fichier']['error'] !== UPLOAD_ERR_NO_FILE) {
+        $categorie = $_POST['categorie'] ?? 'autre';
+        $description = trim($_POST['description'] ?? '');
+        $tags = trim($_POST['tags'] ?? '');
+        $result = $coffre->upload($_FILES['fichier'], $categorie, $userId, $description, $tags, $selectedProprio);
         if ($result['success']) {
-            unset($_SESSION['coffre_2fa_pending']);
-            $message = 'Accès autorisé. Session active pour 15 minutes.';
-            $messageType = 'success';
+            $feedback = '<div class="alert alert-success alert-dismissible fade show">Document ajoute au coffre-fort.<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
         } else {
-            $message = $result['error'];
-            $messageType = 'error';
+            $feedback = '<div class="alert alert-danger">' . htmlspecialchars($result['error']) . '</div>';
         }
     }
 
-    // Upload de fichier
-    if ($action === 'upload') {
-        $session = $coffre->verifierSession();
-        if (!$session) {
-            $message = 'Session expirée. Veuillez vous ré-authentifier.';
-            $messageType = 'error';
-        } elseif (isset($_FILES['fichier']) && $_FILES['fichier']['error'] !== UPLOAD_ERR_NO_FILE) {
-            $categorie = $_POST['categorie'] ?? 'autre';
-            $description = trim($_POST['description'] ?? '');
-            $tags = trim($_POST['tags'] ?? '');
-            $result = $coffre->upload($_FILES['fichier'], $categorie, $userId, $description, $tags);
-            if ($result['success']) {
-                $message = 'Fichier chiffré et ajouté au coffre-fort.';
-                $messageType = 'success';
-            } else {
-                $message = $result['error'];
-                $messageType = 'error';
-            }
-        }
-    }
-
-    // Suppression
     if ($action === 'supprimer') {
-        $session = $coffre->verifierSession();
-        if ($session) {
-            $fichierId = (int) ($_POST['fichier_id'] ?? 0);
-            $coffre->supprimer($fichierId, $userId);
-            $message = 'Fichier supprimé du coffre-fort.';
-            $messageType = 'success';
-        }
-    }
-
-    // Déconnexion coffre
-    if ($action === 'deconnexion') {
-        $token = $_SESSION['coffre_fort_token'] ?? '';
-        if ($token) {
-            $coffre->invaliderSession($token);
-        }
-        $message = 'Session coffre-fort terminée.';
-        $messageType = 'success';
+        $fichierId = (int) ($_POST['fichier_id'] ?? 0);
+        $coffre->supprimer($fichierId, $userId);
+        $feedback = '<div class="alert alert-success alert-dismissible fade show">Document supprime.<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
     }
 }
 
-// ========================================================
-// ÉTAT
-// ========================================================
-
-$sessionCoffre = $coffre->verifierSession();
-$isUnlocked = $sessionCoffre !== null;
-$tempsRestant = $coffre->tempsRestant();
-$pendingCode = isset($_SESSION['coffre_2fa_pending']);
-
-$filtreCategorie = $_GET['categorie'] ?? '';
-$filtreRecherche = $_GET['q'] ?? '';
-
-$fichiers = $isUnlocked ? $coffre->lister($filtreCategorie, $filtreRecherche) : [];
-$stats = $isUnlocked ? $coffre->getStats() : [];
-$logs = ($isUnlocked && isset($_GET['logs'])) ? $coffre->getLogs(30) : [];
+// ============================================================
+// DONNEES
+// ============================================================
 
 $categories = [
-    'photo' => ['label' => 'Photos', 'icon' => 'fa-image', 'color' => '#43A047'],
-    'video' => ['label' => 'Vidéos', 'icon' => 'fa-video', 'color' => '#1E88E5'],
-    'document' => ['label' => 'Documents', 'icon' => 'fa-file-pdf', 'color' => '#FB8C00'],
-    'contrat' => ['label' => 'Contrats', 'icon' => 'fa-file-contract', 'color' => '#8E24AA'],
-    'identite' => ['label' => 'Identité', 'icon' => 'fa-id-card', 'color' => '#E53935'],
-    'autre' => ['label' => 'Autres', 'icon' => 'fa-folder', 'color' => '#757575'],
+    'identite'    => ['label' => 'Identite', 'icon' => 'fa-id-card', 'color' => '#1976d2'],
+    'rib'         => ['label' => 'RIB / IBAN', 'icon' => 'fa-university', 'color' => '#28a745'],
+    'bail'        => ['label' => 'Bail / Contrat', 'icon' => 'fa-file-signature', 'color' => '#6f42c1'],
+    'diagnostic'  => ['label' => 'Diagnostics', 'icon' => 'fa-clipboard-check', 'color' => '#fd7e14'],
+    'assurance'   => ['label' => 'Assurance', 'icon' => 'fa-shield-alt', 'color' => '#e53935'],
+    'fiscal'      => ['label' => 'Fiscal', 'icon' => 'fa-file-invoice', 'color' => '#00acc1'],
+    'photo'       => ['label' => 'Photos', 'icon' => 'fa-camera', 'color' => '#8e24aa'],
+    'autre'       => ['label' => 'Autre', 'icon' => 'fa-folder', 'color' => '#757575'],
 ];
 
-include __DIR__ . '/menu.php';
+// Liste des proprietaires avec nombre de docs
+$proprios = [];
+try {
+    // S'assurer que proprietaire_id existe
+    try {
+        $cols = array_column($conn->query("SHOW COLUMNS FROM coffre_fort_fichiers")->fetchAll(), 'Field');
+        if (!in_array('proprietaire_id', $cols)) {
+            $conn->exec("ALTER TABLE coffre_fort_fichiers ADD COLUMN proprietaire_id INT DEFAULT NULL AFTER uploade_par, ADD INDEX idx_proprio (proprietaire_id)");
+        }
+    } catch (PDOException $e) {}
+
+    $proprios = $conn->query("
+        SELECT p.id, p.nom, p.prenom, p.email, p.telephone,
+               COUNT(f.id) AS nb_docs,
+               COALESCE(SUM(f.taille), 0) AS taille_totale,
+               MAX(f.created_at) AS dernier_upload
+        FROM FC_proprietaires p
+        LEFT JOIN coffre_fort_fichiers f ON f.proprietaire_id = p.id AND f.supprime = 0
+        WHERE p.actif = 1
+        GROUP BY p.id
+        ORDER BY p.nom, p.prenom
+    ")->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    error_log('coffre_fort admin: ' . $e->getMessage());
+}
+
+// Si proprio selectionne, charger ses infos et docs
+$proprioInfo = null;
+$fichiers = [];
+$filtreCat = $_GET['cat'] ?? '';
+if ($selectedProprio) {
+    try {
+        $stmt = $conn->prepare("SELECT * FROM FC_proprietaires WHERE id = ?");
+        $stmt->execute([$selectedProprio]);
+        $proprioInfo = $stmt->fetch(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {}
+
+    if ($proprioInfo) {
+        $fichiers = $coffre->listerParProprietaire($selectedProprio, $filtreCat);
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Coffre-Fort Numérique — Frenchy Conciergerie</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>Coffre-Fort — FrenchyConciergerie</title>
+    <link rel="stylesheet" href="../css/style.css">
     <style>
-        :root {
-            --navy: #1B3A6B;
-            --red: #E53935;
-            --bg: #f5f7fa;
-        }
-        body { background: var(--bg); }
-
-        .vault-header {
-            background: linear-gradient(135deg, var(--navy) 0%, #0d2240 100%);
-            color: #fff;
-            padding: 30px;
-            border-radius: 12px;
-            margin-bottom: 24px;
-        }
-        .vault-header h1 { font-size: 24px; font-weight: 800; }
-        .vault-header .subtitle { opacity: 0.7; font-size: 14px; }
-
-        .lock-screen {
-            max-width: 500px;
-            margin: 60px auto;
-            text-align: center;
-        }
-        .lock-icon {
-            font-size: 80px;
-            color: var(--navy);
-            margin-bottom: 20px;
-        }
-        .lock-screen h2 { color: var(--navy); font-weight: 800; }
-
-        .code-input {
-            font-size: 32px;
-            letter-spacing: 12px;
-            text-align: center;
-            font-weight: 800;
-            max-width: 250px;
-            margin: 0 auto;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            padding: 12px;
-        }
-        .code-input:focus {
-            border-color: var(--navy);
-            outline: none;
-            box-shadow: 0 0 0 3px rgba(27,58,107,0.15);
-        }
-
-        .btn-navy {
-            background: var(--navy);
-            color: #fff;
-            border: none;
-            padding: 12px 28px;
-            border-radius: 8px;
-            font-weight: 700;
-            font-size: 15px;
-        }
-        .btn-navy:hover { background: #142d54; color: #fff; }
-
-        .btn-red {
-            background: var(--red);
-            color: #fff;
-            border: none;
-        }
-        .btn-red:hover { background: #C62828; color: #fff; }
-
-        .session-bar {
-            background: #fff;
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
-            padding: 12px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        .session-timer {
-            font-weight: 700;
-            font-size: 18px;
-            color: var(--navy);
-        }
-        .session-timer.warning { color: var(--red); }
-
-        .stat-card {
-            background: #fff;
-            border-radius: 10px;
-            padding: 20px;
-            text-align: center;
-            border-top: 3px solid var(--navy);
-        }
-        .stat-card .stat-value {
-            font-size: 28px;
-            font-weight: 800;
-            color: var(--navy);
-        }
-        .stat-card .stat-label {
-            font-size: 12px;
-            color: #888;
-            text-transform: uppercase;
-        }
-
-        .file-card {
-            background: #fff;
-            border-radius: 10px;
-            padding: 16px;
-            border: 1px solid #e8e8e8;
-            transition: box-shadow 0.2s;
-            position: relative;
-        }
-        .file-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
-        .file-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            color: #fff;
-        }
-        .file-name {
-            font-weight: 700;
-            color: #333;
-            font-size: 14px;
-            word-break: break-all;
-        }
-        .file-meta { font-size: 12px; color: #999; }
-        .file-badge {
-            font-size: 11px;
-            padding: 2px 10px;
-            border-radius: 20px;
-            font-weight: 600;
-        }
-
-        .upload-zone {
-            background: #fff;
-            border: 2px dashed #ccc;
-            border-radius: 12px;
-            padding: 30px;
-            text-align: center;
-            cursor: pointer;
-            transition: border-color 0.2s, background 0.2s;
-        }
-        .upload-zone:hover, .upload-zone.dragover {
-            border-color: var(--navy);
-            background: #f0f4ff;
-        }
-        .upload-zone i { font-size: 40px; color: var(--navy); }
-
-        .filter-pills .btn {
-            border-radius: 20px;
-            font-size: 12px;
-            padding: 6px 16px;
-            margin-right: 6px;
-            margin-bottom: 6px;
-        }
-        .filter-pills .btn.active {
-            background: var(--navy);
-            color: #fff;
-            border-color: var(--navy);
-        }
-
-        .log-entry {
-            padding: 8px 0;
-            border-bottom: 1px solid #f0f0f0;
-            font-size: 13px;
-        }
-        .log-entry:last-child { border: none; }
-        .log-action {
-            display: inline-block;
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 11px;
-            font-weight: 600;
-        }
+        .vault-header { background: linear-gradient(135deg, #1B3A6B, #0d2240); color: #fff; padding: 24px 28px; border-radius: 12px; margin-bottom: 24px; }
+        .proprio-card { background: #fff; border-radius: 10px; padding: 16px; border: 1px solid #e9ecef; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 14px; }
+        .proprio-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); transform: translateY(-1px); }
+        .proprio-card.active { border-color: #1B3A6B; background: #f0f4ff; }
+        .proprio-avatar { width: 44px; height: 44px; border-radius: 50%; background: #1B3A6B; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.1rem; flex-shrink: 0; }
+        .proprio-name { font-weight: 600; font-size: 0.95rem; }
+        .proprio-meta { font-size: 0.78rem; color: #999; }
+        .doc-count { background: #e8f5e9; color: #2e7d32; padding: 4px 10px; border-radius: 20px; font-weight: 700; font-size: 0.8rem; margin-left: auto; }
+        .doc-count.empty { background: #f5f5f5; color: #999; }
+        .file-card { background: #fff; border-radius: 10px; padding: 16px; border: 1px solid #e9ecef; display: flex; align-items: center; gap: 14px; margin-bottom: 8px; }
+        .file-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: #fff; flex-shrink: 0; }
+        .file-info { flex: 1; min-width: 0; }
+        .file-name { font-weight: 600; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .file-meta { font-size: 0.78rem; color: #999; }
+        .cat-pill { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.78rem; font-weight: 600; cursor: pointer; text-decoration: none; border: 1px solid #ddd; margin: 0 4px 4px 0; }
+        .cat-pill.active { background: #1B3A6B; color: #fff; border-color: #1B3A6B; }
+        .upload-zone { border: 2px dashed #ccc; border-radius: 12px; padding: 25px; text-align: center; background: #fafafa; cursor: pointer; transition: border-color 0.2s; }
+        .upload-zone:hover, .upload-zone.dragover { border-color: #1B3A6B; background: #f0f4ff; }
+        .search-bar { margin-bottom: 16px; }
     </style>
 </head>
 <body>
+<div class="container-fluid mt-4">
 
-<div class="container-fluid py-4" style="max-width: 1200px;">
-
-    <!-- Header -->
     <div class="vault-header">
         <div class="d-flex justify-content-between align-items-center">
             <div>
-                <h1><i class="fas fa-vault me-2"></i>Coffre-Fort Numérique</h1>
-                <div class="subtitle">Stockage chiffré AES-256 — Accès sécurisé 2FA</div>
+                <h2 style="font-weight:800;margin:0;"><i class="fas fa-vault me-2"></i>Coffre-Fort Numerique</h2>
+                <p style="margin:4px 0 0;opacity:0.7;font-size:0.9rem;">Espaces proprietaires — Documents chiffres AES-256</p>
             </div>
-            <?php if ($isUnlocked): ?>
-                <div class="text-end">
-                    <span class="badge bg-success fs-6"><i class="fas fa-lock-open me-1"></i>Déverrouillé</span>
-                </div>
-            <?php else: ?>
-                <div class="text-end">
-                    <span class="badge bg-danger fs-6"><i class="fas fa-lock me-1"></i>Verrouillé</span>
-                </div>
-            <?php endif; ?>
+            <span class="badge bg-success" style="font-size:0.9em;"><i class="fas fa-lock-open"></i> Acces admin</span>
         </div>
     </div>
 
-    <!-- Messages -->
-    <?php if ($message): ?>
-        <div class="alert alert-<?= $messageType === 'success' ? 'success' : 'danger' ?> alert-dismissible fade show">
-            <?= htmlspecialchars($message) ?>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    <?php endif; ?>
+    <?= $feedback ?>
 
-    <?php if (!$isUnlocked): ?>
-    <!-- ===== ÉCRAN DE VERROUILLAGE ===== -->
-    <div class="lock-screen">
-        <div class="lock-icon"><i class="fas fa-shield-halved"></i></div>
-        <h2>Accès Sécurisé</h2>
-        <p class="text-muted mb-4">
-            Une vérification par SMS est requise pour accéder au coffre-fort.
-            <?php if ($userPhone): ?>
-                <br>Le code sera envoyé au <strong><?= substr(htmlspecialchars($userPhone), 0, -4) ?>****</strong>
-            <?php endif; ?>
-        </p>
+    <?php if ($proprioInfo): ?>
+    <!-- ============================================================ -->
+    <!-- VUE ESPACE PROPRIETAIRE -->
+    <!-- ============================================================ -->
+    <?php $nomComplet = htmlspecialchars(trim(($proprioInfo['prenom'] ?? '') . ' ' . ($proprioInfo['nom'] ?? ''))); ?>
 
-        <?php if (!$pendingCode): ?>
-            <!-- Étape 1 : Demander le code -->
-            <form method="POST">
-                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
-                <input type="hidden" name="action" value="envoyer_2fa">
-                <button type="submit" class="btn btn-navy btn-lg">
-                    <i class="fas fa-sms me-2"></i>Recevoir le code SMS
-                </button>
-            </form>
-        <?php else: ?>
-            <!-- Étape 2 : Saisir le code -->
-            <form method="POST" class="mt-3">
-                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
-                <input type="hidden" name="action" value="verifier_2fa">
-                <div class="mb-3">
-                    <input type="text" name="code" class="form-control code-input" maxlength="6"
-                           placeholder="000000" autofocus autocomplete="off" inputmode="numeric" pattern="[0-9]{6}">
-                </div>
-                <button type="submit" class="btn btn-navy btn-lg">
-                    <i class="fas fa-key me-2"></i>Vérifier
-                </button>
-            </form>
-            <form method="POST" class="mt-3">
-                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
-                <input type="hidden" name="action" value="envoyer_2fa">
-                <button type="submit" class="btn btn-link text-muted btn-sm">Renvoyer le code</button>
-            </form>
-        <?php endif; ?>
+    <div class="mb-3">
+        <a href="coffre_fort.php" class="btn btn-outline-secondary btn-sm"><i class="fas fa-arrow-left"></i> Tous les proprietaires</a>
+        <a href="proprietaire_detail.php?id=<?= $selectedProprio ?>" class="btn btn-outline-primary btn-sm"><i class="fas fa-user-tie"></i> Fiche</a>
     </div>
 
-    <?php else: ?>
-    <!-- ===== COFFRE DÉVERROUILLÉ ===== -->
-
-    <!-- Barre session -->
-    <div class="session-bar">
+    <div class="d-flex align-items-center gap-3 mb-4">
+        <div class="proprio-avatar" style="width:56px;height:56px;font-size:1.4rem;"><?= strtoupper(substr($proprioInfo['prenom'] ?? 'P', 0, 1)) ?></div>
         <div>
-            <i class="fas fa-clock me-2 text-muted"></i>
-            Session active — Expire dans
-            <span class="session-timer" id="timer" data-seconds="<?= $tempsRestant ?>"><?= gmdate('i:s', $tempsRestant) ?></span>
-        </div>
-        <div>
-            <a href="?logs=1" class="btn btn-sm btn-outline-secondary me-2"><i class="fas fa-history me-1"></i>Logs</a>
-            <form method="POST" style="display: inline;">
-                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
-                <input type="hidden" name="action" value="deconnexion">
-                <button type="submit" class="btn btn-sm btn-red"><i class="fas fa-lock me-1"></i>Verrouiller</button>
-            </form>
+            <h4 style="margin:0;font-weight:700;"><?= $nomComplet ?></h4>
+            <span class="text-muted"><?= htmlspecialchars($proprioInfo['email'] ?? '') ?> · <?= count($fichiers) ?> document(s) · <?= CoffreFort::formatTaille(array_sum(array_column($fichiers, 'taille'))) ?></span>
         </div>
     </div>
 
-    <!-- Stats -->
-    <div class="row g-3 mb-4">
-        <div class="col-md-3">
-            <div class="stat-card">
-                <div class="stat-value"><?= $stats['total_fichiers'] ?? 0 ?></div>
-                <div class="stat-label">Fichiers</div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="stat-card">
-                <div class="stat-value"><?= CoffreFort::formatTaille($stats['taille_totale'] ?? 0) ?></div>
-                <div class="stat-label">Espace utilisé</div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="stat-card">
-                <div class="stat-value"><?= $stats['par_categorie']['photo'] ?? 0 ?></div>
-                <div class="stat-label">Photos</div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="stat-card">
-                <div class="stat-value"><?= $stats['par_categorie']['video'] ?? 0 ?></div>
-                <div class="stat-label">Vidéos</div>
-            </div>
-        </div>
+    <!-- Categories -->
+    <div class="mb-3">
+        <a href="?proprio=<?= $selectedProprio ?>" class="cat-pill <?= !$filtreCat ? 'active' : '' ?>">Tous (<?= count($coffre->listerParProprietaire($selectedProprio)) ?>)</a>
+        <?php foreach ($categories as $catKey => $cat):
+            $catCount = count(array_filter($coffre->listerParProprietaire($selectedProprio, $catKey)));
+        ?>
+        <a href="?proprio=<?= $selectedProprio ?>&cat=<?= $catKey ?>" class="cat-pill <?= $filtreCat === $catKey ? 'active' : '' ?>">
+            <i class="fas <?= $cat['icon'] ?>" style="color:<?= $filtreCat === $catKey ? '#fff' : $cat['color'] ?>;"></i>
+            <?= $cat['label'] ?> (<?= $catCount ?>)
+        </a>
+        <?php endforeach; ?>
     </div>
 
     <!-- Upload -->
-    <div class="card mb-4">
+    <div class="card mb-4" style="border-radius:12px;">
         <div class="card-body">
-            <h5 class="card-title mb-3"><i class="fas fa-upload me-2 text-primary"></i>Ajouter un fichier</h5>
-            <form method="POST" enctype="multipart/form-data" id="uploadForm">
-                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
+            <h6 style="font-weight:700;"><i class="fas fa-cloud-upload-alt text-primary"></i> Ajouter un document pour <?= $nomComplet ?></h6>
+            <form method="POST" enctype="multipart/form-data">
+                <?php echoCsrfField(); ?>
                 <input type="hidden" name="action" value="upload">
-                <div class="upload-zone mb-3" id="dropZone" onclick="document.getElementById('fileInput').click()">
-                    <i class="fas fa-cloud-arrow-up d-block mb-2"></i>
-                    <span class="text-muted">Glissez un fichier ou cliquez pour sélectionner</span>
-                    <div class="mt-1 text-muted" style="font-size: 12px;">Images, vidéos, PDF, documents — Max 200 Mo</div>
-                    <input type="file" name="fichier" id="fileInput" class="d-none"
-                           accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx">
-                    <div id="fileName" class="mt-2 fw-bold text-primary" style="display:none;"></div>
-                </div>
-                <div class="row g-2">
+                <div class="row g-2 mb-2">
                     <div class="col-md-3">
-                        <select name="categorie" class="form-select">
-                            <?php foreach ($categories as $key => $cat): ?>
-                                <option value="<?= $key ?>"><?= $cat['label'] ?></option>
+                        <select name="categorie" class="form-select form-select-sm">
+                            <?php foreach ($categories as $catKey => $cat): ?>
+                            <option value="<?= $catKey ?>"><?= htmlspecialchars($cat['label']) ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>
-                    <div class="col-md-4">
-                        <input type="text" name="description" class="form-control" placeholder="Description (optionnel)">
+                    <div class="col-md-5">
+                        <input type="text" name="description" class="form-control form-control-sm" placeholder="Description (optionnel)">
                     </div>
                     <div class="col-md-3">
-                        <input type="text" name="tags" class="form-control" placeholder="Tags (ex: logement, paris)">
-                    </div>
-                    <div class="col-md-2">
-                        <button type="submit" class="btn btn-navy w-100" id="uploadBtn" disabled>
-                            <i class="fas fa-lock me-1"></i>Chiffrer & Stocker
-                        </button>
+                        <input type="text" name="tags" class="form-control form-control-sm" placeholder="Tags (optionnel)">
                     </div>
                 </div>
+                <div class="upload-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+                    <i class="fas fa-cloud-upload-alt" style="font-size:2rem;color:#1B3A6B;"></i>
+                    <p style="margin:8px 0 0;font-weight:600;">Glissez ou cliquez</p>
+                    <small class="text-muted">PDF, images, Word, Excel — max 500 Mo</small>
+                    <input type="file" id="fileInput" name="fichier" style="display:none;" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx" required>
+                    <div id="fileLabel" style="margin-top:8px;font-weight:600;color:#1B3A6B;display:none;"></div>
+                </div>
+                <button type="submit" class="btn btn-primary btn-sm mt-2"><i class="fas fa-lock"></i> Chiffrer et deposer</button>
             </form>
         </div>
     </div>
 
-    <!-- Filtres -->
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <div class="filter-pills">
-            <a href="coffre_fort.php" class="btn btn-outline-secondary <?= !$filtreCategorie ? 'active' : '' ?>">Tout</a>
-            <?php foreach ($categories as $key => $cat): ?>
-                <a href="?categorie=<?= $key ?>" class="btn btn-outline-secondary <?= $filtreCategorie === $key ? 'active' : '' ?>">
-                    <i class="fas <?= $cat['icon'] ?> me-1"></i><?= $cat['label'] ?>
-                </a>
-            <?php endforeach; ?>
-        </div>
-        <form class="d-flex gap-2" method="GET">
-            <?php if ($filtreCategorie): ?><input type="hidden" name="categorie" value="<?= htmlspecialchars($filtreCategorie) ?>"><?php endif; ?>
-            <input type="text" name="q" class="form-control form-control-sm" placeholder="Rechercher..."
-                   value="<?= htmlspecialchars($filtreRecherche) ?>" style="width: 200px;">
-            <button type="submit" class="btn btn-sm btn-outline-primary"><i class="fas fa-search"></i></button>
-        </form>
-    </div>
-
-    <!-- Liste des fichiers -->
+    <!-- Fichiers -->
     <?php if (empty($fichiers)): ?>
-        <div class="text-center py-5 text-muted">
-            <i class="fas fa-vault fa-3x mb-3 d-block"></i>
-            <p>Aucun fichier dans le coffre-fort<?= $filtreCategorie ? ' pour cette catégorie' : '' ?>.</p>
-        </div>
+    <div style="text-align:center;padding:40px;color:#999;">
+        <i class="fas fa-folder-open" style="font-size:3rem;margin-bottom:12px;"></i>
+        <p>Aucun document<?= $filtreCat ? ' dans cette categorie' : '' ?>.</p>
+    </div>
     <?php else: ?>
-        <div class="row g-3">
-            <?php foreach ($fichiers as $f):
-                $cat = $categories[$f['categorie']] ?? $categories['autre'];
-                $isImage = str_starts_with($f['type_mime'], 'image/');
-                $isVideo = str_starts_with($f['type_mime'], 'video/');
-            ?>
-                <div class="col-md-6 col-lg-4">
-                    <div class="file-card">
-                        <div class="d-flex align-items-start gap-3">
-                            <div class="file-icon" style="background: <?= $cat['color'] ?>;">
-                                <i class="fas <?= $cat['icon'] ?>"></i>
-                            </div>
-                            <div class="flex-grow-1" style="min-width: 0;">
-                                <div class="file-name"><?= htmlspecialchars($f['nom_original']) ?></div>
-                                <div class="file-meta">
-                                    <?= CoffreFort::formatTaille($f['taille']) ?> —
-                                    <?= date('d/m/Y H:i', strtotime($f['created_at'])) ?>
-                                </div>
-                                <?php if ($f['description']): ?>
-                                    <div class="file-meta mt-1"><?= htmlspecialchars($f['description']) ?></div>
-                                <?php endif; ?>
-                                <?php if ($f['tags']): ?>
-                                    <div class="mt-1">
-                                        <?php foreach (explode(',', $f['tags']) as $tag): ?>
-                                            <span class="badge bg-light text-dark" style="font-size:10px;"><?= htmlspecialchars(trim($tag)) ?></span>
-                                        <?php endforeach; ?>
-                                    </div>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                        <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
-                            <span class="file-badge" style="background: <?= $cat['color'] ?>22; color: <?= $cat['color'] ?>;">
-                                <?= $cat['label'] ?>
-                            </span>
-                            <div>
-                                <?php if ($isImage || $isVideo || $f['type_mime'] === 'application/pdf'): ?>
-                                    <a href="coffre_fort_viewer.php?id=<?= $f['id'] ?>" class="btn btn-sm btn-outline-primary" title="Consulter">
-                                        <i class="fas fa-eye"></i>
-                                    </a>
-                                <?php endif; ?>
-                                <form method="POST" style="display: inline;" onsubmit="return confirm('Supprimer ce fichier ?');">
-                                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
-                                    <input type="hidden" name="action" value="supprimer">
-                                    <input type="hidden" name="fichier_id" value="<?= $f['id'] ?>">
-                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            <?php endforeach; ?>
-        </div>
-    <?php endif; ?>
-
-    <!-- Logs -->
-    <?php if (isset($_GET['logs']) && $logs): ?>
-        <div class="card mt-4">
-            <div class="card-header"><i class="fas fa-history me-2"></i>Journal d'accès (30 derniers)</div>
-            <div class="card-body">
-                <?php foreach ($logs as $log):
-                    $actionColors = [
-                        'login_2fa' => '#1E88E5',
-                        'verification_ok' => '#43A047',
-                        'verification_fail' => '#E53935',
-                        'consultation' => '#FB8C00',
-                        'upload' => '#8E24AA',
-                        'suppression' => '#E53935',
-                        'session_expire' => '#757575',
-                    ];
-                    $color = $actionColors[$log['action']] ?? '#757575';
-                ?>
-                    <div class="log-entry">
-                        <span class="log-action" style="background: <?= $color ?>22; color: <?= $color ?>;">
-                            <?= htmlspecialchars($log['action']) ?>
-                        </span>
-                        <strong><?= htmlspecialchars($log['user_nom'] ?? 'Inconnu') ?></strong>
-                        <?php if ($log['fichier_nom']): ?>
-                            — <?= htmlspecialchars($log['fichier_nom']) ?>
-                        <?php endif; ?>
-                        <?php if ($log['details']): ?>
-                            <span class="text-muted">— <?= htmlspecialchars($log['details']) ?></span>
-                        <?php endif; ?>
-                        <span class="text-muted float-end"><?= date('d/m H:i:s', strtotime($log['created_at'])) ?> — <?= htmlspecialchars($log['ip_address'] ?? '') ?></span>
-                    </div>
-                <?php endforeach; ?>
+    <?php foreach ($fichiers as $f):
+        $cat = $categories[$f['categorie']] ?? $categories['autre'];
+    ?>
+    <div class="file-card">
+        <div class="file-icon" style="background:<?= $cat['color'] ?>;"><i class="fas <?= $cat['icon'] ?>"></i></div>
+        <div class="file-info">
+            <div class="file-name" title="<?= htmlspecialchars($f['nom_original']) ?>"><?= htmlspecialchars($f['nom_original']) ?></div>
+            <div class="file-meta">
+                <?= htmlspecialchars($cat['label']) ?>
+                <?php if (!empty($f['description'])): ?> — <?= htmlspecialchars($f['description']) ?><?php endif; ?>
+                · <?= CoffreFort::formatTaille((int)$f['taille']) ?>
+                · <?= date('d/m/Y H:i', strtotime($f['created_at'])) ?>
             </div>
         </div>
+        <?php if (str_starts_with($f['type_mime'] ?? '', 'image/') || ($f['type_mime'] ?? '') === 'application/pdf'): ?>
+        <a href="coffre_fort_viewer.php?id=<?= (int)$f['id'] ?>" class="btn btn-sm btn-outline-primary" title="Consulter"><i class="fas fa-eye"></i></a>
+        <?php endif; ?>
+        <form method="POST" class="d-inline" onsubmit="return confirm('Supprimer ce document ?');">
+            <?php echoCsrfField(); ?>
+            <input type="hidden" name="action" value="supprimer">
+            <input type="hidden" name="fichier_id" value="<?= (int)$f['id'] ?>">
+            <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer"><i class="fas fa-trash"></i></button>
+        </form>
+    </div>
+    <?php endforeach; ?>
     <?php endif; ?>
 
-    <?php endif; /* fin isUnlocked */ ?>
+    <?php else: ?>
+    <!-- ============================================================ -->
+    <!-- VUE LISTE PROPRIETAIRES -->
+    <!-- ============================================================ -->
+
+    <!-- Recherche -->
+    <div class="search-bar">
+        <div class="input-group" style="max-width:400px;">
+            <span class="input-group-text"><i class="fas fa-search"></i></span>
+            <input type="text" class="form-control" id="searchProprio" placeholder="Rechercher un proprietaire..." oninput="filterProprios()">
+        </div>
+    </div>
+
+    <div class="row g-3" id="proprioList">
+        <?php foreach ($proprios as $p):
+            $pNom = htmlspecialchars(trim(($p['prenom'] ?? '') . ' ' . ($p['nom'] ?? '')));
+            $initiale = strtoupper(substr($p['prenom'] ?? $p['nom'] ?? 'P', 0, 1));
+            $nbDocs = (int)$p['nb_docs'];
+        ?>
+        <div class="col-md-6 col-lg-4 proprio-item" data-search="<?= strtolower($pNom . ' ' . ($p['email'] ?? '')) ?>">
+            <a href="?proprio=<?= (int)$p['id'] ?>" class="text-decoration-none">
+                <div class="proprio-card">
+                    <div class="proprio-avatar"><?= $initiale ?></div>
+                    <div>
+                        <div class="proprio-name"><?= $pNom ?></div>
+                        <div class="proprio-meta">
+                            <?= htmlspecialchars($p['email'] ?? '') ?>
+                            <?php if ($p['dernier_upload']): ?><br>Dernier upload : <?= date('d/m/Y', strtotime($p['dernier_upload'])) ?><?php endif; ?>
+                        </div>
+                    </div>
+                    <span class="doc-count <?= $nbDocs === 0 ? 'empty' : '' ?>">
+                        <?= $nbDocs ?> doc<?= $nbDocs > 1 ? 's' : '' ?>
+                        <?php if ($nbDocs > 0): ?><br><small><?= CoffreFort::formatTaille((int)$p['taille_totale']) ?></small><?php endif; ?>
+                    </span>
+                </div>
+            </a>
+        </div>
+        <?php endforeach; ?>
+
+        <?php if (empty($proprios)): ?>
+        <div class="col-12 text-center text-muted py-5">
+            <i class="fas fa-user-slash fa-3x mb-3"></i>
+            <p>Aucun proprietaire actif.</p>
+        </div>
+        <?php endif; ?>
+    </div>
+
+    <?php endif; ?>
 
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-// Timer de session
-const timerEl = document.getElementById('timer');
-if (timerEl) {
-    let seconds = parseInt(timerEl.dataset.seconds);
-    const interval = setInterval(() => {
-        seconds--;
-        if (seconds <= 0) {
-            clearInterval(interval);
-            location.reload();
-            return;
-        }
-        const m = Math.floor(seconds / 60).toString().padStart(2, '0');
-        const s = (seconds % 60).toString().padStart(2, '0');
-        timerEl.textContent = m + ':' + s;
-        if (seconds < 120) timerEl.classList.add('warning');
-    }, 1000);
+// Recherche proprietaires
+function filterProprios() {
+    const q = document.getElementById('searchProprio')?.value?.toLowerCase() || '';
+    document.querySelectorAll('.proprio-item').forEach(el => {
+        el.style.display = el.dataset.search.includes(q) ? '' : 'none';
+    });
 }
 
-// Upload zone
+// Upload drag & drop
 const dropZone = document.getElementById('dropZone');
 const fileInput = document.getElementById('fileInput');
-const fileNameEl = document.getElementById('fileName');
-const uploadBtn = document.getElementById('uploadBtn');
-
+const fileLabel = document.getElementById('fileLabel');
 if (dropZone) {
-    ['dragenter', 'dragover'].forEach(e => dropZone.addEventListener(e, ev => {
-        ev.preventDefault();
-        dropZone.classList.add('dragover');
-    }));
-    ['dragleave', 'drop'].forEach(e => dropZone.addEventListener(e, ev => {
-        ev.preventDefault();
-        dropZone.classList.remove('dragover');
-    }));
-    dropZone.addEventListener('drop', ev => {
-        fileInput.files = ev.dataTransfer.files;
-        showFile();
+    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', e => {
+        e.preventDefault(); dropZone.classList.remove('dragover');
+        if (e.dataTransfer.files.length) { fileInput.files = e.dataTransfer.files; showFile(); }
     });
-    fileInput.addEventListener('change', showFile);
+    fileInput?.addEventListener('change', showFile);
 }
-
 function showFile() {
-    if (fileInput.files.length > 0) {
-        fileNameEl.textContent = fileInput.files[0].name;
-        fileNameEl.style.display = 'block';
-        uploadBtn.disabled = false;
-    }
+    if (fileInput.files.length) { fileLabel.textContent = fileInput.files[0].name; fileLabel.style.display = 'block'; }
 }
 </script>
-
 </body>
 </html>
