@@ -865,11 +865,10 @@ class SuperhoteAutomation:
                 )
                 if search_input and search_input.is_displayed():
                     search_input.clear()
-                    # Utiliser une partie du nom pour la recherche
-                    search_term = property_name.split(' - ')[0] if ' - ' in property_name else property_name
-                    search_input.send_keys(search_term)
+                    # Utiliser le nom COMPLET pour la recherche
+                    search_input.send_keys(property_name)
                     time.sleep(1)
-                    logger.info(f"Recherche: {search_term}")
+                    logger.info(f"Recherche: {property_name}")
             except (NoSuchElementException, TimeoutException, StaleElementReferenceException) as e:
                 logger.info(f"Champ de recherche non trouve ({type(e).__name__}), on cherche directement")
 
@@ -888,17 +887,32 @@ class SuperhoteAutomation:
                 property_selected = True
                 logger.info(f"Logement coche: {property_name}")
             except (NoSuchElementException, TimeoutException, StaleElementReferenceException) as e:
-                logger.debug(f"Logement non trouve par nom exact ({type(e).__name__}), essai nom partiel")
-                # Essayer avec une partie du nom
+                logger.debug(f"Logement non trouve par nom exact ({type(e).__name__}), essai avec premiere partie du nom")
+                # Essayer avec la premiere partie du nom (avant le dernier tiret)
                 try:
-                    short_name = property_name.split(' - ')[-1] if ' - ' in property_name else property_name
-                    checkbox_label = self.driver.find_element(
+                    # Ex: "Delphin Jun - 5" -> chercher "Delphin Jun"
+                    parts = property_name.rsplit(' - ', 1)
+                    if len(parts) == 2:
+                        search_prefix = parts[0]
+                    else:
+                        search_prefix = property_name
+                    # Chercher tous les elements contenant ce prefixe
+                    candidates = self.driver.find_elements(
                         By.XPATH,
-                        f"//*[contains(text(), '{short_name}')]"
+                        f"//label[contains(text(), '{search_prefix}')] | //span[contains(text(), '{search_prefix}')]"
                     )
-                    self.driver.execute_script("arguments[0].click();", checkbox_label)
-                    property_selected = True
-                    logger.info(f"Logement coche (nom partiel): {short_name}")
+                    # Parmi les candidats, trouver celui qui contient le nom complet
+                    for candidate in candidates:
+                        if property_name in candidate.text:
+                            self.driver.execute_script("arguments[0].click();", candidate)
+                            property_selected = True
+                            logger.info(f"Logement coche (via candidats): {candidate.text}")
+                            break
+                    if not property_selected and candidates:
+                        # Dernier recours: prendre le premier candidat qui match le mieux
+                        logger.warning(f"Aucun candidat exact pour '{property_name}', {len(candidates)} candidats trouves")
+                        for candidate in candidates:
+                            logger.warning(f"  Candidat: '{candidate.text}'")
                 except (NoSuchElementException, TimeoutException, StaleElementReferenceException) as e2:
                     logger.warning(f"Logement non trouve: {property_name} ({type(e2).__name__})")
 
