@@ -307,9 +307,13 @@ switch ($action) {
             break;
         }
 
+        // Option workers-only: ne pas regenerer les prix (utile quand le VPS a deja genere)
+        $workersOnly = isset($_POST['workers_only']) || isset($_GET['workers_only']);
+        $extraArgs = $workersOnly ? ' --workers-only' : '';
+
         // Lancer en arriere-plan avec nohup pour garantir l'execution
         $logFile = "$logsDir/manual_run.log";
-        $cmd = "cd $scriptDir && nohup /usr/bin/python3 run_scheduled_update.py -w $maxWorkers > $logFile 2>&1 &";
+        $cmd = "cd $scriptDir && nohup /usr/bin/python3 run_scheduled_update.py -w $maxWorkers$extraArgs > $logFile 2>&1 &";
 
         // Utiliser shell_exec avec descriptors pour forcer le background
         $descriptorspec = array(
