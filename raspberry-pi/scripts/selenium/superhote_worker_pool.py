@@ -83,6 +83,7 @@ def get_all_active_logements() -> List[Dict]:
                     l.id,
                     l.nom_du_logement,
                     sc.superhote_property_id,
+                    sc.superhote_property_name,
                     sc.groupe
                 FROM liste_logements l
                 INNER JOIN superhote_config sc ON l.id = sc.logement_id
@@ -111,7 +112,8 @@ def get_groups_with_reference() -> List[Dict]:
                     g.nom,
                     g.logement_reference_id,
                     l.nom_du_logement as reference_name,
-                    sc.superhote_property_id as reference_superhote_id
+                    sc.superhote_property_id as reference_superhote_id,
+                    sc.superhote_property_name as reference_superhote_name
                 FROM superhote_groups g
                 LEFT JOIN liste_logements l ON g.logement_reference_id = l.id
                 LEFT JOIN superhote_config sc ON g.logement_reference_id = sc.logement_id
@@ -138,7 +140,8 @@ def get_logements_by_group(group_name: str) -> List[Dict]:
                 SELECT
                     l.id,
                     l.nom_du_logement,
-                    sc.superhote_property_id
+                    sc.superhote_property_id,
+                    sc.superhote_property_name
                 FROM liste_logements l
                 INNER JOIN superhote_config sc ON l.id = sc.logement_id
                 WHERE sc.is_active = 1
@@ -166,7 +169,8 @@ def get_ungrouped_logements() -> List[Dict]:
                 SELECT
                     l.id,
                     l.nom_du_logement,
-                    sc.superhote_property_id
+                    sc.superhote_property_id,
+                    sc.superhote_property_name
                 FROM liste_logements l
                 INNER JOIN superhote_config sc ON l.id = sc.logement_id
                 WHERE sc.is_active = 1
@@ -199,7 +203,7 @@ def assign_logements_to_workers(logements: List[Dict], properties_per_worker: in
         chunk = logements[i:i + properties_per_worker]
         worker_id = len(workers) + 1
         logement_ids = [l["id"] for l in chunk]
-        logement_names = [l["nom_du_logement"] for l in chunk]
+        logement_names = [l.get("superhote_property_name") or l["nom_du_logement"] for l in chunk]
 
         workers.append(WorkerConfig(
             worker_id=worker_id,
@@ -263,7 +267,7 @@ def assign_workers_by_group(properties_per_worker: int = 6) -> List[WorkerConfig
             pool_logger.info(f"Groupe {group_name}: pas de pending, ignore")
             continue
 
-        reference_property = group.get("reference_superhote_id") or group.get("reference_name")
+        reference_property = group.get("reference_superhote_id") or group.get("reference_superhote_name") or group.get("reference_name")
 
         if not reference_property:
             pool_logger.warning(f"Groupe {group_name}: pas de logement de reference, ignore")
@@ -278,7 +282,7 @@ def assign_workers_by_group(properties_per_worker: int = 6) -> List[WorkerConfig
 
         worker_id = len(workers) + 1
         logement_ids = [l["id"] for l in logements]
-        logement_names = [l["nom_du_logement"] for l in logements]
+        logement_names = [l.get("superhote_property_name") or l["nom_du_logement"] for l in logements]
 
         workers.append(WorkerConfig(
             worker_id=worker_id,
@@ -300,7 +304,7 @@ def assign_workers_by_group(properties_per_worker: int = 6) -> List[WorkerConfig
                 chunk = ungrouped[i:i + properties_per_worker]
                 worker_id = len(workers) + 1
                 logement_ids = [l["id"] for l in chunk]
-                logement_names = [l["nom_du_logement"] for l in chunk]
+                logement_names = [l.get("superhote_property_name") or l["nom_du_logement"] for l in chunk]
 
                 workers.append(WorkerConfig(
                     worker_id=worker_id,
@@ -337,9 +341,11 @@ def get_pending_updates_for_logements(logement_ids: List[int]) -> List[Dict]:
                     spu.date_end,
                     spu.price,
                     spu.nom_du_logement,
-                    l.nom_du_logement as logement_name
+                    l.nom_du_logement as logement_name,
+                    sc.superhote_property_name
                 FROM superhote_price_updates spu
                 LEFT JOIN liste_logements l ON spu.logement_id = l.id
+                LEFT JOIN superhote_config sc ON spu.logement_id = sc.logement_id
                 WHERE spu.status = 'pending'
                 AND spu.logement_id IN ({placeholders})
                 ORDER BY spu.date_start ASC, spu.price ASC
@@ -432,7 +438,7 @@ def group_updates_by_price_and_date(updates: List[Dict]) -> List[Dict]:
             "date_start": date_start_str,
             "date_end": date_end_str,
             "updates": group_updates,
-            "logement_names": [u.get("logement_name") or u.get("nom_du_logement") for u in group_updates],
+            "logement_names": [u.get("superhote_property_name") or u.get("logement_name") or u.get("nom_du_logement") for u in group_updates],
             "superhote_property_ids": [u.get("superhote_property_id") for u in group_updates],
             "update_ids": [u["id"] for u in group_updates]
         })
