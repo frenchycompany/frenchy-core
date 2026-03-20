@@ -169,18 +169,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (is_writable($uploadDir) && move_uploaded_file($_FILES['video']['tmp_name'], $uploadDir . $origFile)) {
 
             // Conversion en MP4 si le format d'origine n'est pas déjà mp4
+            // Lancée en arrière-plan pour éviter les timeout 504 sur les grosses vidéos
             if ($ext !== 'mp4') {
                 $input  = escapeshellarg($uploadDir . $origFile);
                 $output = escapeshellarg($uploadDir . $filename);
-                // -movflags +faststart = lecture streaming immédiate
-                exec("ffmpeg -i $input -c:v libx264 -preset fast -crf 28 -c:a aac -movflags +faststart -y $output 2>&1", $ffOut, $ffCode);
-                if ($ffCode === 0 && file_exists($uploadDir . $filename)) {
-                    // Supprime le fichier original
-                    @unlink($uploadDir . $origFile);
-                } else {
-                    // Fallback : on garde le fichier original tel quel
-                    $filename = $origFile;
-                }
+                // nohup + & : ffmpeg tourne en arrière-plan, la requête PHP retourne immédiatement
+                // Le fichier original est supprimé automatiquement après conversion réussie
+                exec("nohup bash -c 'ffmpeg -i $input -c:v libx264 -preset fast -crf 28 -c:a aac -movflags +faststart -y $output 2>/dev/null && rm -f $input' > /dev/null 2>&1 &");
             }
 
             // Marque le token utilisé et met à jour le planning

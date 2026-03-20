@@ -10,9 +10,23 @@ if (!$file || !preg_match('/^\d+_\d+\.\w+$/i', $file)) {
 }
 
 $path = __DIR__ . '/uploads/' . $file;
+
+// Si le fichier mp4 n'existe pas encore (conversion en cours), chercher le fichier original
 if (!file_exists($path)) {
-    http_response_code(404);
-    die('Vidéo introuvable.');
+    $baseName = pathinfo($file, PATHINFO_FILENAME);
+    $origFound = false;
+    foreach (glob(__DIR__ . '/uploads/' . $baseName . '.*') as $candidate) {
+        if (basename($candidate) !== $file) {
+            $path = $candidate;
+            $file = basename($candidate);
+            $origFound = true;
+            break;
+        }
+    }
+    if (!$origFound) {
+        http_response_code(404);
+        die('Vidéo introuvable.');
+    }
 }
 
 $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
