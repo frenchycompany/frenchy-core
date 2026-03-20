@@ -25,6 +25,7 @@ import pymysql
 import argparse
 import signal
 import subprocess
+import fcntl
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional, Dict, List, Tuple
@@ -46,6 +47,7 @@ BASE_DIR = Path(__file__).parent.parent.parent
 CONFIG_DIR = BASE_DIR / "config"
 LOG_DIR = BASE_DIR / "logs"
 LOG_DIR.mkdir(exist_ok=True)
+LOCK_FILE = LOG_DIR / "scheduled_update.lock"
 
 # Fichier de statut pour l'interface web
 STATUS_FILE = LOG_DIR / "scheduled_update_status.json"
@@ -765,6 +767,19 @@ Exemples:
     if args.status:
         show_status()
         return
+
+    # Verrou fichier: empeche les executions concurrentes
+    lock_fp = open(LOCK_FILE, "w")
+    try:
+        fcntl.flock(lock_fp.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        msg = "Une mise a jour est deja en cours. Lancement refuse."
+        print(msg)
+        logging.getLogger("scheduled_update").warning(msg)
+        sys.exit(2)
+    # Ecrire le PID pour diagnostic
+    lock_fp.write(str(os.getpid()))
+    lock_fp.flush()
 
     # Gerer les signaux avec cleanup propre
     def signal_handler(signum, frame):

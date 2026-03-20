@@ -307,6 +307,23 @@ switch ($action) {
             break;
         }
 
+        // Verifier qu'une mise a jour n'est pas deja en cours (file lock)
+        $lockFile = "$logsDir/scheduled_update.lock";
+        if (file_exists($lockFile)) {
+            $fp = fopen($lockFile, 'r');
+            if ($fp) {
+                // Tenter un lock non-bloquant pour voir si le fichier est verrouille
+                if (!flock($fp, LOCK_EX | LOCK_NB)) {
+                    fclose($fp);
+                    echo json_encode(['success' => false, 'error' => 'Une mise a jour est deja en cours. Patientez.']);
+                    break;
+                }
+                // Le lock a reussi = pas de process en cours, on relache
+                flock($fp, LOCK_UN);
+                fclose($fp);
+            }
+        }
+
         // Option workers-only: ne pas regenerer les prix (utile quand le VPS a deja genere)
         $workersOnly = isset($_POST['workers_only']) || isset($_GET['workers_only']);
         $extraArgs = $workersOnly ? ' --workers-only' : '';
