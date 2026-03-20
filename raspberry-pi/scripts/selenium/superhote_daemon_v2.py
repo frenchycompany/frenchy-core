@@ -104,7 +104,8 @@ def get_db_connection() -> Optional[pymysql.Connection]:
             database=config.get("DATABASE", "database"),
             charset="utf8mb4",
             cursorclass=pymysql.cursors.DictCursor,
-            autocommit=True
+            autocommit=True,
+            connect_timeout=10
         )
     except Exception as e:
         logger.error(f"Erreur connexion BDD: {e}")
@@ -203,12 +204,14 @@ class TaskQueueManager:
 
                     # Etape 2: Recuperer les taches qu'on vient de reserver
                     cursor.execute("""
-                        SELECT id, logement_id, superhote_property_id,
-                               date_start, date_end, price, nom_du_logement
-                        FROM superhote_price_updates
-                        WHERE status = 'processing'
-                        AND error_message = %s
-                        ORDER BY date_start ASC
+                        SELECT spu.id, spu.logement_id, spu.superhote_property_id,
+                               spu.date_start, spu.date_end, spu.price, spu.nom_du_logement,
+                               sc.superhote_property_name
+                        FROM superhote_price_updates spu
+                        LEFT JOIN superhote_config sc ON spu.logement_id = sc.logement_id
+                        WHERE spu.status = 'processing'
+                        AND spu.error_message = %s
+                        ORDER BY spu.date_start ASC
                     """, (worker_marker,))
 
                     tasks = cursor.fetchall()
@@ -419,7 +422,7 @@ class PersistentWorker(threading.Thread):
 
             if not self.automation.login():
                 logger.error(f"Worker {self.worker_id}: Echec login Superhote")
-                self.automation.close()
+                self.automation.stop()
                 return False
 
             self.state = WorkerState.CONNECTED
@@ -528,7 +531,7 @@ class PersistentWorker(threading.Thread):
                 "date_end": date_end,
                 "tasks": group_tasks,
                 "task_ids": [t["id"] for t in group_tasks],
-                "property_names": [t.get("nom_du_logement") or t.get("superhote_property_id") for t in group_tasks],
+                "property_names": [t.get("superhote_property_name") or t.get("nom_du_logement") or t.get("superhote_property_id") for t in group_tasks],
                 "superhote_ids": [t.get("superhote_property_id") for t in group_tasks]
             })
 
@@ -599,7 +602,7 @@ class PersistentWorker(threading.Thread):
         """Nettoie les ressources."""
         if self.automation:
             try:
-                self.automation.close()
+                self.automation.stop()
             except:
                 pass
             self.automation = None
@@ -910,6 +913,12 @@ class SuperhoteDaemon:
 
             # Liberer les taches bloquees
             self.task_queue.release_stale_tasks()
+
+            # Rafraichir les references de groupes (si modifiees dans le PHP)
+            updated_refs = self._load_group_references()
+            if updated_refs:
+                for worker in self.workers:
+                    worker.group_refs = updated_refs
 
             # Log des stats
             stats = self.task_queue.get_queue_stats()

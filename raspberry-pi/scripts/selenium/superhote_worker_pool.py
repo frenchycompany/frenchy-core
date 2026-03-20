@@ -63,7 +63,8 @@ def get_db_connection():
             password=config.get("DATABASE", "password"),
             database=config.get("DATABASE", "database"),
             charset="utf8mb4",
-            cursorclass=pymysql.cursors.DictCursor
+            cursorclass=pymysql.cursors.DictCursor,
+            connect_timeout=10
         )
     except Exception as e:
         pool_logger.error(f"Erreur connexion BDD: {e}")
@@ -317,6 +318,29 @@ def assign_workers_by_group(properties_per_worker: int = 6) -> List[WorkerConfig
                 pool_logger.info(f"Worker {worker_id} [STANDARD]: {len(chunk)} logements orphelins")
 
     return workers
+
+
+def release_stale_tasks(max_age_minutes: int = 30):
+    """Libere les taches 'processing' bloquees depuis trop longtemps."""
+    db = get_db_connection()
+    if not db:
+        return
+
+    try:
+        with db.cursor() as cursor:
+            cursor.execute("""
+                UPDATE superhote_price_updates
+                SET status = 'pending', error_message = 'Released - worker timeout'
+                WHERE status = 'processing'
+                AND updated_at < DATE_SUB(NOW(), INTERVAL %s MINUTE)
+            """, (max_age_minutes,))
+            db.commit()
+            if cursor.rowcount > 0:
+                pool_logger.warning(f"Libere {cursor.rowcount} taches bloquees (>{max_age_minutes}min)")
+    except Exception as e:
+        pool_logger.error(f"Erreur liberation taches: {e}")
+    finally:
+        db.close()
 
 
 def get_pending_updates_for_logements(logement_ids: List[int]) -> List[Dict]:
@@ -834,6 +858,9 @@ class SuperhoteWorkerPool:
         if not self.workers:
             pool_logger.warning("Aucun worker a lancer")
             return []
+
+        # Liberer les taches bloquees avant de commencer
+        release_stale_tasks()
 
         pool_logger.info(f"Lancement de {len(self.workers)} workers en parallele...")
 

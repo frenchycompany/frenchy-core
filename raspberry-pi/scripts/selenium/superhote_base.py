@@ -815,7 +815,7 @@ class SuperhoteAutomation:
         try:
             # Screenshot debug avant filtre
             try:
-                self.driver.save_screenshot("/home/raphael/sms_project/logs/debug_filter_01_avant.png")
+                self.driver.save_screenshot(str(LOG_DIR / "debug_filter_01_avant.png"))
                 logger.info("Screenshot: debug_filter_01_avant.png")
             except Exception:
                 pass
@@ -851,7 +851,7 @@ class SuperhoteAutomation:
             if not filter_clicked:
                 logger.warning("Bouton filtre non trouve")
                 try:
-                    self.driver.save_screenshot("/home/raphael/sms_project/logs/debug_filter_02_bouton_pas_trouve.png")
+                    self.driver.save_screenshot(str(LOG_DIR / "debug_filter_02_bouton_pas_trouve.png"))
                     logger.info("Screenshot: debug_filter_02_bouton_pas_trouve.png")
                 except Exception:
                     pass
@@ -914,7 +914,7 @@ class SuperhoteAutomation:
 
             # Screenshot apres recherche
             try:
-                self.driver.save_screenshot("/home/raphael/sms_project/logs/debug_filter_03_apres_recherche.png")
+                self.driver.save_screenshot(str(LOG_DIR / "debug_filter_03_apres_recherche.png"))
                 logger.info("Screenshot: debug_filter_03_apres_recherche.png")
             except Exception:
                 pass
