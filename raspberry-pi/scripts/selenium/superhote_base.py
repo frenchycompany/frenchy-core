@@ -1372,7 +1372,9 @@ class SuperhoteAutomation:
 
             # ETAPE 2: Filtrer pour n'afficher que ce logement
             logger.info(f"Filtrage pour: {property_name}")
-            self.filter_by_property(property_name)
+            if not self.filter_by_property(property_name):
+                logger.error(f"Impossible de filtrer pour: {property_name}. Abandon pour eviter de modifier le mauvais logement.")
+                return False
             # Attendre que le filtre soit applique (calendrier se rafraichit)
             time.sleep(1.5)
 
