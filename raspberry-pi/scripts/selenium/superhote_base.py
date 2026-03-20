@@ -813,6 +813,13 @@ class SuperhoteAutomation:
             True si le filtrage a reussi
         """
         try:
+            # Screenshot debug avant filtre
+            try:
+                self.driver.save_screenshot("/home/raphael/sms_project/logs/debug_filter_01_avant.png")
+                logger.info("Screenshot: debug_filter_01_avant.png")
+            except Exception:
+                pass
+
             # ETAPE 1: Cliquer sur "Filtrer par hebergement"
             filter_clicked = False
             try:
@@ -843,6 +850,11 @@ class SuperhoteAutomation:
 
             if not filter_clicked:
                 logger.warning("Bouton filtre non trouve")
+                try:
+                    self.driver.save_screenshot("/home/raphael/sms_project/logs/debug_filter_02_bouton_pas_trouve.png")
+                    logger.info("Screenshot: debug_filter_02_bouton_pas_trouve.png")
+                except Exception:
+                    pass
                 return False
 
             # ETAPE 2: Cliquer sur "Effacer" pour tout decocher
@@ -870,6 +882,13 @@ class SuperhoteAutomation:
                     logger.info(f"Recherche: {property_name}")
             except (NoSuchElementException, TimeoutException, StaleElementReferenceException) as e:
                 logger.info(f"Champ de recherche non trouve ({type(e).__name__}), on cherche directement")
+
+            # Screenshot apres recherche
+            try:
+                self.driver.save_screenshot("/home/raphael/sms_project/logs/debug_filter_03_apres_recherche.png")
+                logger.info("Screenshot: debug_filter_03_apres_recherche.png")
+            except Exception:
+                pass
 
             # ETAPE 4: Cocher le logement correspondant
             time.sleep(0.5)
