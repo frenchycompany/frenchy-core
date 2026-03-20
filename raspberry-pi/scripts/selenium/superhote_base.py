@@ -865,11 +865,9 @@ class SuperhoteAutomation:
                 )
                 if search_input and search_input.is_displayed():
                     search_input.clear()
-                    # Utiliser une partie du nom pour la recherche
-                    search_term = property_name.split(' - ')[0] if ' - ' in property_name else property_name
-                    search_input.send_keys(search_term)
+                    search_input.send_keys(property_name)
                     time.sleep(1)
-                    logger.info(f"Recherche: {search_term}")
+                    logger.info(f"Recherche: {property_name}")
             except (NoSuchElementException, TimeoutException, StaleElementReferenceException) as e:
                 logger.info(f"Champ de recherche non trouve ({type(e).__name__}), on cherche directement")
 
