@@ -870,16 +870,45 @@ class SuperhoteAutomation:
             # ETAPE 3: Taper le nom dans le champ de recherche
             search_input = None
             try:
-                # Chercher le champ de recherche dans le dropdown
-                search_input = self.driver.find_element(
-                    By.CSS_SELECTOR,
-                    "input[type='text'], input[type='search'], input[placeholder*='echerch']"
-                )
+                # D'abord trouver le dropdown ouvert, puis chercher l'input DEDANS
+                dropdown_menu = None
+                try:
+                    dropdown_menu = self.driver.find_element(
+                        By.CSS_SELECTOR,
+                        ".dropdown-menu.show, .dropdown-menu[style*='display: block']"
+                    )
+                except (NoSuchElementException, StaleElementReferenceException):
+                    # Fallback: chercher tout conteneur dropdown visible
+                    try:
+                        dropdown_menu = self.driver.find_element(
+                            By.CSS_SELECTOR,
+                            ".dropdown.open .dropdown-menu, .dropdown.show .dropdown-menu"
+                        )
+                    except (NoSuchElementException, StaleElementReferenceException):
+                        pass
+
+                if dropdown_menu:
+                    # Chercher l'input de recherche DANS le dropdown
+                    search_input = dropdown_menu.find_element(
+                        By.CSS_SELECTOR,
+                        "input[type='text'], input[type='search'], input[placeholder*='echerch']"
+                    )
+                    logger.info("Champ de recherche trouve dans le dropdown")
+                else:
+                    # Fallback: utiliser le placeholder specifique pour cibler le bon input
+                    search_input = self.driver.find_element(
+                        By.CSS_SELECTOR,
+                        ".dropdown-menu input[placeholder*='echerch'], .dropdown input[placeholder*='echerch']"
+                    )
+                    logger.info("Champ de recherche trouve par placeholder dans dropdown")
+
                 if search_input and search_input.is_displayed():
                     search_input.clear()
                     search_input.send_keys(property_name)
                     time.sleep(1)
                     logger.info(f"Recherche: {property_name}")
+                else:
+                    logger.warning("Champ de recherche trouve mais non visible")
             except (NoSuchElementException, TimeoutException, StaleElementReferenceException) as e:
                 logger.info(f"Champ de recherche non trouve ({type(e).__name__}), on cherche directement")
 
