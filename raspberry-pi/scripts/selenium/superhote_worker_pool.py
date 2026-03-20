@@ -723,7 +723,7 @@ class SuperhoteWorkerPool:
     - Mode groupe: un worker par groupe, utilise un logement de reference pour eviter les reservations
     """
 
-    def __init__(self, properties_per_worker: int = 6, max_workers: int = None, use_groups: bool = False):
+    def __init__(self, properties_per_worker: int = 6, max_workers: int = None, use_groups: bool = False, logement_id: int = None):
         """
         Initialise le pool de workers.
 
@@ -731,10 +731,12 @@ class SuperhoteWorkerPool:
             properties_per_worker: Nombre de logements par worker en mode standard (defaut: 6)
             max_workers: Nombre maximum de workers (defaut: illimite)
             use_groups: Si True, utilise le mode groupe (un worker par groupe configure)
+            logement_id: Si specifie, ne traiter que ce logement
         """
         self.properties_per_worker = properties_per_worker
         self.max_workers = max_workers
         self.use_groups = use_groups
+        self.logement_id = logement_id
         self.workers = []
         # Utiliser Manager().Event() pour partager entre processus
         self._manager = Manager()
@@ -751,9 +753,15 @@ class SuperhoteWorkerPool:
         En mode standard:
         - Repartit les logements entre workers (X par worker)
 
+        Si logement_id est specifie, filtre pour ne garder que le worker
+        qui contient ce logement.
+
         Returns:
             Nombre de workers configures
         """
+        if self.logement_id:
+            pool_logger.info(f"Mode LOGEMENT UNIQUE: id={self.logement_id}")
+
         if self.use_groups:
             # Mode groupe: un worker par groupe + workers pour orphelins
             pool_logger.info("Mode GROUPE active (hybride: groupes + orphelins)")
@@ -764,6 +772,11 @@ class SuperhoteWorkerPool:
                 pool_logger.info("Fallback vers mode standard...")
                 self.use_groups = False
             else:
+                # Filtrer par logement_id si specifie
+                if self.logement_id:
+                    self.workers = [w for w in self.workers if self.logement_id in w.logement_ids]
+                    pool_logger.info(f"Filtre logement_id={self.logement_id}: {len(self.workers)} worker(s) retenu(s)")
+
                 group_workers = [w for w in self.workers if w.group_name]
                 standard_workers = [w for w in self.workers if not w.group_name]
                 pool_logger.info(f"Workers configures: {len(self.workers)} ({len(group_workers)} groupes, {len(standard_workers)} standards)")
@@ -776,6 +789,11 @@ class SuperhoteWorkerPool:
         if not self.use_groups:
             # Mode standard: repartition par nombre
             logements = get_all_active_logements()
+
+            # Filtrer par logement_id si specifie
+            if self.logement_id:
+                logements = [l for l in logements if l["id"] == self.logement_id]
+                pool_logger.info(f"Filtre logement_id={self.logement_id}: {len(logements)} logement(s)")
 
             if not logements:
                 pool_logger.warning("Aucun logement actif trouve")
@@ -882,6 +900,12 @@ def main():
         action="store_true",
         help="Affiche la configuration sans lancer les workers"
     )
+    parser.add_argument(
+        "--logement-id", "-l",
+        type=int,
+        default=None,
+        help="Ne traiter que ce logement (filtre les workers)"
+    )
 
     args = parser.parse_args()
 
@@ -896,7 +920,8 @@ def main():
     pool = SuperhoteWorkerPool(
         properties_per_worker=args.properties_per_worker,
         max_workers=args.max_workers,
-        use_groups=args.groups
+        use_groups=args.groups,
+        logement_id=args.logement_id
     )
 
     # Gerer SIGINT/SIGTERM

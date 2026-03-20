@@ -409,7 +409,7 @@ def get_groups_with_pending() -> List[Dict]:
         db.close()
 
 
-def run_workers(max_workers: int = 2, use_groups: bool = True) -> Dict:
+def run_workers(max_workers: int = 2, use_groups: bool = True, logement_id: int = None) -> Dict:
     """
     Lance les workers pour traiter la queue.
     Mode sequentiel: traite les groupes un par un pour economiser la RAM.
@@ -417,6 +417,7 @@ def run_workers(max_workers: int = 2, use_groups: bool = True) -> Dict:
     Args:
         max_workers: Nombre maximum de workers en parallele
         use_groups: Utiliser le mode groupe
+        logement_id: Si specifie, ne traite que ce logement
 
     Returns:
         Statistiques d'execution
@@ -463,6 +464,9 @@ def run_workers(max_workers: int = 2, use_groups: bool = True) -> Dict:
 
         if use_groups:
             cmd.append("--groups")
+
+        if logement_id:
+            cmd.extend(["--logement-id", str(logement_id)])
 
         logger.info(f"  Commande: {' '.join(cmd)}")
 
@@ -748,6 +752,12 @@ Exemples:
         action="store_true",
         help="Desactive le mode groupe"
     )
+    parser.add_argument(
+        "--logement-id", "-l",
+        type=int,
+        default=None,
+        help="ID du logement a traiter (filtre les workers sur ce logement uniquement)"
+    )
 
     args = parser.parse_args()
 
@@ -790,12 +800,13 @@ Exemples:
 
     # Mode workers seuls
     if args.workers_only:
+        logger.info(f"Mode workers-only (logement_id={args.logement_id})")
         cleanup_stale_tasks()
         workers = args.workers
         if workers is None:
             settings = get_settings()
             workers = int(settings.get("max_workers", 2))
-        result = run_workers(workers, not args.no_groups)
+        result = run_workers(workers, not args.no_groups, logement_id=args.logement_id)
         print(f"Workers: {result}")
         return
 

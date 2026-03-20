@@ -311,9 +311,18 @@ switch ($action) {
         $workersOnly = isset($_POST['workers_only']) || isset($_GET['workers_only']);
         $extraArgs = $workersOnly ? ' --workers-only' : '';
 
+        // Option logement_id: ne traiter que ce logement
+        $logementId = intval($_POST['logement_id'] ?? $_GET['logement_id'] ?? 0);
+        if ($logementId > 0) {
+            $extraArgs .= ' --logement-id ' . $logementId;
+        }
+
         // Lancer en arriere-plan avec nohup pour garantir l'execution
         $logFile = "$logsDir/manual_run.log";
         $cmd = "cd $scriptDir && nohup /usr/bin/python3 run_scheduled_update.py -w $maxWorkers$extraArgs > $logFile 2>&1 &";
+
+        // Log de debug pour tracer la commande exacte
+        error_log("daemon_api.php run_now: cmd=$cmd workers_only=$workersOnly logement_id=$logementId");
 
         // Utiliser shell_exec avec descriptors pour forcer le background
         $descriptorspec = array(

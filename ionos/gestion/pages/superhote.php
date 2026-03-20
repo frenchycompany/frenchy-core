@@ -422,7 +422,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     } catch (PDOException $e) { $logName = "ID $logementId"; }
 
                     // Lancer le worker sur le RPI en mode workers-only (les prix sont deja en queue)
-                    $rpiUrl = RPI_BASE_URL . '/pages/daemon_api.php?action=run_now&workers_only=1&token=' . urlencode(env('CRON_SECRET', ''));
+                    $rpiUrl = RPI_BASE_URL . '/pages/daemon_api.php?action=run_now&workers_only=1&logement_id=' . $logementId . '&token=' . urlencode(env('CRON_SECRET', ''));
                     $ctx = stream_context_create([
                         'http' => [
                             'method' => 'POST',
