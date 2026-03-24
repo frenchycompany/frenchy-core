@@ -276,7 +276,8 @@ function parseDateFr($str) {
 $filtre_logement = $_GET['logement'] ?? '';
 $avis_existants = [];
 try {
-    $sql = "SELECT a.*, r.prenom AS resa_prenom, r.nom AS resa_nom, r.date_arrivee, r.date_depart, r.plateforme,
+    $sql = "SELECT a.*, r.prenom AS resa_prenom, r.nom AS resa_nom, r.telephone AS resa_telephone,
+                   r.date_arrivee, r.date_depart, r.plateforme,
                    l.nom_du_logement
             FROM avis_voyageurs a
             LEFT JOIN reservation r ON a.reservation_id = r.id
@@ -544,9 +545,30 @@ try {
                         <p class="mb-1 text-danger"><i class="fas fa-thumbs-down"></i> <?= nl2br(htmlspecialchars($a['commentaire_negatif'])) ?></p>
                     <?php endif; ?>
                 </div>
-                <div class="card-footer text-muted small">
-                    <?php if ($a['date_avis']): ?>
-                        <i class="fas fa-calendar"></i> <?= date('d/m/Y', strtotime($a['date_avis'])) ?>
+                <div class="card-footer d-flex justify-content-between align-items-center small">
+                    <span class="text-muted">
+                        <?php if ($a['date_avis']): ?>
+                            <i class="fas fa-calendar"></i> <?= date('d/m/Y', strtotime($a['date_avis'])) ?>
+                        <?php endif; ?>
+                    </span>
+                    <?php if (!empty($a['resa_telephone']) && $a['reservation_id']): ?>
+                    <div class="btn-group btn-group-sm">
+                        <?php foreach ($sms_avis_templates as $tpl_key => $tpl): ?>
+                            <button type="button" class="btn btn-outline-<?= $tpl['color'] ?> btn-sm py-0" title="<?= htmlspecialchars($tpl['label']) ?>"
+                                onclick="ouvrirModalSms(<?= htmlspecialchars(json_encode([
+                                    'reservation_id' => $a['reservation_id'],
+                                    'prenom' => $a['resa_prenom'] ?? $a['nom_voyageur'] ?? '',
+                                    'nom' => $a['resa_nom'] ?? '',
+                                    'telephone' => $a['resa_telephone'],
+                                    'logement' => $a['nom_du_logement'] ?? '',
+                                    'date_arrivee' => $a['date_arrivee'] ? date('d/m/Y', strtotime($a['date_arrivee'])) : '',
+                                    'date_depart' => $a['date_depart'] ? date('d/m/Y', strtotime($a['date_depart'])) : '',
+                                    'template_key' => $tpl_key,
+                                ])) ?>)">
+                                <i class="fas <?= $tpl['icon'] ?>"></i>
+                            </button>
+                        <?php endforeach; ?>
+                    </div>
                     <?php endif; ?>
                 </div>
             </div>
