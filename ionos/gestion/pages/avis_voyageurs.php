@@ -61,6 +61,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     }
 }
 
+// --- Seed : créer les templates avis dans sms_templates s'ils n'existent pas ---
+try {
+    foreach ($sms_avis_templates as $key => $tpl) {
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM sms_templates WHERE name = ?");
+        $stmt->execute([$key]);
+        if ($stmt->fetchColumn() == 0) {
+            $stmt = $pdo->prepare("INSERT INTO sms_templates (campaign, name, template, description) VALUES ('avis', ?, ?, ?)");
+            $stmt->execute([$key, $tpl['default'], $tpl['label'] . ' — Suivi avis voyageurs']);
+        }
+    }
+} catch (PDOException $e) { /* ignore si colonnes manquantes */ }
+
 // Créer la table si elle n'existe pas
 try {
     $pdo->exec("CREATE TABLE IF NOT EXISTS `avis_voyageurs` (
