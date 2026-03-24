@@ -5,6 +5,61 @@
  */
 include '../config.php';
 include '../pages/menu.php';
+include '../includes/template_helper.php';
+
+// --- Templates SMS pour suivi avis ---
+$sms_avis_templates = [
+    'avis_remerciement' => [
+        'label' => 'Remerciement',
+        'icon' => 'fa-heart',
+        'color' => 'success',
+        'default' => "Bonjour {prenom}, merci d'avoir séjourné chez nous du {date_arrivee} au {date_depart} à {logement}. Nous espérons que tout s'est bien passé ! L'équipe Frenchy Conciergerie"
+    ],
+    'avis_relance' => [
+        'label' => 'Demande d\'avis',
+        'icon' => 'fa-star',
+        'color' => 'warning',
+        'default' => "Bonjour {prenom}, nous espérons que votre séjour à {logement} vous a plu ! Votre avis sur Booking compte beaucoup pour nous. Pourriez-vous prendre 2 min pour laisser un commentaire ? Merci ! Frenchy Conciergerie"
+    ],
+    'avis_amelioration' => [
+        'label' => 'Amélioration',
+        'icon' => 'fa-comments',
+        'color' => 'info',
+        'default' => "Bonjour {prenom}, suite à votre séjour à {logement}, nous aimerions avoir votre retour. Y a-t-il quelque chose que nous pourrions améliorer ? Votre avis nous aide à progresser. Merci ! Frenchy Conciergerie"
+    ],
+    'avis_commercial' => [
+        'label' => 'Offre fidélité',
+        'icon' => 'fa-gift',
+        'color' => 'primary',
+        'default' => "Bonjour {prenom}, merci pour votre séjour à {logement} ! Pour votre prochaine visite, bénéficiez de -10% en réservant directement chez nous. Contactez-nous pour en profiter ! Frenchy Conciergerie"
+    ],
+];
+
+// Charger les templates personnalisés depuis sms_templates si existants
+foreach ($sms_avis_templates as $key => &$tpl) {
+    $custom = get_sms_template($pdo, $key);
+    if ($custom) $tpl['default'] = $custom;
+}
+unset($tpl);
+
+// --- Traitement POST : Envoi SMS suivi avis ---
+$sms_result = null;
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'send_sms_avis') {
+    $resa_id = (int)($_POST['reservation_id'] ?? 0);
+    $sms_message = trim($_POST['sms_message'] ?? '');
+    $sms_receiver = trim($_POST['sms_receiver'] ?? '');
+
+    if ($resa_id && $sms_message && $sms_receiver) {
+        $cleanReceiver = preg_replace('/\s/', '', $sms_receiver);
+        try {
+            $stmt = $pdo->prepare("INSERT INTO sms_outbox (receiver, message, modem, status, reservation_id, created_at) VALUES (?, ?, 'modem1', 'pending', ?, NOW())");
+            $stmt->execute([$cleanReceiver, $sms_message, $resa_id]);
+            $sms_result = ['success' => true, 'prenom' => $_POST['sms_prenom'] ?? ''];
+        } catch (PDOException $e) {
+            $sms_result = ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+}
 
 // Créer la table si elle n'existe pas
 try {
@@ -248,6 +303,31 @@ if ($avis_existants) {
 
 // Logements pour filtre
 $logements = $pdo->query("SELECT id, nom_du_logement FROM liste_logements WHERE actif = 1 ORDER BY nom_du_logement")->fetchAll();
+
+// --- Réservations Booking sans avis (déjà parties, avec téléphone) ---
+$resas_sans_avis = [];
+try {
+    $sql_sans_avis = "SELECT r.id, r.reference, r.prenom, r.nom, r.telephone, r.email,
+                             r.date_arrivee, r.date_depart, r.logement_id, r.plateforme,
+                             l.nom_du_logement,
+                             DATEDIFF(CURDATE(), r.date_depart) AS jours_depuis_depart
+                      FROM reservation r
+                      LEFT JOIN liste_logements l ON r.logement_id = l.id
+                      LEFT JOIN avis_voyageurs av ON av.reservation_id = r.id
+                      WHERE r.date_depart < CURDATE()
+                        AND r.statut = 'confirmée'
+                        AND r.telephone IS NOT NULL AND r.telephone != ''
+                        AND av.id IS NULL";
+    $params_sans_avis = [];
+    if ($filtre_logement) {
+        $sql_sans_avis .= " AND r.logement_id = ?";
+        $params_sans_avis[] = (int)$filtre_logement;
+    }
+    $sql_sans_avis .= " ORDER BY r.date_depart DESC LIMIT 50";
+    $stmt = $pdo->prepare($sql_sans_avis);
+    $stmt->execute($params_sans_avis);
+    $resas_sans_avis = $stmt->fetchAll();
+} catch (PDOException $e) { /* ignore */ }
 ?>
 
 <div class="container-fluid py-4">
@@ -479,6 +559,130 @@ $logements = $pdo->query("SELECT id, nom_du_logement FROM liste_logements WHERE 
         <p>Aucun avis importé. Collez le texte des avis Booking.com ci-dessus pour commencer.</p>
     </div>
     <?php endif; ?>
+
+    <!-- ============================================== -->
+    <!-- RÉSERVATIONS SANS AVIS — RELANCE SMS           -->
+    <!-- ============================================== -->
+    <hr class="my-4">
+    <h3><i class="fas fa-sms text-primary"></i> Réservations sans avis — Relance SMS</h3>
+    <p class="text-muted">Réservations terminées dont les voyageurs n'ont pas encore laissé d'avis. Envoyez un SMS pour les relancer.</p>
+
+    <!-- Résultat envoi SMS -->
+    <?php if ($sms_result !== null): ?>
+    <div class="alert <?= $sms_result['success'] ? 'alert-success' : 'alert-danger' ?> alert-dismissible fade show">
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <?php if ($sms_result['success']): ?>
+            <i class="fas fa-check"></i> SMS envoyé à <strong><?= htmlspecialchars($sms_result['prenom']) ?></strong> — en file d'attente.
+        <?php else: ?>
+            <i class="fas fa-times"></i> Erreur : <?= htmlspecialchars($sms_result['error'] ?? 'Inconnue') ?>
+        <?php endif; ?>
+    </div>
+    <?php endif; ?>
+
+    <?php if ($resas_sans_avis): ?>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Voyageur</th>
+                    <th>Logement</th>
+                    <th>Séjour</th>
+                    <th>Depuis</th>
+                    <th>Téléphone</th>
+                    <th class="text-center">Actions SMS</th>
+                </tr>
+            </thead>
+            <tbody>
+            <?php foreach ($resas_sans_avis as $r): ?>
+                <tr>
+                    <td>
+                        <strong><?= htmlspecialchars($r['prenom']) ?></strong>
+                        <?= htmlspecialchars($r['nom'] ?? '') ?>
+                        <?php if ($r['plateforme']): ?>
+                            <br><small class="text-muted"><?= htmlspecialchars($r['plateforme']) ?></small>
+                        <?php endif; ?>
+                    </td>
+                    <td><?= htmlspecialchars($r['nom_du_logement'] ?? '—') ?></td>
+                    <td>
+                        <small>
+                            <?= date('d/m', strtotime($r['date_arrivee'])) ?> → <?= date('d/m/Y', strtotime($r['date_depart'])) ?>
+                        </small>
+                    </td>
+                    <td>
+                        <span class="badge <?= $r['jours_depuis_depart'] <= 7 ? 'bg-success' : ($r['jours_depuis_depart'] <= 30 ? 'bg-warning' : 'bg-secondary') ?>">
+                            <?= $r['jours_depuis_depart'] ?>j
+                        </span>
+                    </td>
+                    <td><small><?= htmlspecialchars($r['telephone']) ?></small></td>
+                    <td class="text-center">
+                        <div class="btn-group btn-group-sm">
+                            <?php foreach ($sms_avis_templates as $tpl_key => $tpl): ?>
+                                <button type="button" class="btn btn-outline-<?= $tpl['color'] ?>" title="<?= htmlspecialchars($tpl['label']) ?>"
+                                    onclick="ouvrirModalSms(<?= htmlspecialchars(json_encode([
+                                        'reservation_id' => $r['id'],
+                                        'prenom' => $r['prenom'],
+                                        'nom' => $r['nom'] ?? '',
+                                        'telephone' => $r['telephone'],
+                                        'logement' => $r['nom_du_logement'] ?? '',
+                                        'date_arrivee' => $r['date_arrivee'] ? date('d/m/Y', strtotime($r['date_arrivee'])) : '',
+                                        'date_depart' => $r['date_depart'] ? date('d/m/Y', strtotime($r['date_depart'])) : '',
+                                        'template_key' => $tpl_key,
+                                    ])) ?>)">
+                                    <i class="fas <?= $tpl['icon'] ?>"></i>
+                                </button>
+                            <?php endforeach; ?>
+                        </div>
+                    </td>
+                </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+    <?php else: ?>
+    <div class="text-center text-muted py-4">
+        <i class="fas fa-check-circle fa-2x mb-2 text-success"></i>
+        <p>Toutes les réservations terminées ont un avis associé, ou n'ont pas de téléphone.</p>
+    </div>
+    <?php endif; ?>
+</div>
+
+<!-- Modal envoi SMS -->
+<div class="modal fade" id="modalSms" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post">
+                <input type="hidden" name="action" value="send_sms_avis">
+                <input type="hidden" name="reservation_id" id="smsResaId">
+                <input type="hidden" name="sms_receiver" id="smsReceiver">
+                <input type="hidden" name="sms_prenom" id="smsPrenom">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-sms"></i> Envoyer un SMS</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-2">
+                        <strong id="smsDestinataire"></strong>
+                        <small class="text-muted" id="smsNumero"></small>
+                    </div>
+                    <div class="mb-2">
+                        <div class="btn-group btn-group-sm w-100" role="group">
+                            <?php foreach ($sms_avis_templates as $tpl_key => $tpl): ?>
+                                <button type="button" class="btn btn-outline-<?= $tpl['color'] ?> btn-tpl" data-tpl="<?= $tpl_key ?>">
+                                    <i class="fas <?= $tpl['icon'] ?>"></i> <?= htmlspecialchars($tpl['label']) ?>
+                                </button>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                    <textarea name="sms_message" id="smsMessage" class="form-control" rows="5" required></textarea>
+                    <small class="text-muted"><span id="smsCount">0</span> caractères</small>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-paper-plane"></i> Envoyer</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -535,6 +739,52 @@ function esc(str) {
     d.textContent = str;
     return d.innerHTML;
 }
+
+// --- SMS Avis : Modal + Templates ---
+const smsTemplates = <?= json_encode(array_map(fn($t) => $t['default'], $sms_avis_templates)) ?>;
+let currentSmsData = {};
+
+function ouvrirModalSms(data) {
+    currentSmsData = data;
+    document.getElementById('smsResaId').value = data.reservation_id;
+    document.getElementById('smsReceiver').value = data.telephone;
+    document.getElementById('smsPrenom').value = data.prenom;
+    document.getElementById('smsDestinataire').textContent = data.prenom + ' ' + data.nom;
+    document.getElementById('smsNumero').textContent = ' — ' + data.telephone;
+
+    // Appliquer le template demandé
+    appliquerTemplate(data.template_key);
+
+    // Highlight du bouton template actif
+    document.querySelectorAll('.btn-tpl').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tpl === data.template_key);
+    });
+
+    new bootstrap.Modal(document.getElementById('modalSms')).show();
+}
+
+function appliquerTemplate(key) {
+    let msg = smsTemplates[key] || '';
+    msg = msg.replace(/\{prenom\}/g, currentSmsData.prenom || '')
+             .replace(/\{nom\}/g, currentSmsData.nom || '')
+             .replace(/\{logement\}/g, currentSmsData.logement || '')
+             .replace(/\{date_arrivee\}/g, currentSmsData.date_arrivee || '')
+             .replace(/\{date_depart\}/g, currentSmsData.date_depart || '');
+    document.getElementById('smsMessage').value = msg;
+    document.getElementById('smsCount').textContent = msg.length;
+}
+
+document.querySelectorAll('.btn-tpl').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.btn-tpl').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        appliquerTemplate(btn.dataset.tpl);
+    });
+});
+
+document.getElementById('smsMessage')?.addEventListener('input', function() {
+    document.getElementById('smsCount').textContent = this.value.length;
+});
 
 function parserAvisBooking(texte) {
     const lignes = texte.split('\n').map(l => l.trim()).filter(l => l.length > 0);
