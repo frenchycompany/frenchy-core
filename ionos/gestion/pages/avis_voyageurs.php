@@ -53,17 +53,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $resa = $stmt->fetch();
         if ($resa) $match_method = 'reference';
 
-        // 2. Match via ical_reservations.platform_reservation_id
+        // 2. Match via ical_reservations.platform_reservation_id → guest_name → reservation
         if (!$resa) {
-            $stmt = $pdo->prepare("SELECT r.id, r.logement_id
-                FROM ical_reservations ir
-                JOIN reservation r ON r.logement_id = ir.logement_id
-                    AND r.date_arrivee = ir.check_in
-                WHERE ir.platform_reservation_id = ?
-                LIMIT 1");
-            $stmt->execute([$num]);
-            $resa = $stmt->fetch();
-            if ($resa) $match_method = 'ical';
+            try {
+                $stmt = $pdo->prepare("SELECT ir.guest_name, ir.start_date
+                    FROM ical_reservations ir
+                    WHERE ir.platform_reservation_id = ?
+                    LIMIT 1");
+                $stmt->execute([$num]);
+                $ical = $stmt->fetch();
+                if ($ical && $ical['guest_name']) {
+                    // Extraire le prénom du guest_name ical
+                    $ical_prenom = explode(' ', trim($ical['guest_name']))[0];
+                    $stmt2 = $pdo->prepare("SELECT id, logement_id FROM reservation
+                        WHERE LOWER(prenom) = LOWER(?) AND date_arrivee = ?
+                        LIMIT 1");
+                    $stmt2->execute([$ical_prenom, $ical['start_date']]);
+                    $resa = $stmt2->fetch();
+                    if ($resa) $match_method = 'ical';
+                }
+            } catch (PDOException $e) { /* table ical_reservations peut ne pas exister */ }
         }
 
         // 3. Match par prénom du voyageur + date proche de l'avis
@@ -115,12 +124,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['avis_json'])) {
             $resa = $stmt->fetch();
             // 2. Match via ical_reservations
             if (!$resa) {
-                $stmt = $pdo->prepare("SELECT r.id, r.logement_id
-                    FROM ical_reservations ir
-                    JOIN reservation r ON r.logement_id = ir.logement_id AND r.date_arrivee = ir.check_in
-                    WHERE ir.platform_reservation_id = ? LIMIT 1");
-                $stmt->execute([$num]);
-                $resa = $stmt->fetch();
+                try {
+                    $stmt = $pdo->prepare("SELECT guest_name, start_date FROM ical_reservations WHERE platform_reservation_id = ? LIMIT 1");
+                    $stmt->execute([$num]);
+                    $ical = $stmt->fetch();
+                    if ($ical && $ical['guest_name']) {
+                        $ical_prenom = explode(' ', trim($ical['guest_name']))[0];
+                        $stmt2 = $pdo->prepare("SELECT id, logement_id FROM reservation WHERE LOWER(prenom) = LOWER(?) AND date_arrivee = ? LIMIT 1");
+                        $stmt2->execute([$ical_prenom, $ical['start_date']]);
+                        $resa = $stmt2->fetch();
+                    }
+                } catch (PDOException $e) { /* table peut ne pas exister */ }
             }
             if ($resa) {
                 $res_id = $resa['id'];
