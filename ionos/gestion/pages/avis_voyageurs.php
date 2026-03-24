@@ -1,0 +1,561 @@
+<?php
+/**
+ * Avis voyageurs — Import et consultation des avis Booking.com
+ * Coller le texte brut copié depuis Booking → parsing automatique → stockage avec détection doublons
+ */
+include '../config.php';
+include '../pages/menu.php';
+
+// Créer la table si elle n'existe pas
+try {
+    $pdo->exec("CREATE TABLE IF NOT EXISTS `avis_voyageurs` (
+        `id` INT(11) NOT NULL AUTO_INCREMENT,
+        `numero_reservation` VARCHAR(50) NOT NULL,
+        `reservation_id` INT(11) DEFAULT NULL,
+        `logement_id` INT(11) DEFAULT NULL,
+        `nom_voyageur` VARCHAR(100) DEFAULT NULL,
+        `pays_voyageur` VARCHAR(10) DEFAULT NULL,
+        `date_avis` DATE DEFAULT NULL,
+        `note_globale` DECIMAL(3,1) DEFAULT NULL,
+        `note_personnel` DECIMAL(3,1) DEFAULT NULL,
+        `note_proprete` DECIMAL(3,1) DEFAULT NULL,
+        `note_situation` DECIMAL(3,1) DEFAULT NULL,
+        `note_equipements` DECIMAL(3,1) DEFAULT NULL,
+        `note_confort` DECIMAL(3,1) DEFAULT NULL,
+        `note_rapport_qualite_prix` DECIMAL(3,1) DEFAULT NULL,
+        `note_lit` DECIMAL(3,1) DEFAULT NULL,
+        `commentaire_positif` TEXT DEFAULT NULL,
+        `commentaire_negatif` TEXT DEFAULT NULL,
+        `commentaire_general` TEXT DEFAULT NULL,
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (`id`),
+        UNIQUE KEY `uk_numero_reservation` (`numero_reservation`),
+        KEY `idx_reservation_id` (`reservation_id`),
+        KEY `idx_logement_id` (`logement_id`),
+        KEY `idx_date_avis` (`date_avis`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+} catch (PDOException $e) { /* table existe déjà */ }
+
+// --- Traitement POST : sauvegarde des avis parsés ---
+$resultats = [];
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['avis_json'])) {
+    $avis_list = json_decode($_POST['avis_json'], true);
+    if (is_array($avis_list)) {
+        foreach ($avis_list as $avis) {
+            $num = trim($avis['numero_reservation'] ?? '');
+            if (empty($num)) continue;
+
+            // Vérifier doublon
+            $exists = $pdo->prepare("SELECT id FROM avis_voyageurs WHERE numero_reservation = ?");
+            $exists->execute([$num]);
+            if ($exists->fetch()) {
+                $resultats[] = ['num' => $num, 'nom' => $avis['nom_voyageur'] ?? '', 'status' => 'doublon'];
+                continue;
+            }
+
+            // Chercher la réservation correspondante
+            $res_id = null;
+            $log_id = null;
+            $stmt = $pdo->prepare("SELECT id, logement_id FROM reservation WHERE reference = ? LIMIT 1");
+            $stmt->execute([$num]);
+            $resa = $stmt->fetch();
+            if ($resa) {
+                $res_id = $resa['id'];
+                $log_id = $resa['logement_id'];
+            }
+
+            // Parser la date
+            $date_avis = null;
+            if (!empty($avis['date_avis'])) {
+                $date_avis = parseDateFr($avis['date_avis']);
+            }
+
+            // Insérer
+            try {
+                $ins = $pdo->prepare("INSERT INTO avis_voyageurs
+                    (numero_reservation, reservation_id, logement_id, nom_voyageur, pays_voyageur,
+                     date_avis, note_globale, note_personnel, note_proprete, note_situation,
+                     note_equipements, note_confort, note_rapport_qualite_prix, note_lit,
+                     commentaire_positif, commentaire_negatif, commentaire_general)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $ins->execute([
+                    $num, $res_id, $log_id,
+                    $avis['nom_voyageur'] ?? null,
+                    $avis['pays_voyageur'] ?? null,
+                    $date_avis,
+                    parseNote($avis['note_globale'] ?? null),
+                    parseNote($avis['note_personnel'] ?? null),
+                    parseNote($avis['note_proprete'] ?? null),
+                    parseNote($avis['note_situation'] ?? null),
+                    parseNote($avis['note_equipements'] ?? null),
+                    parseNote($avis['note_confort'] ?? null),
+                    parseNote($avis['note_rapport_qualite_prix'] ?? null),
+                    parseNote($avis['note_lit'] ?? null),
+                    $avis['commentaire_positif'] ?? null,
+                    $avis['commentaire_negatif'] ?? null,
+                    $avis['commentaire_general'] ?? null,
+                ]);
+                $resultats[] = ['num' => $num, 'nom' => $avis['nom_voyageur'] ?? '', 'status' => 'ok', 'matched' => $res_id !== null];
+            } catch (PDOException $e) {
+                $resultats[] = ['num' => $num, 'nom' => $avis['nom_voyageur'] ?? '', 'status' => 'erreur', 'msg' => $e->getMessage()];
+            }
+        }
+    }
+}
+
+function parseNote($val) {
+    if ($val === null || $val === '') return null;
+    $val = str_replace(',', '.', trim($val));
+    return is_numeric($val) ? (float)$val : null;
+}
+
+function parseDateFr($str) {
+    $str = trim($str);
+    // Retirer "Nouveau !" et autres suffixes
+    $str = preg_replace('/Nouveau\s*!?\s*$/i', '', $str);
+    $str = trim($str);
+
+    $mois_fr = [
+        'janv.' => '01', 'janvier' => '01',
+        'févr.' => '02', 'février' => '02', 'fevr.' => '02',
+        'mars' => '03',
+        'avr.' => '04', 'avril' => '04',
+        'mai' => '05',
+        'juin' => '06',
+        'juil.' => '07', 'juillet' => '07',
+        'août' => '08', 'aout' => '08',
+        'sept.' => '09', 'septembre' => '09',
+        'oct.' => '10', 'octobre' => '10',
+        'nov.' => '11', 'novembre' => '11',
+        'déc.' => '12', 'décembre' => '12', 'dec.' => '12',
+    ];
+
+    foreach ($mois_fr as $fr => $num) {
+        if (stripos($str, $fr) !== false) {
+            if (preg_match('/(\d{1,2})\s+' . preg_quote($fr, '/') . '\s+(\d{4})/i', $str, $m)) {
+                return sprintf('%04d-%02d-%02d', (int)$m[2], (int)$num, (int)$m[1]);
+            }
+        }
+    }
+    return null;
+}
+
+// --- Charger les avis existants ---
+$filtre_logement = $_GET['logement'] ?? '';
+$avis_existants = [];
+try {
+    $sql = "SELECT a.*, r.prenom AS resa_prenom, r.nom AS resa_nom, r.date_arrivee, r.date_depart, r.plateforme,
+                   l.nom_du_logement
+            FROM avis_voyageurs a
+            LEFT JOIN reservation r ON a.reservation_id = r.id
+            LEFT JOIN liste_logements l ON a.logement_id = l.id";
+    $params = [];
+    if ($filtre_logement) {
+        $sql .= " WHERE a.logement_id = ?";
+        $params[] = (int)$filtre_logement;
+    }
+    $sql .= " ORDER BY a.date_avis DESC, a.created_at DESC";
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+    $avis_existants = $stmt->fetchAll();
+} catch (PDOException $e) { /* ignore */ }
+
+// Stats
+$stats = ['total' => 0, 'moyenne' => 0, 'matched' => 0];
+if ($avis_existants) {
+    $stats['total'] = count($avis_existants);
+    $notes = array_filter(array_column($avis_existants, 'note_globale'));
+    $stats['moyenne'] = $notes ? round(array_sum($notes) / count($notes), 1) : 0;
+    $stats['matched'] = count(array_filter(array_column($avis_existants, 'reservation_id')));
+}
+
+// Logements pour filtre
+$logements = $pdo->query("SELECT id, nom_du_logement FROM liste_logements WHERE actif = 1 ORDER BY nom_du_logement")->fetchAll();
+?>
+
+<div class="container-fluid py-4">
+    <h2><i class="fas fa-star text-warning"></i> Avis voyageurs</h2>
+
+    <!-- Stats -->
+    <?php if ($stats['total'] > 0): ?>
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="mb-0"><?= $stats['total'] ?></h3>
+                    <small class="text-muted">Avis importés</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="mb-0"><?= $stats['moyenne'] ?>/10</h3>
+                    <small class="text-muted">Note moyenne</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="mb-0"><?= $stats['matched'] ?></h3>
+                    <small class="text-muted">Liés à une réservation</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="mb-0"><?= $stats['total'] - $stats['matched'] ?></h3>
+                    <small class="text-muted">Non matchés</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
+
+    <!-- Résultats import -->
+    <?php if ($resultats): ?>
+    <div class="alert alert-info alert-dismissible fade show">
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <strong>Résultat de l'import :</strong>
+        <ul class="mb-0 mt-2">
+        <?php foreach ($resultats as $r): ?>
+            <li>
+                <?php if ($r['status'] === 'ok'): ?>
+                    <i class="fas fa-check text-success"></i> <?= htmlspecialchars($r['nom']) ?> (<?= htmlspecialchars($r['num']) ?>)
+                    <?= $r['matched'] ? '<span class="badge bg-success">Réservation trouvée</span>' : '<span class="badge bg-warning">Réservation non trouvée</span>' ?>
+                <?php elseif ($r['status'] === 'doublon'): ?>
+                    <i class="fas fa-copy text-warning"></i> <?= htmlspecialchars($r['nom']) ?> (<?= htmlspecialchars($r['num']) ?>) — <strong>Doublon ignoré</strong>
+                <?php else: ?>
+                    <i class="fas fa-times text-danger"></i> <?= htmlspecialchars($r['nom']) ?> — Erreur
+                <?php endif; ?>
+            </li>
+        <?php endforeach; ?>
+        </ul>
+    </div>
+    <?php endif; ?>
+
+    <!-- Zone de collage -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span><i class="fas fa-paste"></i> Importer des avis Booking.com</span>
+            <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#importZone">
+                <i class="fas fa-chevron-down"></i>
+            </button>
+        </div>
+        <div class="collapse <?= empty($avis_existants) ? 'show' : '' ?>" id="importZone">
+            <div class="card-body">
+                <p class="text-muted">Copiez-collez le texte brut des avis depuis la page Booking.com. Le système détecte automatiquement chaque avis et ignore les doublons.</p>
+                <textarea id="texteAvis" class="form-control mb-3" rows="8" placeholder="Collez ici le texte copié depuis Booking.com..."></textarea>
+                <button type="button" class="btn btn-primary" id="btnParser" disabled>
+                    <i class="fas fa-magic"></i> Analyser le texte
+                </button>
+
+                <!-- Preview des avis parsés -->
+                <div id="previewAvis" class="mt-3" style="display:none;">
+                    <h5>Avis détectés : <span id="nbAvis" class="badge bg-primary">0</span></h5>
+                    <div id="listePreview"></div>
+                    <form method="post" id="formImport">
+                        <input type="hidden" name="avis_json" id="avisJson">
+                        <button type="submit" class="btn btn-success mt-3">
+                            <i class="fas fa-save"></i> Enregistrer les avis
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtre logement -->
+    <div class="row mb-3">
+        <div class="col-md-4">
+            <select class="form-select" onchange="window.location='?logement='+this.value">
+                <option value="">Tous les logements</option>
+                <?php foreach ($logements as $l): ?>
+                    <option value="<?= $l['id'] ?>" <?= $filtre_logement == $l['id'] ? 'selected' : '' ?>>
+                        <?= htmlspecialchars($l['nom_du_logement']) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+    </div>
+
+    <!-- Liste des avis existants -->
+    <?php if ($avis_existants): ?>
+    <div class="row">
+    <?php foreach ($avis_existants as $a): ?>
+        <div class="col-md-6 col-lg-4 mb-3">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong><?= htmlspecialchars($a['nom_voyageur'] ?? 'Anonyme') ?></strong>
+                        <?php if ($a['pays_voyageur']): ?>
+                            <small class="text-muted">(<?= htmlspecialchars($a['pays_voyageur']) ?>)</small>
+                        <?php endif; ?>
+                    </div>
+                    <span class="badge <?= $a['note_globale'] >= 8 ? 'bg-success' : ($a['note_globale'] >= 6 ? 'bg-warning' : 'bg-danger') ?> fs-6">
+                        <?= number_format($a['note_globale'], 1, ',', '') ?>/10
+                    </span>
+                </div>
+                <div class="card-body">
+                    <!-- Logement + réservation -->
+                    <?php if ($a['nom_du_logement']): ?>
+                        <p class="mb-1"><i class="fas fa-home text-muted"></i> <?= htmlspecialchars($a['nom_du_logement']) ?></p>
+                    <?php endif; ?>
+                    <?php if ($a['reservation_id']): ?>
+                        <p class="mb-1">
+                            <i class="fas fa-link text-success"></i>
+                            <a href="reservation_details.php?id=<?= $a['reservation_id'] ?>">
+                                Résa #<?= htmlspecialchars($a['numero_reservation']) ?>
+                            </a>
+                            <?php if ($a['date_arrivee']): ?>
+                                <small class="text-muted">(<?= date('d/m/Y', strtotime($a['date_arrivee'])) ?> → <?= date('d/m/Y', strtotime($a['date_depart'])) ?>)</small>
+                            <?php endif; ?>
+                        </p>
+                    <?php else: ?>
+                        <p class="mb-1"><i class="fas fa-unlink text-warning"></i> Résa #<?= htmlspecialchars($a['numero_reservation']) ?> <small class="text-muted">(non matchée)</small></p>
+                    <?php endif; ?>
+
+                    <!-- Notes détaillées -->
+                    <div class="row mt-2 small">
+                        <?php
+                        $categories = [
+                            'Personnel' => $a['note_personnel'],
+                            'Propreté' => $a['note_proprete'],
+                            'Situation' => $a['note_situation'],
+                            'Équipements' => $a['note_equipements'],
+                            'Confort' => $a['note_confort'],
+                            'Qualité/Prix' => $a['note_rapport_qualite_prix'],
+                        ];
+                        if ($a['note_lit']) $categories['Lit'] = $a['note_lit'];
+                        foreach ($categories as $cat => $note):
+                            if ($note === null) continue;
+                        ?>
+                            <div class="col-6 mb-1">
+                                <span class="text-muted"><?= $cat ?></span>
+                                <span class="float-end fw-bold <?= $note >= 8 ? 'text-success' : ($note >= 6 ? 'text-warning' : 'text-danger') ?>">
+                                    <?= number_format($note, 1, ',', '') ?>
+                                </span>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+
+                    <!-- Commentaires -->
+                    <?php if ($a['commentaire_general']): ?>
+                        <p class="mt-2 mb-1"><?= nl2br(htmlspecialchars($a['commentaire_general'])) ?></p>
+                    <?php endif; ?>
+                    <?php if ($a['commentaire_positif']): ?>
+                        <p class="mt-2 mb-1 text-success"><i class="fas fa-thumbs-up"></i> <?= nl2br(htmlspecialchars($a['commentaire_positif'])) ?></p>
+                    <?php endif; ?>
+                    <?php if ($a['commentaire_negatif']): ?>
+                        <p class="mb-1 text-danger"><i class="fas fa-thumbs-down"></i> <?= nl2br(htmlspecialchars($a['commentaire_negatif'])) ?></p>
+                    <?php endif; ?>
+                </div>
+                <div class="card-footer text-muted small">
+                    <?php if ($a['date_avis']): ?>
+                        <i class="fas fa-calendar"></i> <?= date('d/m/Y', strtotime($a['date_avis'])) ?>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+    <?php endforeach; ?>
+    </div>
+    <?php elseif (empty($resultats)): ?>
+    <div class="text-center text-muted py-5">
+        <i class="fas fa-star fa-3x mb-3"></i>
+        <p>Aucun avis importé. Collez le texte des avis Booking.com ci-dessus pour commencer.</p>
+    </div>
+    <?php endif; ?>
+</div>
+
+<script>
+const textarea = document.getElementById('texteAvis');
+const btnParser = document.getElementById('btnParser');
+const previewDiv = document.getElementById('previewAvis');
+const listePreview = document.getElementById('listePreview');
+const nbAvisSpan = document.getElementById('nbAvis');
+const avisJsonInput = document.getElementById('avisJson');
+
+textarea.addEventListener('input', () => {
+    btnParser.disabled = textarea.value.trim().length < 20;
+});
+
+btnParser.addEventListener('click', () => {
+    const texte = textarea.value.trim();
+    if (!texte) return;
+
+    const avis = parserAvisBooking(texte);
+    if (avis.length === 0) {
+        alert('Aucun avis détecté dans le texte collé. Vérifiez le format.');
+        return;
+    }
+
+    nbAvisSpan.textContent = avis.length;
+    avisJsonInput.value = JSON.stringify(avis);
+
+    // Afficher la preview
+    listePreview.innerHTML = avis.map((a, i) => `
+        <div class="card mb-2">
+            <div class="card-body py-2 px-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>${esc(a.nom_voyageur)}</strong>
+                        <small class="text-muted">(${esc(a.pays_voyageur)})</small>
+                        — Résa #${esc(a.numero_reservation)}
+                    </div>
+                    <span class="badge ${parseFloat(a.note_globale.replace(',','.')) >= 8 ? 'bg-success' : 'bg-warning'} fs-6">
+                        ${esc(a.note_globale)}/10
+                    </span>
+                </div>
+                <small class="text-muted">${esc(a.date_avis)}</small>
+                ${a.commentaire_general ? `<p class="mb-0 mt-1 small">${esc(a.commentaire_general).substring(0, 150)}${a.commentaire_general.length > 150 ? '...' : ''}</p>` : ''}
+            </div>
+        </div>
+    `).join('');
+
+    previewDiv.style.display = 'block';
+});
+
+function esc(str) {
+    if (!str) return '';
+    const d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+}
+
+function parserAvisBooking(texte) {
+    const lignes = texte.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+    const avis = [];
+    let i = 0;
+
+    while (i < lignes.length) {
+        // Chercher le début d'un avis : une note globale (nombre seul comme "10", "8,0", "9,0")
+        const noteMatch = lignes[i].match(/^(\d{1,2}[,\.]\d)?$|^(\d{1,2})$/);
+        if (!noteMatch) { i++; continue; }
+
+        const noteGlobale = lignes[i];
+        i++;
+        if (i >= lignes.length) break;
+
+        // Ligne suivante = nom, pays (ex: "Laurine, fr")
+        const nomMatch = lignes[i].match(/^(.+),\s*([a-z]{2})$/i);
+        if (!nomMatch) { continue; } // Pas un avis, fausse note
+
+        const nom = nomMatch[1].trim();
+        const pays = nomMatch[2].trim().toLowerCase();
+        i++;
+
+        // Numéro de réservation
+        let numResa = '';
+        if (i < lignes.length) {
+            const resaMatch = lignes[i].match(/Numéro de réservation\s+(\d+)/i);
+            if (resaMatch) {
+                numResa = resaMatch[1];
+                i++;
+            }
+        }
+
+        if (!numResa) continue; // Pas un avis valide sans numéro de réservation
+
+        // Date
+        let dateAvis = '';
+        if (i < lignes.length && !lignes[i].match(/^Catégories/i)) {
+            dateAvis = lignes[i].replace(/Nouveau\s*!?\s*$/i, '').trim();
+            i++;
+        }
+
+        // Parser les catégories
+        const notes = {};
+        const categoriesMap = {
+            'Personnel': 'note_personnel',
+            'Propreté': 'note_proprete',
+            'Situation géographique': 'note_situation',
+            'Équipements': 'note_equipements',
+            'Confort': 'note_confort',
+            'Rapport qualité/prix': 'note_rapport_qualite_prix',
+            'Évaluation du lit': 'note_lit',
+        };
+
+        // Avancer à travers "Catégories principales" et "Catégories supplémentaires"
+        while (i < lignes.length) {
+            const ligne = lignes[i];
+
+            if (ligne.match(/^Catégories (principales|supplémentaires)$/i)) {
+                i++;
+                continue;
+            }
+
+            // Vérifier si c'est un nom de catégorie connu
+            let foundCat = false;
+            for (const [catNom, catKey] of Object.entries(categoriesMap)) {
+                if (ligne === catNom) {
+                    i++;
+                    if (i < lignes.length && lignes[i].match(/^\d{1,2}([,\.]\d)?$/)) {
+                        notes[catKey] = lignes[i];
+                        i++;
+                    }
+                    foundCat = true;
+                    break;
+                }
+            }
+
+            if (!foundCat) break; // Plus de catégories, on est dans les commentaires
+        }
+
+        // Le reste = commentaires jusqu'au prochain avis ou "Répondre" / "__Consulter" / "__Votre réponse"
+        let commentaires = [];
+        while (i < lignes.length) {
+            const ligne = lignes[i];
+
+            // Fin de l'avis ?
+            if (ligne.match(/^Répondre$/i) ||
+                ligne.match(/^__/) ||
+                ligne.match(/^Traduit de/i)) {
+                // "Traduit de..." → skip cette ligne et continuer les commentaires
+                if (ligne.match(/^Traduit de/i)) {
+                    i++;
+                    continue;
+                }
+                i++;
+                break;
+            }
+
+            // Début d'un nouvel avis ? (note seule suivie de nom,pays)
+            if (ligne.match(/^(\d{1,2}[,\.]\d)?$|^(\d{1,2})$/) &&
+                i + 1 < lignes.length &&
+                lignes[i + 1].match(/^.+,\s*[a-z]{2}$/i)) {
+                break; // Ne pas incrémenter i, on le traitera au prochain tour
+            }
+
+            commentaires.push(ligne);
+            i++;
+        }
+
+        // Skip les lignes de réponse
+        while (i < lignes.length && (lignes[i].match(/^__/) || lignes[i].match(/^Répondre$/i))) {
+            i++;
+        }
+
+        avis.push({
+            note_globale: noteGlobale,
+            nom_voyageur: nom,
+            pays_voyageur: pays,
+            numero_reservation: numResa,
+            date_avis: dateAvis,
+            note_personnel: notes.note_personnel || '',
+            note_proprete: notes.note_proprete || '',
+            note_situation: notes.note_situation || '',
+            note_equipements: notes.note_equipements || '',
+            note_confort: notes.note_confort || '',
+            note_rapport_qualite_prix: notes.note_rapport_qualite_prix || '',
+            note_lit: notes.note_lit || '',
+            commentaire_general: commentaires.join('\n').trim(),
+            commentaire_positif: '',
+            commentaire_negatif: '',
+        });
+    }
+
+    return avis;
+}
+</script>

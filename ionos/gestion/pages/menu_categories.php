@@ -45,6 +45,7 @@ if (!isset($menu_categories)) {
                 ['nom' => 'Sync iCal',          'chemin' => 'pages/sync_ical.php',           'icon' => 'fa-sync-alt'],
                 ['nom' => 'Taux d\'occupation', 'chemin' => 'pages/occupation.php',          'icon' => 'fa-chart-pie'],
                 ['nom' => 'Import CSV',         'chemin' => 'pages/import_reservations.php', 'icon' => 'fa-file-import'],
+                ['nom' => 'Avis voyageurs',    'chemin' => 'pages/avis_voyageurs.php',     'icon' => 'fa-star'],
             ]
         ],
         'Communication' => [
