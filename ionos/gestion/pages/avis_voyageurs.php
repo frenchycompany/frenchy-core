@@ -63,6 +63,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
 // --- Seed : créer les templates avis dans sms_templates s'ils n'existent pas ---
 try {
+    // S'assurer que la colonne description existe
+    try {
+        $pdo->exec("ALTER TABLE sms_templates ADD COLUMN `description` VARCHAR(255) DEFAULT NULL");
+    } catch (PDOException $e) { /* colonne existe déjà */ }
+
     foreach ($sms_avis_templates as $key => $tpl) {
         $stmt = $pdo->prepare("SELECT COUNT(*) FROM sms_templates WHERE name = ?");
         $stmt->execute([$key]);
@@ -71,7 +76,12 @@ try {
             $stmt->execute([$key, $tpl['default'], $tpl['label'] . ' — Suivi avis voyageurs']);
         }
     }
-} catch (PDOException $e) { /* ignore si colonnes manquantes */ }
+
+    // Dédoublonnage : garder uniquement le plus récent par name
+    $pdo->exec("DELETE t1 FROM sms_templates t1
+                 INNER JOIN sms_templates t2
+                 ON t1.name = t2.name AND t1.id < t2.id");
+} catch (PDOException $e) { error_log("Seed templates avis: " . $e->getMessage()); }
 
 // Créer la table si elle n'existe pas
 try {
