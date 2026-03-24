@@ -40,29 +40,51 @@ try {
 $rematch_results = null;
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'rematch') {
     $rematch_results = ['matched' => 0, 'already' => 0, 'unmatched' => 0, 'details' => []];
-    $unmatched = $pdo->query("SELECT id, numero_reservation, nom_voyageur FROM avis_voyageurs WHERE reservation_id IS NULL");
+    $unmatched = $pdo->query("SELECT id, numero_reservation, nom_voyageur, date_avis FROM avis_voyageurs WHERE reservation_id IS NULL");
     foreach ($unmatched as $avis) {
         $num = trim($avis['numero_reservation']);
-        // Essayer match exact
+        $nom = trim($avis['nom_voyageur'] ?? '');
+        $resa = null;
+        $match_method = '';
+
+        // 1. Match exact sur reservation.reference
         $stmt = $pdo->prepare("SELECT id, logement_id FROM reservation WHERE reference = ? LIMIT 1");
         $stmt->execute([$num]);
         $resa = $stmt->fetch();
+        if ($resa) $match_method = 'reference';
 
-        // Essayer match partiel (le numéro de résa est contenu dans la référence ou inversement)
+        // 2. Match via ical_reservations.platform_reservation_id
         if (!$resa) {
-            $stmt = $pdo->prepare("SELECT id, logement_id FROM reservation WHERE reference LIKE ? OR ? LIKE CONCAT('%', reference, '%') LIMIT 1");
-            $stmt->execute(['%' . $num . '%', $num]);
+            $stmt = $pdo->prepare("SELECT r.id, r.logement_id
+                FROM ical_reservations ir
+                JOIN reservation r ON r.logement_id = ir.logement_id
+                    AND r.date_arrivee = ir.check_in
+                WHERE ir.platform_reservation_id = ?
+                LIMIT 1");
+            $stmt->execute([$num]);
             $resa = $stmt->fetch();
+            if ($resa) $match_method = 'ical';
+        }
+
+        // 3. Match par prénom du voyageur + date proche de l'avis
+        if (!$resa && $nom !== '' && $avis['date_avis']) {
+            $stmt = $pdo->prepare("SELECT id, logement_id FROM reservation
+                WHERE LOWER(prenom) = LOWER(?)
+                AND date_depart <= ? AND date_depart >= DATE_SUB(?, INTERVAL 30 DAY)
+                ORDER BY date_depart DESC LIMIT 1");
+            $stmt->execute([$nom, $avis['date_avis'], $avis['date_avis']]);
+            $resa = $stmt->fetch();
+            if ($resa) $match_method = 'nom+date';
         }
 
         if ($resa) {
             $upd = $pdo->prepare("UPDATE avis_voyageurs SET reservation_id = ?, logement_id = ? WHERE id = ?");
             $upd->execute([$resa['id'], $resa['logement_id'], $avis['id']]);
             $rematch_results['matched']++;
-            $rematch_results['details'][] = ['nom' => $avis['nom_voyageur'], 'num' => $num, 'status' => 'matched'];
+            $rematch_results['details'][] = ['nom' => $nom, 'num' => $num, 'status' => 'matched', 'method' => $match_method];
         } else {
             $rematch_results['unmatched']++;
-            $rematch_results['details'][] = ['nom' => $avis['nom_voyageur'], 'num' => $num, 'status' => 'unmatched'];
+            $rematch_results['details'][] = ['nom' => $nom, 'num' => $num, 'status' => 'unmatched'];
         }
     }
 }
@@ -87,9 +109,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['avis_json'])) {
             // Chercher la réservation correspondante
             $res_id = null;
             $log_id = null;
+            // 1. Match exact sur reference
             $stmt = $pdo->prepare("SELECT id, logement_id FROM reservation WHERE reference = ? LIMIT 1");
             $stmt->execute([$num]);
             $resa = $stmt->fetch();
+            // 2. Match via ical_reservations
+            if (!$resa) {
+                $stmt = $pdo->prepare("SELECT r.id, r.logement_id
+                    FROM ical_reservations ir
+                    JOIN reservation r ON r.logement_id = ir.logement_id AND r.date_arrivee = ir.check_in
+                    WHERE ir.platform_reservation_id = ? LIMIT 1");
+                $stmt->execute([$num]);
+                $resa = $stmt->fetch();
+            }
             if ($resa) {
                 $res_id = $resa['id'];
                 $log_id = $resa['logement_id'];
@@ -270,6 +302,9 @@ $logements = $pdo->query("SELECT id, nom_du_logement FROM liste_logements WHERE 
                         <i class="fas fa-times text-danger"></i>
                     <?php endif; ?>
                     <?= htmlspecialchars($d['nom'] ?? 'Anonyme') ?> — Résa #<?= htmlspecialchars($d['num']) ?>
+                    <?php if (!empty($d['method'])): ?>
+                        <span class="badge bg-info"><?= htmlspecialchars($d['method']) ?></span>
+                    <?php endif; ?>
                 </li>
             <?php endforeach; ?>
         </ul>
