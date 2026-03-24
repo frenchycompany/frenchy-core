@@ -36,6 +36,37 @@ try {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
 } catch (PDOException $e) { /* table existe déjà */ }
 
+// --- Traitement POST : Re-matcher les avis non liés ---
+$rematch_results = null;
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'rematch') {
+    $rematch_results = ['matched' => 0, 'already' => 0, 'unmatched' => 0, 'details' => []];
+    $unmatched = $pdo->query("SELECT id, numero_reservation, nom_voyageur FROM avis_voyageurs WHERE reservation_id IS NULL");
+    foreach ($unmatched as $avis) {
+        $num = trim($avis['numero_reservation']);
+        // Essayer match exact
+        $stmt = $pdo->prepare("SELECT id, logement_id FROM reservation WHERE reference = ? LIMIT 1");
+        $stmt->execute([$num]);
+        $resa = $stmt->fetch();
+
+        // Essayer match partiel (le numéro de résa est contenu dans la référence ou inversement)
+        if (!$resa) {
+            $stmt = $pdo->prepare("SELECT id, logement_id FROM reservation WHERE reference LIKE ? OR ? LIKE CONCAT('%', reference, '%') LIMIT 1");
+            $stmt->execute(['%' . $num . '%', $num]);
+            $resa = $stmt->fetch();
+        }
+
+        if ($resa) {
+            $upd = $pdo->prepare("UPDATE avis_voyageurs SET reservation_id = ?, logement_id = ? WHERE id = ?");
+            $upd->execute([$resa['id'], $resa['logement_id'], $avis['id']]);
+            $rematch_results['matched']++;
+            $rematch_results['details'][] = ['nom' => $avis['nom_voyageur'], 'num' => $num, 'status' => 'matched'];
+        } else {
+            $rematch_results['unmatched']++;
+            $rematch_results['details'][] = ['nom' => $avis['nom_voyageur'], 'num' => $num, 'status' => 'unmatched'];
+        }
+    }
+}
+
 // --- Traitement POST : sauvegarde des avis parsés ---
 $resultats = [];
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['avis_json'])) {
@@ -208,9 +239,41 @@ $logements = $pdo->query("SELECT id, nom_du_logement FROM liste_logements WHERE 
                 <div class="card-body">
                     <h3 class="mb-0"><?= $stats['total'] - $stats['matched'] ?></h3>
                     <small class="text-muted">Non matchés</small>
+                    <?php if ($stats['total'] - $stats['matched'] > 0): ?>
+                        <form method="post" class="mt-2">
+                            <input type="hidden" name="action" value="rematch">
+                            <button type="submit" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-sync"></i> Re-matcher
+                            </button>
+                        </form>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
+    </div>
+    <?php endif; ?>
+
+    <!-- Résultats re-match -->
+    <?php if ($rematch_results !== null): ?>
+    <div class="alert <?= $rematch_results['matched'] > 0 ? 'alert-success' : 'alert-warning' ?> alert-dismissible fade show">
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <strong>Re-matching terminé :</strong>
+        <?= $rematch_results['matched'] ?> avis associé(s) à une réservation,
+        <?= $rematch_results['unmatched'] ?> toujours non matché(s).
+        <?php if ($rematch_results['details']): ?>
+        <ul class="mb-0 mt-2">
+            <?php foreach ($rematch_results['details'] as $d): ?>
+                <li>
+                    <?php if ($d['status'] === 'matched'): ?>
+                        <i class="fas fa-check text-success"></i>
+                    <?php else: ?>
+                        <i class="fas fa-times text-danger"></i>
+                    <?php endif; ?>
+                    <?= htmlspecialchars($d['nom'] ?? 'Anonyme') ?> — Résa #<?= htmlspecialchars($d['num']) ?>
+                </li>
+            <?php endforeach; ?>
+        </ul>
+        <?php endif; ?>
     </div>
     <?php endif; ?>
 
