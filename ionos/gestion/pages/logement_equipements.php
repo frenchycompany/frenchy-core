@@ -239,26 +239,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Recuperer la liste des logements actifs avec leurs equipements
+// Recuperer la liste des logements actifs
 $logements = [];
 try {
-    $stmt = $pdo->query("
-        SELECT l.id AS id, l.nom_du_logement, le.*
-        FROM liste_logements l
-        LEFT JOIN logement_equipements le ON l.id = le.logement_id
-        WHERE l.actif = 1
-        ORDER BY l.nom_du_logement
-    ");
-    $logements = $stmt->fetchAll(PDO::FETCH_ASSOC);
-} catch (PDOException $e) {
-    $debug_errors[] = 'LIST join: ' . $e->getMessage();
-    // Fallback sans le JOIN si logement_equipements pose problème
+    $stmt = $pdo->query("SELECT id, nom_du_logement FROM liste_logements WHERE actif = 1 ORDER BY nom_du_logement");
+    $baseLogements = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Enrichir avec les données d'équipements
     try {
-        $stmt = $pdo->query("SELECT id, nom_du_logement FROM liste_logements WHERE actif = 1 ORDER BY nom_du_logement");
-        $logements = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    } catch (PDOException $e2) {
-        $debug_errors[] = 'LIST fallback: ' . $e2->getMessage();
+        $equipStmt = $pdo->query("SELECT logement_id, nombre_couchages, code_wifi FROM logement_equipements");
+        $equipMap = [];
+        while ($row = $equipStmt->fetch(PDO::FETCH_ASSOC)) {
+            $equipMap[$row['logement_id']] = $row;
+        }
+        foreach ($baseLogements as $l) {
+            $merged = $l;
+            if (isset($equipMap[$l['id']])) {
+                $merged = array_merge($merged, $equipMap[$l['id']]);
+            }
+            $logements[] = $merged;
+        }
+    } catch (PDOException $e) {
+        $logements = $baseLogements; // table logement_equipements n'existe peut-être pas
     }
+} catch (PDOException $e) {
+    $debug_errors[] = 'LIST: ' . $e->getMessage();
 }
 
 // Recuperer un logement specifique si demande
@@ -266,20 +271,28 @@ $selectedLogement = null;
 if (isset($_GET['id'])) {
     $reqId = intval($_GET['id']);
     try {
-        $stmt = $pdo->prepare("
-            SELECT l.id AS id, l.nom_du_logement, le.*
-            FROM liste_logements l
-            LEFT JOIN logement_equipements le ON l.id = le.logement_id
-            WHERE l.id = ?
-        ");
+        // Récupérer le logement
+        $stmt = $pdo->prepare("SELECT id, nom_du_logement FROM liste_logements WHERE id = ?");
         $stmt->execute([$reqId]);
         $selectedLogement = $stmt->fetch(PDO::FETCH_ASSOC);
-        // Récupérer ville_id séparément (colonne peut ne pas exister)
+
         if ($selectedLogement) {
+            // Récupérer les équipements séparément
             try {
-                $stmt2 = $pdo->prepare("SELECT ville_id FROM liste_logements WHERE id = ?");
+                $stmt2 = $pdo->prepare("SELECT * FROM logement_equipements WHERE logement_id = ?");
                 $stmt2->execute([$reqId]);
-                $selectedLogement['ville_id'] = $stmt2->fetchColumn() ?: null;
+                $equip = $stmt2->fetch(PDO::FETCH_ASSOC);
+                if ($equip) {
+                    unset($equip['id']); // Éviter collision avec l.id
+                    $selectedLogement = array_merge($selectedLogement, $equip);
+                }
+            } catch (PDOException $e) { /* table peut ne pas exister */ }
+
+            // Récupérer ville_id séparément
+            try {
+                $stmt3 = $pdo->prepare("SELECT ville_id FROM liste_logements WHERE id = ?");
+                $stmt3->execute([$reqId]);
+                $selectedLogement['ville_id'] = $stmt3->fetchColumn() ?: null;
             } catch (PDOException $e) {
                 $selectedLogement['ville_id'] = null;
             }
