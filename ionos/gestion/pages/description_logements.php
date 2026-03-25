@@ -54,7 +54,10 @@ try {
 
         // Récupérer les données du logement sélectionné
         fetch('get_description_logement.php?logement_id=' + logementId)
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) throw new Error('Erreur serveur ' + response.status);
+                return response.json();
+            })
             .then(data => {
                 if (data.error) {
                     formFields.innerHTML = '<p class="text-danger">' + data.error + '</p>';
