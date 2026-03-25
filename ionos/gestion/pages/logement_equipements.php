@@ -29,6 +29,101 @@ foreach ($guideColumns as $col) {
     try { $pdo->exec("ALTER TABLE logement_equipements ADD COLUMN $col $colType"); } catch (PDOException $e) { error_log('logement_equipements.php: ' . $e->getMessage()); }
 }
 
+// Créer la table si elle n'existe pas
+try {
+    $pdo->exec("CREATE TABLE IF NOT EXISTS `logement_equipements` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `logement_id` INT NOT NULL,
+        `nombre_couchages` INT DEFAULT 0,
+        `nombre_chambres` INT DEFAULT 0,
+        `nombre_salles_bain` INT DEFAULT 0,
+        `superficie_m2` INT DEFAULT 0,
+        `etage` VARCHAR(50) DEFAULT NULL,
+        `ascenseur` TINYINT(1) DEFAULT 0,
+        `code_wifi` VARCHAR(100) DEFAULT NULL,
+        `nom_wifi` VARCHAR(100) DEFAULT NULL,
+        `code_porte` VARCHAR(100) DEFAULT NULL,
+        `code_boite_cles` VARCHAR(100) DEFAULT NULL,
+        `instructions_arrivee` TEXT DEFAULT NULL,
+        `machine_cafe_type` VARCHAR(50) DEFAULT 'aucune',
+        `machine_cafe_autre` VARCHAR(100) DEFAULT NULL,
+        `bouilloire` TINYINT(1) DEFAULT 0,
+        `grille_pain` TINYINT(1) DEFAULT 0,
+        `micro_ondes` TINYINT(1) DEFAULT 0,
+        `four` TINYINT(1) DEFAULT 0,
+        `plaque_cuisson` TINYINT(1) DEFAULT 0,
+        `plaque_cuisson_type` VARCHAR(50) DEFAULT NULL,
+        `lave_vaisselle` TINYINT(1) DEFAULT 0,
+        `refrigerateur` TINYINT(1) DEFAULT 0,
+        `congelateur` TINYINT(1) DEFAULT 0,
+        `ustensiles_cuisine` TINYINT(1) DEFAULT 0,
+        `machine_laver` TINYINT(1) DEFAULT 0,
+        `seche_linge` TINYINT(1) DEFAULT 0,
+        `fer_repasser` TINYINT(1) DEFAULT 0,
+        `table_repasser` TINYINT(1) DEFAULT 0,
+        `aspirateur` TINYINT(1) DEFAULT 0,
+        `produits_menage` TINYINT(1) DEFAULT 0,
+        `tv` TINYINT(1) DEFAULT 0,
+        `tv_type` VARCHAR(50) DEFAULT NULL,
+        `tv_pouces` INT DEFAULT NULL,
+        `chaines_tv` VARCHAR(255) DEFAULT NULL,
+        `netflix` TINYINT(1) DEFAULT 0,
+        `amazon_prime` TINYINT(1) DEFAULT 0,
+        `disney_plus` TINYINT(1) DEFAULT 0,
+        `enceinte_bluetooth` TINYINT(1) DEFAULT 0,
+        `console_jeux` TINYINT(1) DEFAULT 0,
+        `console_jeux_type` VARCHAR(100) DEFAULT NULL,
+        `livres` TINYINT(1) DEFAULT 0,
+        `jeux_societe` TINYINT(1) DEFAULT 0,
+        `canape` TINYINT(1) DEFAULT 0,
+        `canape_convertible` TINYINT(1) DEFAULT 0,
+        `canape_type` VARCHAR(100) DEFAULT NULL,
+        `table_manger` TINYINT(1) DEFAULT 0,
+        `table_manger_places` INT DEFAULT NULL,
+        `bureau` TINYINT(1) DEFAULT 0,
+        `type_lits` VARCHAR(255) DEFAULT NULL,
+        `linge_lit_fourni` TINYINT(1) DEFAULT 0,
+        `serviettes_fournies` TINYINT(1) DEFAULT 0,
+        `oreillers_supplementaires` TINYINT(1) DEFAULT 0,
+        `couvertures_supplementaires` TINYINT(1) DEFAULT 0,
+        `climatisation` TINYINT(1) DEFAULT 0,
+        `chauffage` TINYINT(1) DEFAULT 0,
+        `chauffage_type` VARCHAR(50) DEFAULT NULL,
+        `ventilateur` TINYINT(1) DEFAULT 0,
+        `baignoire` TINYINT(1) DEFAULT 0,
+        `douche` TINYINT(1) DEFAULT 0,
+        `seche_cheveux` TINYINT(1) DEFAULT 0,
+        `produits_toilette` TINYINT(1) DEFAULT 0,
+        `balcon` TINYINT(1) DEFAULT 0,
+        `terrasse` TINYINT(1) DEFAULT 0,
+        `jardin` TINYINT(1) DEFAULT 0,
+        `parking` TINYINT(1) DEFAULT 0,
+        `parking_type` VARCHAR(100) DEFAULT NULL,
+        `barbecue` TINYINT(1) DEFAULT 0,
+        `salon_jardin` TINYINT(1) DEFAULT 0,
+        `detecteur_fumee` TINYINT(1) DEFAULT 0,
+        `detecteur_co` TINYINT(1) DEFAULT 0,
+        `extincteur` TINYINT(1) DEFAULT 0,
+        `trousse_secours` TINYINT(1) DEFAULT 0,
+        `coffre_fort` TINYINT(1) DEFAULT 0,
+        `lit_bebe` TINYINT(1) DEFAULT 0,
+        `chaise_haute` TINYINT(1) DEFAULT 0,
+        `barriere_securite` TINYINT(1) DEFAULT 0,
+        `jeux_enfants` TINYINT(1) DEFAULT 0,
+        `animaux_acceptes` TINYINT(1) DEFAULT 0,
+        `animaux_conditions` VARCHAR(255) DEFAULT NULL,
+        `fumer_autorise` TINYINT(1) DEFAULT 0,
+        `fetes_autorisees` TINYINT(1) DEFAULT 0,
+        `heure_checkin` VARCHAR(10) DEFAULT NULL,
+        `heure_checkout` VARCHAR(10) DEFAULT NULL,
+        `instructions_depart` TEXT DEFAULT NULL,
+        `infos_quartier` TEXT DEFAULT NULL,
+        `numeros_urgence` TEXT DEFAULT NULL,
+        `notes_supplementaires` TEXT DEFAULT NULL,
+        UNIQUE KEY `unique_logement` (`logement_id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+} catch (PDOException $e) { error_log('logement_equipements.php CREATE: ' . $e->getMessage()); }
+
 // Inserer les logements manquants
 try {
     $pdo->exec("
@@ -144,26 +239,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Recuperer la liste des logements actifs avec leurs equipements
-$stmt = $pdo->query("
-    SELECT l.id, l.nom_du_logement, le.*
-    FROM liste_logements l
-    LEFT JOIN logement_equipements le ON l.id = le.logement_id
-    WHERE l.actif = 1
-    ORDER BY l.nom_du_logement
-");
-$logements = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$logements = [];
+try {
+    $stmt = $pdo->query("
+        SELECT l.id, l.nom_du_logement, le.*
+        FROM liste_logements l
+        LEFT JOIN logement_equipements le ON l.id = le.logement_id
+        WHERE l.actif = 1
+        ORDER BY l.nom_du_logement
+    ");
+    $logements = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    error_log('logement_equipements.php list: ' . $e->getMessage());
+}
 
 // Recuperer un logement specifique si demande
 $selectedLogement = null;
 if (isset($_GET['id'])) {
-    $stmt = $pdo->prepare("
-        SELECT l.id, l.nom_du_logement, l.ville_id, le.*
-        FROM liste_logements l
-        LEFT JOIN logement_equipements le ON l.id = le.logement_id
-        WHERE l.id = ?
-    ");
-    $stmt->execute([intval($_GET['id'])]);
-    $selectedLogement = $stmt->fetch(PDO::FETCH_ASSOC);
+    try {
+        $stmt = $pdo->prepare("
+            SELECT l.id, l.nom_du_logement, l.ville_id, le.*
+            FROM liste_logements l
+            LEFT JOIN logement_equipements le ON l.id = le.logement_id
+            WHERE l.id = ?
+        ");
+        $stmt->execute([intval($_GET['id'])]);
+        $selectedLogement = $stmt->fetch(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        error_log('logement_equipements.php detail: ' . $e->getMessage());
+    }
 }
 
 // Recuperer la liste des villes

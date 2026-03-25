@@ -10,6 +10,19 @@ if (!$logement_id) {
 }
 
 try {
+    // S'assurer que les colonnes NOT NULL problématiques ont un DEFAULT
+    try {
+        $cols = $conn->query("SHOW COLUMNS FROM description_logements")->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($cols as $col) {
+            if ($col['Null'] === 'NO' && $col['Default'] === null && $col['Key'] !== 'PRI' && $col['Field'] !== 'logement_id') {
+                $type = $col['Type'];
+                $default = (stripos($type, 'int') !== false || stripos($type, 'float') !== false || stripos($type, 'decimal') !== false)
+                    ? 'DEFAULT 0' : 'DEFAULT NULL';
+                $conn->exec("ALTER TABLE description_logements MODIFY `{$col['Field']}` {$type} NULL {$default}");
+            }
+        }
+    } catch (PDOException $e) { /* table n'existe peut-être pas */ }
+
     // Créer la table si elle n'existe pas
     $conn->exec("CREATE TABLE IF NOT EXISTS `description_logements` (
         `id` INT(11) NOT NULL AUTO_INCREMENT,
