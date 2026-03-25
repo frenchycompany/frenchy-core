@@ -60,36 +60,6 @@ function handleBonus(PDO $conn, int $planningId, bool $hasBonus, ?int $f1, ?int 
 
 // ---------------------------------------------------------------------
 
-// Auto-rollover : les interventions non réalisées (A Faire / À Vérifier)
-// des jours passés sont automatiquement reportées à aujourd'hui.
-// Exclut les logements qui ont déjà une intervention aujourd'hui.
-$today = date('Y-m-d');
-$rollover_count = 0;
-try {
-    $stmtRollover = $conn->prepare("
-        UPDATE planning p
-        SET p.date = :today,
-            p.note = CONCAT(COALESCE(p.note, ''), ' [Reporté du ', DATE_FORMAT(p.date, '%d/%m'), ']')
-        WHERE p.date < :today2
-          AND p.statut IN ('A Faire', 'À Faire', 'À Vérifier')
-          AND NOT EXISTS (
-              SELECT 1 FROM (SELECT logement_id FROM planning WHERE date = :today3) AS existing
-              WHERE existing.logement_id = p.logement_id
-          )
-    ");
-    $stmtRollover->execute([':today' => $today, ':today2' => $today, ':today3' => $today]);
-    $rollover_count = $stmtRollover->rowCount();
-} catch (PDOException $e) {
-    error_log('planning.php rollover: ' . $e->getMessage());
-}
-if ($rollover_count > 0) {
-    if (!isset($_SESSION['flash_messages'])) $_SESSION['flash_messages'] = [];
-    $_SESSION['flash_messages'][] = [
-        'type' => 'warning',
-        'html' => '<i class="fas fa-exclamation-triangle"></i> ' . $rollover_count . ' intervention(s) non réalisée(s) reportée(s) à aujourd\'hui.'
-    ];
-}
-
 // Filtres de période, de statut et de logement
 $date_debut      = isset($_GET['date_debut']) ? $_GET['date_debut'] : date('Y-m-01');
 $date_fin        = isset($_GET['date_fin']) ? $_GET['date_fin'] : date('Y-m-t');
