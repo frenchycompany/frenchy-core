@@ -40,5 +40,5 @@ try {
     echo json_encode($logement_data);
 } catch (PDOException $e) {
     error_log('get_description_logement.php: ' . $e->getMessage());
-    echo json_encode(['error' => 'Une erreur interne est survenue.']);
+    echo json_encode(['error' => 'Erreur DB: ' . $e->getMessage()]);
 }
