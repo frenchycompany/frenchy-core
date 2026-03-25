@@ -17,19 +17,7 @@ $messageType = '';
 
 // Tables requises : voir db/install_tables.php
 
-// Ajouter les colonnes guide_* si elles n'existent pas encore
-$guideColumns = [
-    'guide_tv', 'guide_canape_convertible', 'guide_plaque_cuisson', 'guide_four',
-    'guide_micro_ondes', 'guide_chauffage', 'guide_climatisation', 'guide_machine_cafe',
-    'guide_machine_laver', 'guide_lave_vaisselle', 'guide_seche_linge',
-    'molotov_tv'
-];
-foreach ($guideColumns as $col) {
-    $colType = str_starts_with($col, 'guide_') ? 'TEXT DEFAULT NULL' : 'TINYINT(1) DEFAULT 0';
-    try { $pdo->exec("ALTER TABLE logement_equipements ADD COLUMN $col $colType"); } catch (PDOException $e) { error_log('logement_equipements.php: ' . $e->getMessage()); }
-}
-
-// Créer la table si elle n'existe pas
+// Créer la table si elle n'existe pas (AVANT les ALTER TABLE)
 try {
     $pdo->exec("CREATE TABLE IF NOT EXISTS `logement_equipements` (
         `id` INT AUTO_INCREMENT PRIMARY KEY,
@@ -123,6 +111,18 @@ try {
         UNIQUE KEY `unique_logement` (`logement_id`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 } catch (PDOException $e) { error_log('logement_equipements.php CREATE: ' . $e->getMessage()); }
+
+// Ajouter les colonnes guide_* si elles n'existent pas encore
+$guideColumns = [
+    'guide_tv', 'guide_canape_convertible', 'guide_plaque_cuisson', 'guide_four',
+    'guide_micro_ondes', 'guide_chauffage', 'guide_climatisation', 'guide_machine_cafe',
+    'guide_machine_laver', 'guide_lave_vaisselle', 'guide_seche_linge',
+    'molotov_tv'
+];
+foreach ($guideColumns as $col) {
+    $colType = str_starts_with($col, 'guide_') ? 'TEXT DEFAULT NULL' : 'TINYINT(1) DEFAULT 0';
+    try { $pdo->exec("ALTER TABLE logement_equipements ADD COLUMN $col $colType"); } catch (PDOException $e) { /* colonne existe déjà */ }
+}
 
 // Inserer les logements manquants
 try {
