@@ -14,6 +14,7 @@ $pdo = $conn;
 
 $message = '';
 $messageType = '';
+$debug_errors = [];
 
 // Tables requises : voir db/install_tables.php
 
@@ -110,7 +111,7 @@ try {
         `notes_supplementaires` TEXT DEFAULT NULL,
         UNIQUE KEY `unique_logement` (`logement_id`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-} catch (PDOException $e) { error_log('logement_equipements.php CREATE: ' . $e->getMessage()); }
+} catch (PDOException $e) { $debug_errors[] = 'CREATE: ' . $e->getMessage(); }
 
 // Ajouter les colonnes guide_* si elles n'existent pas encore
 $guideColumns = [
@@ -130,7 +131,7 @@ try {
         INSERT IGNORE INTO logement_equipements (logement_id)
         SELECT id FROM liste_logements
     ");
-} catch (PDOException $e) { error_log('logement_equipements.php: ' . $e->getMessage()); }
+} catch (PDOException $e) { $debug_errors[] = 'INSERT IGNORE: ' . $e->getMessage(); }
 
 // Ajouter colonne ville_id a liste_logements si elle n'existe pas
 try {
@@ -250,7 +251,7 @@ try {
     ");
     $logements = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
-    error_log('logement_equipements.php list: ' . $e->getMessage());
+    $debug_errors[] = 'LIST: ' . $e->getMessage();
 }
 
 // Recuperer un logement specifique si demande
@@ -266,7 +267,7 @@ if (isset($_GET['id'])) {
         $stmt->execute([intval($_GET['id'])]);
         $selectedLogement = $stmt->fetch(PDO::FETCH_ASSOC);
     } catch (PDOException $e) {
-        error_log('logement_equipements.php detail: ' . $e->getMessage());
+        $debug_errors[] = 'DETAIL: ' . $e->getMessage();
     }
 }
 
@@ -308,6 +309,18 @@ if ($selectedLogement && !empty($selectedLogement['ville_id'])) {
 
 // header loaded via menu.php
 ?>
+
+<!-- Debug erreurs DB -->
+<?php if (!empty($debug_errors)): ?>
+<div class="alert alert-danger">
+    <strong>Erreurs DB détectées :</strong>
+    <ul class="mb-0">
+        <?php foreach ($debug_errors as $err): ?>
+            <li><?= htmlspecialchars($err) ?></li>
+        <?php endforeach; ?>
+    </ul>
+</div>
+<?php endif; ?>
 
 <!-- Header de page -->
 <div class="row mb-4">
