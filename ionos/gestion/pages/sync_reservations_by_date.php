@@ -77,12 +77,17 @@ $needRemote = [
   'date_arrivee' => column_exists($pdoRemote,'reservation','date_arrivee'),
   'date_depart'  => column_exists($pdoRemote,'reservation','date_depart'),
   'statut'       => column_exists($pdoRemote,'reservation','statut'),
-  'nb_adultes'   => column_exists($pdoRemote,'reservation','nb_adultes'),
-  'nb_enfants'   => column_exists($pdoRemote,'reservation','nb_enfants'),
-  'nb_bebes'     => column_exists($pdoRemote,'reservation','nb_bebes'),
 ];
 $missing = array_keys(array_filter($needRemote, fn($ok)=>!$ok));
 if ($missing) jerr(500, 'Colonnes manquantes (REMOTE reservation)', ['missing'=>$missing]);
+
+// Colonnes optionnelles pour le calcul du nombre de personnes
+$remoteHasNbPersonnes = column_exists($pdoRemote,'reservation','nb_adultes')
+                     && column_exists($pdoRemote,'reservation','nb_enfants')
+                     && column_exists($pdoRemote,'reservation','nb_bebes');
+$remoteNbPersExpr = $remoteHasNbPersonnes
+    ? '(COALESCE(r.nb_adultes,0)+COALESCE(r.nb_enfants,0)+COALESCE(r.nb_bebes,0))'
+    : '0';
 
 // côté LOCAL planning : colonnes optionnelles + tokens
 $pl_has_src_id    = column_exists($conn,'planning','source_reservation_id');
@@ -125,7 +130,7 @@ if ($remoteOk) {
         $sqlDeps = "
             SELECT r.id AS resa_id, r.logement_id, DATE(r.date_arrivee) AS date_arrivee,
                    DATE(r.date_depart) AS date_depart,
-                   (COALESCE(r.nb_adultes,0)+COALESCE(r.nb_enfants,0)+COALESCE(r.nb_bebes,0)) AS nb_pers,
+                   {$remoteNbPersExpr} AS nb_pers,
                    GREATEST(DATEDIFF(r.date_depart, r.date_arrivee), 0) AS nb_jours
             FROM reservation r WHERE r.statut = 'confirmée' AND DATE(r.date_depart) = :d
             ORDER BY r.date_depart ASC
@@ -143,7 +148,7 @@ if ($remoteOk) {
         $sqlArrs = "
             SELECT r.id AS resa_id, r.logement_id, DATE(r.date_arrivee) AS date_arrivee,
                    DATE(r.date_depart) AS date_depart,
-                   (COALESCE(r.nb_adultes,0)+COALESCE(r.nb_enfants,0)+COALESCE(r.nb_bebes,0)) AS nb_pers,
+                   {$remoteNbPersExpr} AS nb_pers,
                    GREATEST(DATEDIFF(r.date_depart, r.date_arrivee), 0) AS nb_jours
             FROM reservation r WHERE r.statut = 'confirmée' AND DATE(r.date_arrivee) = :d
             ORDER BY r.date_arrivee ASC
@@ -196,7 +201,7 @@ try {
             r.logement_id AS logement_id,
             DATE(r.date_arrivee) AS date_arrivee,
             DATE(r.date_depart)  AS date_depart,
-            (COALESCE(r.nb_adultes,0) + COALESCE(r.nb_enfants,0) + COALESCE(r.nb_bebes,0)) AS nb_pers,
+            {$remoteNbPersExpr} AS nb_pers,
             GREATEST(DATEDIFF(r.date_depart, r.date_arrivee), 0) AS nb_jours
         FROM reservation r
         WHERE r.statut = 'confirmée'
