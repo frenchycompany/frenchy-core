@@ -243,7 +243,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $logements = [];
 try {
     $stmt = $pdo->query("
-        SELECT l.id, l.nom_du_logement, le.*
+        SELECT l.id AS id, l.nom_du_logement, le.*
         FROM liste_logements l
         LEFT JOIN logement_equipements le ON l.id = le.logement_id
         WHERE l.actif = 1
@@ -265,31 +265,27 @@ try {
 $selectedLogement = null;
 if (isset($_GET['id'])) {
     $reqId = intval($_GET['id']);
-    // D'abord essayer avec ville_id
     try {
         $stmt = $pdo->prepare("
-            SELECT l.id, l.nom_du_logement, l.ville_id, le.*
+            SELECT l.id AS id, l.nom_du_logement, le.*
             FROM liste_logements l
             LEFT JOIN logement_equipements le ON l.id = le.logement_id
             WHERE l.id = ?
         ");
         $stmt->execute([$reqId]);
         $selectedLogement = $stmt->fetch(PDO::FETCH_ASSOC);
-    } catch (PDOException $e) {
-        // ville_id n'existe peut-être pas, essayer sans
-        try {
-            $stmt = $pdo->prepare("
-                SELECT l.id, l.nom_du_logement, le.*
-                FROM liste_logements l
-                LEFT JOIN logement_equipements le ON l.id = le.logement_id
-                WHERE l.id = ?
-            ");
-            $stmt->execute([$reqId]);
-            $selectedLogement = $stmt->fetch(PDO::FETCH_ASSOC);
-            if ($selectedLogement) $selectedLogement['ville_id'] = null;
-        } catch (PDOException $e2) {
-            $debug_errors[] = 'DETAIL fallback: ' . $e2->getMessage();
+        // Récupérer ville_id séparément (colonne peut ne pas exister)
+        if ($selectedLogement) {
+            try {
+                $stmt2 = $pdo->prepare("SELECT ville_id FROM liste_logements WHERE id = ?");
+                $stmt2->execute([$reqId]);
+                $selectedLogement['ville_id'] = $stmt2->fetchColumn() ?: null;
+            } catch (PDOException $e) {
+                $selectedLogement['ville_id'] = null;
+            }
         }
+    } catch (PDOException $e) {
+        $debug_errors[] = 'DETAIL: ' . $e->getMessage();
     }
     if (!$selectedLogement) {
         $debug_errors[] = "Logement ID=$reqId non trouvé (selectedLogement=null)";
