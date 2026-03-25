@@ -251,12 +251,21 @@ try {
     ");
     $logements = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
-    $debug_errors[] = 'LIST: ' . $e->getMessage();
+    $debug_errors[] = 'LIST join: ' . $e->getMessage();
+    // Fallback sans le JOIN si logement_equipements pose problème
+    try {
+        $stmt = $pdo->query("SELECT id, nom_du_logement FROM liste_logements WHERE actif = 1 ORDER BY nom_du_logement");
+        $logements = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e2) {
+        $debug_errors[] = 'LIST fallback: ' . $e2->getMessage();
+    }
 }
 
 // Recuperer un logement specifique si demande
 $selectedLogement = null;
 if (isset($_GET['id'])) {
+    $reqId = intval($_GET['id']);
+    // D'abord essayer avec ville_id
     try {
         $stmt = $pdo->prepare("
             SELECT l.id, l.nom_du_logement, l.ville_id, le.*
@@ -264,10 +273,26 @@ if (isset($_GET['id'])) {
             LEFT JOIN logement_equipements le ON l.id = le.logement_id
             WHERE l.id = ?
         ");
-        $stmt->execute([intval($_GET['id'])]);
+        $stmt->execute([$reqId]);
         $selectedLogement = $stmt->fetch(PDO::FETCH_ASSOC);
     } catch (PDOException $e) {
-        $debug_errors[] = 'DETAIL: ' . $e->getMessage();
+        // ville_id n'existe peut-être pas, essayer sans
+        try {
+            $stmt = $pdo->prepare("
+                SELECT l.id, l.nom_du_logement, le.*
+                FROM liste_logements l
+                LEFT JOIN logement_equipements le ON l.id = le.logement_id
+                WHERE l.id = ?
+            ");
+            $stmt->execute([$reqId]);
+            $selectedLogement = $stmt->fetch(PDO::FETCH_ASSOC);
+            if ($selectedLogement) $selectedLogement['ville_id'] = null;
+        } catch (PDOException $e2) {
+            $debug_errors[] = 'DETAIL fallback: ' . $e2->getMessage();
+        }
+    }
+    if (!$selectedLogement) {
+        $debug_errors[] = "Logement ID=$reqId non trouvé (selectedLogement=null)";
     }
 }
 
