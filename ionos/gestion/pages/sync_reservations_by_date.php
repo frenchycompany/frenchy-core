@@ -64,8 +64,12 @@ function table_exists(PDO $c, string $t): bool {
     catch(Throwable $e){ return false; }
 }
 function column_exists(PDO $c, string $t, string $col): bool {
-    try { $s=$c->prepare("SHOW COLUMNS FROM `$t` LIKE ?"); $s->execute([$col]); $r=(bool)$s->fetch(); $s->closeCursor(); return $r; }
-    catch(Throwable $e){ return false; }
+    try {
+        $s = $c->query("SHOW COLUMNS FROM `$t`");
+        $cols = $s->fetchAll(PDO::FETCH_COLUMN);
+        $s->closeCursor();
+        return in_array($col, $cols);
+    } catch(Throwable $e){ return false; }
 }
 
 // vérif REMOTE
