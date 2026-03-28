@@ -71,15 +71,47 @@ function column_exists(PDO $c, string $t, string $col): bool {
 // vérif REMOTE
 if (!table_exists($pdoRemote, 'reservation')) jerr(500, "Table 'reservation' introuvable sur la base distante.");
 
-$needRemote = [
-  'id'           => column_exists($pdoRemote,'reservation','id'),
-  'logement_id'  => column_exists($pdoRemote,'reservation','logement_id'),
-  'date_arrivee' => column_exists($pdoRemote,'reservation','date_arrivee'),
-  'date_depart'  => column_exists($pdoRemote,'reservation','date_depart'),
-  'statut'       => column_exists($pdoRemote,'reservation','statut'),
-];
-$missing = array_keys(array_filter($needRemote, fn($ok)=>!$ok));
-if ($missing) jerr(500, 'Colonnes manquantes (REMOTE reservation)', ['missing'=>$missing]);
+// Vérifier que la table reservation existe
+if (!table_exists($pdoRemote, 'reservation')) jerr(500, "Table 'reservation' introuvable sur la base distante.");
+
+// Introspection des colonnes disponibles
+$hasId         = column_exists($pdoRemote,'reservation','id');
+$hasLogementId = column_exists($pdoRemote,'reservation','logement_id');
+$hasArrivee    = column_exists($pdoRemote,'reservation','date_arrivee');
+$hasDepart     = column_exists($pdoRemote,'reservation','date_depart');
+$hasStatut     = column_exists($pdoRemote,'reservation','statut');
+
+// Si colonnes essentielles manquantes, log et message clair
+$missing = [];
+if (!$hasId) $missing[] = 'id';
+if (!$hasLogementId) $missing[] = 'logement_id';
+if (!$hasArrivee) $missing[] = 'date_arrivee';
+if (!$hasDepart) $missing[] = 'date_depart';
+if (!$hasStatut) $missing[] = 'statut';
+
+// Vérifier les noms alternatifs courants
+if (!$hasArrivee && column_exists($pdoRemote,'reservation','checkin'))  { $hasArrivee = true; $colArrivee = 'checkin'; } else { $colArrivee = 'date_arrivee'; }
+if (!$hasDepart  && column_exists($pdoRemote,'reservation','checkout')) { $hasDepart  = true; $colDepart  = 'checkout'; } else { $colDepart  = 'date_depart'; }
+if (!$hasStatut  && column_exists($pdoRemote,'reservation','status'))  { $hasStatut  = true; $colStatut  = 'status'; } else { $colStatut  = 'statut'; }
+
+// Recalculer les manquantes après fallback
+$missing = [];
+if (!$hasId) $missing[] = 'id';
+if (!$hasLogementId) $missing[] = 'logement_id';
+if (!$hasArrivee) $missing[] = 'date_arrivee/checkin';
+if (!$hasDepart) $missing[] = 'date_depart/checkout';
+if (!$hasStatut) $missing[] = 'statut/status';
+
+if ($missing) {
+    // Lister les colonnes réellement présentes pour debug
+    $allCols = [];
+    try {
+        $colStmt = $pdoRemote->query("SHOW COLUMNS FROM reservation");
+        $allCols = $colStmt->fetchAll(PDO::FETCH_COLUMN);
+        $colStmt->closeCursor();
+    } catch (Throwable $e) {}
+    jerr(500, 'Colonnes manquantes (REMOTE reservation)', ['missing'=>$missing, 'available'=>$allCols]);
+}
 
 // Colonnes optionnelles pour le calcul du nombre de personnes
 $remoteHasNbPersonnes = column_exists($pdoRemote,'reservation','nb_adultes')
@@ -128,12 +160,12 @@ $sourceLabel = '';
 if ($remoteOk) {
     try {
         $sqlDeps = "
-            SELECT r.id AS resa_id, r.logement_id, DATE(r.date_arrivee) AS date_arrivee,
-                   DATE(r.date_depart) AS date_depart,
+            SELECT r.id AS resa_id, r.logement_id, DATE(r.{$colArrivee}) AS date_arrivee,
+                   DATE(r.{$colDepart}) AS date_depart,
                    {$remoteNbPersExpr} AS nb_pers,
-                   GREATEST(DATEDIFF(r.date_depart, r.date_arrivee), 0) AS nb_jours
-            FROM reservation r WHERE r.statut = 'confirmée' AND DATE(r.date_depart) = :d
-            ORDER BY r.date_depart ASC
+                   GREATEST(DATEDIFF(r.{$colDepart}, r.{$colArrivee}), 0) AS nb_jours
+            FROM reservation r WHERE r.{$colStatut} = 'confirmée' AND DATE(r.{$colDepart}) = :d
+            ORDER BY r.{$colDepart} ASC
         ";
         $stDeps = $pdoRemote->prepare($sqlDeps);
         $stDeps->execute([':d'=>$target]);
@@ -146,12 +178,12 @@ if ($remoteOk) {
 
     try {
         $sqlArrs = "
-            SELECT r.id AS resa_id, r.logement_id, DATE(r.date_arrivee) AS date_arrivee,
-                   DATE(r.date_depart) AS date_depart,
+            SELECT r.id AS resa_id, r.logement_id, DATE(r.{$colArrivee}) AS date_arrivee,
+                   DATE(r.{$colDepart}) AS date_depart,
                    {$remoteNbPersExpr} AS nb_pers,
-                   GREATEST(DATEDIFF(r.date_depart, r.date_arrivee), 0) AS nb_jours
-            FROM reservation r WHERE r.statut = 'confirmée' AND DATE(r.date_arrivee) = :d
-            ORDER BY r.date_arrivee ASC
+                   GREATEST(DATEDIFF(r.{$colDepart}, r.{$colArrivee}), 0) AS nb_jours
+            FROM reservation r WHERE r.{$colStatut} = 'confirmée' AND DATE(r.{$colArrivee}) = :d
+            ORDER BY r.{$colArrivee} ASC
         ";
         $stArrs = $pdoRemote->prepare($sqlArrs);
         $stArrs->execute([':d'=>$target]);
@@ -169,14 +201,14 @@ if ($localHasReservation) {
             SELECT
                 r.id AS resa_id,
                 r.logement_id AS logement_id,
-                DATE(r.date_arrivee) AS date_arrivee,
-                DATE(r.date_depart)  AS date_depart,
+                DATE(r.{$colArrivee}) AS date_arrivee,
+                DATE(r.{$colDepart})  AS date_depart,
                 {$localNbPersExpr} AS nb_pers,
-                GREATEST(DATEDIFF(r.date_depart, r.date_arrivee), 0) AS nb_jours
+                GREATEST(DATEDIFF(r.{$colDepart}, r.{$colArrivee}), 0) AS nb_jours
             FROM reservation r
-            WHERE r.statut = 'confirmée'
-              AND DATE(r.date_depart) = :d
-            ORDER BY r.date_depart ASC
+            WHERE r.{$colStatut} = 'confirmée'
+              AND DATE(r.{$colDepart}) = :d
+            ORDER BY r.{$colDepart} ASC
         ";
         $stLD = $conn->prepare($sqlLocalDeps);
         $stLD->execute([':d' => $target]);
@@ -199,14 +231,14 @@ try {
         SELECT
             r.id AS resa_id,
             r.logement_id AS logement_id,
-            DATE(r.date_arrivee) AS date_arrivee,
-            DATE(r.date_depart)  AS date_depart,
+            DATE(r.{$colArrivee}) AS date_arrivee,
+            DATE(r.{$colDepart})  AS date_depart,
             {$remoteNbPersExpr} AS nb_pers,
-            GREATEST(DATEDIFF(r.date_depart, r.date_arrivee), 0) AS nb_jours
+            GREATEST(DATEDIFF(r.{$colDepart}, r.{$colArrivee}), 0) AS nb_jours
         FROM reservation r
-        WHERE r.statut = 'confirmée'
-          AND DATE(r.date_arrivee) = :d
-        ORDER BY r.date_arrivee ASC
+        WHERE r.{$colStatut} = 'confirmée'
+          AND DATE(r.{$colArrivee}) = :d
+        ORDER BY r.{$colArrivee} ASC
     ";
     $stArrs = $pdoRemote->prepare($sqlArrs);
     $stArrs->execute([':d'=>$target]);
@@ -223,14 +255,14 @@ if ($localHasReservation) {
             SELECT
                 r.id AS resa_id,
                 r.logement_id AS logement_id,
-                DATE(r.date_arrivee) AS date_arrivee,
-                DATE(r.date_depart)  AS date_depart,
+                DATE(r.{$colArrivee}) AS date_arrivee,
+                DATE(r.{$colDepart})  AS date_depart,
                 {$localNbPersExpr} AS nb_pers,
-                GREATEST(DATEDIFF(r.date_depart, r.date_arrivee), 0) AS nb_jours
+                GREATEST(DATEDIFF(r.{$colDepart}, r.{$colArrivee}), 0) AS nb_jours
             FROM reservation r
-            WHERE r.statut = 'confirmée'
-              AND DATE(r.date_arrivee) = :d
-            ORDER BY r.date_arrivee ASC
+            WHERE r.{$colStatut} = 'confirmée'
+              AND DATE(r.{$colArrivee}) = :d
+            ORDER BY r.{$colArrivee} ASC
         ";
         $stLA = $conn->prepare($sqlLocalArrs);
         $stLA->execute([':d' => $target]);
