@@ -881,40 +881,14 @@ $charges = $chargeStmt->fetchAll(PDO::FETCH_ASSOC);
     t.show();
   }
 
-  // Sync du jour
+  // Sync du jour → redirige vers le bouton sync par date (avec date du jour)
   document.addEventListener('DOMContentLoaded', function () {
     const syncBtn = document.getElementById('sync_today_btn');
     if (syncBtn) {
       syncBtn.addEventListener('click', function (e) {
         e.preventDefault();
-        syncBtn.disabled = true;
-        syncBtn.textContent = 'Synchronisation...';
-
-        $.getJSON('sync_reservations_today.php?debug=1')
-          .done(function(resp){
-            if (resp.status === 'success') {
-              showToast(`Synchro du jour OK : ${resp.inserted} créées, ${resp.updated} mises à jour.`);
-              setTimeout(()=> location.reload(), 800);
-            } else {
-              showToast('Erreur synchro : ' + (resp.message || 'Inconnue'), 'error');
-              console.error('SYNC error:', resp);
-            }
-          })
-          .fail(function(xhr){
-            let msg = `Erreur ${xhr.status || ''} pendant la synchro du jour.`;
-            try {
-              const j = JSON.parse(xhr.responseText);
-              if (j && j.message) msg = j.message;
-              if (j && j.ex) console.error('SYNC exception:', j.ex);
-            } catch(e) {
-              console.error('SYNC raw response:', xhr.responseText);
-            }
-            showToast(msg, 'error');
-          })
-          .always(function(){
-            syncBtn.disabled = false;
-            syncBtn.textContent = 'Synchroniser (aujourd\'hui)';
-          });
+        document.getElementById('sync_target_date').value = new Date().toISOString().slice(0,10);
+        document.getElementById('sync_by_date_btn').click();
       });
     }
   });
