@@ -348,20 +348,25 @@ if ($logement_filter > 0) {
     $countQuery .= " AND p.logement_id = ? ";
     $countParams[] = $logement_filter;
 }
+try {
 $countStmt = $conn->prepare($countQuery);
 $countStmt->execute($countParams);
 $totalCount = $countStmt->fetchColumn();
-$totalPages = ceil($totalCount / $limit);
+} catch (PDOException $e) {
+    echo '<div class="alert alert-danger">Erreur count: ' . htmlspecialchars($e->getMessage()) . '</div>';
+    $totalCount = 0;
+}
+$totalPages = max(1, ceil($totalCount / $limit));
 
 $query = "
-    SELECT 
-        p.*, 
+    SELECT
+        p.*,
         l.nom_du_logement,
         c.nom AS conducteur_nom,
         fm1.nom AS femme_de_menage_1_nom,
         fm2.nom AS femme_de_menage_2_nom,
         lav.nom AS laverie_nom
-    FROM planning p 
+    FROM planning p
     JOIN liste_logements l ON p.logement_id = l.id
     LEFT JOIN intervenant c ON p.conducteur = c.id
     LEFT JOIN intervenant fm1 ON p.femme_de_menage_1 = fm1.id
@@ -382,6 +387,7 @@ $query .= " ORDER BY p.date ASC LIMIT ? OFFSET ? ";
 $params[] = $limit;
 $params[] = $offset;
 
+try {
 $stmt = $conn->prepare($query);
 $stmt->bindValue(count($params)-1, $limit, PDO::PARAM_INT);
 $stmt->bindValue(count($params), $offset, PDO::PARAM_INT);
@@ -390,10 +396,21 @@ for ($i = 0; $i < count($params)-2; $i++) {
 }
 $stmt->execute();
 $interventions = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    echo '<div class="alert alert-danger">Erreur interventions: ' . htmlspecialchars($e->getMessage()) . '</div>';
+    $interventions = [];
+}
 
+try {
 $logements = $conn->query("SELECT id, nom_du_logement FROM liste_logements WHERE actif = 1 ORDER BY nom_du_logement")->fetchAll(PDO::FETCH_ASSOC);
 $allLogements = $conn->query("SELECT id, nom_du_logement FROM liste_logements ORDER BY nom_du_logement")->fetchAll(PDO::FETCH_ASSOC);
 $intervenants = $conn->query("SELECT id, nom FROM intervenant WHERE actif = 1 ORDER BY nom")->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    echo '<div class="alert alert-danger">Erreur logements/intervenants: ' . htmlspecialchars($e->getMessage()) . '</div>';
+    $logements = $logements ?? [];
+    $allLogements = $allLogements ?? [];
+    $intervenants = $intervenants ?? [];
+}
 
 // Compteur de charge par intervenant sur la période
 $chargeQuery = "
@@ -408,9 +425,14 @@ $chargeQuery = "
     GROUP BY i.id, i.nom
     ORDER BY nb_total DESC
 ";
+try {
 $chargeStmt = $conn->prepare($chargeQuery);
 $chargeStmt->execute([$date_debut, $date_fin]);
 $charges = $chargeStmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    echo '<div class="alert alert-danger">Erreur charges: ' . htmlspecialchars($e->getMessage()) . '</div>';
+    $charges = [];
+}
 ?>
 
 <!DOCTYPE html>
