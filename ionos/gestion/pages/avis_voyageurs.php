@@ -42,9 +42,64 @@ foreach ($sms_avis_templates as $key => &$tpl) {
 }
 unset($tpl);
 
-// --- Traitement POST : Envoi SMS suivi avis ---
-$sms_result = null;
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'send_sms_avis') {
+// --- Traitement POST ---
+$flash = null;
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+    $action = $_POST['action'];
+
+    // Suppression d'un avis
+    if ($action === 'delete_avis') {
+        $avis_id = (int)($_POST['avis_id'] ?? 0);
+        if ($avis_id) {
+            try {
+                $pdo->prepare("DELETE FROM avis_voyageurs WHERE id = ?")->execute([$avis_id]);
+                $flash = ['type' => 'success', 'msg' => 'Avis supprimé.'];
+            } catch (PDOException $e) {
+                $flash = ['type' => 'danger', 'msg' => 'Erreur suppression : ' . $e->getMessage()];
+            }
+        }
+    }
+
+    // Attribution manuelle d'une réservation
+    if ($action === 'link_reservation') {
+        $avis_id = (int)($_POST['avis_id'] ?? 0);
+        $resa_id = (int)($_POST['reservation_id'] ?? 0);
+        if ($avis_id && $resa_id) {
+            try {
+                // Récupérer le logement_id de la réservation
+                $stmt = $pdo->prepare("SELECT logement_id FROM reservation WHERE id = ?");
+                $stmt->execute([$resa_id]);
+                $logId = $stmt->fetchColumn();
+                $pdo->prepare("UPDATE avis_voyageurs SET reservation_id = ?, logement_id = ? WHERE id = ?")->execute([$resa_id, $logId ?: null, $avis_id]);
+                $flash = ['type' => 'success', 'msg' => 'Réservation associée.'];
+            } catch (PDOException $e) {
+                $flash = ['type' => 'danger', 'msg' => 'Erreur : ' . $e->getMessage()];
+            }
+        }
+    }
+
+    // Créer une fiche client depuis un avis
+    if ($action === 'create_client') {
+        $nom = trim($_POST['client_nom'] ?? '');
+        $prenom = trim($_POST['client_prenom'] ?? '');
+        $telephone = trim($_POST['client_telephone'] ?? '');
+        $email = trim($_POST['client_email'] ?? '');
+        $avis_id = (int)($_POST['avis_id'] ?? 0);
+        if ($prenom && $telephone) {
+            try {
+                $stmt = $pdo->prepare("INSERT INTO client (prenom, nom, telephone, email) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE nom = VALUES(nom), email = VALUES(email)");
+                $stmt->execute([$prenom, $nom, $telephone, $email]);
+                $flash = ['type' => 'success', 'msg' => "Fiche client créée pour $prenom $nom."];
+            } catch (PDOException $e) {
+                $flash = ['type' => 'danger', 'msg' => 'Erreur : ' . $e->getMessage()];
+            }
+        } else {
+            $flash = ['type' => 'warning', 'msg' => 'Prénom et téléphone obligatoires.'];
+        }
+    }
+
+    // Envoi SMS suivi avis
+    if ($action === 'send_sms_avis') {
     $resa_id = (int)($_POST['reservation_id'] ?? 0);
     $sms_message = trim($_POST['sms_message'] ?? '');
     $sms_receiver = trim($_POST['sms_receiver'] ?? '');
@@ -54,10 +109,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         try {
             $stmt = $pdo->prepare("INSERT INTO sms_outbox (receiver, message, modem, status, reservation_id, created_at) VALUES (?, ?, 'modem1', 'pending', ?, NOW())");
             $stmt->execute([$cleanReceiver, $sms_message, $resa_id]);
-            $sms_result = ['success' => true, 'prenom' => $_POST['sms_prenom'] ?? ''];
+            $flash = ['type' => 'success', 'msg' => 'SMS envoyé à ' . ($_POST['sms_prenom'] ?? '') . '.'];
         } catch (PDOException $e) {
-            $sms_result = ['success' => false, 'error' => $e->getMessage()];
+            $flash = ['type' => 'danger', 'msg' => 'Erreur SMS : ' . $e->getMessage()];
         }
+    }
     }
 }
 
@@ -327,6 +383,12 @@ if ($avis_existants) {
 // Logements pour filtre
 $logements = $pdo->query("SELECT id, nom_du_logement FROM liste_logements WHERE actif = 1 ORDER BY nom_du_logement")->fetchAll();
 
+// Réservations récentes pour attribution manuelle
+$reservations_recentes = [];
+try {
+    $reservations_recentes = $pdo->query("SELECT id, reference, prenom, nom, date_arrivee, date_depart, logement_id FROM reservation ORDER BY date_depart DESC LIMIT 200")->fetchAll();
+} catch (PDOException $e) { /* ignore */ }
+
 // --- Réservations Booking sans avis (déjà parties, avec téléphone) ---
 $resas_sans_avis = [];
 try {
@@ -355,6 +417,14 @@ try {
 
 <div class="container-fluid py-4">
     <h2><i class="fas fa-star text-warning"></i> Avis voyageurs</h2>
+
+    <!-- Flash message -->
+    <?php if ($flash): ?>
+    <div class="alert alert-<?= $flash['type'] ?> alert-dismissible fade show">
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <?= htmlspecialchars($flash['msg']) ?>
+    </div>
+    <?php endif; ?>
 
     <!-- Stats -->
     <?php if ($stats['total'] > 0): ?>
@@ -567,31 +637,61 @@ try {
                         <p class="mb-1 text-danger"><i class="fas fa-thumbs-down"></i> <?= nl2br(htmlspecialchars($a['commentaire_negatif'])) ?></p>
                     <?php endif; ?>
                 </div>
-                <div class="card-footer d-flex justify-content-between align-items-center small">
-                    <span class="text-muted">
-                        <?php if ($a['date_avis']): ?>
-                            <i class="fas fa-calendar"></i> <?= date('d/m/Y', strtotime($a['date_avis'])) ?>
-                        <?php endif; ?>
-                    </span>
-                    <?php if (!empty($a['resa_telephone']) && $a['reservation_id']): ?>
-                    <div class="btn-group btn-group-sm">
-                        <?php foreach ($sms_avis_templates as $tpl_key => $tpl): ?>
-                            <button type="button" class="btn btn-outline-<?= $tpl['color'] ?> btn-sm py-0" title="<?= htmlspecialchars($tpl['label']) ?>"
-                                onclick="ouvrirModalSms(<?= htmlspecialchars(json_encode([
-                                    'reservation_id' => $a['reservation_id'],
-                                    'prenom' => $a['resa_prenom'] ?? $a['nom_voyageur'] ?? '',
-                                    'nom' => $a['resa_nom'] ?? '',
-                                    'telephone' => $a['resa_telephone'],
-                                    'logement' => $a['nom_du_logement'] ?? '',
-                                    'date_arrivee' => $a['date_arrivee'] ? date('d/m/Y', strtotime($a['date_arrivee'])) : '',
-                                    'date_depart' => $a['date_depart'] ? date('d/m/Y', strtotime($a['date_depart'])) : '',
-                                    'template_key' => $tpl_key,
-                                ])) ?>)">
-                                <i class="fas <?= $tpl['icon'] ?>"></i>
-                            </button>
-                        <?php endforeach; ?>
+                <div class="card-footer small">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="text-muted">
+                            <?php if ($a['date_avis']): ?>
+                                <i class="fas fa-calendar"></i> <?= date('d/m/Y', strtotime($a['date_avis'])) ?>
+                            <?php endif; ?>
+                        </span>
+                        <div class="btn-group btn-group-sm">
+                            <?php if (!empty($a['resa_telephone']) && $a['reservation_id']): ?>
+                                <?php foreach ($sms_avis_templates as $tpl_key => $tpl): ?>
+                                    <button type="button" class="btn btn-outline-<?= $tpl['color'] ?> btn-sm py-0" title="<?= htmlspecialchars($tpl['label']) ?>"
+                                        onclick="ouvrirModalSms(<?= htmlspecialchars(json_encode([
+                                            'reservation_id' => $a['reservation_id'],
+                                            'prenom' => $a['resa_prenom'] ?? $a['nom_voyageur'] ?? '',
+                                            'nom' => $a['resa_nom'] ?? '',
+                                            'telephone' => $a['resa_telephone'],
+                                            'logement' => $a['nom_du_logement'] ?? '',
+                                            'date_arrivee' => $a['date_arrivee'] ? date('d/m/Y', strtotime($a['date_arrivee'])) : '',
+                                            'date_depart' => $a['date_depart'] ? date('d/m/Y', strtotime($a['date_depart'])) : '',
+                                            'template_key' => $tpl_key,
+                                        ])) ?>)">
+                                        <i class="fas <?= $tpl['icon'] ?>"></i>
+                                    </button>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </div>
                     </div>
-                    <?php endif; ?>
+                    <div class="d-flex gap-1">
+                        <!-- Attribuer réservation -->
+                        <?php if (!$a['reservation_id']): ?>
+                        <button type="button" class="btn btn-outline-primary btn-sm py-0" title="Attribuer une réservation"
+                            onclick="ouvrirModalLinkResa(<?= $a['id'] ?>, <?= htmlspecialchars(json_encode($a['nom_voyageur'] ?? '')) ?>)">
+                            <i class="fas fa-link"></i> Résa
+                        </button>
+                        <?php endif; ?>
+                        <!-- Créer fiche client -->
+                        <button type="button" class="btn btn-outline-info btn-sm py-0" title="Créer fiche client"
+                            onclick="ouvrirModalClient(<?= htmlspecialchars(json_encode([
+                                'avis_id' => $a['id'],
+                                'prenom' => $a['resa_prenom'] ?? $a['nom_voyageur'] ?? '',
+                                'nom' => $a['resa_nom'] ?? '',
+                                'telephone' => $a['resa_telephone'] ?? '',
+                                'email' => '',
+                            ])) ?>)">
+                            <i class="fas fa-user-plus"></i>
+                        </button>
+                        <!-- Supprimer -->
+                        <form method="post" class="d-inline" onsubmit="return confirm('Supprimer cet avis ?')">
+                            <input type="hidden" name="action" value="delete_avis">
+                            <input type="hidden" name="avis_id" value="<?= $a['id'] ?>">
+                            <button type="submit" class="btn btn-outline-danger btn-sm py-0" title="Supprimer">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
@@ -610,18 +710,6 @@ try {
     <hr class="my-4">
     <h3><i class="fas fa-sms text-primary"></i> Réservations sans avis — Relance SMS</h3>
     <p class="text-muted">Réservations terminées dont les voyageurs n'ont pas encore laissé d'avis. Envoyez un SMS pour les relancer.</p>
-
-    <!-- Résultat envoi SMS -->
-    <?php if ($sms_result !== null): ?>
-    <div class="alert <?= $sms_result['success'] ? 'alert-success' : 'alert-danger' ?> alert-dismissible fade show">
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        <?php if ($sms_result['success']): ?>
-            <i class="fas fa-check"></i> SMS envoyé à <strong><?= htmlspecialchars($sms_result['prenom']) ?></strong> — en file d'attente.
-        <?php else: ?>
-            <i class="fas fa-times"></i> Erreur : <?= htmlspecialchars($sms_result['error'] ?? 'Inconnue') ?>
-        <?php endif; ?>
-    </div>
-    <?php endif; ?>
 
     <?php if ($resas_sans_avis): ?>
     <div class="table-responsive">
@@ -688,6 +776,78 @@ try {
         <p>Toutes les réservations terminées ont un avis associé, ou n'ont pas de téléphone.</p>
     </div>
     <?php endif; ?>
+</div>
+
+<!-- Modal attribution réservation -->
+<div class="modal fade" id="modalLinkResa" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post">
+                <input type="hidden" name="action" value="link_reservation">
+                <input type="hidden" name="avis_id" id="linkResaAvisId">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-link"></i> Attribuer une réservation</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Avis de <strong id="linkResaNom"></strong></p>
+                    <div class="mb-3">
+                        <label class="form-label">Réservation</label>
+                        <select name="reservation_id" class="form-select" id="linkResaSelect" required>
+                            <option value="">-- Choisir une réservation --</option>
+                            <?php foreach ($reservations_recentes as $rr): ?>
+                                <option value="<?= $rr['id'] ?>">
+                                    #<?= htmlspecialchars($rr['reference'] ?? $rr['id']) ?> — <?= htmlspecialchars($rr['prenom'] . ' ' . ($rr['nom'] ?? '')) ?> (<?= $rr['date_arrivee'] ? date('d/m/Y', strtotime($rr['date_arrivee'])) : '?' ?> → <?= $rr['date_depart'] ? date('d/m/Y', strtotime($rr['date_depart'])) : '?' ?>)
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-link"></i> Associer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal création fiche client -->
+<div class="modal fade" id="modalClient" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post">
+                <input type="hidden" name="action" value="create_client">
+                <input type="hidden" name="avis_id" id="clientAvisId">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-user-plus"></i> Créer fiche client</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Prénom <span class="text-danger">*</span></label>
+                        <input type="text" name="client_prenom" id="clientPrenom" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Nom</label>
+                        <input type="text" name="client_nom" id="clientNom" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Téléphone <span class="text-danger">*</span></label>
+                        <input type="text" name="client_telephone" id="clientTelephone" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" name="client_email" id="clientEmail" class="form-control">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-info"><i class="fas fa-user-plus"></i> Créer</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 
 <!-- Modal envoi SMS -->
@@ -829,6 +989,24 @@ document.querySelectorAll('.btn-tpl').forEach(btn => {
 document.getElementById('smsMessage')?.addEventListener('input', function() {
     document.getElementById('smsCount').textContent = this.value.length;
 });
+
+// --- Attribution réservation ---
+function ouvrirModalLinkResa(avisId, nomVoyageur) {
+    document.getElementById('linkResaAvisId').value = avisId;
+    document.getElementById('linkResaNom').textContent = nomVoyageur || 'Anonyme';
+    document.getElementById('linkResaSelect').value = '';
+    new bootstrap.Modal(document.getElementById('modalLinkResa')).show();
+}
+
+// --- Création fiche client ---
+function ouvrirModalClient(data) {
+    document.getElementById('clientAvisId').value = data.avis_id || '';
+    document.getElementById('clientPrenom').value = data.prenom || '';
+    document.getElementById('clientNom').value = data.nom || '';
+    document.getElementById('clientTelephone').value = data.telephone || '';
+    document.getElementById('clientEmail').value = data.email || '';
+    new bootstrap.Modal(document.getElementById('modalClient')).show();
+}
 
 function parserAvisBooking(texte) {
     const lignes = texte.split('\n').map(l => l.trim()).filter(l => l.length > 0);
