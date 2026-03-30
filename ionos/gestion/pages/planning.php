@@ -512,8 +512,10 @@ $charges = $chargeStmt->fetchAll(PDO::FETCH_ASSOC);
                 <?php endif; ?>
             </div>
         </div>
+        <div class="row"><div class="col-12"><p style="color:red;font-weight:bold;font-size:20px;">>>> DEBUG INSIDE FORM: <?= count($interventions) ?> interventions, is_admin=<?= var_export($is_admin,true) ?> <<<</p></div></div>
     </form>
 
+    <h1 style="color:red;font-size:40px;">PLANNING DEBUG TEST</h1>
     <div class="alert alert-warning"><strong>DEBUG:</strong> is_admin=<?= var_export($is_admin, true) ?>, interventions=<?= count($interventions) ?>, logements=<?= count($logements) ?>, charges=<?= count($charges) ?></div>
 
     <?php if ($is_admin): ?>
