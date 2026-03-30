@@ -514,6 +514,8 @@ $charges = $chargeStmt->fetchAll(PDO::FETCH_ASSOC);
         </div>
     </form>
 
+    <div class="alert alert-warning"><strong>DEBUG:</strong> is_admin=<?= var_export($is_admin, true) ?>, interventions=<?= count($interventions) ?>, logements=<?= count($logements) ?>, charges=<?= count($charges) ?></div>
+
     <?php if ($is_admin): ?>
     <div class="mb-3">
         <h4>Modification en masse</h4>
