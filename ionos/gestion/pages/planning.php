@@ -481,11 +481,14 @@ $charges = $chargeStmt->fetchAll(PDO::FETCH_ASSOC);
                     <i class="fas fa-file-csv"></i>
                 </a>
                 <?php if ($is_admin): ?>
-                <button type="button" id="sync_today_btn" style="display:none"></button>
-                <div class="input-group">
-                  <input type="date" id="sync_target_date" class="form-control" value="<?= htmlspecialchars(date(‘Y-m-d’)) ?>">
+                <button type="button" id="sync_today_btn" class="btn btn-outline-secondary w-50">
+                    Synchroniser (aujourd’hui)
+                </button>
+
+                <div class="input-group mt-2">
+                  <input type="date" id="sync_target_date" class="form-control" value="<?= htmlspecialchars(date('Y-m-d')) ?>">
                   <button type="button" id="sync_by_date_btn" class="btn btn-outline-secondary">
-                    <i class="fas fa-sync"></i> Sync
+                    Synchroniser (date)
                   </button>
                 </div>
                 <?php endif; ?>
