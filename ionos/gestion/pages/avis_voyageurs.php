@@ -564,6 +564,89 @@ try {
     </div>
     <?php endif; ?>
 
+    <!-- ============================================== -->
+    <!-- RÉSERVATIONS SANS AVIS — RELANCE SMS (30 jours) -->
+    <!-- ============================================== -->
+    <?php if ($resas_sans_avis): ?>
+    <div class="card mb-4 border-primary">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <span><i class="fas fa-sms"></i> Relance SMS — Sans avis (30 derniers jours)</span>
+            <span class="badge bg-light text-primary"><?= count($resas_sans_avis) ?> voyageur(s)</span>
+        </div>
+        <div class="card-body p-0">
+            <form method="post" id="formBulkSms">
+                <input type="hidden" name="action" value="send_bulk_sms">
+                <div class="p-2 bg-light border-bottom d-flex align-items-center gap-3 flex-wrap">
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" id="bulkSelectAll" onchange="toggleBulkAll(this)">
+                        <label class="form-check-label fw-bold" for="bulkSelectAll">Tout sélectionner</label>
+                    </div>
+                    <span class="text-muted" id="bulkCount">0 sélectionné(s)</span>
+                    <select name="bulk_template" class="form-select form-select-sm" style="width:auto">
+                        <?php foreach ($sms_avis_templates as $tpl_key => $tpl): ?>
+                            <option value="<?= $tpl_key ?>" <?= $tpl_key === 'avis_relance' ? 'selected' : '' ?>>
+                                <?= htmlspecialchars($tpl['label']) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <button type="submit" class="btn btn-primary btn-sm" id="btnBulkSend" disabled onclick="return confirm('Envoyer un SMS à tous les voyageurs sélectionnés ?')">
+                        <i class="fas fa-paper-plane"></i> Relancer la sélection
+                    </button>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width:40px"></th>
+                                <th>Voyageur</th>
+                                <th>Logement</th>
+                                <th>Séjour</th>
+                                <th>Depuis</th>
+                                <th>Téléphone</th>
+                                <th class="text-center">SMS</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        <?php foreach ($resas_sans_avis as $r): ?>
+                            <tr>
+                                <td><input type="checkbox" class="form-check-input bulk-check" name="bulk_resa_ids[]" value="<?= $r['id'] ?>" onchange="updateBulkCount()"></td>
+                                <td>
+                                    <strong><?= htmlspecialchars($r['prenom']) ?></strong> <?= htmlspecialchars($r['nom'] ?? '') ?>
+                                    <?php if ($r['plateforme']): ?><br><small class="text-muted"><?= htmlspecialchars($r['plateforme']) ?></small><?php endif; ?>
+                                </td>
+                                <td><?= htmlspecialchars($r['nom_du_logement'] ?? '—') ?></td>
+                                <td><small><?= date('d/m', strtotime($r['date_arrivee'])) ?> → <?= date('d/m/Y', strtotime($r['date_depart'])) ?></small></td>
+                                <td><span class="badge <?= $r['jours_depuis_depart'] <= 7 ? 'bg-success' : ($r['jours_depuis_depart'] <= 14 ? 'bg-warning' : 'bg-secondary') ?>"><?= $r['jours_depuis_depart'] ?>j</span></td>
+                                <td><small><?= htmlspecialchars($r['telephone']) ?></small></td>
+                                <td class="text-center">
+                                    <div class="btn-group btn-group-sm">
+                                        <?php foreach ($sms_avis_templates as $tpl_key => $tpl): ?>
+                                            <button type="button" class="btn btn-outline-<?= $tpl['color'] ?>" title="<?= htmlspecialchars($tpl['label']) ?>"
+                                                onclick="ouvrirModalSms(<?= htmlspecialchars(json_encode([
+                                                    'reservation_id' => $r['id'],
+                                                    'prenom' => $r['prenom'],
+                                                    'nom' => $r['nom'] ?? '',
+                                                    'telephone' => $r['telephone'],
+                                                    'logement' => $r['nom_du_logement'] ?? '',
+                                                    'date_arrivee' => $r['date_arrivee'] ? date('d/m/Y', strtotime($r['date_arrivee'])) : '',
+                                                    'date_depart' => $r['date_depart'] ? date('d/m/Y', strtotime($r['date_depart'])) : '',
+                                                    'template_key' => $tpl_key,
+                                                ])) ?>)">
+                                                <i class="fas <?= $tpl['icon'] ?>"></i>
+                                            </button>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </form>
+        </div>
+    </div>
+    <?php endif; ?>
+
     <!-- Zone de collage -->
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
@@ -744,109 +827,6 @@ try {
     <div class="text-center text-muted py-5">
         <i class="fas fa-star fa-3x mb-3"></i>
         <p>Aucun avis importé. Collez le texte des avis Booking.com ci-dessus pour commencer.</p>
-    </div>
-    <?php endif; ?>
-
-    <!-- ============================================== -->
-    <!-- RÉSERVATIONS SANS AVIS — RELANCE SMS (30 jours) -->
-    <!-- ============================================== -->
-    <hr class="my-4">
-    <h3><i class="fas fa-sms text-primary"></i> Relance SMS — Sans avis (30 derniers jours)</h3>
-    <p class="text-muted">Réservations terminées dans les 30 derniers jours dont les voyageurs n'ont pas laissé d'avis. Sélectionnez et relancez en un clic.</p>
-
-    <?php if ($resas_sans_avis): ?>
-    <form method="post" id="formBulkSms">
-        <input type="hidden" name="action" value="send_bulk_sms">
-
-        <!-- Barre d'actions groupées -->
-        <div class="card mb-3 border-primary">
-            <div class="card-body py-2 d-flex align-items-center gap-3 flex-wrap">
-                <div class="form-check">
-                    <input type="checkbox" class="form-check-input" id="bulkSelectAll" onchange="toggleBulkAll(this)">
-                    <label class="form-check-label fw-bold" for="bulkSelectAll">Tout sélectionner</label>
-                </div>
-                <span class="text-muted" id="bulkCount">0 sélectionné(s)</span>
-                <select name="bulk_template" class="form-select form-select-sm" style="width:auto">
-                    <?php foreach ($sms_avis_templates as $tpl_key => $tpl): ?>
-                        <option value="<?= $tpl_key ?>" <?= $tpl_key === 'avis_relance' ? 'selected' : '' ?>>
-                            <?= htmlspecialchars($tpl['label']) ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
-                <button type="submit" class="btn btn-primary btn-sm" id="btnBulkSend" disabled onclick="return confirm('Envoyer un SMS à tous les voyageurs sélectionnés ?')">
-                    <i class="fas fa-paper-plane"></i> Relancer la sélection
-                </button>
-                <span class="text-muted small"><?= count($resas_sans_avis) ?> voyageur(s) à relancer</span>
-            </div>
-        </div>
-
-        <div class="table-responsive">
-            <table class="table table-hover align-middle">
-                <thead class="table-light">
-                    <tr>
-                        <th style="width:40px"></th>
-                        <th>Voyageur</th>
-                        <th>Logement</th>
-                        <th>Séjour</th>
-                        <th>Depuis</th>
-                        <th>Téléphone</th>
-                        <th class="text-center">SMS individuel</th>
-                    </tr>
-                </thead>
-                <tbody>
-                <?php foreach ($resas_sans_avis as $r): ?>
-                    <tr>
-                        <td>
-                            <input type="checkbox" class="form-check-input bulk-check" name="bulk_resa_ids[]" value="<?= $r['id'] ?>" onchange="updateBulkCount()">
-                        </td>
-                        <td>
-                            <strong><?= htmlspecialchars($r['prenom']) ?></strong>
-                            <?= htmlspecialchars($r['nom'] ?? '') ?>
-                            <?php if ($r['plateforme']): ?>
-                                <br><small class="text-muted"><?= htmlspecialchars($r['plateforme']) ?></small>
-                            <?php endif; ?>
-                        </td>
-                        <td><?= htmlspecialchars($r['nom_du_logement'] ?? '—') ?></td>
-                        <td>
-                            <small>
-                                <?= date('d/m', strtotime($r['date_arrivee'])) ?> → <?= date('d/m/Y', strtotime($r['date_depart'])) ?>
-                            </small>
-                        </td>
-                        <td>
-                            <span class="badge <?= $r['jours_depuis_depart'] <= 7 ? 'bg-success' : ($r['jours_depuis_depart'] <= 14 ? 'bg-warning' : 'bg-secondary') ?>">
-                                <?= $r['jours_depuis_depart'] ?>j
-                            </span>
-                        </td>
-                        <td><small><?= htmlspecialchars($r['telephone']) ?></small></td>
-                        <td class="text-center">
-                            <div class="btn-group btn-group-sm">
-                                <?php foreach ($sms_avis_templates as $tpl_key => $tpl): ?>
-                                    <button type="button" class="btn btn-outline-<?= $tpl['color'] ?>" title="<?= htmlspecialchars($tpl['label']) ?>"
-                                        onclick="ouvrirModalSms(<?= htmlspecialchars(json_encode([
-                                            'reservation_id' => $r['id'],
-                                            'prenom' => $r['prenom'],
-                                            'nom' => $r['nom'] ?? '',
-                                            'telephone' => $r['telephone'],
-                                            'logement' => $r['nom_du_logement'] ?? '',
-                                            'date_arrivee' => $r['date_arrivee'] ? date('d/m/Y', strtotime($r['date_arrivee'])) : '',
-                                            'date_depart' => $r['date_depart'] ? date('d/m/Y', strtotime($r['date_depart'])) : '',
-                                            'template_key' => $tpl_key,
-                                        ])) ?>)">
-                                        <i class="fas <?= $tpl['icon'] ?>"></i>
-                                    </button>
-                                <?php endforeach; ?>
-                            </div>
-                        </td>
-                    </tr>
-                <?php endforeach; ?>
-                </tbody>
-            </table>
-        </div>
-    </form>
-    <?php else: ?>
-    <div class="text-center text-muted py-4">
-        <i class="fas fa-check-circle fa-2x mb-2 text-success"></i>
-        <p>Aucune réservation sans avis dans les 30 derniers jours.</p>
     </div>
     <?php endif; ?>
 </div>
