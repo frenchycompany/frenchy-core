@@ -348,25 +348,20 @@ if ($logement_filter > 0) {
     $countQuery .= " AND p.logement_id = ? ";
     $countParams[] = $logement_filter;
 }
-try {
 $countStmt = $conn->prepare($countQuery);
 $countStmt->execute($countParams);
 $totalCount = $countStmt->fetchColumn();
-} catch (PDOException $e) {
-    echo '<div class="alert alert-danger">Erreur count: ' . htmlspecialchars($e->getMessage()) . '</div>';
-    $totalCount = 0;
-}
-$totalPages = max(1, ceil($totalCount / $limit));
+$totalPages = ceil($totalCount / $limit);
 
 $query = "
-    SELECT
-        p.*,
+    SELECT 
+        p.*, 
         l.nom_du_logement,
         c.nom AS conducteur_nom,
         fm1.nom AS femme_de_menage_1_nom,
         fm2.nom AS femme_de_menage_2_nom,
         lav.nom AS laverie_nom
-    FROM planning p
+    FROM planning p 
     JOIN liste_logements l ON p.logement_id = l.id
     LEFT JOIN intervenant c ON p.conducteur = c.id
     LEFT JOIN intervenant fm1 ON p.femme_de_menage_1 = fm1.id
@@ -387,7 +382,6 @@ $query .= " ORDER BY p.date ASC LIMIT ? OFFSET ? ";
 $params[] = $limit;
 $params[] = $offset;
 
-try {
 $stmt = $conn->prepare($query);
 $stmt->bindValue(count($params)-1, $limit, PDO::PARAM_INT);
 $stmt->bindValue(count($params), $offset, PDO::PARAM_INT);
@@ -396,21 +390,10 @@ for ($i = 0; $i < count($params)-2; $i++) {
 }
 $stmt->execute();
 $interventions = $stmt->fetchAll(PDO::FETCH_ASSOC);
-} catch (PDOException $e) {
-    echo '<div class="alert alert-danger">Erreur interventions: ' . htmlspecialchars($e->getMessage()) . '</div>';
-    $interventions = [];
-}
 
-try {
 $logements = $conn->query("SELECT id, nom_du_logement FROM liste_logements WHERE actif = 1 ORDER BY nom_du_logement")->fetchAll(PDO::FETCH_ASSOC);
 $allLogements = $conn->query("SELECT id, nom_du_logement FROM liste_logements ORDER BY nom_du_logement")->fetchAll(PDO::FETCH_ASSOC);
 $intervenants = $conn->query("SELECT id, nom FROM intervenant WHERE actif = 1 ORDER BY nom")->fetchAll(PDO::FETCH_ASSOC);
-} catch (PDOException $e) {
-    echo '<div class="alert alert-danger">Erreur logements/intervenants: ' . htmlspecialchars($e->getMessage()) . '</div>';
-    $logements = $logements ?? [];
-    $allLogements = $allLogements ?? [];
-    $intervenants = $intervenants ?? [];
-}
 
 // Compteur de charge par intervenant sur la période
 $chargeQuery = "
@@ -425,14 +408,9 @@ $chargeQuery = "
     GROUP BY i.id, i.nom
     ORDER BY nb_total DESC
 ";
-try {
 $chargeStmt = $conn->prepare($chargeQuery);
 $chargeStmt->execute([$date_debut, $date_fin]);
 $charges = $chargeStmt->fetchAll(PDO::FETCH_ASSOC);
-} catch (PDOException $e) {
-    echo '<div class="alert alert-danger">Erreur charges: ' . htmlspecialchars($e->getMessage()) . '</div>';
-    $charges = [];
-}
 ?>
 
 <!DOCTYPE html>
@@ -503,20 +481,20 @@ $charges = $chargeStmt->fetchAll(PDO::FETCH_ASSOC);
                     <i class="fas fa-file-csv"></i>
                 </a>
                 <?php if ($is_admin): ?>
-                <div class="input-group">
-                  <input type="date" id="sync_target_date" class="form-control" value="<?= htmlspecialchars(date(‘Y-m-d’)) ?>">
+                <button type="button" id="sync_today_btn" class="btn btn-outline-secondary w-50">
+                    Synchroniser (aujourd’hui)
+                </button>
+
+                <div class="input-group mt-2">
+                  <input type="date" id="sync_target_date" class="form-control" value="<?= htmlspecialchars(date('Y-m-d')) ?>">
                   <button type="button" id="sync_by_date_btn" class="btn btn-outline-secondary">
-                    <i class="fas fa-sync"></i> Synchroniser
+                    Synchroniser (date)
                   </button>
                 </div>
                 <?php endif; ?>
             </div>
         </div>
-        <div class="row"><div class="col-12"><p style="color:red;font-weight:bold;font-size:20px;">>>> DEBUG INSIDE FORM: <?= count($interventions) ?> interventions, is_admin=<?= var_export($is_admin,true) ?> <<<</p></div></div>
     </form>
-
-    <h1 style="color:red;font-size:40px;">PLANNING DEBUG TEST</h1>
-    <div class="alert alert-warning"><strong>DEBUG:</strong> is_admin=<?= var_export($is_admin, true) ?>, interventions=<?= count($interventions) ?>, logements=<?= count($logements) ?>, charges=<?= count($charges) ?></div>
 
     <?php if ($is_admin): ?>
     <div class="mb-3">
@@ -902,6 +880,44 @@ $charges = $chargeStmt->fetchAll(PDO::FETCH_ASSOC);
     const t = new bootstrap.Toast(el, { delay: 3000 });
     t.show();
   }
+
+  // Sync du jour
+  document.addEventListener('DOMContentLoaded', function () {
+    const syncBtn = document.getElementById('sync_today_btn');
+    if (syncBtn) {
+      syncBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        syncBtn.disabled = true;
+        syncBtn.textContent = 'Synchronisation...';
+
+        $.getJSON('sync_reservations_today.php?debug=1')
+          .done(function(resp){
+            if (resp.status === 'success') {
+              showToast(`Synchro du jour OK : ${resp.inserted} créées, ${resp.updated} mises à jour.`);
+              setTimeout(()=> location.reload(), 800);
+            } else {
+              showToast('Erreur synchro : ' + (resp.message || 'Inconnue'), 'error');
+              console.error('SYNC error:', resp);
+            }
+          })
+          .fail(function(xhr){
+            let msg = `Erreur ${xhr.status || ''} pendant la synchro du jour.`;
+            try {
+              const j = JSON.parse(xhr.responseText);
+              if (j && j.message) msg = j.message;
+              if (j && j.ex) console.error('SYNC exception:', j.ex);
+            } catch(e) {
+              console.error('SYNC raw response:', xhr.responseText);
+            }
+            showToast(msg, 'error');
+          })
+          .always(function(){
+            syncBtn.disabled = false;
+            syncBtn.textContent = 'Synchroniser (aujourd\'hui)';
+          });
+      });
+    }
+  });
 
   function refreshSelectAllState() {
     const $items = $("input.bulk_checkbox");
