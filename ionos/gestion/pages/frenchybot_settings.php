@@ -33,11 +33,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['flash'] = 'Configuration sauvegardee.';
     }
 
+    if ($action === 'test_openai' || $action === 'test_whatsapp') {
+        // Sauvegarder les settings avant de tester
+        foreach ($_POST['settings'] ?? [] as $k2 => $v2) {
+            $k2 = preg_replace('/[^a-z0-9_]/', '', $k2);
+            if ($k2) _saveSetting($k2, trim($v2));
+        }
+    }
+
     if ($action === 'test_openai') {
         $s = _botSettings();
         $apiKey = $s['openai_api_key'] ?? '';
         if (!$apiKey) {
-            $_SESSION['flash_error'] = 'Sauvegardez d\'abord votre cle OpenAI ci-dessus.';
+            $_SESSION['flash_error'] = 'Entrez votre cle OpenAI ci-dessus puis retestez.';
         } else {
             $ch = curl_init('https://api.openai.com/v1/models');
             curl_setopt_array($ch, [CURLOPT_HTTPHEADER => ['Authorization: Bearer ' . $apiKey], CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 10]);
