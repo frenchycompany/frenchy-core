@@ -6,11 +6,20 @@
  */
 include '../config.php';
 include '../pages/menu.php';
-require_once __DIR__ . '/../includes/csrf.php';
+
+// --- Fonction inline pour lire un setting ---
+function _botSetting(PDO $pdo, string $key, string $default = ''): string {
+    try {
+        $stmt = $pdo->prepare("SELECT setting_value FROM bot_settings WHERE setting_key = ?");
+        $stmt->execute([$key]);
+        $val = $stmt->fetchColumn();
+        return ($val !== false && $val !== '') ? $val : $default;
+    } catch (\PDOException $e) { return $default; }
+}
 
 // --- Actions POST ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    verifyToken();
+    validateCsrfToken();
     $action = $_POST['action'] ?? '';
 
     if ($action === 'save_entry') {
@@ -52,21 +61,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 
-// Charger settings de maniere safe
-$settingsFile = realpath(__DIR__ . '/../../../frenchybot/includes/settings.php');
-if ($settingsFile && file_exists($settingsFile)) {
-    require_once $settingsFile;
-} else {
-    function botSetting(PDO $pdo, string $key, string $default = ''): string {
-        try {
-            $stmt = $pdo->prepare("SELECT setting_value FROM bot_settings WHERE setting_key = ?");
-            $stmt->execute([$key]);
-            $val = $stmt->fetchColumn();
-            return ($val !== false && $val !== '') ? $val : $default;
-        } catch (\PDOException $e) { return $default; }
-    }
-}
-
 // --- Donnees ---
 $entries = $pdo->query("
     SELECT bk.*, l.nom_du_logement
@@ -75,7 +69,6 @@ $entries = $pdo->query("
     ORDER BY bk.logement_id IS NULL DESC, bk.sort_order, bk.title
 ")->fetchAll(PDO::FETCH_ASSOC);
 
-// Reservations actives pour le test du bot
 $resasTest = $pdo->query("
     SELECT r.id, r.prenom, r.nom, r.date_arrivee, r.date_depart, l.nom_du_logement,
            ht.token
@@ -89,13 +82,15 @@ $resasTest = $pdo->query("
 
 $logements = $pdo->query("SELECT id, nom_du_logement FROM liste_logements WHERE actif = 1 ORDER BY nom_du_logement")->fetchAll(PDO::FETCH_ASSOC);
 
-// Stats conversations
 try {
     $totalConv = $pdo->query("SELECT COUNT(*) FROM bot_conversations WHERE role = 'user'")->fetchColumn();
     $todayConv = $pdo->query("SELECT COUNT(*) FROM bot_conversations WHERE role = 'user' AND DATE(created_at) = CURDATE()")->fetchColumn();
 } catch (\PDOException $e) {
     $totalConv = $todayConv = 0;
 }
+
+$hasOpenAI = (bool)_botSetting($pdo, 'openai_api_key');
+$chatApiUrl = rtrim(_botSetting($pdo, 'app_url', 'https://gestion.frenchyconciergerie.fr'), '/') . '/frenchybot/api/chat.php';
 ?>
 
 <div class="container-fluid py-4">
@@ -114,12 +109,12 @@ try {
         </button>
     </div>
 
-    <!-- Config OpenAI -->
+    <!-- Stats -->
     <div class="row g-3 mb-4">
         <div class="col-md-4">
             <div class="card border-0 shadow-sm">
                 <div class="card-body text-center">
-                    <?php if (env('OPENAI_API_KEY', '')): ?>
+                    <?php if ($hasOpenAI): ?>
                         <div class="fs-4 text-success"><i class="fas fa-check-circle"></i></div>
                         <div class="small text-muted">OpenAI configure</div>
                     <?php else: ?>
@@ -155,9 +150,9 @@ try {
         <p class="mb-0"><strong>Entrees par logement</strong> = specifiques a un logement (ex: "le parking est au sous-sol place B12")</p>
     </div>
 
-    <?php if (!env('OPENAI_API_KEY', '')): ?>
+    <?php if (!$hasOpenAI): ?>
     <div class="alert alert-warning">
-        <i class="fas fa-key"></i> Pour activer le chatbot IA, ajoutez <code>OPENAI_API_KEY=sk-...</code> dans votre fichier .env.
+        <i class="fas fa-key"></i> Pour activer le chatbot IA, allez dans <a href="frenchybot_settings.php"><strong>Configuration</strong></a> et ajoutez votre cle OpenAI.
         <br>Sans cle API, les questions des voyageurs sont transmises directement a l'equipe par SMS/WhatsApp.
     </div>
     <?php endif; ?>
@@ -174,7 +169,7 @@ try {
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <strong><?= htmlspecialchars($entry['title']) ?></strong>
                     <form method="POST" style="display:inline;">
-                        <input type="hidden" name="csrf_token" value="<?= generateToken() ?>">
+                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
                         <input type="hidden" name="action" value="toggle_active">
                         <input type="hidden" name="id" value="<?= $entry['id'] ?>">
                         <button type="submit" class="btn btn-sm <?= $entry['active'] ? 'btn-success' : 'btn-secondary' ?>">
@@ -192,7 +187,7 @@ try {
                         <i class="fas fa-edit"></i> Modifier
                     </button>
                     <form method="POST" style="display:inline;" onsubmit="return confirm('Supprimer cette entree ?')">
-                        <input type="hidden" name="csrf_token" value="<?= generateToken() ?>">
+                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
                         <input type="hidden" name="action" value="delete_entry">
                         <input type="hidden" name="id" value="<?= $entry['id'] ?>">
                         <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
@@ -223,7 +218,7 @@ try {
                         <br><small class="text-muted"><i class="fas fa-home"></i> <?= htmlspecialchars($entry['nom_du_logement'] ?? '?') ?></small>
                     </div>
                     <form method="POST" style="display:inline;">
-                        <input type="hidden" name="csrf_token" value="<?= generateToken() ?>">
+                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
                         <input type="hidden" name="action" value="toggle_active">
                         <input type="hidden" name="id" value="<?= $entry['id'] ?>">
                         <button type="submit" class="btn btn-sm <?= $entry['active'] ? 'btn-success' : 'btn-secondary' ?>">
@@ -241,7 +236,7 @@ try {
                         <i class="fas fa-edit"></i>
                     </button>
                     <form method="POST" style="display:inline;" onsubmit="return confirm('Supprimer ?')">
-                        <input type="hidden" name="csrf_token" value="<?= generateToken() ?>">
+                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
                         <input type="hidden" name="action" value="delete_entry">
                         <input type="hidden" name="id" value="<?= $entry['id'] ?>">
                         <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
@@ -282,11 +277,11 @@ try {
                 <div class="col-md-6">
                     <label class="form-label fw-semibold">Statut OpenAI</label>
                     <div class="mt-2">
-                        <?php if (botSetting($pdo, 'openai_api_key')): ?>
+                        <?php if ($hasOpenAI): ?>
                             <span class="badge bg-success fs-6"><i class="fas fa-check"></i> Cle API configuree</span>
                         <?php else: ?>
                             <span class="badge bg-danger fs-6"><i class="fas fa-times"></i> Pas de cle API</span>
-                            <div class="form-text">Allez dans Configuration pour ajouter votre cle OpenAI.</div>
+                            <div class="form-text">Allez dans <a href="frenchybot_settings.php">Configuration</a> pour ajouter votre cle OpenAI.</div>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -314,6 +309,7 @@ try {
     </div>
 
     <!-- Suggestions -->
+    <div class="card border-0 shadow-sm mt-4">
         <div class="card-header"><h6 class="mb-0"><i class="fas fa-lightbulb text-warning"></i> Idees d'entrees a ajouter</h6></div>
         <div class="card-body">
             <div class="row g-2">
@@ -344,7 +340,7 @@ try {
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <form method="POST">
-                <input type="hidden" name="csrf_token" value="<?= generateToken() ?>">
+                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
                 <input type="hidden" name="action" value="save_entry">
                 <input type="hidden" name="id" id="edit_id" value="0">
                 <div class="modal-header">
@@ -440,17 +436,15 @@ function sendTestChat() {
     const text = input.value.trim();
     if (!text || !token) return;
 
-    // Message utilisateur
     messages.innerHTML += '<div style="text-align:right; margin-bottom:8px;"><span style="background:#3B82F6; color:white; padding:8px 12px; border-radius:12px 12px 2px 12px; display:inline-block; max-width:80%;">' + escHtml(text) + '</span></div>';
     input.value = '';
     btn.disabled = true;
 
-    // Typing
     const tid = 'typing-' + Date.now();
     messages.innerHTML += '<div id="' + tid + '" style="margin-bottom:8px;"><span style="background:#f1f5f9; padding:8px 12px; border-radius:12px 12px 12px 2px; display:inline-block;"><i class="fas fa-circle-notch fa-spin"></i> Le bot reflechit...</span></div>';
     messages.scrollTop = messages.scrollHeight;
 
-    fetch('<?= rtrim(botSetting($pdo, "app_url", "https://gestion.frenchyconciergerie.fr"), "/") ?>/frenchybot/api/chat.php', {
+    fetch('<?= htmlspecialchars($chatApiUrl) ?>', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({token: token, message: text})
@@ -479,4 +473,3 @@ function escHtml(t) {
     return d.innerHTML;
 }
 </script>
-

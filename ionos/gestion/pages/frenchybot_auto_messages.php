@@ -5,11 +5,10 @@
  */
 include '../config.php';
 include '../pages/menu.php';
-require_once __DIR__ . '/../includes/csrf.php';
 
 // --- Actions POST ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    verifyToken();
+    validateCsrfToken();
     $action = $_POST['action'] ?? '';
 
     if ($action === 'save_message') {
@@ -66,12 +65,24 @@ $messages = $pdo->query("
 $logements = $pdo->query("SELECT id, nom_du_logement FROM liste_logements WHERE actif = 1 ORDER BY nom_du_logement")->fetchAll(PDO::FETCH_ASSOC);
 
 $triggerLabels = [
-    'before_checkin' => 'Avant check-in',
-    'checkin_day' => 'Jour du check-in',
-    'during_stay' => 'Pendant le sejour',
-    'checkout_day' => 'Jour du check-out',
-    'after_checkout' => 'Apres le check-out',
+    'before_checkin' => ['label' => 'Avant check-in', 'icon' => 'fa-plane-arrival', 'color' => 'primary'],
+    'checkin_day'    => ['label' => 'Jour du check-in', 'icon' => 'fa-door-open', 'color' => 'success'],
+    'during_stay'    => ['label' => 'Pendant le sejour', 'icon' => 'fa-bed', 'color' => 'info'],
+    'checkout_day'   => ['label' => 'Jour du check-out', 'icon' => 'fa-door-closed', 'color' => 'warning'],
+    'after_checkout' => ['label' => 'Apres le check-out', 'icon' => 'fa-star', 'color' => 'secondary'],
 ];
+
+$channelLabels = [
+    'auto'     => ['label' => 'Auto (SMS FR / WhatsApp etranger)', 'short' => 'Auto'],
+    'sms'      => ['label' => 'SMS uniquement', 'short' => 'SMS'],
+    'whatsapp' => ['label' => 'WhatsApp uniquement', 'short' => 'WhatsApp'],
+];
+
+// Grouper par trigger
+$messagesByTrigger = [];
+foreach ($messages as $msg) {
+    $messagesByTrigger[$msg['trigger_type']][] = $msg;
+}
 ?>
 
 <div class="container-fluid py-4">
@@ -90,84 +101,128 @@ $triggerLabels = [
         </button>
     </div>
 
+    <!-- Timeline du sejour -->
+    <div class="alert alert-light border mb-4">
+        <h6 class="mb-2"><i class="fas fa-route"></i> Parcours voyageur</h6>
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+            <?php foreach ($triggerLabels as $tk => $t):
+                $count = count($messagesByTrigger[$tk] ?? []);
+            ?>
+            <div class="d-flex align-items-center">
+                <span class="badge bg-<?= $t['color'] ?> me-1"><i class="fas <?= $t['icon'] ?>"></i> <?= $t['label'] ?></span>
+                <span class="small text-muted">(<?= $count ?> msg)</span>
+                <?php if ($tk !== 'after_checkout'): ?>
+                    <i class="fas fa-arrow-right text-muted mx-2"></i>
+                <?php endif; ?>
+            </div>
+            <?php endforeach; ?>
+        </div>
+    </div>
+
     <!-- Variables disponibles -->
     <div class="alert alert-info mb-4">
-        <strong><i class="fas fa-info-circle"></i> Variables disponibles :</strong>
-        <code>{prenom}</code> <code>{nom}</code> <code>{logement}</code> <code>{date_arrivee}</code>
-        <code>{date_depart}</code> <code>{heure_checkin}</code> <code>{heure_checkout}</code>
-        <code>{hub_url}</code> <code>{telephone}</code>
+        <strong><i class="fas fa-code"></i> Variables disponibles dans les templates :</strong><br>
+        <code>{prenom}</code> Prenom du voyageur &middot;
+        <code>{nom}</code> Nom &middot;
+        <code>{logement}</code> Nom du logement &middot;
+        <code>{date_arrivee}</code> &middot;
+        <code>{date_depart}</code> &middot;
+        <code>{heure_checkin}</code> &middot;
+        <code>{heure_checkout}</code> &middot;
+        <code>{hub_url}</code> Lien vers le HUB du voyageur &middot;
+        <code>{telephone}</code>
     </div>
 
-    <!-- Liste des messages -->
-    <div class="row g-3">
-        <?php foreach ($messages as $msg): ?>
-        <div class="col-md-6 col-lg-4">
-            <div class="card border-0 shadow-sm h-100 <?= $msg['active'] ? '' : 'opacity-50' ?>">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <strong><?= htmlspecialchars($msg['name']) ?></strong>
-                    <div>
-                        <form method="POST" style="display:inline;">
-                            <input type="hidden" name="csrf_token" value="<?= generateToken() ?>">
-                            <input type="hidden" name="action" value="toggle_active">
-                            <input type="hidden" name="id" value="<?= $msg['id'] ?>">
-                            <button type="submit" class="btn btn-sm <?= $msg['active'] ? 'btn-success' : 'btn-secondary' ?>">
-                                <?= $msg['active'] ? 'ON' : 'OFF' ?>
-                            </button>
-                        </form>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <div class="mb-2">
-                        <span class="badge bg-primary"><?= $triggerLabels[$msg['trigger_type']] ?? $msg['trigger_type'] ?></span>
-                        <?php if ($msg['trigger_offset_hours']): ?>
-                            <span class="badge bg-secondary"><?= $msg['trigger_offset_hours'] > 0 ? '+' : '' ?><?= $msg['trigger_offset_hours'] ?>h</span>
-                        <?php endif; ?>
-                        <span class="badge bg-info"><?= $msg['channel'] ?></span>
-                    </div>
-                    <?php if ($msg['nom_du_logement']): ?>
-                        <div class="small text-muted mb-2"><i class="fas fa-home"></i> <?= htmlspecialchars($msg['nom_du_logement']) ?></div>
-                    <?php else: ?>
-                        <div class="small text-muted mb-2"><i class="fas fa-globe"></i> Tous les logements</div>
-                    <?php endif; ?>
-                    <div class="bg-light rounded p-2 small" style="white-space:pre-line; max-height:120px; overflow-y:auto;">
-                        <?= htmlspecialchars($msg['template']) ?>
-                    </div>
-                    <div class="mt-2 small text-muted">
-                        <i class="fas fa-paper-plane"></i> <?= $msg['nb_sent'] ?> envoyes
-                        <?php if ($msg['nb_failed']): ?>
-                            | <span class="text-danger"><i class="fas fa-exclamation-circle"></i> <?= $msg['nb_failed'] ?> echecs</span>
-                        <?php endif; ?>
-                    </div>
-                </div>
-                <div class="card-footer border-0 bg-transparent">
-                    <button class="btn btn-sm btn-outline-primary" onclick='editMessage(<?= json_encode($msg) ?>)' data-bs-toggle="modal" data-bs-target="#editModal">
-                        <i class="fas fa-edit"></i> Modifier
-                    </button>
-                    <form method="POST" style="display:inline;" onsubmit="return confirm('Supprimer ce message ?')">
-                        <input type="hidden" name="csrf_token" value="<?= generateToken() ?>">
-                        <input type="hidden" name="action" value="delete_message">
-                        <input type="hidden" name="id" value="<?= $msg['id'] ?>">
-                        <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
-                    </form>
-                </div>
+    <!-- Messages groupes par declencheur -->
+    <?php foreach ($triggerLabels as $tk => $t):
+        $groupMessages = $messagesByTrigger[$tk] ?? [];
+    ?>
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-<?= $t['color'] ?> bg-opacity-10 d-flex justify-content-between align-items-center">
+            <h6 class="mb-0"><i class="fas <?= $t['icon'] ?> text-<?= $t['color'] ?>"></i> <?= $t['label'] ?></h6>
+            <span class="badge bg-<?= $t['color'] ?>"><?= count($groupMessages) ?> message(s)</span>
+        </div>
+        <?php if (!empty($groupMessages)): ?>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Nom</th>
+                            <th>Decalage</th>
+                            <th>Canal</th>
+                            <th>Logement</th>
+                            <th>Apercu</th>
+                            <th>Envoyes</th>
+                            <th>Statut</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    <?php foreach ($groupMessages as $msg): ?>
+                        <tr class="<?= $msg['active'] ? '' : 'opacity-50' ?>">
+                            <td><strong><?= htmlspecialchars($msg['name']) ?></strong></td>
+                            <td>
+                                <?php if ($msg['trigger_offset_hours'] < 0): ?>
+                                    <span class="badge bg-light text-dark"><?= abs($msg['trigger_offset_hours']) ?>h avant</span>
+                                <?php elseif ($msg['trigger_offset_hours'] > 0): ?>
+                                    <span class="badge bg-light text-dark"><?= $msg['trigger_offset_hours'] ?>h apres</span>
+                                <?php else: ?>
+                                    <span class="badge bg-light text-dark">Le jour meme</span>
+                                <?php endif; ?>
+                            </td>
+                            <td><span class="badge bg-secondary"><?= $channelLabels[$msg['channel']]['short'] ?? $msg['channel'] ?></span></td>
+                            <td class="small"><?= $msg['nom_du_logement'] ? htmlspecialchars($msg['nom_du_logement']) : '<span class="text-muted">Tous</span>' ?></td>
+                            <td class="small" style="max-width:250px;">
+                                <div style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"><?= htmlspecialchars(mb_substr($msg['template'], 0, 80)) ?><?= mb_strlen($msg['template']) > 80 ? '...' : '' ?></div>
+                            </td>
+                            <td>
+                                <span class="badge bg-success"><?= $msg['nb_sent'] ?></span>
+                                <?php if ($msg['nb_failed']): ?>
+                                    <span class="badge bg-danger"><?= $msg['nb_failed'] ?> echec</span>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <form method="POST" style="display:inline;">
+                                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
+                                    <input type="hidden" name="action" value="toggle_active">
+                                    <input type="hidden" name="id" value="<?= $msg['id'] ?>">
+                                    <button type="submit" class="btn btn-sm <?= $msg['active'] ? 'btn-success' : 'btn-secondary' ?>">
+                                        <?= $msg['active'] ? 'ON' : 'OFF' ?>
+                                    </button>
+                                </form>
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary" onclick='editMessage(<?= json_encode($msg) ?>)' data-bs-toggle="modal" data-bs-target="#editModal">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <form method="POST" style="display:inline;" onsubmit="return confirm('Supprimer ce message ?')">
+                                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
+                                    <input type="hidden" name="action" value="delete_message">
+                                    <input type="hidden" name="id" value="<?= $msg['id'] ?>">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
+                                </form>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                    </tbody>
+                </table>
             </div>
         </div>
-        <?php endforeach; ?>
-
-        <?php if (empty($messages)): ?>
-            <div class="col-12 text-center text-muted py-5">
-                <i class="fas fa-envelope fa-3x mb-3 opacity-25"></i>
-                <p>Aucun message automatique configure.<br>Cliquez sur "Nouveau message" pour commencer.</p>
-            </div>
+        <?php else: ?>
+        <div class="card-body text-center text-muted py-3">
+            <small>Aucun message pour cette etape.</small>
+        </div>
         <?php endif; ?>
     </div>
+    <?php endforeach; ?>
 
     <!-- CRON Info -->
     <div class="card border-0 shadow-sm mt-4">
         <div class="card-body">
             <h6><i class="fas fa-terminal"></i> Configuration CRON</h6>
             <p class="small text-muted mb-1">Ajouter cette ligne au crontab du serveur pour l'envoi automatique :</p>
-            <code>0 * * * * php <?= realpath(__DIR__ . '/../../../frenchybot/cron/auto-messages.php') ?: '/var/www/frenchy-core/frenchybot/cron/auto-messages.php' ?></code>
+            <code>0 * * * * php /var/www/frenchy-core/frenchybot/cron/auto-messages.php</code>
         </div>
     </div>
 </div>
@@ -177,7 +232,7 @@ $triggerLabels = [
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <form method="POST">
-                <input type="hidden" name="csrf_token" value="<?= generateToken() ?>">
+                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
                 <input type="hidden" name="action" value="save_message">
                 <input type="hidden" name="id" id="edit_id" value="0">
                 <div class="modal-header">
@@ -187,29 +242,29 @@ $triggerLabels = [
                 <div class="modal-body">
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label class="form-label">Nom</label>
-                            <input type="text" name="name" id="edit_name" class="form-control" required placeholder="Ex: Message de bienvenue">
+                            <label class="form-label">Nom du message</label>
+                            <input type="text" name="name" id="edit_name" class="form-control" required placeholder="Ex: Bienvenue J-1">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Canal</label>
+                            <label class="form-label">Canal d'envoi</label>
                             <select name="channel" id="edit_channel" class="form-select">
-                                <option value="auto">Auto (SMS FR / WhatsApp etranger)</option>
-                                <option value="sms">SMS uniquement</option>
-                                <option value="whatsapp">WhatsApp uniquement</option>
+                                <?php foreach ($channelLabels as $ck => $cl): ?>
+                                    <option value="<?= $ck ?>"><?= $cl['label'] ?></option>
+                                <?php endforeach; ?>
                             </select>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label">Declencheur</label>
+                            <label class="form-label">Quand envoyer ?</label>
                             <select name="trigger_type" id="edit_trigger_type" class="form-select" required>
-                                <?php foreach ($triggerLabels as $val => $label): ?>
-                                    <option value="<?= $val ?>"><?= $label ?></option>
+                                <?php foreach ($triggerLabels as $val => $t): ?>
+                                    <option value="<?= $val ?>"><?= $t['label'] ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Decalage (heures)</label>
                             <input type="number" name="trigger_offset_hours" id="edit_offset" class="form-control" value="0">
-                            <div class="form-text">-24 = 24h avant, 0 = le jour meme</div>
+                            <div class="form-text">Ex: -24 = 24h avant, 0 = le jour meme, 10 = a 10h</div>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Logement</label>
@@ -221,14 +276,15 @@ $triggerLabels = [
                             </select>
                         </div>
                         <div class="col-12">
-                            <label class="form-label">Template du message</label>
-                            <textarea name="template" id="edit_template" class="form-control" rows="4" required
-                                placeholder="Bonjour {prenom} ! Votre sejour a {logement} commence demain. Infos : {hub_url}"></textarea>
+                            <label class="form-label">Contenu du message</label>
+                            <textarea name="template" id="edit_template" class="form-control" rows="5" required
+                                placeholder="Bonjour {prenom} ! Votre sejour a {logement} commence demain. Toutes les infos ici : {hub_url}"></textarea>
+                            <div class="form-text">Utilisez les variables entre accolades : {prenom}, {logement}, {hub_url}, etc.</div>
                         </div>
                         <div class="col-12">
                             <div class="form-check">
                                 <input type="checkbox" name="active" id="edit_active" class="form-check-input" checked>
-                                <label class="form-check-label" for="edit_active">Actif</label>
+                                <label class="form-check-label" for="edit_active">Actif (envoi automatique)</label>
                             </div>
                         </div>
                     </div>
@@ -267,4 +323,3 @@ function editMessage(msg) {
     }
 }
 </script>
-

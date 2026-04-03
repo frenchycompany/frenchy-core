@@ -5,28 +5,42 @@
  */
 include '../config.php';
 include '../pages/menu.php';
-require_once __DIR__ . '/../includes/csrf.php';
 
-// Charger includes FrenchyBot de maniere safe
-$fbBase = realpath(__DIR__ . '/../../../frenchybot/includes');
-if ($fbBase) {
-    require_once $fbBase . '/hub-functions.php';
-    if (file_exists($fbBase . '/settings.php')) require_once $fbBase . '/settings.php';
+// --- Fonctions inline (pas de dependance frenchybot/) ---
+function _getOrCreateHubToken(PDO $pdo, int $reservationId, int $logementId): string {
+    $stmt = $pdo->prepare("SELECT token FROM hub_tokens WHERE reservation_id = ? AND logement_id = ? AND active = 1");
+    $stmt->execute([$reservationId, $logementId]);
+    $existing = $stmt->fetchColumn();
+    if ($existing) return $existing;
+
+    $token = bin2hex(random_bytes(32));
+    $stmt = $pdo->prepare("INSERT INTO hub_tokens (reservation_id, logement_id, token, active) VALUES (?, ?, ?, 1)");
+    $stmt->execute([$reservationId, $logementId, $token]);
+    return $token;
 }
 
-$appUrl = function_exists('botSetting') ? botSetting($pdo, 'app_url', 'https://gestion.frenchyconciergerie.fr') : env('APP_URL', 'https://gestion.frenchyconciergerie.fr');
+function _getAppUrl(PDO $pdo): string {
+    try {
+        $stmt = $pdo->prepare("SELECT setting_value FROM bot_settings WHERE setting_key = 'app_url'");
+        $stmt->execute();
+        $val = $stmt->fetchColumn();
+        if ($val && $val !== '') return $val;
+    } catch (\PDOException $e) {}
+    return env('APP_URL', 'https://gestion.frenchyconciergerie.fr');
+}
+
+$appUrl = _getAppUrl($pdo);
 
 // --- Actions POST ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    verifyToken();
-
+    validateCsrfToken();
     $action = $_POST['action'] ?? '';
 
     if ($action === 'generate_token') {
         $resaId = (int)($_POST['reservation_id'] ?? 0);
         $logId = (int)($_POST['logement_id'] ?? 0);
         if ($resaId && $logId) {
-            $token = getOrCreateHubToken($pdo, $resaId, $logId);
+            _getOrCreateHubToken($pdo, $resaId, $logId);
             $_SESSION['flash'] = 'Token HUB genere avec succes.';
         }
     }
@@ -51,10 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 
-// --- Filtres ---
-$filter = $_GET['filter'] ?? 'active';
-
-// Reservations avec HUB tokens
+// --- Donnees ---
 $hubTokens = $pdo->query("
     SELECT ht.*, r.prenom, r.nom, r.date_arrivee, r.date_depart, r.telephone, r.plateforme,
            l.nom_du_logement,
@@ -65,7 +76,6 @@ $hubTokens = $pdo->query("
     ORDER BY r.date_arrivee DESC
 ")->fetchAll(PDO::FETCH_ASSOC);
 
-// Reservations sans token (actuelles + futures)
 $resasSansToken = $pdo->query("
     SELECT r.id, r.prenom, r.nom, r.date_arrivee, r.date_depart, r.telephone, r.plateforme,
            r.logement_id, l.nom_du_logement
@@ -79,7 +89,6 @@ $resasSansToken = $pdo->query("
     LIMIT 100
 ")->fetchAll(PDO::FETCH_ASSOC);
 
-// Stats globales
 try {
     $statsTotal = $pdo->query("SELECT COUNT(*) FROM hub_tokens WHERE active = 1")->fetchColumn();
     $statsViews = $pdo->query("SELECT COALESCE(SUM(access_count), 0) FROM hub_tokens")->fetchColumn();
@@ -88,7 +97,6 @@ try {
     $statsTotal = $statsViews = $statsInteractions = 0;
 }
 
-// Dernieres interactions (hors simples vues)
 $recentInteractions = $pdo->query("
     SELECT hi.created_at, hi.action_type, hi.action_data,
            r.prenom, r.nom, r.telephone,
@@ -115,7 +123,6 @@ $actionLabels = [
 ?>
 
 <div class="container-fluid py-4">
-    <!-- Flash -->
     <?php if (!empty($_SESSION['flash'])): ?>
         <div class="alert alert-success alert-dismissible fade show">
             <?= htmlspecialchars($_SESSION['flash']) ?>
@@ -271,7 +278,7 @@ $actionLabels = [
                             <td><span class="badge bg-secondary"><?= htmlspecialchars($r['plateforme'] ?? '?') ?></span></td>
                             <td>
                                 <form method="POST" style="display:inline;">
-                                    <input type="hidden" name="csrf_token" value="<?= generateToken() ?>">
+                                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
                                     <input type="hidden" name="action" value="generate_token">
                                     <input type="hidden" name="reservation_id" value="<?= $r['id'] ?>">
                                     <input type="hidden" name="logement_id" value="<?= $r['logement_id'] ?>">
@@ -333,17 +340,14 @@ $actionLabels = [
                             </td>
                             <td>
                                 <div class="btn-group btn-group-sm">
-                                    <!-- Copier le lien -->
                                     <button class="btn btn-outline-primary" onclick="copyHubUrl('<?= htmlspecialchars($hubUrl) ?>', this)" title="Copier le lien">
                                         <i class="fas fa-copy"></i>
                                     </button>
-                                    <!-- Ouvrir le HUB -->
                                     <a href="<?= htmlspecialchars($hubUrl) ?>" target="_blank" class="btn btn-outline-success" title="Voir le HUB">
                                         <i class="fas fa-external-link-alt"></i>
                                     </a>
-                                    <!-- Activer/Desactiver -->
                                     <form method="POST" style="display:inline;">
-                                        <input type="hidden" name="csrf_token" value="<?= generateToken() ?>">
+                                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
                                         <input type="hidden" name="token_id" value="<?= $ht['id'] ?>">
                                         <?php if ($isActive): ?>
                                             <input type="hidden" name="action" value="deactivate_token">
@@ -386,4 +390,3 @@ function copyHubUrl(url, btn) {
     });
 }
 </script>
-

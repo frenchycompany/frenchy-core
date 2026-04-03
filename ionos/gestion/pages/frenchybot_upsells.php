@@ -5,11 +5,10 @@
  */
 include '../config.php';
 include '../pages/menu.php';
-require_once __DIR__ . '/../includes/csrf.php';
 
 // --- Actions POST ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    verifyToken();
+    validateCsrfToken();
     $action = $_POST['action'] ?? '';
 
     if ($action === 'save_upsell') {
@@ -68,7 +67,6 @@ $upsells = $pdo->query("
 
 $logements = $pdo->query("SELECT id, nom_du_logement FROM liste_logements WHERE actif = 1 ORDER BY nom_du_logement")->fetchAll(PDO::FETCH_ASSOC);
 
-// Stats globales
 try {
     $totalRevenue = $pdo->query("SELECT COALESCE(SUM(amount), 0) FROM upsell_orders WHERE status = 'paid'")->fetchColumn();
     $totalOrders = $pdo->query("SELECT COUNT(*) FROM upsell_orders WHERE status = 'paid'")->fetchColumn();
@@ -99,7 +97,7 @@ try {
         <div class="col-md-4">
             <div class="card border-0 shadow-sm">
                 <div class="card-body text-center">
-                    <div class="fs-3 fw-bold text-success"><?= number_format($totalRevenue, 2) ?> €</div>
+                    <div class="fs-3 fw-bold text-success"><?= number_format($totalRevenue, 2) ?> &euro;</div>
                     <div class="text-muted small">Revenus totaux</div>
                 </div>
             </div>
@@ -133,6 +131,7 @@ try {
                             <th>Upsell</th>
                             <th>Logement</th>
                             <th>Prix</th>
+                            <th>Stripe</th>
                             <th>Commandes</th>
                             <th>Revenus</th>
                             <th>Statut</th>
@@ -149,12 +148,19 @@ try {
                                 <div class="small text-muted"><?= htmlspecialchars($u['description'] ?? '') ?></div>
                             </td>
                             <td><?= $u['nom_du_logement'] ? htmlspecialchars($u['nom_du_logement']) : '<span class="text-muted">Tous</span>' ?></td>
-                            <td><strong><?= number_format($u['price'], 2) ?> €</strong></td>
+                            <td><strong><?= number_format($u['price'], 2) ?> &euro;</strong></td>
+                            <td>
+                                <?php if (!empty($u['stripe_link'])): ?>
+                                    <span class="badge bg-success"><i class="fas fa-check"></i> Lien</span>
+                                <?php else: ?>
+                                    <span class="badge bg-warning">Manuel</span>
+                                <?php endif; ?>
+                            </td>
                             <td><span class="badge bg-info"><?= $u['nb_orders'] ?></span></td>
-                            <td><?= number_format($u['revenue'], 2) ?> €</td>
+                            <td><?= number_format($u['revenue'], 2) ?> &euro;</td>
                             <td>
                                 <form method="POST" style="display:inline;">
-                                    <input type="hidden" name="csrf_token" value="<?= generateToken() ?>">
+                                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
                                     <input type="hidden" name="action" value="toggle_active">
                                     <input type="hidden" name="id" value="<?= $u['id'] ?>">
                                     <button type="submit" class="btn btn-sm <?= $u['active'] ? 'btn-success' : 'btn-secondary' ?>">
@@ -167,7 +173,7 @@ try {
                                     <i class="fas fa-edit"></i>
                                 </button>
                                 <form method="POST" style="display:inline;" onsubmit="return confirm('Supprimer cet upsell ?')">
-                                    <input type="hidden" name="csrf_token" value="<?= generateToken() ?>">
+                                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
                                     <input type="hidden" name="action" value="delete_upsell">
                                     <input type="hidden" name="id" value="<?= $u['id'] ?>">
                                     <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
@@ -176,7 +182,7 @@ try {
                         </tr>
                     <?php endforeach; ?>
                     <?php if (empty($upsells)): ?>
-                        <tr><td colspan="8" class="text-center text-muted py-4">Aucun upsell configure.</td></tr>
+                        <tr><td colspan="9" class="text-center text-muted py-4">Aucun upsell configure.</td></tr>
                     <?php endif; ?>
                     </tbody>
                 </table>
@@ -184,17 +190,16 @@ try {
         </div>
     </div>
 
-    <!-- Stripe Config -->
+    <!-- Stripe Info -->
     <div class="card border-0 shadow-sm mt-4">
         <div class="card-body">
-            <h6><i class="fas fa-credit-card"></i> Configuration Stripe</h6>
-            <?php if (env('STRIPE_SECRET_KEY', '')): ?>
-                <span class="badge bg-success"><i class="fas fa-check"></i> Stripe configure</span>
-            <?php else: ?>
-                <span class="badge bg-warning"><i class="fas fa-exclamation-triangle"></i> Stripe non configure</span>
-                <p class="small text-muted mt-1">Ajoutez <code>STRIPE_SECRET_KEY=sk_live_...</code> dans votre fichier .env pour activer les paiements.</p>
-                <p class="small text-muted">Sans Stripe, les commandes sont enregistrees en statut "pending" et vous pouvez les gerer manuellement.</p>
-            <?php endif; ?>
+            <h6><i class="fas fa-credit-card text-primary"></i> Paiements Stripe</h6>
+            <p class="mb-2">Pour activer les paiements, collez un <strong>lien de paiement Stripe</strong> sur chaque upsell (bouton Modifier).</p>
+            <p class="mb-0 small text-muted">
+                <a href="https://dashboard.stripe.com/payment-links" target="_blank"><i class="fas fa-external-link-alt"></i> Creer un lien de paiement sur Stripe</a>
+                — Pas besoin de cle API, le voyageur est redirige vers Stripe pour payer.
+                Sans lien, les commandes sont enregistrees en statut "en attente" et a gerer manuellement.
+            </p>
         </div>
     </div>
 </div>
@@ -204,7 +209,7 @@ try {
     <div class="modal-dialog">
         <div class="modal-content">
             <form method="POST">
-                <input type="hidden" name="csrf_token" value="<?= generateToken() ?>">
+                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
                 <input type="hidden" name="action" value="save_upsell">
                 <input type="hidden" name="id" id="edit_id" value="0">
                 <div class="modal-header">
@@ -226,7 +231,7 @@ try {
                             <input type="text" name="description" id="edit_description" class="form-control" placeholder="Arrivez des 14h au lieu de 16h">
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label">Prix (€)</label>
+                            <label class="form-label">Prix (&euro;)</label>
                             <input type="number" name="price" id="edit_price" class="form-control" required step="0.01" min="0.01">
                         </div>
                         <div class="col-md-4">
@@ -238,7 +243,7 @@ try {
                             <input type="number" name="sort_order" id="edit_sort" class="form-control" value="0">
                         </div>
                         <div class="col-12">
-                            <label class="form-label">Lien de paiement Stripe</label>
+                            <label class="form-label"><i class="fab fa-stripe text-primary"></i> Lien de paiement Stripe</label>
                             <input type="url" name="stripe_link" id="edit_stripe_link" class="form-control" placeholder="https://buy.stripe.com/...">
                             <div class="form-text">Collez votre lien Stripe Payment Link. Le voyageur sera redirige vers ce lien pour payer. <a href="https://dashboard.stripe.com/payment-links" target="_blank">Creer un lien</a></div>
                         </div>
@@ -297,4 +302,3 @@ function editUpsell(u) {
     }
 }
 </script>
-
