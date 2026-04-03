@@ -19,17 +19,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $description = trim($_POST['description'] ?? '');
         $price = (float)($_POST['price'] ?? 0);
         $icon = trim($_POST['icon'] ?? 'fa-gift');
+        $stripeLink = trim($_POST['stripe_link'] ?? '');
         $logementId = !empty($_POST['logement_id']) ? (int)$_POST['logement_id'] : null;
         $active = isset($_POST['active']) ? 1 : 0;
         $sortOrder = (int)($_POST['sort_order'] ?? 0);
 
         if ($name && $label && $price > 0) {
             if ($id) {
-                $stmt = $pdo->prepare("UPDATE upsells SET name=?, label=?, description=?, price=?, icon=?, logement_id=?, active=?, sort_order=? WHERE id=?");
-                $stmt->execute([$name, $label, $description, $price, $icon, $logementId, $active, $sortOrder, $id]);
+                $stmt = $pdo->prepare("UPDATE upsells SET name=?, label=?, description=?, price=?, icon=?, stripe_link=?, logement_id=?, active=?, sort_order=? WHERE id=?");
+                $stmt->execute([$name, $label, $description, $price, $icon, $stripeLink, $logementId, $active, $sortOrder, $id]);
             } else {
-                $stmt = $pdo->prepare("INSERT INTO upsells (name, label, description, price, icon, logement_id, active, sort_order) VALUES (?,?,?,?,?,?,?,?)");
-                $stmt->execute([$name, $label, $description, $price, $icon, $logementId, $active, $sortOrder]);
+                $stmt = $pdo->prepare("INSERT INTO upsells (name, label, description, price, icon, stripe_link, logement_id, active, sort_order) VALUES (?,?,?,?,?,?,?,?,?)");
+                $stmt->execute([$name, $label, $description, $price, $icon, $stripeLink, $logementId, $active, $sortOrder]);
             }
             $_SESSION['flash'] = 'Upsell sauvegarde.';
         }
@@ -236,6 +237,11 @@ try {
                             <label class="form-label">Ordre</label>
                             <input type="number" name="sort_order" id="edit_sort" class="form-control" value="0">
                         </div>
+                        <div class="col-12">
+                            <label class="form-label">Lien de paiement Stripe</label>
+                            <input type="url" name="stripe_link" id="edit_stripe_link" class="form-control" placeholder="https://buy.stripe.com/...">
+                            <div class="form-text">Collez votre lien Stripe Payment Link. Le voyageur sera redirige vers ce lien pour payer. <a href="https://dashboard.stripe.com/payment-links" target="_blank">Creer un lien</a></div>
+                        </div>
                         <div class="col-md-8">
                             <label class="form-label">Logement</label>
                             <select name="logement_id" id="edit_logement" class="form-select">
@@ -272,6 +278,7 @@ function editUpsell(u) {
         document.getElementById('edit_description').value = u.description || '';
         document.getElementById('edit_price').value = u.price;
         document.getElementById('edit_icon').value = u.icon || 'fa-gift';
+        document.getElementById('edit_stripe_link').value = u.stripe_link || '';
         document.getElementById('edit_sort').value = u.sort_order || 0;
         document.getElementById('edit_logement').value = u.logement_id || '';
         document.getElementById('edit_active').checked = !!u.active;
@@ -283,6 +290,7 @@ function editUpsell(u) {
         document.getElementById('edit_description').value = '';
         document.getElementById('edit_price').value = '';
         document.getElementById('edit_icon').value = 'fa-gift';
+        document.getElementById('edit_stripe_link').value = '';
         document.getElementById('edit_sort').value = 0;
         document.getElementById('edit_logement').value = '';
         document.getElementById('edit_active').checked = true;
