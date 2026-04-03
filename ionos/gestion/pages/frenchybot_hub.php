@@ -81,6 +81,31 @@ try {
 } catch (\PDOException $e) {
     $statsTotal = $statsViews = $statsInteractions = 0;
 }
+
+// Dernieres interactions (hors simples vues)
+$recentInteractions = $pdo->query("
+    SELECT hi.created_at, hi.action_type, hi.action_data,
+           r.prenom, r.nom, r.telephone,
+           l.nom_du_logement
+    FROM hub_interactions hi
+    JOIN hub_tokens ht ON hi.hub_token_id = ht.id
+    JOIN reservation r ON hi.reservation_id = r.id
+    JOIN liste_logements l ON ht.logement_id = l.id
+    ORDER BY hi.created_at DESC
+    LIMIT 30
+")->fetchAll(PDO::FETCH_ASSOC);
+
+$actionLabels = [
+    'view' => ['label' => 'Vue', 'badge' => 'bg-light text-dark'],
+    'cleaning_request' => ['label' => 'Demande menage', 'badge' => 'bg-warning'],
+    'access_problem' => ['label' => 'Probleme acces', 'badge' => 'bg-danger'],
+    'wifi_help' => ['label' => 'Probleme wifi', 'badge' => 'bg-warning'],
+    'checkout_info' => ['label' => 'Infos depart', 'badge' => 'bg-info'],
+    'other' => ['label' => 'Autre question', 'badge' => 'bg-primary'],
+    'chat' => ['label' => 'Chat IA', 'badge' => 'bg-success'],
+    'upsell_request' => ['label' => 'Demande upsell', 'badge' => 'bg-success'],
+    'upsell_checkout' => ['label' => 'Achat upsell', 'badge' => 'bg-success'],
+];
 ?>
 
 <div class="container-fluid py-4">
@@ -126,6 +151,86 @@ try {
                 <div class="card-body text-center">
                     <div class="fs-3 fw-bold text-info"><?= count($resasSansToken) ?></div>
                     <div class="text-muted small">Resas sans HUB</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dernieres interactions -->
+    <?php
+    $importantInteractions = array_filter($recentInteractions, fn($i) => $i['action_type'] !== 'view');
+    if (!empty($importantInteractions)):
+    ?>
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-danger bg-opacity-10">
+            <h5 class="mb-0"><i class="fas fa-bell text-danger"></i> Dernieres interactions (<?= count($importantInteractions) ?>)</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Date</th>
+                            <th>Voyageur</th>
+                            <th>Logement</th>
+                            <th>Action</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    <?php foreach ($importantInteractions as $inter):
+                        $al = $actionLabels[$inter['action_type']] ?? ['label' => $inter['action_type'], 'badge' => 'bg-secondary'];
+                        $details = '';
+                        if ($inter['action_data']) {
+                            $d = json_decode($inter['action_data'], true);
+                            if (isset($d['message'])) $details = mb_substr($d['message'], 0, 100);
+                            elseif (isset($d['upsell_name'])) $details = $d['upsell_name'];
+                        }
+                    ?>
+                        <tr>
+                            <td class="text-nowrap"><?= date('d/m H:i', strtotime($inter['created_at'])) ?></td>
+                            <td>
+                                <strong><?= htmlspecialchars($inter['prenom'] . ' ' . ($inter['nom'] ?? '')) ?></strong>
+                                <br><small class="text-muted"><?= htmlspecialchars($inter['telephone'] ?? '') ?></small>
+                            </td>
+                            <td><?= htmlspecialchars($inter['nom_du_logement']) ?></td>
+                            <td><span class="badge <?= $al['badge'] ?>"><?= $al['label'] ?></span></td>
+                            <td class="small"><?= htmlspecialchars($details) ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
+
+    <!-- Dernieres vues -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="fas fa-eye text-info"></i> Dernieres vues
+                <button class="btn btn-sm btn-outline-secondary float-end" type="button" data-bs-toggle="collapse" data-bs-target="#viewsCollapse">
+                    Afficher/Masquer
+                </button>
+            </h5>
+        </div>
+        <div class="collapse" id="viewsCollapse">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <tbody>
+                        <?php
+                        $views = array_filter($recentInteractions, fn($i) => $i['action_type'] === 'view');
+                        foreach (array_slice($views, 0, 15) as $v): ?>
+                            <tr>
+                                <td class="text-nowrap"><?= date('d/m H:i', strtotime($v['created_at'])) ?></td>
+                                <td><?= htmlspecialchars($v['prenom'] . ' ' . ($v['nom'] ?? '')) ?></td>
+                                <td><?= htmlspecialchars($v['nom_du_logement']) ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
