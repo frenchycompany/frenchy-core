@@ -60,6 +60,18 @@ $entries = $pdo->query("
     ORDER BY bk.logement_id IS NULL DESC, bk.sort_order, bk.title
 ")->fetchAll(PDO::FETCH_ASSOC);
 
+// Reservations actives pour le test du bot
+$resasTest = $pdo->query("
+    SELECT r.id, r.prenom, r.nom, r.date_arrivee, r.date_depart, l.nom_du_logement,
+           ht.token
+    FROM reservation r
+    JOIN liste_logements l ON r.logement_id = l.id
+    LEFT JOIN hub_tokens ht ON ht.reservation_id = r.id AND ht.active = 1
+    WHERE r.date_depart >= CURDATE() AND r.statut = 'confirmée' AND ht.token IS NOT NULL
+    ORDER BY r.date_arrivee ASC
+    LIMIT 50
+")->fetchAll(PDO::FETCH_ASSOC);
+
 $logements = $pdo->query("SELECT id, nom_du_logement FROM liste_logements WHERE actif = 1 ORDER BY nom_du_logement")->fetchAll(PDO::FETCH_ASSOC);
 
 // Stats conversations
@@ -230,8 +242,63 @@ try {
         <?php endif; ?>
     </div>
 
+    <!-- TEST DU BOT -->
+    <div class="card border-0 shadow-sm mt-4" id="testBot">
+        <div class="card-header bg-success bg-opacity-10">
+            <h5 class="mb-0"><i class="fas fa-flask text-success"></i> Tester le bot</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Choisir une reservation (voyageur)</label>
+                    <select id="testResa" class="form-select" onchange="resetTestChat()">
+                        <option value="">-- Selectionner un voyageur --</option>
+                        <?php foreach ($resasTest as $rt): ?>
+                            <option value="<?= htmlspecialchars($rt['token']) ?>">
+                                <?= htmlspecialchars($rt['prenom'] . ' ' . ($rt['nom'] ?? '')) ?> — <?= htmlspecialchars($rt['nom_du_logement']) ?>
+                                (<?= date('d/m', strtotime($rt['date_arrivee'])) ?> → <?= date('d/m', strtotime($rt['date_depart'])) ?>)
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <?php if (empty($resasTest)): ?>
+                        <div class="form-text text-warning">Aucune reservation avec un HUB actif. Generez d'abord un HUB dans "HUB Sejours".</div>
+                    <?php endif; ?>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Statut OpenAI</label>
+                    <div class="mt-2">
+                        <?php if (botSetting($pdo, 'openai_api_key')): ?>
+                            <span class="badge bg-success fs-6"><i class="fas fa-check"></i> Cle API configuree</span>
+                        <?php else: ?>
+                            <span class="badge bg-danger fs-6"><i class="fas fa-times"></i> Pas de cle API</span>
+                            <div class="form-text">Allez dans Configuration pour ajouter votre cle OpenAI.</div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Zone de chat -->
+            <div id="testChatZone" style="display:none;">
+                <div id="testMessages" style="max-height:400px; overflow-y:auto; border:1px solid #e2e8f0; border-radius:8px; padding:12px; margin-bottom:12px; background:#f8fafc;">
+                    <div class="text-center text-muted small py-3">
+                        <i class="fas fa-robot"></i> Envoyez un message pour tester le bot comme si vous etiez le voyageur.
+                    </div>
+                </div>
+                <div class="input-group">
+                    <input type="text" id="testInput" class="form-control" placeholder="Tapez une question comme un voyageur..." maxlength="500"
+                        onkeydown="if(event.key==='Enter')sendTestChat()">
+                    <button class="btn btn-success" onclick="sendTestChat()" id="testSendBtn">
+                        <i class="fas fa-paper-plane"></i> Envoyer
+                    </button>
+                </div>
+                <div class="mt-2 small text-muted">
+                    <strong>Exemples :</strong> "Quel est le code wifi ?", "Y a-t-il un parking ?", "Comment fonctionne la machine a cafe ?", "Est-ce que les animaux sont acceptes ?"
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Suggestions -->
-    <div class="card border-0 shadow-sm mt-4">
         <div class="card-header"><h6 class="mb-0"><i class="fas fa-lightbulb text-warning"></i> Idees d'entrees a ajouter</h6></div>
         <div class="card-body">
             <div class="row g-2">
@@ -336,6 +403,65 @@ function prefillEntry(title, content) {
     editEntry(null);
     document.getElementById('edit_title').value = title;
     document.getElementById('edit_content').value = content;
+}
+
+// --- Test du bot ---
+function resetTestChat() {
+    const token = document.getElementById('testResa').value;
+    const zone = document.getElementById('testChatZone');
+    if (token) {
+        zone.style.display = 'block';
+        document.getElementById('testMessages').innerHTML = '<div class="text-center text-muted small py-3"><i class="fas fa-robot"></i> Pret ! Posez une question comme si vous etiez le voyageur.</div>';
+    } else {
+        zone.style.display = 'none';
+    }
+}
+
+function sendTestChat() {
+    const token = document.getElementById('testResa').value;
+    const input = document.getElementById('testInput');
+    const btn = document.getElementById('testSendBtn');
+    const messages = document.getElementById('testMessages');
+    const text = input.value.trim();
+    if (!text || !token) return;
+
+    // Message utilisateur
+    messages.innerHTML += '<div style="text-align:right; margin-bottom:8px;"><span style="background:#3B82F6; color:white; padding:8px 12px; border-radius:12px 12px 2px 12px; display:inline-block; max-width:80%;">' + escHtml(text) + '</span></div>';
+    input.value = '';
+    btn.disabled = true;
+
+    // Typing
+    const tid = 'typing-' + Date.now();
+    messages.innerHTML += '<div id="' + tid + '" style="margin-bottom:8px;"><span style="background:#f1f5f9; padding:8px 12px; border-radius:12px 12px 12px 2px; display:inline-block;"><i class="fas fa-circle-notch fa-spin"></i> Le bot reflechit...</span></div>';
+    messages.scrollTop = messages.scrollHeight;
+
+    fetch('/frenchybot/api/chat.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({token: token, message: text})
+    })
+    .then(r => r.json())
+    .then(data => {
+        const el = document.getElementById(tid);
+        if (el) el.remove();
+        const reply = data.reply || data.error || 'Erreur inconnue';
+        messages.innerHTML += '<div style="margin-bottom:8px;"><span style="background:#f1f5f9; padding:8px 12px; border-radius:12px 12px 12px 2px; display:inline-block; max-width:80%;">' + escHtml(reply) + '</span></div>';
+        messages.scrollTop = messages.scrollHeight;
+        btn.disabled = false;
+        input.focus();
+    })
+    .catch(e => {
+        const el = document.getElementById(tid);
+        if (el) el.remove();
+        messages.innerHTML += '<div style="margin-bottom:8px;"><span style="background:#fee2e2; padding:8px 12px; border-radius:12px; display:inline-block;">Erreur de connexion : ' + escHtml(e.message) + '</span></div>';
+        btn.disabled = false;
+    });
+}
+
+function escHtml(t) {
+    const d = document.createElement('div');
+    d.textContent = t;
+    return d.innerHTML;
 }
 </script>
 
