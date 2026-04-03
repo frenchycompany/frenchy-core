@@ -130,9 +130,9 @@ function findActiveReservation(PDO $pdo, int $logementId): ?array
 /**
  * Genere l'URL publique du HUB
  */
-function getHubUrl(string $token): string
+function getHubUrl(string $token, ?PDO $pdo = null): string
 {
-    $baseUrl = env('APP_URL', 'https://gestion.frenchyconciergerie.fr');
+    $baseUrl = $pdo ? botSetting($pdo, 'app_url', 'https://gestion.frenchyconciergerie.fr') : env('APP_URL', 'https://gestion.frenchyconciergerie.fr');
     return rtrim($baseUrl, '/') . '/frenchybot/hub/?id=' . $token;
 }
 

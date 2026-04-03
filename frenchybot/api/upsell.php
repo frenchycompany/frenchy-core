@@ -9,6 +9,7 @@ header('Content-Type: application/json');
 require_once __DIR__ . '/../../ionos/gestion/includes/env_loader.php';
 require_once __DIR__ . '/../../ionos/gestion/db/connection.php';
 require_once __DIR__ . '/../includes/hub-functions.php';
+require_once __DIR__ . '/../includes/settings.php';
 
 $input = json_decode(file_get_contents('php://input'), true);
 $token = $input['token'] ?? '';
@@ -46,7 +47,7 @@ if (!$upsell) {
 }
 
 // Verifier Stripe
-$stripeKey = env('STRIPE_SECRET_KEY', '');
+$stripeKey = botSetting($pdo, 'stripe_secret_key');
 if (!$stripeKey) {
     // Pas de Stripe → enregistrer la commande en pending et notifier
     try {
@@ -67,7 +68,7 @@ if (!$stripeKey) {
 }
 
 // Creer la session Stripe Checkout
-$hubUrl = getHubUrl($hub['token']);
+$hubUrl = getHubUrl($hub['token'], $pdo);
 
 $sessionData = [
     'payment_method_types' => ['card'],

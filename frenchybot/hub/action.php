@@ -9,6 +9,7 @@ require_once __DIR__ . '/../../ionos/gestion/includes/env_loader.php';
 require_once __DIR__ . '/../../ionos/gestion/db/connection.php';
 require_once __DIR__ . '/../includes/hub-functions.php';
 require_once __DIR__ . '/../includes/channels.php';
+require_once __DIR__ . '/../includes/settings.php';
 
 $input = json_decode(file_get_contents('php://input'), true);
 $token = $input['token'] ?? '';
@@ -74,7 +75,7 @@ if ($matched) {
 
     // Notifier l'equipe si necessaire (SMS/WhatsApp a l'admin)
     if ($matched['notify']) {
-        $adminPhone = env('ADMIN_PHONE', '');
+        $adminPhone = botSetting($pdo, 'admin_phone');
         if ($adminPhone) {
             $notifMsg = "⚠ HUB Sejour — " . $matched['label'] . "\n"
                 . "Voyageur : " . $hub['prenom'] . " " . ($hub['nom'] ?? '') . "\n"

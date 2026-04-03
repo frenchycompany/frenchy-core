@@ -14,6 +14,7 @@ require_once __DIR__ . '/../../ionos/gestion/includes/env_loader.php';
 require_once __DIR__ . '/../../ionos/gestion/db/connection.php';
 require_once __DIR__ . '/../includes/hub-functions.php';
 require_once __DIR__ . '/../includes/channels.php';
+require_once __DIR__ . '/../includes/settings.php';
 
 $now = new DateTime();
 $today = $now->format('Y-m-d');
@@ -96,7 +97,7 @@ foreach ($msgs as $msg) {
         // Generer le token HUB et l'URL
         try {
             $token = getOrCreateHubToken($pdo, $resa['id'], $resa['logement_id']);
-            $hubUrl = getHubUrl($token);
+            $hubUrl = getHubUrl($token, $pdo);
         } catch (\PDOException $e) {
             $hubUrl = '';
         }

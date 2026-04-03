@@ -151,6 +151,32 @@ CREATE TABLE IF NOT EXISTS bot_conversations (
     FOREIGN KEY (reservation_id) REFERENCES reservation(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- 10. bot_settings : configuration FrenchyBot (remplace le .env pour les cles API)
+CREATE TABLE IF NOT EXISTS bot_settings (
+    setting_key VARCHAR(100) NOT NULL PRIMARY KEY,
+    setting_value TEXT DEFAULT NULL,
+    setting_label VARCHAR(255) DEFAULT NULL,
+    setting_group VARCHAR(50) DEFAULT 'general',
+    setting_type ENUM('text','password','textarea','toggle','select') DEFAULT 'text',
+    sort_order INT DEFAULT 0,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- SEED : parametres par defaut
+INSERT IGNORE INTO bot_settings (setting_key, setting_value, setting_label, setting_group, setting_type, sort_order) VALUES
+('openai_api_key',     '', 'Cle API OpenAI',             'ia',       'password', 1),
+('openai_model',       'gpt-4o-mini', 'Modele OpenAI',   'ia',       'select',   2),
+('whatsapp_token',     '', 'Token WhatsApp (Meta)',       'whatsapp', 'password', 1),
+('whatsapp_phone_id',  '', 'Phone ID WhatsApp',           'whatsapp', 'text',     2),
+('stripe_secret_key',  '', 'Cle secrete Stripe',          'stripe',   'password', 1),
+('stripe_webhook_secret','', 'Secret Webhook Stripe',     'stripe',   'password', 2),
+('admin_phone',        '', 'Telephone admin (notifications)', 'general', 'text',  1),
+('app_url',            'https://gestion.frenchyconciergerie.fr', 'URL de l''application', 'general', 'text', 2),
+('bot_name',           'Frenchy', 'Nom du bot',            'ia',       'text',     3),
+('bot_instructions',   'Tu es un assistant amical et professionnel pour une conciergerie de locations courte duree.', 'Instructions generales du bot', 'ia', 'textarea', 4),
+('auto_generate_hub',  '0', 'Generer automatiquement les HUB pour les nouvelles reservations', 'general', 'toggle', 3),
+('notify_on_chat',     '1', 'Notifier l''admin quand le bot ne sait pas repondre', 'general', 'toggle', 4);
+
 -- =====================================================
 -- SEED : upsells par defaut
 -- =====================================================

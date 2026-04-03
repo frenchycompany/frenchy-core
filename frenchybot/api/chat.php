@@ -12,6 +12,7 @@ require_once __DIR__ . '/../../ionos/gestion/db/connection.php';
 require_once __DIR__ . '/../includes/hub-functions.php';
 require_once __DIR__ . '/../includes/openai.php';
 require_once __DIR__ . '/../includes/channels.php';
+require_once __DIR__ . '/../includes/settings.php';
 
 $input = json_decode(file_get_contents('php://input'), true);
 $token = $input['token'] ?? '';
@@ -60,10 +61,10 @@ try {
 trackInteraction($pdo, $hub['hub_token_id'], $hub['reservation_id'], 'chat', ['message' => $userMessage]);
 
 // Verifier si OpenAI est configure
-$apiKey = env('OPENAI_API_KEY', '');
+$apiKey = botSetting($pdo, 'openai_api_key');
 if (!$apiKey) {
     // Fallback : notification a l'equipe + message generique
-    $adminPhone = env('ADMIN_PHONE', '');
+    $adminPhone = botSetting($pdo, 'admin_phone');
     if ($adminPhone) {
         $notifMsg = "💬 Question HUB (pas d'IA)\nVoyageur : {$hub['prenom']} {$hub['nom']}\nMessage : " . mb_substr($userMessage, 0, 200);
         sendMessage($pdo, $adminPhone, $notifMsg, $hub['reservation_id']);
@@ -90,7 +91,7 @@ $messages[] = ['role' => 'user', 'content' => $userMessage];
 
 // Appeler OpenAI
 $systemPrompt = buildSystemPrompt($pdo, $hub);
-$result = callOpenAI($systemPrompt, $messages);
+$result = callOpenAI($systemPrompt, $messages, $pdo);
 
 if ($result['success']) {
     $reply = $result['message'];
@@ -109,7 +110,7 @@ if ($result['success']) {
     }
 
     if ($shouldNotify) {
-        $adminPhone = env('ADMIN_PHONE', '');
+        $adminPhone = botSetting($pdo, 'admin_phone');
         if ($adminPhone) {
             $notifMsg = "🤖 FrenchyBot ne sait pas repondre\nVoyageur : {$hub['prenom']} {$hub['nom']}\nQuestion : " . mb_substr($userMessage, 0, 200);
             sendMessage($pdo, $adminPhone, $notifMsg, $hub['reservation_id']);
@@ -121,7 +122,7 @@ if ($result['success']) {
     // Erreur API → fallback notification
     error_log('OpenAI error: ' . ($result['error'] ?? 'Unknown'));
 
-    $adminPhone = env('ADMIN_PHONE', '');
+    $adminPhone = botSetting($pdo, 'admin_phone');
     if ($adminPhone) {
         $notifMsg = "⚠ Erreur IA HUB\nVoyageur : {$hub['prenom']} {$hub['nom']}\nMessage : " . mb_substr($userMessage, 0, 200);
         sendMessage($pdo, $adminPhone, $notifMsg, $hub['reservation_id']);

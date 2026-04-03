@@ -60,7 +60,7 @@ function sendMessage(PDO $pdo, string $phone, string $message, ?int $reservation
         return sendSms($pdo, $normalized, $message, $reservationId);
     }
 
-    return sendWhatsApp($normalized, $message, $reservationId);
+    return sendWhatsApp($normalized, $message, $reservationId, $pdo);
 }
 
 /**
@@ -84,10 +84,10 @@ function sendSms(PDO $pdo, string $phone, string $message, ?int $reservationId =
  * WhatsApp via Meta Cloud API
  * Config requise dans .env : WHATSAPP_TOKEN, WHATSAPP_PHONE_ID
  */
-function sendWhatsApp(string $phone, string $message, ?int $reservationId = null): array
+function sendWhatsApp(string $phone, string $message, ?int $reservationId = null, ?PDO $pdo = null): array
 {
-    $token = env('WHATSAPP_TOKEN', '');
-    $phoneId = env('WHATSAPP_PHONE_ID', '');
+    $token = $pdo ? botSetting($pdo, 'whatsapp_token') : env('WHATSAPP_TOKEN', '');
+    $phoneId = $pdo ? botSetting($pdo, 'whatsapp_phone_id') : env('WHATSAPP_PHONE_ID', '');
 
     if (!$token || !$phoneId) {
         return ['success' => false, 'channel' => 'whatsapp', 'error' => 'WhatsApp non configure (WHATSAPP_TOKEN / WHATSAPP_PHONE_ID manquants)'];

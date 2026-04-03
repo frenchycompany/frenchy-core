@@ -116,6 +116,7 @@ if (!isset($menu_categories)) {
                 ['nom' => 'Messages auto',     'chemin' => 'pages/frenchybot_auto_messages.php',  'icon' => 'fa-envelope-open-text'],
                 ['nom' => 'Upsells',           'chemin' => 'pages/frenchybot_upsells.php',        'icon' => 'fa-shopping-cart'],
                 ['nom' => 'QR Codes',          'chemin' => 'pages/frenchybot_qrcodes.php',        'icon' => 'fa-qrcode'],
+                ['nom' => 'Configuration',     'chemin' => 'pages/frenchybot_settings.php',      'icon' => 'fa-cog'],
             ]
         ],
         'Outils' => [

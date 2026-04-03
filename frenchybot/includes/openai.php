@@ -10,14 +10,14 @@
  * @param array $messages Historique [{role, content}, ...]
  * @return array{success: bool, message?: string, error?: string}
  */
-function callOpenAI(string $systemPrompt, array $messages): array
+function callOpenAI(string $systemPrompt, array $messages, ?PDO $pdo = null): array
 {
-    $apiKey = env('OPENAI_API_KEY', '');
+    $apiKey = $pdo ? botSetting($pdo, 'openai_api_key') : env('OPENAI_API_KEY', '');
     if (!$apiKey) {
-        return ['success' => false, 'error' => 'OPENAI_API_KEY non configure'];
+        return ['success' => false, 'error' => 'Cle API OpenAI non configuree (allez dans FrenchyBot > Configuration)'];
     }
 
-    $model = env('OPENAI_MODEL', 'gpt-4o-mini');
+    $model = $pdo ? botSetting($pdo, 'openai_model', 'gpt-4o-mini') : env('OPENAI_MODEL', 'gpt-4o-mini');
 
     $payload = [
         'model' => $model,
@@ -87,7 +87,11 @@ function buildSystemPrompt(PDO $pdo, array $hubData): string
         // Table peut ne pas exister encore
     }
 
-    $prompt = "Tu es l'assistant virtuel de Frenchy Conciergerie. Tu aides les voyageurs pendant leur sejour.
+    // Instructions personnalisees depuis l'admin
+    $botName = botSetting($pdo, 'bot_name', 'Frenchy');
+    $customInstructions = botSetting($pdo, 'bot_instructions', '');
+
+    $prompt = "Tu es $botName, l'assistant virtuel de Frenchy Conciergerie. Tu aides les voyageurs pendant leur sejour.
 
 REGLES IMPORTANTES :
 - Reponds toujours en francais, de maniere amicale et professionnelle
@@ -95,7 +99,14 @@ REGLES IMPORTANTES :
 - Si tu ne connais pas la reponse, dis-le honnêtement et propose de contacter l'equipe
 - Ne donne JAMAIS d'informations que tu n'as pas dans le contexte
 - Utilise des emojis avec parcimonie (1-2 max par message)
-- Tu peux utiliser du texte simple (pas de HTML ni markdown)
+- Tu peux utiliser du texte simple (pas de HTML ni markdown)";
+
+    if ($customInstructions) {
+        $prompt .= "\n\nINSTRUCTIONS SUPPLEMENTAIRES DU PROPRIETAIRE :\n$customInstructions";
+    }
+
+    $prompt .= "
+
 
 CONTEXTE DU SEJOUR :
 - Voyageur : {$hubData['prenom']} {$hubData['nom']}
