@@ -291,4 +291,3 @@ function togglePassword(fieldId) {
 }
 </script>
 
-<?php include '../includes/footer.php'; ?>

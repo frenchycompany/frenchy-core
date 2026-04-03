@@ -268,4 +268,3 @@ function editMessage(msg) {
 }
 </script>
 
-<?php include '../includes/footer.php'; ?>

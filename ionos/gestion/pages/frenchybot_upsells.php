@@ -290,4 +290,3 @@ function editUpsell(u) {
 }
 </script>
 
-<?php include '../includes/footer.php'; ?>

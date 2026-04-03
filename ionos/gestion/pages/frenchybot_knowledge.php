@@ -339,4 +339,3 @@ function prefillEntry(title, content) {
 }
 </script>
 
-<?php include '../includes/footer.php'; ?>

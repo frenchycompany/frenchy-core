@@ -140,4 +140,3 @@ function copyUrl(url, btn) {
 }
 </script>
 
-<?php include '../includes/footer.php'; ?>
