@@ -123,6 +123,34 @@ CREATE TABLE IF NOT EXISTS hub_qr_scans (
     FOREIGN KEY (hub_token_id) REFERENCES hub_tokens(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- 8. bot_knowledge : base de connaissances pour le chatbot IA
+CREATE TABLE IF NOT EXISTS bot_knowledge (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    logement_id INT DEFAULT NULL,
+    title VARCHAR(255) NOT NULL,
+    content TEXT NOT NULL,
+    active TINYINT(1) NOT NULL DEFAULT 1,
+    sort_order INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    KEY idx_logement_active (logement_id, active),
+    FOREIGN KEY (logement_id) REFERENCES liste_logements(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 9. bot_conversations : historique des conversations chatbot
+CREATE TABLE IF NOT EXISTS bot_conversations (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    hub_token_id INT NOT NULL,
+    reservation_id INT NOT NULL,
+    role ENUM('user','assistant') NOT NULL,
+    content TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    KEY idx_token_date (hub_token_id, created_at),
+    KEY idx_reservation (reservation_id),
+    FOREIGN KEY (hub_token_id) REFERENCES hub_tokens(id) ON DELETE CASCADE,
+    FOREIGN KEY (reservation_id) REFERENCES reservation(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- =====================================================
 -- SEED : upsells par defaut
 -- =====================================================

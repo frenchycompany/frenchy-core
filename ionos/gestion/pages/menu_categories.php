@@ -108,6 +108,16 @@ if (!isset($menu_categories)) {
                 ['nom' => 'Carnet clients',    'chemin' => 'pages/clients.php',                    'icon' => 'fa-address-book'],
             ]
         ],
+        'FrenchyBot' => [
+            'icon' => 'fa-robot',
+            'items' => [
+                ['nom' => 'HUB Séjours',      'chemin' => 'pages/frenchybot_hub.php',            'icon' => 'fa-concierge-bell'],
+                ['nom' => 'Base connaissances','chemin' => 'pages/frenchybot_knowledge.php',      'icon' => 'fa-brain'],
+                ['nom' => 'Messages auto',     'chemin' => 'pages/frenchybot_auto_messages.php',  'icon' => 'fa-envelope-open-text'],
+                ['nom' => 'Upsells',           'chemin' => 'pages/frenchybot_upsells.php',        'icon' => 'fa-shopping-cart'],
+                ['nom' => 'QR Codes',          'chemin' => 'pages/frenchybot_qrcodes.php',        'icon' => 'fa-qrcode'],
+            ]
+        ],
         'Outils' => [
             'icon' => 'fa-tools',
             'items' => [

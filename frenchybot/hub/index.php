@@ -216,6 +216,59 @@ $heureDepart = $hub['heure_depart'] ?: ($equip['heure_checkout'] ?? '10:00');
         }
         #chatArea { display: none; }
 
+        .chat-container {
+            border-top: 1px solid var(--fc-border);
+            margin-top: 12px;
+            padding-top: 12px;
+        }
+        .chat-messages {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 12px;
+        }
+        .chat-input-row {
+            display: flex;
+            gap: 8px;
+        }
+        .chat-input-row input {
+            flex: 1;
+            border: 1px solid var(--fc-border);
+            border-radius: 20px;
+            padding: 10px 16px;
+            font-size: 0.9rem;
+            outline: none;
+        }
+        .chat-input-row input:focus { border-color: var(--fc-primary); }
+        .chat-send-btn {
+            background: var(--fc-primary);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 42px;
+            height: 42px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .chat-send-btn:disabled { opacity: 0.5; }
+        .typing-dots { display: inline-block; }
+        .typing-dots span {
+            display: inline-block;
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: var(--fc-text-muted);
+            margin: 0 1px;
+            animation: typing 1.2s infinite;
+        }
+        .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-4px); }
+        }
+
         .hub-footer {
             position: fixed;
             bottom: 0;
@@ -374,6 +427,25 @@ $heureDepart = $hub['heure_depart'] ?: ($equip['heure_checkout'] ?? '10:00');
     </div>
     <?php endif; ?>
 
+    <!-- Chat IA -->
+    <?php if ($sejour['status'] === 'during' || $sejour['status'] === 'before'): ?>
+    <div class="hub-card">
+        <div class="hub-card-header">
+            <i class="fas fa-comment-dots" style="color:var(--fc-primary)"></i> Une question ?
+        </div>
+        <div class="hub-card-body">
+            <div class="chat-messages" id="chatMessages"></div>
+            <div class="chat-input-row">
+                <input type="text" id="chatInput" placeholder="Posez votre question..." maxlength="500"
+                    onkeydown="if(event.key==='Enter')sendChat()">
+                <button class="chat-send-btn" id="chatSendBtn" onclick="sendChat()">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
+
     <!-- Upsells -->
     <?php if (!empty($hub['upsells']) && $sejour['status'] !== 'after'): ?>
     <div class="hub-card">
@@ -468,6 +540,55 @@ function handleAction(actionId) {
     .catch(() => {
         chatArea.innerHTML = '<div class="chat-response">Votre demande a ete transmise. Nous vous recontactons rapidement.</div>';
     });
+}
+
+function sendChat() {
+    const input = document.getElementById('chatInput');
+    const btn = document.getElementById('chatSendBtn');
+    const messages = document.getElementById('chatMessages');
+    const text = input.value.trim();
+    if (!text) return;
+
+    // Afficher le message utilisateur
+    messages.innerHTML += '<div class="chat-bubble" style="border-radius:12px 12px 2px 12px; background:var(--fc-primary); color:white; margin-left:40px;">' + escapeHtml(text) + '</div>';
+    input.value = '';
+    btn.disabled = true;
+
+    // Indicateur de frappe
+    const typingId = 'typing-' + Date.now();
+    messages.innerHTML += '<div class="chat-response" id="' + typingId + '"><div class="typing-dots"><span></span><span></span><span></span></div></div>';
+    messages.scrollTop = messages.scrollHeight;
+
+    fetch('../api/chat.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({token: TOKEN, message: text})
+    })
+    .then(r => r.json())
+    .then(data => {
+        const typing = document.getElementById(typingId);
+        if (typing) typing.remove();
+        if (data.reply) {
+            messages.innerHTML += '<div class="chat-response">' + escapeHtml(data.reply) + '</div>';
+        } else if (data.error) {
+            messages.innerHTML += '<div class="chat-response">Votre message a ete transmis a notre equipe.</div>';
+        }
+        messages.scrollTop = messages.scrollHeight;
+        btn.disabled = false;
+        input.focus();
+    })
+    .catch(() => {
+        const typing = document.getElementById(typingId);
+        if (typing) typing.remove();
+        messages.innerHTML += '<div class="chat-response">Erreur de connexion. Reessayez.</div>';
+        btn.disabled = false;
+    });
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 
 function buyUpsell(upsellId) {
