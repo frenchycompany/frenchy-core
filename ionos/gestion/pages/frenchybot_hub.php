@@ -6,7 +6,7 @@
 include '../config.php';
 include '../pages/menu.php';
 require_once __DIR__ . '/../includes/csrf.php';
-require_once __DIR__ . '/../../frenchybot/includes/hub-functions.php';
+require_once __DIR__ . '/../../../frenchybot/includes/hub-functions.php';
 
 $appUrl = env('APP_URL', 'https://gestion.frenchyconciergerie.fr');
 

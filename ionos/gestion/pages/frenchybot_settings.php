@@ -6,7 +6,7 @@
 include '../config.php';
 include '../pages/menu.php';
 require_once __DIR__ . '/../includes/csrf.php';
-require_once __DIR__ . '/../../frenchybot/includes/settings.php';
+require_once __DIR__ . '/../../../frenchybot/includes/settings.php';
 
 // --- Actions POST ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -26,7 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($action === 'test_openai') {
-        require_once __DIR__ . '/../../frenchybot/includes/openai.php';
+        require_once __DIR__ . '/../../../frenchybot/includes/openai.php';
         $apiKey = trim($_POST['test_key'] ?? '');
         if (!$apiKey) $apiKey = botSetting($pdo, 'openai_api_key');
 

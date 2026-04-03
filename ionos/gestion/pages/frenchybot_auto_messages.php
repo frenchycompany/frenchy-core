@@ -167,7 +167,7 @@ $triggerLabels = [
         <div class="card-body">
             <h6><i class="fas fa-terminal"></i> Configuration CRON</h6>
             <p class="small text-muted mb-1">Ajouter cette ligne au crontab du serveur pour l'envoi automatique :</p>
-            <code>0 * * * * php <?= realpath(__DIR__ . '/../../frenchybot/cron/auto-messages.php') ?: '/var/www/frenchy-core/frenchybot/cron/auto-messages.php' ?></code>
+            <code>0 * * * * php <?= realpath(__DIR__ . '/../../../frenchybot/cron/auto-messages.php') ?: '/var/www/frenchy-core/frenchybot/cron/auto-messages.php' ?></code>
         </div>
     </div>
 </div>
