@@ -6,9 +6,15 @@
 include '../config.php';
 include '../pages/menu.php';
 require_once __DIR__ . '/../includes/csrf.php';
-require_once __DIR__ . '/../../../frenchybot/includes/hub-functions.php';
 
-$appUrl = env('APP_URL', 'https://gestion.frenchyconciergerie.fr');
+// Charger includes FrenchyBot de maniere safe
+$fbBase = realpath(__DIR__ . '/../../../frenchybot/includes');
+if ($fbBase) {
+    require_once $fbBase . '/hub-functions.php';
+    if (file_exists($fbBase . '/settings.php')) require_once $fbBase . '/settings.php';
+}
+
+$appUrl = function_exists('botSetting') ? botSetting($pdo, 'app_url', 'https://gestion.frenchyconciergerie.fr') : env('APP_URL', 'https://gestion.frenchyconciergerie.fr');
 
 // --- Actions POST ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

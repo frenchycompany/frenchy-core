@@ -52,6 +52,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 
+// Charger settings de maniere safe
+$settingsFile = realpath(__DIR__ . '/../../../frenchybot/includes/settings.php');
+if ($settingsFile && file_exists($settingsFile)) {
+    require_once $settingsFile;
+} else {
+    function botSetting(PDO $pdo, string $key, string $default = ''): string {
+        try {
+            $stmt = $pdo->prepare("SELECT setting_value FROM bot_settings WHERE setting_key = ?");
+            $stmt->execute([$key]);
+            $val = $stmt->fetchColumn();
+            return ($val !== false && $val !== '') ? $val : $default;
+        } catch (\PDOException $e) { return $default; }
+    }
+}
+
 // --- Donnees ---
 $entries = $pdo->query("
     SELECT bk.*, l.nom_du_logement
@@ -435,7 +450,7 @@ function sendTestChat() {
     messages.innerHTML += '<div id="' + tid + '" style="margin-bottom:8px;"><span style="background:#f1f5f9; padding:8px 12px; border-radius:12px 12px 12px 2px; display:inline-block;"><i class="fas fa-circle-notch fa-spin"></i> Le bot reflechit...</span></div>';
     messages.scrollTop = messages.scrollHeight;
 
-    fetch('/frenchybot/api/chat.php', {
+    fetch('<?= rtrim(botSetting($pdo, "app_url", "https://gestion.frenchyconciergerie.fr"), "/") ?>/frenchybot/api/chat.php', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({token: token, message: text})

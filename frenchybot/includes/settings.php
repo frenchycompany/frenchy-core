@@ -70,9 +70,4 @@ function saveBotSetting(PDO $pdo, string $key, string $value): void
         ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)
     ");
     $stmt->execute([$key, $value]);
-
-    // Invalider le cache
-    // Force reload au prochain appel
-    $ref = new ReflectionFunction('botSettings');
-    // On ne peut pas invalider un static facilement, mais le redirect POST→GET suffit
 }
