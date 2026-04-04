@@ -71,7 +71,8 @@ if (!$apiKey) {
     }
     echo json_encode([
         'ok' => true,
-        'reply' => "Merci pour votre message ! Notre equipe a ete notifiee et vous recontactera rapidement."
+        'reply' => "Merci pour votre message ! Notre equipe a ete notifiee et vous recontactera rapidement.",
+        'debug_error' => 'no_api_key'
     ]);
     exit;
 }
@@ -129,7 +130,8 @@ if ($result['success']) {
     }
 
     echo json_encode([
-        'ok' => true,
-        'reply' => "Merci pour votre message ! Notre equipe a ete notifiee et vous recontactera rapidement."
+        'ok' => false,
+        'reply' => "Desole, une erreur technique est survenue. Notre equipe a ete notifiee.",
+        'debug_error' => $result['error'] ?? 'Unknown'
     ]);
 }
