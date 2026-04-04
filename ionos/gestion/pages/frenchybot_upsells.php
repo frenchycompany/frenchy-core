@@ -6,6 +6,15 @@
 include '../config.php';
 include '../pages/menu.php';
 
+// Creer la table de liaison si elle n'existe pas
+try {
+    $pdo->exec("CREATE TABLE IF NOT EXISTS upsell_logements (
+        upsell_id INT NOT NULL,
+        logement_id INT NOT NULL,
+        PRIMARY KEY (upsell_id, logement_id)
+    )");
+} catch (\PDOException $e) {}
+
 // --- Actions POST ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     validateCsrfToken();
@@ -19,18 +28,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $price = (float)($_POST['price'] ?? 0);
         $icon = trim($_POST['icon'] ?? 'fa-gift');
         $stripeLink = trim($_POST['stripe_link'] ?? '');
-        $logementId = !empty($_POST['logement_id']) ? (int)$_POST['logement_id'] : null;
+        $selectedLogements = $_POST['logement_ids'] ?? [];
         $active = isset($_POST['active']) ? 1 : 0;
         $sortOrder = (int)($_POST['sort_order'] ?? 0);
 
         if ($name && $label && $price > 0) {
             if ($id) {
-                $stmt = $pdo->prepare("UPDATE upsells SET name=?, label=?, description=?, price=?, icon=?, stripe_link=?, logement_id=?, active=?, sort_order=? WHERE id=?");
-                $stmt->execute([$name, $label, $description, $price, $icon, $stripeLink, $logementId, $active, $sortOrder, $id]);
+                $stmt = $pdo->prepare("UPDATE upsells SET name=?, label=?, description=?, price=?, icon=?, stripe_link=?, logement_id=NULL, active=?, sort_order=? WHERE id=?");
+                $stmt->execute([$name, $label, $description, $price, $icon, $stripeLink, $active, $sortOrder, $id]);
             } else {
-                $stmt = $pdo->prepare("INSERT INTO upsells (name, label, description, price, icon, stripe_link, logement_id, active, sort_order) VALUES (?,?,?,?,?,?,?,?,?)");
-                $stmt->execute([$name, $label, $description, $price, $icon, $stripeLink, $logementId, $active, $sortOrder]);
+                $stmt = $pdo->prepare("INSERT INTO upsells (name, label, description, price, icon, stripe_link, logement_id, active, sort_order) VALUES (?,?,?,?,?,?,NULL,?,?)");
+                $stmt->execute([$name, $label, $description, $price, $icon, $stripeLink, $active, $sortOrder]);
+                $id = (int)$pdo->lastInsertId();
             }
+
+            // Mettre a jour les logements associes
+            $pdo->prepare("DELETE FROM upsell_logements WHERE upsell_id = ?")->execute([$id]);
+            if (!empty($selectedLogements)) {
+                $ins = $pdo->prepare("INSERT INTO upsell_logements (upsell_id, logement_id) VALUES (?, ?)");
+                foreach ($selectedLogements as $lid) {
+                    $lid = (int)$lid;
+                    if ($lid) $ins->execute([$id, $lid]);
+                }
+            }
+
             $_SESSION['flash'] = 'Upsell sauvegarde.';
         }
     }
@@ -38,6 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'delete_upsell') {
         $id = (int)($_POST['id'] ?? 0);
         if ($id) {
+            $pdo->prepare("DELETE FROM upsell_logements WHERE upsell_id = ?")->execute([$id]);
             $pdo->prepare("DELETE FROM upsells WHERE id = ?")->execute([$id]);
             $_SESSION['flash'] = 'Upsell supprime.';
         }
@@ -50,20 +72,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    header('Location: ' . $_SERVER['REQUEST_URI']);
+    header('Location: frenchybot_upsells.php');
     exit;
 }
 
 // --- Donnees ---
 $upsells = $pdo->query("
-    SELECT u.*, l.nom_du_logement,
+    SELECT u.*,
            (SELECT COUNT(*) FROM upsell_orders WHERE upsell_id = u.id) AS nb_orders,
            (SELECT COUNT(*) FROM upsell_orders WHERE upsell_id = u.id AND status = 'paid') AS nb_paid,
            (SELECT COALESCE(SUM(amount), 0) FROM upsell_orders WHERE upsell_id = u.id AND status = 'paid') AS revenue
     FROM upsells u
-    LEFT JOIN liste_logements l ON u.logement_id = l.id
     ORDER BY u.sort_order, u.id
 ")->fetchAll(PDO::FETCH_ASSOC);
+
+// Charger les logements associes pour chaque upsell
+foreach ($upsells as &$u) {
+    $stmt = $pdo->prepare("
+        SELECT ul.logement_id, l.nom_du_logement
+        FROM upsell_logements ul
+        JOIN liste_logements l ON ul.logement_id = l.id
+        WHERE ul.upsell_id = ?
+        ORDER BY l.nom_du_logement
+    ");
+    $stmt->execute([$u['id']]);
+    $u['_logements'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $u['_logement_ids'] = array_column($u['_logements'], 'logement_id');
+}
+unset($u);
 
 $logements = $pdo->query("SELECT id, nom_du_logement FROM liste_logements WHERE actif = 1 ORDER BY nom_du_logement")->fetchAll(PDO::FETCH_ASSOC);
 
@@ -129,7 +165,7 @@ try {
                         <tr>
                             <th>Ordre</th>
                             <th>Upsell</th>
-                            <th>Logement</th>
+                            <th>Logements</th>
                             <th>Prix</th>
                             <th>Stripe</th>
                             <th>Commandes</th>
@@ -147,7 +183,15 @@ try {
                                 <strong><?= htmlspecialchars($u['label']) ?></strong>
                                 <div class="small text-muted"><?= htmlspecialchars($u['description'] ?? '') ?></div>
                             </td>
-                            <td><?= $u['nom_du_logement'] ? htmlspecialchars($u['nom_du_logement']) : '<span class="text-muted">Tous</span>' ?></td>
+                            <td>
+                                <?php if (empty($u['_logements'])): ?>
+                                    <span class="text-muted">Tous</span>
+                                <?php else: ?>
+                                    <?php foreach ($u['_logements'] as $ul): ?>
+                                        <span class="badge bg-light text-dark mb-1"><?= htmlspecialchars($ul['nom_du_logement']) ?></span>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </td>
                             <td><strong><?= number_format($u['price'], 2) ?> &euro;</strong></td>
                             <td>
                                 <?php if (!empty($u['stripe_link'])): ?>
@@ -206,7 +250,7 @@ try {
 
 <!-- Modal Edition -->
 <div class="modal fade" id="editModal" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <form method="POST">
                 <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
@@ -245,18 +289,21 @@ try {
                         <div class="col-12">
                             <label class="form-label"><i class="fab fa-stripe text-primary"></i> Lien de paiement Stripe</label>
                             <input type="url" name="stripe_link" id="edit_stripe_link" class="form-control" placeholder="https://buy.stripe.com/...">
-                            <div class="form-text">Collez votre lien Stripe Payment Link. Le voyageur sera redirige vers ce lien pour payer. <a href="https://dashboard.stripe.com/payment-links" target="_blank">Creer un lien</a></div>
+                            <div class="form-text">Collez votre lien Stripe Payment Link. <a href="https://dashboard.stripe.com/payment-links" target="_blank">Creer un lien</a></div>
                         </div>
-                        <div class="col-md-8">
-                            <label class="form-label">Logement</label>
-                            <select name="logement_id" id="edit_logement" class="form-select">
-                                <option value="">Tous les logements</option>
+                        <div class="col-12">
+                            <label class="form-label">Logements concernes</label>
+                            <div class="border rounded p-2" style="max-height:200px; overflow-y:auto;">
                                 <?php foreach ($logements as $l): ?>
-                                    <option value="<?= $l['id'] ?>"><?= htmlspecialchars($l['nom_du_logement']) ?></option>
+                                <div class="form-check">
+                                    <input type="checkbox" name="logement_ids[]" value="<?= $l['id'] ?>" class="form-check-input logement-check" id="log_<?= $l['id'] ?>">
+                                    <label class="form-check-label" for="log_<?= $l['id'] ?>"><?= htmlspecialchars($l['nom_du_logement']) ?></label>
+                                </div>
                                 <?php endforeach; ?>
-                            </select>
+                            </div>
+                            <div class="form-text">Ne rien cocher = disponible pour tous les logements. Cochez pour restreindre.</div>
                         </div>
-                        <div class="col-md-4 d-flex align-items-end">
+                        <div class="col-12">
                             <div class="form-check">
                                 <input type="checkbox" name="active" id="edit_active" class="form-check-input" checked>
                                 <label class="form-check-label" for="edit_active">Actif</label>
@@ -275,6 +322,9 @@ try {
 
 <script>
 function editUpsell(u) {
+    // Reset toutes les checkboxes logement
+    document.querySelectorAll('.logement-check').forEach(cb => cb.checked = false);
+
     if (u) {
         document.getElementById('editModalTitle').textContent = 'Modifier l\'upsell';
         document.getElementById('edit_id').value = u.id;
@@ -285,8 +335,12 @@ function editUpsell(u) {
         document.getElementById('edit_icon').value = u.icon || 'fa-gift';
         document.getElementById('edit_stripe_link').value = u.stripe_link || '';
         document.getElementById('edit_sort').value = u.sort_order || 0;
-        document.getElementById('edit_logement').value = u.logement_id || '';
         document.getElementById('edit_active').checked = !!u.active;
+        // Cocher les logements associes
+        (u._logement_ids || []).forEach(function(lid) {
+            var cb = document.getElementById('log_' + lid);
+            if (cb) cb.checked = true;
+        });
     } else {
         document.getElementById('editModalTitle').textContent = 'Nouvel upsell';
         document.getElementById('edit_id').value = 0;
@@ -297,7 +351,6 @@ function editUpsell(u) {
         document.getElementById('edit_icon').value = 'fa-gift';
         document.getElementById('edit_stripe_link').value = '';
         document.getElementById('edit_sort').value = 0;
-        document.getElementById('edit_logement').value = '';
         document.getElementById('edit_active').checked = true;
     }
 }
