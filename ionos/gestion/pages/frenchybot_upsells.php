@@ -6,73 +6,80 @@
 include '../config.php';
 include '../pages/menu.php';
 
-// Creer la table de liaison si elle n'existe pas
-try {
-    $pdo->exec("CREATE TABLE IF NOT EXISTS upsell_logements (
-        upsell_id INT NOT NULL,
-        logement_id INT NOT NULL,
-        PRIMARY KEY (upsell_id, logement_id)
-    )");
-} catch (\PDOException $e) {}
-
 // --- Actions POST ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     validateCsrfToken();
     $action = $_POST['action'] ?? '';
 
-    if ($action === 'save_upsell') {
-        $id = (int)($_POST['id'] ?? 0);
-        $name = trim($_POST['name'] ?? '');
-        $label = trim($_POST['label'] ?? '');
-        $description = trim($_POST['description'] ?? '');
-        $price = (float)($_POST['price'] ?? 0);
-        $icon = trim($_POST['icon'] ?? 'fa-gift');
-        $stripeLink = trim($_POST['stripe_link'] ?? '');
-        $selectedLogements = $_POST['logement_ids'] ?? [];
-        $active = isset($_POST['active']) ? 1 : 0;
-        $sortOrder = (int)($_POST['sort_order'] ?? 0);
+    try {
+        // Creer la table de liaison si elle n'existe pas
+        $pdo->exec("CREATE TABLE IF NOT EXISTS upsell_logements (
+            upsell_id INT NOT NULL,
+            logement_id INT NOT NULL,
+            PRIMARY KEY (upsell_id, logement_id)
+        )");
+    } catch (\PDOException $e) {}
 
-        if ($name && $label && $price > 0) {
-            if ($id) {
-                $stmt = $pdo->prepare("UPDATE upsells SET name=?, label=?, description=?, price=?, icon=?, stripe_link=?, logement_id=NULL, active=?, sort_order=? WHERE id=?");
-                $stmt->execute([$name, $label, $description, $price, $icon, $stripeLink, $active, $sortOrder, $id]);
-            } else {
-                $stmt = $pdo->prepare("INSERT INTO upsells (name, label, description, price, icon, stripe_link, logement_id, active, sort_order) VALUES (?,?,?,?,?,?,NULL,?,?)");
-                $stmt->execute([$name, $label, $description, $price, $icon, $stripeLink, $active, $sortOrder]);
-                $id = (int)$pdo->lastInsertId();
-            }
+    try {
+        if ($action === 'save_upsell') {
+            $id = (int)($_POST['id'] ?? 0);
+            $name = trim($_POST['name'] ?? '');
+            $label = trim($_POST['label'] ?? '');
+            $description = trim($_POST['description'] ?? '');
+            $price = (float)($_POST['price'] ?? 0);
+            $icon = trim($_POST['icon'] ?? 'fa-gift');
+            $stripeLink = trim($_POST['stripe_link'] ?? '');
+            $selectedLogements = $_POST['logement_ids'] ?? [];
+            $active = isset($_POST['active']) ? 1 : 0;
+            $sortOrder = (int)($_POST['sort_order'] ?? 0);
 
-            // Mettre a jour les logements associes
-            $pdo->prepare("DELETE FROM upsell_logements WHERE upsell_id = ?")->execute([$id]);
-            if (!empty($selectedLogements)) {
-                $ins = $pdo->prepare("INSERT INTO upsell_logements (upsell_id, logement_id) VALUES (?, ?)");
-                foreach ($selectedLogements as $lid) {
-                    $lid = (int)$lid;
-                    if ($lid) $ins->execute([$id, $lid]);
+            if ($name && $label && $price > 0) {
+                if ($id) {
+                    $stmt = $pdo->prepare("UPDATE upsells SET name=?, label=?, description=?, price=?, icon=?, stripe_link=?, logement_id=NULL, active=?, sort_order=? WHERE id=?");
+                    $stmt->execute([$name, $label, $description, $price, $icon, $stripeLink, $active, $sortOrder, $id]);
+                } else {
+                    $stmt = $pdo->prepare("INSERT INTO upsells (name, label, description, price, icon, stripe_link, logement_id, active, sort_order) VALUES (?,?,?,?,?,?,NULL,?,?)");
+                    $stmt->execute([$name, $label, $description, $price, $icon, $stripeLink, $active, $sortOrder]);
+                    $id = (int)$pdo->lastInsertId();
                 }
+
+                // Mettre a jour les logements associes
+                try {
+                    $pdo->prepare("DELETE FROM upsell_logements WHERE upsell_id = ?")->execute([$id]);
+                    if (!empty($selectedLogements)) {
+                        $ins = $pdo->prepare("INSERT INTO upsell_logements (upsell_id, logement_id) VALUES (?, ?)");
+                        foreach ($selectedLogements as $lid) {
+                            $lid = (int)$lid;
+                            if ($lid) $ins->execute([$id, $lid]);
+                        }
+                    }
+                } catch (\PDOException $e) {}
+
+                $_SESSION['flash'] = 'Upsell sauvegarde.';
             }
-
-            $_SESSION['flash'] = 'Upsell sauvegarde.';
         }
+
+        if ($action === 'delete_upsell') {
+            $id = (int)($_POST['id'] ?? 0);
+            if ($id) {
+                try { $pdo->prepare("DELETE FROM upsell_logements WHERE upsell_id = ?")->execute([$id]); } catch (\PDOException $e) {}
+                $pdo->prepare("DELETE FROM upsells WHERE id = ?")->execute([$id]);
+                $_SESSION['flash'] = 'Upsell supprime.';
+            }
+        }
+
+        if ($action === 'toggle_active') {
+            $id = (int)($_POST['id'] ?? 0);
+            if ($id) {
+                $pdo->prepare("UPDATE upsells SET active = NOT active WHERE id = ?")->execute([$id]);
+            }
+        }
+    } catch (\PDOException $e) {
+        $_SESSION['flash_error'] = 'Erreur : ' . $e->getMessage();
     }
 
-    if ($action === 'delete_upsell') {
-        $id = (int)($_POST['id'] ?? 0);
-        if ($id) {
-            $pdo->prepare("DELETE FROM upsell_logements WHERE upsell_id = ?")->execute([$id]);
-            $pdo->prepare("DELETE FROM upsells WHERE id = ?")->execute([$id]);
-            $_SESSION['flash'] = 'Upsell supprime.';
-        }
-    }
-
-    if ($action === 'toggle_active') {
-        $id = (int)($_POST['id'] ?? 0);
-        if ($id) {
-            $pdo->prepare("UPDATE upsells SET active = NOT active WHERE id = ?")->execute([$id]);
-        }
-    }
-
-    header('Location: /pages/frenchybot_upsells.php');
+    if (ob_get_level()) ob_end_clean();
+    header('Location: ' . $_SERVER['REQUEST_URI']);
     exit;
 }
 
@@ -119,6 +126,13 @@ try {
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
         <?php unset($_SESSION['flash']); ?>
+    <?php endif; ?>
+    <?php if (!empty($_SESSION['flash_error'])): ?>
+        <div class="alert alert-danger alert-dismissible fade show">
+            <?= htmlspecialchars($_SESSION['flash_error']) ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        <?php unset($_SESSION['flash_error']); ?>
     <?php endif; ?>
 
     <div class="d-flex justify-content-between align-items-center mb-4">
