@@ -69,18 +69,28 @@ function loadHubData(PDO $pdo, string $token): ?array
     }
 
     // Charger les upsells disponibles
-    $ups = $pdo->prepare("
-        SELECT DISTINCT u.* FROM upsells u
-        LEFT JOIN upsell_logements ul ON u.id = ul.upsell_id
-        WHERE u.active = 1 AND (
-            ul.upsell_id IS NULL AND u.logement_id IS NULL
-            OR ul.logement_id = ?
-            OR (ul.upsell_id IS NULL AND u.logement_id = ?)
-        )
-        ORDER BY u.sort_order ASC
-    ");
-    $ups->execute([$data['logement_id'], $data['logement_id']]);
-    $data['upsells'] = $ups->fetchAll(PDO::FETCH_ASSOC);
+    try {
+        $ups = $pdo->prepare("
+            SELECT DISTINCT u.* FROM upsells u
+            LEFT JOIN upsell_logements ul ON u.id = ul.upsell_id
+            WHERE u.active = 1 AND (
+                (ul.upsell_id IS NULL AND u.logement_id IS NULL)
+                OR ul.logement_id = ?
+                OR (ul.upsell_id IS NULL AND u.logement_id = ?)
+            )
+            ORDER BY u.sort_order ASC
+        ");
+        $ups->execute([$data['logement_id'], $data['logement_id']]);
+        $data['upsells'] = $ups->fetchAll(PDO::FETCH_ASSOC);
+    } catch (\PDOException $e) {
+        $ups = $pdo->prepare("
+            SELECT * FROM upsells
+            WHERE active = 1 AND (logement_id IS NULL OR logement_id = ?)
+            ORDER BY sort_order ASC
+        ");
+        $ups->execute([$data['logement_id']]);
+        $data['upsells'] = $ups->fetchAll(PDO::FETCH_ASSOC);
+    }
 
     // Mettre a jour le compteur d'acces
     $pdo->prepare("UPDATE hub_tokens SET access_count = access_count + 1, last_accessed_at = NOW() WHERE token = ?")
