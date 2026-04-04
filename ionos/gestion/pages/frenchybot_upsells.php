@@ -72,7 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    header('Location: frenchybot_upsells.php');
+    header('Location: /pages/frenchybot_upsells.php');
     exit;
 }
 
