@@ -321,11 +321,13 @@ $heureDepart = $hub['heure_depart'] ?: ($equip['heure_checkout'] ?? '10:00');
         </div>
     </div>
 
-    <!-- Acces & Wifi -->
-    <?php if (!empty($equip['code_porte']) || !empty($equip['code_wifi'])): ?>
+    <!-- Acces -->
+    <?php
+    $hasAccess = !empty($equip['code_porte']) || !empty($equip['code_boite_cles']) || !empty($equip['etage']) || !empty($equip['parking']);
+    if ($hasAccess): ?>
     <div class="hub-card">
         <div class="hub-card-header">
-            <i class="fas fa-key" style="color:var(--fc-primary)"></i> Acces & Wifi
+            <i class="fas fa-key" style="color:var(--fc-primary)"></i> Acces au logement
         </div>
         <div class="hub-card-body">
             <?php if (!empty($equip['code_porte'])): ?>
@@ -341,18 +343,59 @@ $heureDepart = $hub['heure_depart'] ?: ($equip['heure_checkout'] ?? '10:00');
             <?php if (!empty($equip['code_boite_cles'])): ?>
             <div class="info-row">
                 <div>
-                    <div class="info-label">Boite a cles</div>
+                    <div class="info-label">Code boite a cles</div>
                     <div class="info-value" id="code_boite"><?= htmlspecialchars($equip['code_boite_cles']) ?></div>
                 </div>
                 <button class="copy-btn" onclick="copyText('code_boite', this)"><i class="fas fa-copy"></i></button>
             </div>
             <?php endif; ?>
 
-            <?php if (!empty($equip['nom_wifi'])): ?>
+            <?php if (!empty($equip['etage'])): ?>
+            <div class="info-row">
+                <span class="info-label">Etage</span>
+                <span class="info-value"><?= htmlspecialchars($equip['etage']) ?><?= !empty($equip['ascenseur']) ? ' <i class="fas fa-elevator text-success" title="Ascenseur"></i>' : '' ?></span>
+            </div>
+            <?php endif; ?>
+
+            <?php if (!empty($equip['parking'])): ?>
+            <div class="info-row">
+                <span class="info-label">Parking</span>
+                <span class="info-value"><?= htmlspecialchars($equip['parking_type'] ?? 'Oui') ?></span>
+            </div>
+            <?php endif; ?>
+
+            <?php if (!empty($equip['digicode'])): ?>
             <div class="info-row">
                 <div>
-                    <div class="info-label">Wifi : <?= htmlspecialchars($equip['nom_wifi']) ?></div>
-                    <div class="info-value" id="code_wifi"><?= htmlspecialchars($equip['code_wifi'] ?? '') ?></div>
+                    <div class="info-label">Digicode</div>
+                    <div class="info-value" id="digicode"><?= htmlspecialchars($equip['digicode']) ?></div>
+                </div>
+                <button class="copy-btn" onclick="copyText('digicode', this)"><i class="fas fa-copy"></i></button>
+            </div>
+            <?php endif; ?>
+        </div>
+    </div>
+    <?php endif; ?>
+
+    <!-- Wifi -->
+    <?php if (!empty($equip['nom_wifi'])): ?>
+    <div class="hub-card">
+        <div class="hub-card-header">
+            <i class="fas fa-wifi" style="color:var(--fc-success)"></i> Wifi
+        </div>
+        <div class="hub-card-body">
+            <div class="info-row">
+                <div>
+                    <div class="info-label">Reseau</div>
+                    <div class="info-value" id="wifi_name"><?= htmlspecialchars($equip['nom_wifi']) ?></div>
+                </div>
+                <button class="copy-btn" onclick="copyText('wifi_name', this)"><i class="fas fa-copy"></i></button>
+            </div>
+            <?php if (!empty($equip['code_wifi'])): ?>
+            <div class="info-row">
+                <div>
+                    <div class="info-label">Mot de passe</div>
+                    <div class="info-value" id="code_wifi"><?= htmlspecialchars($equip['code_wifi']) ?></div>
                 </div>
                 <button class="copy-btn" onclick="copyText('code_wifi', this)"><i class="fas fa-copy"></i></button>
             </div>
@@ -519,27 +562,54 @@ function copyText(elId, btn) {
 }
 
 function handleAction(actionId) {
-    const chatArea = document.getElementById('chatArea');
-    chatArea.style.display = 'block';
+    const messages = {
+        'access_problem': "J'ai un problème d'accès au logement. Pouvez-vous me donner les codes et instructions pour entrer ?",
+        'wifi_help': "J'ai un problème avec le wifi. Quel est le nom du réseau et le mot de passe ?",
+        'cleaning_request': "J'aurais besoin d'un ménage supplémentaire ou de linge propre. C'est possible ?",
+        'checkout_info': "Quelles sont les instructions pour le départ / check-out ?",
+        'other': null
+    };
 
-    // Envoyer l'action au serveur
+    const msg = messages[actionId];
+
+    // Tracker + notifier l'admin via action.php (fire and forget)
     fetch('action.php', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({token: TOKEN, action: actionId})
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.response) {
-            chatArea.innerHTML = '<div class="chat-response">' + data.response + '</div>';
-        }
-        if (data.show_departure_info) {
-            chatArea.innerHTML = '<div class="chat-response">' + data.departure_info + '</div>';
-        }
-    })
-    .catch(() => {
-        chatArea.innerHTML = '<div class="chat-response">Votre demande a ete transmise. Nous vous recontactons rapidement.</div>';
     });
+
+    if (msg) {
+        // Envoyer au chat IA pour une reponse intelligente
+        const chatMessages = document.getElementById('chatMessages');
+        chatMessages.innerHTML += '<div class="chat-bubble" style="border-radius:12px 12px 2px 12px; background:var(--fc-primary); color:white; margin-left:40px;">' + escapeHtml(msg) + '</div>';
+
+        const typingId = 'typing-' + Date.now();
+        chatMessages.innerHTML += '<div class="chat-response" id="' + typingId + '"><div class="typing-dots"><span></span><span></span><span></span></div></div>';
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+
+        fetch('../api/chat.php', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({token: TOKEN, message: msg})
+        })
+        .then(r => r.json())
+        .then(data => {
+            const typing = document.getElementById(typingId);
+            if (typing) typing.remove();
+            if (data.reply) {
+                chatMessages.innerHTML += '<div class="chat-response">' + escapeHtml(data.reply) + '</div>';
+            } else {
+                chatMessages.innerHTML += '<div class="chat-response">Votre demande a ete transmise a notre equipe.</div>';
+            }
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        })
+        .catch(() => {
+            const typing = document.getElementById(typingId);
+            if (typing) typing.remove();
+            chatMessages.innerHTML += '<div class="chat-response">Votre demande a ete transmise. Nous revenons vers vous rapidement.</div>';
+        });
+    }
 }
 
 function sendChat() {
