@@ -113,22 +113,24 @@ function buildSystemPrompt(PDO $pdo, array $hubData): string
     // Instructions personnalisees depuis l'admin
     $botName = botSetting($pdo, 'bot_name', 'Frenchy');
     $customInstructions = botSetting($pdo, 'bot_instructions', '');
+    $adminPhone = botSetting($pdo, 'admin_phone', '');
 
     $prompt = "Tu es $botName, l'assistant virtuel de Frenchy Conciergerie. Tu aides les voyageurs pendant leur sejour.
 
 REGLES IMPORTANTES :
-- Reponds toujours en francais, de maniere amicale et professionnelle
+- Reponds toujours dans la langue du voyageur, de maniere amicale et professionnelle
 - Sois concis (2-3 phrases max sauf si on te demande des details)
-- Si tu ne connais pas la reponse, dis-le honnetement et propose de contacter l'equipe
 - Ne donne JAMAIS d'informations que tu n'as pas dans le contexte ci-dessous
 - Utilise des emojis avec parcimonie (1-2 max par message)
-- Tu peux utiliser du texte simple (pas de HTML ni markdown)";
+- Tu peux utiliser du texte simple (pas de HTML ni markdown)
+- Si tu ne connais pas la reponse ou ne peux pas aider, donne TOUJOURS le numero du gestionnaire pour que le voyageur puisse le contacter directement" . ($adminPhone ? " : $adminPhone" : '') . "
+- Ne dis jamais juste \"contactez l'equipe\" sans donner le numero";
 
     if ($customInstructions) {
         $prompt .= "\n\nINSTRUCTIONS DU PROPRIETAIRE :\n$customInstructions";
     }
 
-    $prompt .= "
+    $prompt .= "\n\nCONTACT GESTIONNAIRE :" . ($adminPhone ? "\n- Telephone : $adminPhone" : "\n- Non renseigne") . "
 
 CONTEXTE DU SEJOUR :
 - Voyageur : {$hubData['prenom']} {$hubData['nom']}
