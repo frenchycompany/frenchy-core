@@ -70,6 +70,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+    if ($action === 'test_stripe') {
+        $s = _botSettings();
+        $sk = $s['stripe_secret_key'] ?? '';
+        if (!$sk) { $_SESSION['flash_error'] = 'Cle secrete Stripe manquante.'; }
+        else {
+            $ch = curl_init('https://api.stripe.com/v1/balance');
+            curl_setopt_array($ch, [CURLOPT_HTTPHEADER => ['Authorization: Bearer ' . $sk], CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 10]);
+            $resp = curl_exec($ch); $code = curl_getinfo($ch, CURLINFO_HTTP_CODE); curl_close($ch);
+            if ($code === 200) { $d = json_decode($resp, true); $bal = ($d['available'][0]['amount'] ?? 0) / 100; $_SESSION['flash'] = "Connexion Stripe OK ! Solde disponible : " . number_format($bal, 2) . " EUR"; }
+            else { $d = json_decode($resp, true); $_SESSION['flash_error'] = 'Erreur Stripe : ' . ($d['error']['message'] ?? "HTTP $code"); }
+        }
+    }
+
     header('Location: ' . $_SERVER['REQUEST_URI']);
     exit;
 }
@@ -86,6 +99,7 @@ $groups = [
     'general'  => ['label' => 'General',                            'icon' => 'fa-cog',          'color' => 'primary'],
     'ia'       => ['label' => 'Intelligence Artificielle (OpenAI)', 'icon' => 'fa-brain',        'color' => 'success'],
     'whatsapp' => ['label' => 'WhatsApp (Meta Cloud API)',          'icon' => 'fa-comment-dots',  'color' => 'success'],
+    'stripe'   => ['label' => 'Paiements Stripe',                   'icon' => 'fa-credit-card',   'color' => 'info'],
 ];
 $models = ['gpt-4o-mini' => 'GPT-4o Mini (pas cher)', 'gpt-4o' => 'GPT-4o (plus intelligent)', 'gpt-4.1-mini' => 'GPT-4.1 Mini', 'gpt-4.1-nano' => 'GPT-4.1 Nano (le moins cher)'];
 ?>
@@ -160,6 +174,14 @@ $models = ['gpt-4o-mini' => 'GPT-4o Mini (pas cher)', 'gpt-4o' => 'GPT-4o (plus 
                     <?= (!empty($settings['whatsapp_token']) && !empty($settings['whatsapp_phone_id'])) ? '<span class="badge bg-success ms-2">Configure</span>' : '<span class="badge bg-warning ms-2">Non configure</span>' ?>
                 </div>
                 <?php endif; ?>
+                <?php if ($gk === 'stripe'): ?>
+                <div class="mt-3 pt-3 border-top">
+                    <button type="button" class="btn btn-sm btn-outline-info" onclick="document.getElementById('formAction').value='test_stripe';document.getElementById('settingsForm').submit()">
+                        <i class="fas fa-plug"></i> Tester Stripe
+                    </button>
+                    <?= !empty($settings['stripe_secret_key']) ? '<span class="badge bg-success ms-2">Cle API configuree</span>' : '<span class="badge bg-warning ms-2">Liens de paiement uniquement</span>' ?>
+                </div>
+                <?php endif; ?>
             </div>
         </div>
         <?php endforeach; ?>
@@ -169,8 +191,10 @@ $models = ['gpt-4o-mini' => 'GPT-4o Mini (pas cher)', 'gpt-4o' => 'GPT-4o (plus 
 
     <div class="card border-0 shadow-sm mt-4">
         <div class="card-body">
-            <h6><i class="fas fa-info-circle"></i> Liens de paiement Stripe</h6>
-            <p class="mb-0">Pour configurer les paiements, allez dans <strong>Upsells</strong> et collez vos <a href="https://dashboard.stripe.com/payment-links" target="_blank">liens Stripe</a> sur chaque upsell. Pas besoin de cle API.</p>
+            <h6><i class="fas fa-info-circle"></i> Paiements Stripe</h6>
+            <p class="mb-1"><strong>Option 1 (recommande) :</strong> Ajoutez votre cle API Stripe ci-dessus pour activer le Checkout Session automatique.</p>
+            <p class="mb-1"><strong>Option 2 :</strong> Collez un <a href="https://dashboard.stripe.com/payment-links" target="_blank">lien de paiement Stripe</a> sur chaque upsell.</p>
+            <p class="mb-0"><strong>Webhook :</strong> Configurez l'URL <code><?= htmlspecialchars(rtrim($settings['app_url'] ?? 'https://gestion.frenchyconciergerie.fr', '/')) ?>/frenchybot/api/stripe-webhook.php</code> dans votre <a href="https://dashboard.stripe.com/webhooks" target="_blank">dashboard Stripe</a> (event: <code>checkout.session.completed</code>).</p>
         </div>
     </div>
 
@@ -181,7 +205,7 @@ $models = ['gpt-4o-mini' => 'GPT-4o Mini (pas cher)', 'gpt-4o' => 'GPT-4o (plus 
                 <div class="col-3"><div class="fs-3 <?= !empty($settings['openai_api_key']) ? 'text-success' : 'text-muted' ?>"><i class="fas fa-brain"></i></div><div class="small">IA <?= !empty($settings['openai_api_key']) ? 'OK' : 'Off' ?></div></div>
                 <div class="col-3"><div class="fs-3 text-success"><i class="fas fa-sms"></i></div><div class="small">SMS OK</div></div>
                 <div class="col-3"><div class="fs-3 <?= (!empty($settings['whatsapp_token']) && !empty($settings['whatsapp_phone_id'])) ? 'text-success' : 'text-muted' ?>"><i class="fas fa-comment-dots"></i></div><div class="small">WhatsApp <?= (!empty($settings['whatsapp_token']) && !empty($settings['whatsapp_phone_id'])) ? 'OK' : 'Off' ?></div></div>
-                <div class="col-3"><div class="fs-3 text-muted"><i class="fas fa-credit-card"></i></div><div class="small">Stripe via liens</div></div>
+                <div class="col-3"><div class="fs-3 <?= !empty($settings['stripe_secret_key']) ? 'text-success' : 'text-muted' ?>"><i class="fas fa-credit-card"></i></div><div class="small">Stripe <?= !empty($settings['stripe_secret_key']) ? 'API' : (!empty($settings['stripe_webhook_secret']) ? 'Webhook' : 'Liens') ?></div></div>
             </div>
         </div>
     </div>

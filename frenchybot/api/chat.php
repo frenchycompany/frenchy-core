@@ -13,40 +13,34 @@ require_once __DIR__ . '/../includes/hub-functions.php';
 require_once __DIR__ . '/../includes/openai.php';
 require_once __DIR__ . '/../includes/channels.php';
 require_once __DIR__ . '/../includes/settings.php';
+require_once __DIR__ . '/../includes/api-security.php';
 
-$input = json_decode(file_get_contents('php://input'), true);
-$token = $input['token'] ?? '';
-$userMessage = trim($input['message'] ?? '');
+// Securite
+apiSecurityHeaders();
+apiRateLimit('chat', 15, 60); // 15 messages/min par IP
 
-if (!$token || !$userMessage) {
-    echo json_encode(['error' => 'Parametres manquants']);
-    exit;
-}
-
-// Limiter la taille du message
-if (mb_strlen($userMessage) > 1000) {
-    $userMessage = mb_substr($userMessage, 0, 1000);
-}
+$input = apiValidateJson([
+    'token' => 'required|string|min:16|max:128',
+    'message' => 'required|string|min:1|max:1000',
+]);
+$token = $input['token'];
+$userMessage = $input['message'];
 
 // Charger le HUB (sans incrementer le compteur — c'est deja fait a la page)
-$stmt = $pdo->prepare("
-    SELECT ht.id AS hub_token_id, ht.reservation_id, ht.logement_id,
-           r.prenom, r.nom, r.telephone, r.email,
-           r.date_arrivee, r.heure_arrivee, r.date_depart, r.heure_depart,
-           r.plateforme,
-           l.nom_du_logement, l.adresse
-    FROM hub_tokens ht
-    JOIN reservation r ON ht.reservation_id = r.id
-    JOIN liste_logements l ON ht.logement_id = l.id
-    WHERE ht.token = ? AND ht.active = 1
-");
-$stmt->execute([$token]);
-$hub = $stmt->fetch(PDO::FETCH_ASSOC);
+$hub = apiValidateHubToken($pdo, $token);
 
-if (!$hub) {
-    echo json_encode(['error' => 'Token invalide']);
-    exit;
-}
+// Completer avec les champs necessaires au chat
+$stmt = $pdo->prepare("
+    SELECT r.date_arrivee, r.heure_arrivee, r.date_depart, r.heure_depart,
+           r.nb_adultes, r.nb_enfants, r.nb_bebes, r.plateforme,
+           l.nom_du_logement, l.adresse
+    FROM reservation r
+    JOIN liste_logements l ON r.logement_id = l.id
+    WHERE r.id = ?
+");
+$stmt->execute([$hub['reservation_id']]);
+$extra = $stmt->fetch(PDO::FETCH_ASSOC);
+$hub = array_merge($hub, $extra ?: []);
 
 // Charger les equipements
 try {

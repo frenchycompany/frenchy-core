@@ -10,31 +10,21 @@ require_once __DIR__ . '/../../ionos/gestion/db/connection.php';
 require_once __DIR__ . '/../includes/hub-functions.php';
 require_once __DIR__ . '/../includes/channels.php';
 require_once __DIR__ . '/../includes/settings.php';
+require_once __DIR__ . '/../includes/api-security.php';
 
-$input = json_decode(file_get_contents('php://input'), true);
-$token = $input['token'] ?? '';
-$action = $input['action'] ?? '';
+// Securite
+apiSecurityHeaders();
+apiRateLimit('action', 30, 60); // 30 actions/min par IP
 
-if (!$token || !$action) {
-    echo json_encode(['error' => 'Parametres manquants']);
-    exit;
-}
+$input = apiValidateJson([
+    'token' => 'required|string|min:16|max:128',
+    'action' => 'required|string|min:1|max:50',
+]);
+$token = $input['token'];
+$action = $input['action'];
 
 // Charger le HUB sans incrementer le compteur de vues
-$stmt = $pdo->prepare("
-    SELECT ht.id AS hub_token_id, ht.reservation_id, ht.logement_id,
-           r.prenom, r.nom, r.telephone
-    FROM hub_tokens ht
-    JOIN reservation r ON ht.reservation_id = r.id
-    WHERE ht.token = ? AND ht.active = 1
-");
-$stmt->execute([$token]);
-$hub = $stmt->fetch(PDO::FETCH_ASSOC);
-
-if (!$hub) {
-    echo json_encode(['error' => 'Token invalide']);
-    exit;
-}
+$hub = apiValidateHubToken($pdo, $token);
 
 // Tracker l'interaction
 trackInteraction($pdo, $hub['hub_token_id'], $hub['reservation_id'], $action);
