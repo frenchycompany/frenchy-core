@@ -63,7 +63,8 @@ def get_db_connection():
             password=config.get("DATABASE", "password"),
             database=config.get("DATABASE", "database"),
             charset="utf8mb4",
-            cursorclass=pymysql.cursors.DictCursor
+            cursorclass=pymysql.cursors.DictCursor,
+            connect_timeout=10
         )
     except Exception as e:
         pool_logger.error(f"Erreur connexion BDD: {e}")
@@ -83,6 +84,7 @@ def get_all_active_logements() -> List[Dict]:
                     l.id,
                     l.nom_du_logement,
                     sc.superhote_property_id,
+                    sc.superhote_property_name,
                     sc.groupe
                 FROM liste_logements l
                 INNER JOIN superhote_config sc ON l.id = sc.logement_id
@@ -111,7 +113,8 @@ def get_groups_with_reference() -> List[Dict]:
                     g.nom,
                     g.logement_reference_id,
                     l.nom_du_logement as reference_name,
-                    sc.superhote_property_id as reference_superhote_id
+                    sc.superhote_property_id as reference_superhote_id,
+                    sc.superhote_property_name as reference_superhote_name
                 FROM superhote_groups g
                 LEFT JOIN liste_logements l ON g.logement_reference_id = l.id
                 LEFT JOIN superhote_config sc ON g.logement_reference_id = sc.logement_id
@@ -138,7 +141,8 @@ def get_logements_by_group(group_name: str) -> List[Dict]:
                 SELECT
                     l.id,
                     l.nom_du_logement,
-                    sc.superhote_property_id
+                    sc.superhote_property_id,
+                    sc.superhote_property_name
                 FROM liste_logements l
                 INNER JOIN superhote_config sc ON l.id = sc.logement_id
                 WHERE sc.is_active = 1
@@ -166,7 +170,8 @@ def get_ungrouped_logements() -> List[Dict]:
                 SELECT
                     l.id,
                     l.nom_du_logement,
-                    sc.superhote_property_id
+                    sc.superhote_property_id,
+                    sc.superhote_property_name
                 FROM liste_logements l
                 INNER JOIN superhote_config sc ON l.id = sc.logement_id
                 WHERE sc.is_active = 1
@@ -199,7 +204,7 @@ def assign_logements_to_workers(logements: List[Dict], properties_per_worker: in
         chunk = logements[i:i + properties_per_worker]
         worker_id = len(workers) + 1
         logement_ids = [l["id"] for l in chunk]
-        logement_names = [l["nom_du_logement"] for l in chunk]
+        logement_names = [l.get("superhote_property_name") or l["nom_du_logement"] for l in chunk]
 
         workers.append(WorkerConfig(
             worker_id=worker_id,
@@ -263,7 +268,7 @@ def assign_workers_by_group(properties_per_worker: int = 6) -> List[WorkerConfig
             pool_logger.info(f"Groupe {group_name}: pas de pending, ignore")
             continue
 
-        reference_property = group.get("reference_superhote_id") or group.get("reference_name")
+        reference_property = group.get("reference_superhote_id") or group.get("reference_superhote_name") or group.get("reference_name")
 
         if not reference_property:
             pool_logger.warning(f"Groupe {group_name}: pas de logement de reference, ignore")
@@ -278,7 +283,7 @@ def assign_workers_by_group(properties_per_worker: int = 6) -> List[WorkerConfig
 
         worker_id = len(workers) + 1
         logement_ids = [l["id"] for l in logements]
-        logement_names = [l["nom_du_logement"] for l in logements]
+        logement_names = [l.get("superhote_property_name") or l["nom_du_logement"] for l in logements]
 
         workers.append(WorkerConfig(
             worker_id=worker_id,
@@ -300,7 +305,7 @@ def assign_workers_by_group(properties_per_worker: int = 6) -> List[WorkerConfig
                 chunk = ungrouped[i:i + properties_per_worker]
                 worker_id = len(workers) + 1
                 logement_ids = [l["id"] for l in chunk]
-                logement_names = [l["nom_du_logement"] for l in chunk]
+                logement_names = [l.get("superhote_property_name") or l["nom_du_logement"] for l in chunk]
 
                 workers.append(WorkerConfig(
                     worker_id=worker_id,
@@ -313,6 +318,29 @@ def assign_workers_by_group(properties_per_worker: int = 6) -> List[WorkerConfig
                 pool_logger.info(f"Worker {worker_id} [STANDARD]: {len(chunk)} logements orphelins")
 
     return workers
+
+
+def release_stale_tasks(max_age_minutes: int = 30):
+    """Libere les taches 'processing' bloquees depuis trop longtemps."""
+    db = get_db_connection()
+    if not db:
+        return
+
+    try:
+        with db.cursor() as cursor:
+            cursor.execute("""
+                UPDATE superhote_price_updates
+                SET status = 'pending', error_message = 'Released - worker timeout'
+                WHERE status = 'processing'
+                AND updated_at < DATE_SUB(NOW(), INTERVAL %s MINUTE)
+            """, (max_age_minutes,))
+            db.commit()
+            if cursor.rowcount > 0:
+                pool_logger.warning(f"Libere {cursor.rowcount} taches bloquees (>{max_age_minutes}min)")
+    except Exception as e:
+        pool_logger.error(f"Erreur liberation taches: {e}")
+    finally:
+        db.close()
 
 
 def get_pending_updates_for_logements(logement_ids: List[int]) -> List[Dict]:
@@ -337,9 +365,11 @@ def get_pending_updates_for_logements(logement_ids: List[int]) -> List[Dict]:
                     spu.date_end,
                     spu.price,
                     spu.nom_du_logement,
-                    l.nom_du_logement as logement_name
+                    l.nom_du_logement as logement_name,
+                    sc.superhote_property_name
                 FROM superhote_price_updates spu
                 LEFT JOIN liste_logements l ON spu.logement_id = l.id
+                LEFT JOIN superhote_config sc ON spu.logement_id = sc.logement_id
                 WHERE spu.status = 'pending'
                 AND spu.logement_id IN ({placeholders})
                 ORDER BY spu.date_start ASC, spu.price ASC
@@ -432,7 +462,7 @@ def group_updates_by_price_and_date(updates: List[Dict]) -> List[Dict]:
             "date_start": date_start_str,
             "date_end": date_end_str,
             "updates": group_updates,
-            "logement_names": [u.get("logement_name") or u.get("nom_du_logement") for u in group_updates],
+            "logement_names": [u.get("superhote_property_name") or u.get("logement_name") or u.get("nom_du_logement") for u in group_updates],
             "superhote_property_ids": [u.get("superhote_property_id") for u in group_updates],
             "update_ids": [u["id"] for u in group_updates]
         })
@@ -723,7 +753,7 @@ class SuperhoteWorkerPool:
     - Mode groupe: un worker par groupe, utilise un logement de reference pour eviter les reservations
     """
 
-    def __init__(self, properties_per_worker: int = 6, max_workers: int = None, use_groups: bool = False):
+    def __init__(self, properties_per_worker: int = 6, max_workers: int = None, use_groups: bool = False, logement_id: int = None):
         """
         Initialise le pool de workers.
 
@@ -731,10 +761,12 @@ class SuperhoteWorkerPool:
             properties_per_worker: Nombre de logements par worker en mode standard (defaut: 6)
             max_workers: Nombre maximum de workers (defaut: illimite)
             use_groups: Si True, utilise le mode groupe (un worker par groupe configure)
+            logement_id: Si specifie, ne traiter que ce logement
         """
         self.properties_per_worker = properties_per_worker
         self.max_workers = max_workers
         self.use_groups = use_groups
+        self.logement_id = logement_id
         self.workers = []
         # Utiliser Manager().Event() pour partager entre processus
         self._manager = Manager()
@@ -751,9 +783,15 @@ class SuperhoteWorkerPool:
         En mode standard:
         - Repartit les logements entre workers (X par worker)
 
+        Si logement_id est specifie, filtre pour ne garder que le worker
+        qui contient ce logement.
+
         Returns:
             Nombre de workers configures
         """
+        if self.logement_id:
+            pool_logger.info(f"Mode LOGEMENT UNIQUE: id={self.logement_id}")
+
         if self.use_groups:
             # Mode groupe: un worker par groupe + workers pour orphelins
             pool_logger.info("Mode GROUPE active (hybride: groupes + orphelins)")
@@ -764,6 +802,11 @@ class SuperhoteWorkerPool:
                 pool_logger.info("Fallback vers mode standard...")
                 self.use_groups = False
             else:
+                # Filtrer par logement_id si specifie
+                if self.logement_id:
+                    self.workers = [w for w in self.workers if self.logement_id in w.logement_ids]
+                    pool_logger.info(f"Filtre logement_id={self.logement_id}: {len(self.workers)} worker(s) retenu(s)")
+
                 group_workers = [w for w in self.workers if w.group_name]
                 standard_workers = [w for w in self.workers if not w.group_name]
                 pool_logger.info(f"Workers configures: {len(self.workers)} ({len(group_workers)} groupes, {len(standard_workers)} standards)")
@@ -776,6 +819,11 @@ class SuperhoteWorkerPool:
         if not self.use_groups:
             # Mode standard: repartition par nombre
             logements = get_all_active_logements()
+
+            # Filtrer par logement_id si specifie
+            if self.logement_id:
+                logements = [l for l in logements if l["id"] == self.logement_id]
+                pool_logger.info(f"Filtre logement_id={self.logement_id}: {len(logements)} logement(s)")
 
             if not logements:
                 pool_logger.warning("Aucun logement actif trouve")
@@ -810,6 +858,9 @@ class SuperhoteWorkerPool:
         if not self.workers:
             pool_logger.warning("Aucun worker a lancer")
             return []
+
+        # Liberer les taches bloquees avant de commencer
+        release_stale_tasks()
 
         pool_logger.info(f"Lancement de {len(self.workers)} workers en parallele...")
 
@@ -882,6 +933,12 @@ def main():
         action="store_true",
         help="Affiche la configuration sans lancer les workers"
     )
+    parser.add_argument(
+        "--logement-id", "-l",
+        type=int,
+        default=None,
+        help="Ne traiter que ce logement (filtre les workers)"
+    )
 
     args = parser.parse_args()
 
@@ -896,7 +953,8 @@ def main():
     pool = SuperhoteWorkerPool(
         properties_per_worker=args.properties_per_worker,
         max_workers=args.max_workers,
-        use_groups=args.groups
+        use_groups=args.groups,
+        logement_id=args.logement_id
     )
 
     # Gerer SIGINT/SIGTERM

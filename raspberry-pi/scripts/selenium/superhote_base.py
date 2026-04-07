@@ -813,6 +813,13 @@ class SuperhoteAutomation:
             True si le filtrage a reussi
         """
         try:
+            # Screenshot debug avant filtre
+            try:
+                self.driver.save_screenshot(str(LOG_DIR / "debug_filter_01_avant.png"))
+                logger.info("Screenshot: debug_filter_01_avant.png")
+            except Exception:
+                pass
+
             # ETAPE 1: Cliquer sur "Filtrer par hebergement"
             filter_clicked = False
             try:
@@ -843,6 +850,11 @@ class SuperhoteAutomation:
 
             if not filter_clicked:
                 logger.warning("Bouton filtre non trouve")
+                try:
+                    self.driver.save_screenshot(str(LOG_DIR / "debug_filter_02_bouton_pas_trouve.png"))
+                    logger.info("Screenshot: debug_filter_02_bouton_pas_trouve.png")
+                except Exception:
+                    pass
                 return False
 
             # ETAPE 2: Cliquer sur "Effacer" pour tout decocher
@@ -858,20 +870,54 @@ class SuperhoteAutomation:
             # ETAPE 3: Taper le nom dans le champ de recherche
             search_input = None
             try:
-                # Chercher le champ de recherche dans le dropdown
-                search_input = self.driver.find_element(
-                    By.CSS_SELECTOR,
-                    "input[type='text'], input[type='search'], input[placeholder*='echerch']"
-                )
+                # D'abord trouver le dropdown ouvert, puis chercher l'input DEDANS
+                dropdown_menu = None
+                try:
+                    dropdown_menu = self.driver.find_element(
+                        By.CSS_SELECTOR,
+                        ".dropdown-menu.show, .dropdown-menu[style*='display: block']"
+                    )
+                except (NoSuchElementException, StaleElementReferenceException):
+                    # Fallback: chercher tout conteneur dropdown visible
+                    try:
+                        dropdown_menu = self.driver.find_element(
+                            By.CSS_SELECTOR,
+                            ".dropdown.open .dropdown-menu, .dropdown.show .dropdown-menu"
+                        )
+                    except (NoSuchElementException, StaleElementReferenceException):
+                        pass
+
+                if dropdown_menu:
+                    # Chercher l'input de recherche DANS le dropdown
+                    search_input = dropdown_menu.find_element(
+                        By.CSS_SELECTOR,
+                        "input[type='text'], input[type='search'], input[placeholder*='echerch']"
+                    )
+                    logger.info("Champ de recherche trouve dans le dropdown")
+                else:
+                    # Fallback: utiliser le placeholder specifique pour cibler le bon input
+                    search_input = self.driver.find_element(
+                        By.CSS_SELECTOR,
+                        ".dropdown-menu input[placeholder*='echerch'], .dropdown input[placeholder*='echerch']"
+                    )
+                    logger.info("Champ de recherche trouve par placeholder dans dropdown")
+
                 if search_input and search_input.is_displayed():
                     search_input.clear()
-                    # Utiliser une partie du nom pour la recherche
-                    search_term = property_name.split(' - ')[0] if ' - ' in property_name else property_name
-                    search_input.send_keys(search_term)
+                    search_input.send_keys(property_name)
                     time.sleep(1)
-                    logger.info(f"Recherche: {search_term}")
+                    logger.info(f"Recherche: {property_name}")
+                else:
+                    logger.warning("Champ de recherche trouve mais non visible")
             except (NoSuchElementException, TimeoutException, StaleElementReferenceException) as e:
                 logger.info(f"Champ de recherche non trouve ({type(e).__name__}), on cherche directement")
+
+            # Screenshot apres recherche
+            try:
+                self.driver.save_screenshot(str(LOG_DIR / "debug_filter_03_apres_recherche.png"))
+                logger.info("Screenshot: debug_filter_03_apres_recherche.png")
+            except Exception:
+                pass
 
             # ETAPE 4: Cocher le logement correspondant
             time.sleep(0.5)
@@ -1374,7 +1420,9 @@ class SuperhoteAutomation:
 
             # ETAPE 2: Filtrer pour n'afficher que ce logement
             logger.info(f"Filtrage pour: {property_name}")
-            self.filter_by_property(property_name)
+            if not self.filter_by_property(property_name):
+                logger.error(f"Impossible de filtrer pour: {property_name}. Abandon pour eviter de modifier le mauvais logement.")
+                return False
             # Attendre que le filtre soit applique (calendrier se rafraichit)
             time.sleep(1.5)
 

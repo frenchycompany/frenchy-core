@@ -15,6 +15,7 @@ $current_user_id = getCurrentUserId();
 
 // Traitement des actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    validateCsrfToken();
     $action = $_POST['action'] ?? '';
 
     switch ($action) {
@@ -277,6 +278,7 @@ if (isset($_GET['edit'])) {
                 </div>
                 <div class="card-body">
                     <form method="POST">
+                        <?php echoCsrfField(); ?>
                         <input type="hidden" name="action" value="update">
                         <input type="hidden" name="user_id" value="<?= $edit_user['id'] ?>">
 
@@ -364,6 +366,7 @@ if (isset($_GET['edit'])) {
     <div class="modal-dialog">
         <div class="modal-content">
             <form method="POST">
+                <?php echoCsrfField(); ?>
                 <input type="hidden" name="action" value="create">
                 <div class="modal-header">
                     <h5 class="modal-title"><i class="fas fa-user-plus"></i> Nouvel utilisateur</h5>
@@ -425,6 +428,7 @@ if (isset($_GET['edit'])) {
     <div class="modal-dialog">
         <div class="modal-content">
             <form method="POST">
+                <?php echoCsrfField(); ?>
                 <input type="hidden" name="action" value="reset_password">
                 <input type="hidden" name="user_id" id="resetUserId">
                 <div class="modal-header bg-warning">
@@ -464,6 +468,7 @@ if (isset($_GET['edit'])) {
     <div class="modal-dialog">
         <div class="modal-content">
             <form method="POST">
+                <?php echoCsrfField(); ?>
                 <input type="hidden" name="action" value="delete">
                 <input type="hidden" name="user_id" id="deleteUserId">
                 <div class="modal-header bg-danger text-white">

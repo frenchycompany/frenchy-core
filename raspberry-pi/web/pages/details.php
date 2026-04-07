@@ -1,7 +1,5 @@
 <?php
 // Affichage des erreurs pour le débogage
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
 
 // Connexion à la base + en-tête
 require_once '../includes/db.php';

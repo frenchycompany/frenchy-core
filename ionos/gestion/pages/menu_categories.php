@@ -11,9 +11,11 @@ if (!isset($menu_categories)) {
             'items' => [
                 ['nom' => 'Logements',     'chemin' => 'pages/logements.php',             'icon' => 'fa-building'],
                 ['nom' => 'Propriétaires','chemin' => 'pages/proprietaires.php',        'icon' => 'fa-user-tie'],
+                ['nom' => 'Onboarding',   'chemin' => 'pages/onboarding_admin.php',   'icon' => 'fa-user-plus'],
                 ['nom' => 'Équipements',   'chemin' => 'pages/logement_equipements.php',  'icon' => 'fa-couch'],
                 ['nom' => 'Descriptions',  'chemin' => 'pages/description_logements.php', 'icon' => 'fa-file-alt'],
                 ['nom' => 'Sites vitrine', 'chemin' => 'pages/sites.php',                 'icon' => 'fa-globe'],
+                ['nom' => 'Site conciergerie', 'chemin' => 'pages/admin_site_conciergerie.php', 'icon' => 'fa-bullhorn'],
             ]
         ],
         'Ménage / Interventions' => [
@@ -43,6 +45,7 @@ if (!isset($menu_categories)) {
                 ['nom' => 'Sync iCal',          'chemin' => 'pages/sync_ical.php',           'icon' => 'fa-sync-alt'],
                 ['nom' => 'Taux d\'occupation', 'chemin' => 'pages/occupation.php',          'icon' => 'fa-chart-pie'],
                 ['nom' => 'Import CSV',         'chemin' => 'pages/import_reservations.php', 'icon' => 'fa-file-import'],
+                ['nom' => 'Avis voyageurs',    'chemin' => 'pages/avis_voyageurs.php',     'icon' => 'fa-star'],
             ]
         ],
         'Communication' => [
@@ -103,6 +106,17 @@ if (!isset($menu_categories)) {
                 ['nom' => 'Concurrence',       'chemin' => 'pages/analyse_concurrence.php',        'icon' => 'fa-chart-area'],
                 ['nom' => 'Relances voyageurs','chemin' => 'pages/relances_voyageurs.php',         'icon' => 'fa-bullhorn'],
                 ['nom' => 'Carnet clients',    'chemin' => 'pages/clients.php',                    'icon' => 'fa-address-book'],
+            ]
+        ],
+        'FrenchyBot' => [
+            'icon' => 'fa-robot',
+            'items' => [
+                ['nom' => 'HUB Séjours',      'chemin' => 'pages/frenchybot_hub.php',            'icon' => 'fa-concierge-bell'],
+                ['nom' => 'Base connaissances','chemin' => 'pages/frenchybot_knowledge.php',      'icon' => 'fa-brain'],
+                ['nom' => 'Messages auto',     'chemin' => 'pages/frenchybot_auto_messages.php',  'icon' => 'fa-envelope-open-text'],
+                ['nom' => 'Upsells',           'chemin' => 'pages/frenchybot_upsells.php',        'icon' => 'fa-shopping-cart'],
+                ['nom' => 'QR Codes',          'chemin' => 'pages/frenchybot_qrcodes.php',        'icon' => 'fa-qrcode'],
+                ['nom' => 'Configuration',     'chemin' => 'pages/frenchybot_settings.php',      'icon' => 'fa-cog'],
             ]
         ],
         'Outils' => [

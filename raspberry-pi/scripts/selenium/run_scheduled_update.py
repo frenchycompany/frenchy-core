@@ -25,12 +25,19 @@ import pymysql
 import argparse
 import signal
 import subprocess
+import fcntl
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional, Dict, List, Tuple
 
-# Numero de telephone pour les notifications SMS
-SMS_NOTIFICATION_NUMBER = "+33647554678"
+# Numero de telephone pour les notifications SMS (lu depuis config.ini)
+def _get_sms_number():
+    config = configparser.ConfigParser()
+    config.read(Path(__file__).parent.parent.parent / "config" / "config.ini")
+    number = config.get("FALLBACK", "numero_admin", fallback="+33647554678").strip()
+    return number if number and number != "+33XXXXXXXXX" else "+33647554678"
+
+SMS_NOTIFICATION_NUMBER = _get_sms_number()
 
 # ============================================================================
 # CONFIGURATION
@@ -40,6 +47,7 @@ BASE_DIR = Path(__file__).parent.parent.parent
 CONFIG_DIR = BASE_DIR / "config"
 LOG_DIR = BASE_DIR / "logs"
 LOG_DIR.mkdir(exist_ok=True)
+LOCK_FILE = LOG_DIR / "scheduled_update.lock"
 
 # Fichier de statut pour l'interface web
 STATUS_FILE = LOG_DIR / "scheduled_update_status.json"
@@ -403,7 +411,7 @@ def get_groups_with_pending() -> List[Dict]:
         db.close()
 
 
-def run_workers(max_workers: int = 2, use_groups: bool = True) -> Dict:
+def run_workers(max_workers: int = 2, use_groups: bool = True, logement_id: int = None) -> Dict:
     """
     Lance les workers pour traiter la queue.
     Mode sequentiel: traite les groupes un par un pour economiser la RAM.
@@ -411,6 +419,7 @@ def run_workers(max_workers: int = 2, use_groups: bool = True) -> Dict:
     Args:
         max_workers: Nombre maximum de workers en parallele
         use_groups: Utiliser le mode groupe
+        logement_id: Si specifie, ne traite que ce logement
 
     Returns:
         Statistiques d'execution
@@ -457,6 +466,9 @@ def run_workers(max_workers: int = 2, use_groups: bool = True) -> Dict:
 
         if use_groups:
             cmd.append("--groups")
+
+        if logement_id:
+            cmd.extend(["--logement-id", str(logement_id)])
 
         logger.info(f"  Commande: {' '.join(cmd)}")
 
@@ -742,6 +754,12 @@ Exemples:
         action="store_true",
         help="Desactive le mode groupe"
     )
+    parser.add_argument(
+        "--logement-id", "-l",
+        type=int,
+        default=None,
+        help="ID du logement a traiter (filtre les workers sur ce logement uniquement)"
+    )
 
     args = parser.parse_args()
 
@@ -749,6 +767,19 @@ Exemples:
     if args.status:
         show_status()
         return
+
+    # Verrou fichier: empeche les executions concurrentes
+    lock_fp = open(LOCK_FILE, "w")
+    try:
+        fcntl.flock(lock_fp.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        msg = "Une mise a jour est deja en cours. Lancement refuse."
+        print(msg)
+        logging.getLogger("scheduled_update").warning(msg)
+        sys.exit(2)
+    # Ecrire le PID pour diagnostic
+    lock_fp.write(str(os.getpid()))
+    lock_fp.flush()
 
     # Gerer les signaux avec cleanup propre
     def signal_handler(signum, frame):
@@ -784,12 +815,13 @@ Exemples:
 
     # Mode workers seuls
     if args.workers_only:
+        logger.info(f"Mode workers-only (logement_id={args.logement_id})")
         cleanup_stale_tasks()
         workers = args.workers
         if workers is None:
             settings = get_settings()
             workers = int(settings.get("max_workers", 2))
-        result = run_workers(workers, not args.no_groups)
+        result = run_workers(workers, not args.no_groups, logement_id=args.logement_id)
         print(f"Workers: {result}")
         return
 

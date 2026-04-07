@@ -2,8 +2,6 @@
 // web/pages/import_ics.php
 
 // Afficher toutes les erreurs pour debug
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
 
 // 1) Autoload Composer (Sabre/VObject)
 require __DIR__ . '/../../vendor/autoload.php';

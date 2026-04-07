@@ -1,4 +1,8 @@
 <?php
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 // pages/planning.php
 include '../config.php'; // Connexion à la base de données
 include '../pages/menu.php'; // Inclusion du menu de navigation
@@ -13,12 +17,12 @@ $is_admin = ($_SESSION['role'] === 'admin');
 // Auto-migration : colonne actif pour intervenant
 try {
     $conn->exec("ALTER TABLE intervenant ADD COLUMN actif TINYINT(1) NOT NULL DEFAULT 1");
-} catch (PDOException $e) { error_log('planning.php: ' . $e->getMessage()); }
+} catch (PDOException $e) { /* colonne existe déjà */ }
 
 // Auto-migration : colonnes checkup pour planning
-try { $conn->exec("ALTER TABLE planning ADD COLUMN checkup_planifie TINYINT(1) NOT NULL DEFAULT 0 AFTER bonus"); } catch (PDOException $e) { error_log('planning.php: ' . $e->getMessage()); }
-try { $conn->exec("ALTER TABLE planning ADD COLUMN checkup_prix DECIMAL(10,2) DEFAULT 50.00 AFTER checkup_planifie"); } catch (PDOException $e) { error_log('planning.php: ' . $e->getMessage()); }
-try { $conn->exec("ALTER TABLE planning ADD COLUMN checkup_intervenant_id INT DEFAULT NULL AFTER checkup_prix"); } catch (PDOException $e) { error_log('planning.php: ' . $e->getMessage()); }
+try { $conn->exec("ALTER TABLE planning ADD COLUMN checkup_planifie TINYINT(1) NOT NULL DEFAULT 0 AFTER bonus"); } catch (PDOException $e) {}
+try { $conn->exec("ALTER TABLE planning ADD COLUMN checkup_prix DECIMAL(10,2) DEFAULT 50.00 AFTER checkup_planifie"); } catch (PDOException $e) {}
+try { $conn->exec("ALTER TABLE planning ADD COLUMN checkup_intervenant_id INT DEFAULT NULL AFTER checkup_prix"); } catch (PDOException $e) {}
 
 // ---------------------------------------------------------------------
 // BONUS/COMPTA : enregistre le bonus fixe 10€ (5€ pour F1, 5€ pour F2)
@@ -65,10 +69,6 @@ $date_debut      = isset($_GET['date_debut']) ? $_GET['date_debut'] : date('Y-m-
 $date_fin        = isset($_GET['date_fin']) ? $_GET['date_fin'] : date('Y-m-t');
 $statut_filter   = isset($_GET['statut_filter']) ? $_GET['statut_filter'] : 'all';
 $logement_filter = isset($_GET['logement_filter']) ? (int)$_GET['logement_filter'] : 0;
-
-// Validation des dates pour eviter les erreurs SQL
-if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date_debut)) $date_debut = date('Y-m-01');
-if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date_fin))   $date_fin   = date('Y-m-t');
 
 // --- Export CSV ---
 if (isset($_GET['export_csv']) && $_GET['export_csv'] === '1') {
@@ -175,7 +175,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['bulk_update'])) {
         try {
             $delC = $conn->prepare("DELETE FROM comptabilite WHERE source_typeIndex='intervention' AND source_idIndex=?");
             $delC->execute([$id]);
-        } catch (Throwable $e) { error_log('planning.php: ' . $e->getMessage()); }
+        } catch (Throwable $e) {}
 
         $stmt = $conn->prepare("DELETE FROM planning WHERE id = ?");
         $stmt->execute([$id]);
@@ -205,16 +205,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['bulk_update'])) {
         if ($nombre_de_jours_reservation < 0) {
             die("Erreur : Le nombre de jours réservés doit être positif ou nul.");
         }
-
-        // Vérification doublon : même logement + même date
-        $checkDup = $conn->prepare("SELECT id FROM planning WHERE logement_id = ? AND date = ? LIMIT 1");
-        $checkDup->execute([$logement_id, $date]);
-        if ($checkDup->fetch()) {
-            $nomLog = $conn->prepare("SELECT nom_du_logement FROM liste_logements WHERE id = ?");
-            $nomLog->execute([$logement_id]);
-            $nomL = $nomLog->fetchColumn() ?: 'Logement #'.$logement_id;
-            $error_message = "Une intervention existe déjà pour " . htmlspecialchars($nomL) . " le " . htmlspecialchars($date) . ". Doublon non créé.";
-        } else {
 
         // 1) Insertion planning
         $stmt = $conn->prepare("
@@ -285,12 +275,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['bulk_update'])) {
         $logNom->execute([$logement_id]);
         $nomLogement = $logNom->fetchColumn() ?: 'Logement';
 
-        // Stocker les messages en session pour affichage après redirect
-        $_SESSION['flash_messages'] = [];
-        $_SESSION['flash_messages'][] = [
-            'type' => 'info',
-            'html' => 'Lien de validation : <a href="' . htmlspecialchars($validation_link) . '" target="_blank">' . htmlspecialchars($validation_link) . '</a>'
-        ];
+        echo '<div class="alert alert-info">';
+        echo 'Lien de validation : <a href="' . htmlspecialchars($validation_link) . '" target="_blank">' . htmlspecialchars($validation_link) . '</a>';
+        echo '</div>';
 
         // Creer le checkup + WhatsApp si checkup planifie
         if ($checkup_planifie) {
@@ -328,27 +315,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['bulk_update'])) {
             }
             $whatsUrl .= '?text=' . rawurlencode($whatsMsg);
 
-            $ckHtml = '<i class="fas fa-clipboard-check"></i> <strong>Checkup cree et attribue</strong>';
-            if ($ckNom) $ckHtml .= ' a <strong>' . htmlspecialchars($ckNom) . '</strong>';
-            $ckHtml .= ' (' . number_format($checkup_prix, 2, ',', ' ') . ' &euro;)<br>';
-            $ckHtml .= '<a href="' . htmlspecialchars($checkup_link) . '" target="_blank" class="btn btn-sm btn-success mt-1"><i class="fas fa-clipboard-check"></i> Voir le Checkup</a> ';
-            $ckHtml .= '<a href="' . htmlspecialchars($whatsUrl) . '" target="_blank" class="btn btn-sm mt-1" style="background:#25D366;color:#fff;"><i class="fab fa-whatsapp"></i> Envoyer par WhatsApp</a>';
-
-            $_SESSION['flash_messages'][] = ['type' => 'success', 'html' => $ckHtml];
+            echo '<div class="alert alert-success">';
+            echo '<i class="fas fa-clipboard-check"></i> <strong>Checkup cree et attribue</strong>';
+            if ($ckNom) echo ' a <strong>' . htmlspecialchars($ckNom) . '</strong>';
+            echo ' (' . number_format($checkup_prix, 2, ',', ' ') . ' &euro;)<br>';
+            echo '<a href="' . htmlspecialchars($checkup_link) . '" target="_blank" class="btn btn-sm btn-success mt-1"><i class="fas fa-clipboard-check"></i> Voir le Checkup</a> ';
+            echo '<a href="' . htmlspecialchars($whatsUrl) . '" target="_blank" class="btn btn-sm mt-1" style="background:#25D366;color:#fff;"><i class="fab fa-whatsapp"></i> Envoyer par WhatsApp</a>';
+            echo '</div>';
         }
-
-        // Redirect POST-Redirect-GET pour éviter les doublons au refresh
-        $redirectUrl = 'planning.php?date_debut=' . urlencode($date) . '&date_fin=' . urlencode($date);
-        header('Location: ' . $redirectUrl);
-        exit;
-        } // fin else (pas de doublon)
     }
 }
 
 
 // --- Requêtes de liste/pagination ---
 
-$limit = 25;
+$limit = 10;
 $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
 $offset = ($page - 1) * $limit;
 
@@ -367,15 +348,10 @@ if ($logement_filter > 0) {
     $countQuery .= " AND p.logement_id = ? ";
     $countParams[] = $logement_filter;
 }
-try {
-    $countStmt = $conn->prepare($countQuery);
-    $countStmt->execute($countParams);
-    $totalCount = $countStmt->fetchColumn();
-} catch (PDOException $e) {
-    error_log('planning.php count error: ' . $e->getMessage());
-    $totalCount = 0;
-}
-$totalPages = max(1, ceil($totalCount / $limit));
+$countStmt = $conn->prepare($countQuery);
+$countStmt->execute($countParams);
+$totalCount = $countStmt->fetchColumn();
+$totalPages = ceil($totalCount / $limit);
 
 $query = "
     SELECT 
@@ -402,16 +378,18 @@ if ($logement_filter > 0) {
     $query .= " AND p.logement_id = ? ";
     $params[] = $logement_filter;
 }
-$query .= " ORDER BY p.date ASC LIMIT " . (int)$limit . " OFFSET " . (int)$offset;
+$query .= " ORDER BY p.date ASC LIMIT ? OFFSET ? ";
+$params[] = $limit;
+$params[] = $offset;
 
-try {
-    $stmt = $conn->prepare($query);
-    $stmt->execute($params);
-    $interventions = $stmt->fetchAll(PDO::FETCH_ASSOC);
-} catch (PDOException $e) {
-    error_log('planning.php query error: ' . $e->getMessage());
-    $interventions = [];
+$stmt = $conn->prepare($query);
+$stmt->bindValue(count($params)-1, $limit, PDO::PARAM_INT);
+$stmt->bindValue(count($params), $offset, PDO::PARAM_INT);
+for ($i = 0; $i < count($params)-2; $i++) {
+    $stmt->bindValue($i+1, $params[$i]);
 }
+$stmt->execute();
+$interventions = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 $logements = $conn->query("SELECT id, nom_du_logement FROM liste_logements WHERE actif = 1 ORDER BY nom_du_logement")->fetchAll(PDO::FETCH_ASSOC);
 $allLogements = $conn->query("SELECT id, nom_du_logement FROM liste_logements ORDER BY nom_du_logement")->fetchAll(PDO::FETCH_ASSOC);
@@ -453,55 +431,17 @@ $charges = $chargeStmt->fetchAll(PDO::FETCH_ASSOC);
     tr.statut-a-verifier { background-color: #e3f2fd !important; }
     tr.statut-verifier { background-color: #fce4ec !important; }
     tr.statut-annule { background-color: #f5f5f5 !important; opacity: 0.65; text-decoration: line-through; }
-
-    /* Tableau planning compact */
-    .table-planning { font-size: 0.85em; }
-    .table-planning th { white-space: nowrap; font-size: 0.8em; text-transform: uppercase; letter-spacing: 0.02em; }
-    .table-planning td { vertical-align: middle; padding: 0.35rem 0.4rem; }
-    .table-planning .form-control,
-    .table-planning .form-select { font-size: 0.82em; padding: 0.2rem 0.4rem; min-height: unset; }
-    .table-planning select.form-control { padding-right: 1.5rem; }
-    .table-planning textarea.form-control { resize: vertical; min-height: 2em; }
-    .table-planning input[type="number"] { max-width: 65px; }
-    .table-planning input[type="date"] { max-width: 130px; }
-    .table-planning .btn-sm { font-size: 0.75em; padding: 0.2rem 0.5rem; }
-    .table-planning .particulars-group { font-size: 0.82em; }
-    .table-planning .particulars-group .form-check { margin-bottom: 0; padding-top: 0; padding-bottom: 0; }
-
     /* Compteur charge */
     .charge-cards { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
     .charge-card { background: #fff; border: 1px solid #dee2e6; border-radius: 8px; padding: 10px 14px; min-width: 150px; flex: 1; }
     .charge-card .name { font-weight: 700; font-size: 0.95em; }
     .charge-card .counts { font-size: 0.82em; color: #666; }
     .charge-card .total { font-size: 1.3em; font-weight: 800; color: #1976d2; }
-
-    /* Container pleine largeur pour le tableau */
-    .container-planning { max-width: 100%; padding: 0 15px; }
-    .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-
-    /* Resume stats inline */
-    .planning-summary { display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 12px; font-size: 0.85em; }
-    .planning-summary .badge { font-size: 0.9em; }
-
-    @media (max-width: 992px) {
-      .table-planning th:nth-child(n+8),
-      .table-planning td:nth-child(n+8) { min-width: 100px; }
-    }
   </style>
 </head>
 <body>
-<div class="container-fluid mt-4 container-planning">
+<div class="container mt-4">
     <h2>Gestion du Planning</h2>
-
-    <?php if (!empty($error_message)): ?>
-        <div class="alert alert-danger"><i class="fas fa-exclamation-triangle"></i> <?= $error_message ?></div>
-    <?php endif; ?>
-    <?php if (!empty($_SESSION['flash_messages'])): ?>
-        <?php foreach ($_SESSION['flash_messages'] as $flash): ?>
-            <div class="alert alert-<?= htmlspecialchars($flash['type']) ?>"><?= $flash['html'] ?></div>
-        <?php endforeach; ?>
-        <?php unset($_SESSION['flash_messages']); ?>
-    <?php endif; ?>
 
     <form method="GET" action="planning.php" class="mb-4">
         <div class="row g-3">
@@ -569,7 +509,6 @@ $charges = $chargeStmt->fetchAll(PDO::FETCH_ASSOC);
                 <option value="Annulé">Annulé</option>
             </select>
             <button id="bulk_update_btn" type="button" class="btn btn-success">Appliquer aux sélectionnées</button>
-            <button id="bulk_delete_btn" type="button" class="btn btn-danger ml-2">Supprimer les sélectionnées</button>
         </div>
     </div>
     <?php endif; ?>
@@ -594,18 +533,7 @@ $charges = $chargeStmt->fetchAll(PDO::FETCH_ASSOC);
     </div>
     <?php endif; ?>
 
-    <!-- Resume rapide -->
-    <div class="planning-summary">
-        <span><strong><?= (int)$totalCount ?></strong> intervention<?= $totalCount > 1 ? 's' : '' ?></span>
-        <span class="text-muted">|</span>
-        <span><?= htmlspecialchars(date('d/m/Y', strtotime($date_debut))) ?> &rarr; <?= htmlspecialchars(date('d/m/Y', strtotime($date_fin))) ?></span>
-        <?php if ($totalPages > 1): ?>
-        <span class="text-muted">| Page <?= $page ?>/<?= $totalPages ?></span>
-        <?php endif; ?>
-    </div>
-
-    <div class="table-responsive">
-    <table class="table table-striped table-planning">
+    <table class="table table-striped">
         <thead>
             <tr>
                 <?php if ($is_admin): ?>
@@ -772,35 +700,20 @@ $charges = $chargeStmt->fetchAll(PDO::FETCH_ASSOC);
             <?php endforeach; ?>
         </tbody>
     </table>
-    </div><!-- /table-responsive -->
 
-    <?php if ($totalPages > 1): ?>
     <nav>
-      <ul class="pagination pagination-sm">
-        <?php if ($page > 1): ?>
-          <li class="page-item"><a class="page-link" href="?date_debut=<?= urlencode($date_debut) ?>&date_fin=<?= urlencode($date_fin) ?>&statut_filter=<?= urlencode($statut_filter) ?>&logement_filter=<?= $logement_filter ?>&page=<?= $page - 1 ?>">&laquo;</a></li>
-        <?php endif; ?>
-        <?php
-          $start = max(1, $page - 3);
-          $end = min($totalPages, $page + 3);
-          if ($start > 1) echo '<li class="page-item disabled"><span class="page-link">...</span></li>';
-          for ($i = $start; $i <= $end; $i++):
-        ?>
+      <ul class="pagination">
+        <?php for ($i = 1; $i <= $totalPages; $i++): ?>
           <li class="page-item <?= ($i == $page) ? 'active' : '' ?>">
             <a class="page-link" href="?date_debut=<?= urlencode($date_debut) ?>&date_fin=<?= urlencode($date_fin) ?>&statut_filter=<?= urlencode($statut_filter) ?>&logement_filter=<?= $logement_filter ?>&page=<?= $i ?>"><?= $i ?></a>
           </li>
         <?php endfor; ?>
-        <?php if ($end < $totalPages) echo '<li class="page-item disabled"><span class="page-link">...</span></li>'; ?>
-        <?php if ($page < $totalPages): ?>
-          <li class="page-item"><a class="page-link" href="?date_debut=<?= urlencode($date_debut) ?>&date_fin=<?= urlencode($date_fin) ?>&statut_filter=<?= urlencode($statut_filter) ?>&logement_filter=<?= $logement_filter ?>&page=<?= $page + 1 ?>">&raquo;</a></li>
-        <?php endif; ?>
       </ul>
     </nav>
-    <?php endif; ?>
 
     <?php if ($is_admin): ?>
     <h3>Créer une nouvelle intervention</h3>
-    <form method="POST" action="" id="form_ajouter" onsubmit="if(this.dataset.submitted){return false;}this.dataset.submitted='1';this.querySelector('button[type=submit]').disabled=true;">
+    <form method="POST" action="">
         <input type="hidden" name="action" value="ajouter">
         <div class="form-row">
             <div class="form-group col-md-6">
@@ -968,40 +881,14 @@ $charges = $chargeStmt->fetchAll(PDO::FETCH_ASSOC);
     t.show();
   }
 
-  // Sync du jour
+  // Sync du jour → redirige vers le bouton sync par date (avec date du jour)
   document.addEventListener('DOMContentLoaded', function () {
     const syncBtn = document.getElementById('sync_today_btn');
     if (syncBtn) {
       syncBtn.addEventListener('click', function (e) {
         e.preventDefault();
-        syncBtn.disabled = true;
-        syncBtn.textContent = 'Synchronisation...';
-
-        $.getJSON('sync_reservations_today.php?debug=1')
-          .done(function(resp){
-            if (resp.status === 'success') {
-              showToast(`Synchro du jour OK : ${resp.inserted} créées, ${resp.updated} mises à jour.`);
-              setTimeout(()=> location.reload(), 800);
-            } else {
-              showToast('Erreur synchro : ' + (resp.message || 'Inconnue'), 'error');
-              console.error('SYNC error:', resp);
-            }
-          })
-          .fail(function(xhr){
-            let msg = `Erreur ${xhr.status || ''} pendant la synchro du jour.`;
-            try {
-              const j = JSON.parse(xhr.responseText);
-              if (j && j.message) msg = j.message;
-              if (j && j.ex) console.error('SYNC exception:', j.ex);
-            } catch(e) {
-              console.error('SYNC raw response:', xhr.responseText);
-            }
-            showToast(msg, 'error');
-          })
-          .always(function(){
-            syncBtn.disabled = false;
-            syncBtn.textContent = 'Synchroniser (aujourd\'hui)';
-          });
+        document.getElementById('sync_target_date').value = new Date().toISOString().slice(0,10);
+        document.getElementById('sync_by_date_btn').click();
       });
     }
   });
@@ -1053,6 +940,10 @@ $charges = $chargeStmt->fetchAll(PDO::FETCH_ASSOC);
       bulkBtn.addEventListener("click", function () {
         const new_status = document.getElementById("bulk_status").value;
         const ids = Array.from(document.querySelectorAll("input.bulk_checkbox:checked")).map(cb => cb.value);
+
+        console.log("DEBUG - IDs sélectionnés:", ids);
+        console.log("DEBUG - Statut sélectionné:", new_status);
+        console.log("DEBUG - Données envoyées:", { intervention_ids: ids, new_status: new_status });
 
         if (ids.length === 0) {
           alert("Veuillez sélectionner au moins une intervention.");
@@ -1107,43 +998,6 @@ $charges = $chargeStmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     refreshSelectAllState();
-
-    const bulkDelBtn = document.getElementById("bulk_delete_btn");
-    if (bulkDelBtn) {
-      bulkDelBtn.addEventListener("click", function () {
-        const ids = Array.from(document.querySelectorAll("input.bulk_checkbox:checked")).map(cb => cb.value);
-        if (ids.length === 0) {
-          alert("Veuillez sélectionner au moins une intervention.");
-          return;
-        }
-        if (!confirm("Confirmer la suppression de " + ids.length + " intervention(s) ?")) return;
-
-        $.ajax({
-          url: 'bulk_delete.php',
-          type: 'POST',
-          contentType: 'application/json',
-          dataType: 'json',
-          data: JSON.stringify({ intervention_ids: ids }),
-          success: function (response) {
-            if (response.status === 'success') {
-              (response.deleted_ids || []).forEach(function (id) {
-                $("#row_" + id).fadeOut(300, function() { $(this).remove(); });
-              });
-              showToast("Suppression réussie (" + (response.deleted_count || 0) + " intervention(s)).");
-            } else {
-              showToast("Erreur : " + (response.message || "Échec de la suppression."), 'error');
-            }
-          },
-          error: function (xhr) {
-            let msg = "Erreur lors de la suppression.";
-            if (xhr && xhr.responseText) {
-              try { const j = JSON.parse(xhr.responseText); if (j.message) msg = j.message; } catch(e) {}
-            }
-            showToast(msg, 'error');
-          }
-        });
-      });
-    }
   });
 </script>
 <script>
@@ -1152,7 +1006,7 @@ $(document).on('click', '#sync_by_date_btn', function(e){
   const d = $('#sync_target_date').val();
   if(!d){ showToast("Choisis une date.", 'error'); return; }
 
-  $.getJSON('sync_reservations_by_date.php', { date: d, debug: '1' })
+  $.getJSON('sync_reservations_by_date.php', { date: d })
     .done(function(resp){
       if(resp.status === 'success'){
         showToast(`Synchro ${resp.day} OK : ${resp.inserted} créées, ${resp.skipped} ignorées.`);
@@ -1164,13 +1018,7 @@ $(document).on('click', '#sync_by_date_btn', function(e){
     })
     .fail(function(xhr){
       console.error('SYNC BY DATE fail:', xhr.status, xhr.responseText);
-      let msg = `Erreur ${xhr.status} pendant la synchro.`;
-      try {
-        const j = JSON.parse(xhr.responseText);
-        if (j && j.message) msg = j.message;
-        if (j && j.ex) console.error('SYNC exception:', j.ex);
-      } catch(e) {}
-      showToast(msg, 'error');
+      showToast(`Erreur ${xhr.status} pendant la synchro.`, 'error');
     });
 });
 </script>

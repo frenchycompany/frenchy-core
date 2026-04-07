@@ -9,6 +9,7 @@ $isAdmin = ($_SESSION['role'] ?? '') === 'admin';
 
 // Suppression d'un checkup (admin uniquement)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_checkup']) && $isAdmin) {
+    validateCsrfToken();
     $deleteId = (int)$_POST['delete_checkup'];
 
     // Recuperer les fichiers a supprimer (photos items + signature)
@@ -24,14 +25,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_checkup']) && 
         $sigPath = null;
     }
 
-    // Supprimer les fichiers physiques
+    // Supprimer les fichiers physiques (avec protection path traversal)
+    $baseDir = realpath(__DIR__ . '/../');
     foreach ($photos as $photo) {
-        $fullPath = __DIR__ . '/../' . $photo;
-        if (file_exists($fullPath)) @unlink($fullPath);
+        $fullPath = realpath(__DIR__ . '/../' . $photo);
+        if ($fullPath && strpos($fullPath, $baseDir . DIRECTORY_SEPARATOR) === 0) {
+            @unlink($fullPath);
+        }
     }
     if ($sigPath) {
-        $fullPath = __DIR__ . '/../' . $sigPath;
-        if (file_exists($fullPath)) @unlink($fullPath);
+        $fullPath = realpath(__DIR__ . '/../' . $sigPath);
+        if ($fullPath && strpos($fullPath, $baseDir . DIRECTORY_SEPARATOR) === 0) {
+            @unlink($fullPath);
+        }
     }
 
     // Supprimer en BDD (CASCADE supprime les checkup_items)
@@ -338,6 +344,7 @@ if ($termines > 0) {
         <div class="modal-actions">
             <button class="modal-cancel" onclick="closeDeleteModal()">Annuler</button>
             <form method="POST" id="deleteForm" style="margin:0">
+                <?php echoCsrfField(); ?>
                 <input type="hidden" name="delete_checkup" id="deleteCheckupId">
                 <button type="submit" class="modal-confirm"><i class="fas fa-trash-alt"></i> Supprimer</button>
             </form>

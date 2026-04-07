@@ -2,8 +2,6 @@
 require_once '../includes/db.php';
 require_once '../includes/header.php';
 
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
 
 // Liste des numéros uniques (clients)
 $liste_numeros = [];

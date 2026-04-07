@@ -49,6 +49,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+// Nettoyer les doublons (garder le plus récent par name)
+try {
+    $pdoRpi = getRpiPdo();
+    $pdoRpi->exec("DELETE t1 FROM sms_templates t1
+                    INNER JOIN sms_templates t2
+                    ON t1.name = t2.name AND t1.id < t2.id");
+} catch (PDOException $e) { /* ignore */ }
+
 // Récupérer les templates (RPi)
 $templates = [];
 try {

@@ -122,6 +122,27 @@ $active_sections = vf_get_active_sections($settings);
 
     <?php include 'includes/footer.php'; ?>
 
+    <!-- Search overlay -->
+    <div class="vf-search-overlay" id="vf-search-overlay" hidden aria-hidden="true" role="dialog" aria-label="Recherche">
+        <div class="vf-search-backdrop" id="vf-search-backdrop"></div>
+        <div class="vf-search-panel">
+            <div class="vf-search-header">
+                <div class="vf-search-input-wrap">
+                    <svg class="vf-search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                    <input type="search" class="vf-search-input" id="vf-search-input" placeholder="Rechercher sur le site..." autocomplete="off" autofocus>
+                </div>
+                <button class="vf-search-close" id="vf-search-close" aria-label="Fermer la recherche">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+                </button>
+            </div>
+            <div class="vf-search-results" id="vf-search-results">
+                <p class="vf-search-hint">Tapez pour rechercher dans toutes les sections du site.</p>
+            </div>
+        </div>
+    </div>
+
     <script src="assets/js/main.js"></script>
 </body>
 </html>

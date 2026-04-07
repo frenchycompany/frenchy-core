@@ -50,7 +50,8 @@ class SuperhotePriceUpdater:
                 password=self.db_password,
                 database=self.db_name,
                 charset="utf8mb4",
-                cursorclass=pymysql.cursors.DictCursor
+                cursorclass=pymysql.cursors.DictCursor,
+                connect_timeout=10
             )
         except Exception as e:
             logger.error(f"Erreur connexion BDD: {e}")
@@ -113,9 +114,11 @@ class SuperhotePriceUpdater:
                         spu.date_end,
                         spu.price,
                         spu.status,
-                        l.nom_du_logement
+                        l.nom_du_logement,
+                        sc.superhote_property_name
                     FROM superhote_price_updates spu
                     LEFT JOIN liste_logements l ON spu.logement_id = l.id
+                    LEFT JOIN superhote_config sc ON spu.logement_id = sc.logement_id
                     WHERE spu.status = 'pending'
                     ORDER BY spu.date_start ASC, spu.logement_id ASC
                 """)
@@ -243,7 +246,7 @@ class SuperhotePriceUpdater:
                 "date_start": date_start_str,
                 "date_end": date_end_str,
                 "updates": group_updates,
-                "property_names": [u.get("nom_du_logement", "Inconnu") for u in group_updates],
+                "property_names": [u.get("superhote_property_name") or u.get("nom_du_logement", "Inconnu") for u in group_updates],
                 "count": len(group_updates)
             })
 
@@ -427,7 +430,7 @@ class SuperhotePriceUpdater:
 
                         # Traiter les resultats par logement
                         for update in group_updates:
-                            logement_name = update.get("nom_du_logement", "Inconnu")
+                            logement_name = update.get("superhote_property_name") or update.get("nom_du_logement", "Inconnu")
                             if results.get(logement_name, False):
                                 self.update_price_status(update["id"], "completed")
                                 self.log_price_history(

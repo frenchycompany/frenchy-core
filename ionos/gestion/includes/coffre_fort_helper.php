@@ -143,7 +143,7 @@ class CoffreFort
     /**
      * Upload et chiffre un fichier dans le coffre.
      */
-    public function upload(array $file, string $categorie, int $userId, string $description = '', string $tags = ''): array
+    public function upload(array $file, string $categorie, int $userId, string $description = '', string $tags = '', ?int $proprietaireId = null): array
     {
         // Validations
         if ($file['error'] !== UPLOAD_ERR_OK) {
@@ -162,12 +162,20 @@ class CoffreFort
         // Chiffrer et stocker
         $crypto = $this->chiffrerFichier($file['tmp_name']);
 
+        // S'assurer que la colonne proprietaire_id existe
+        try {
+            $cols = array_column($this->conn->query("SHOW COLUMNS FROM coffre_fort_fichiers")->fetchAll(), 'Field');
+            if (!in_array('proprietaire_id', $cols)) {
+                $this->conn->exec("ALTER TABLE coffre_fort_fichiers ADD COLUMN proprietaire_id INT DEFAULT NULL AFTER uploade_par, ADD INDEX idx_proprio (proprietaire_id)");
+            }
+        } catch (PDOException $e) {}
+
         // Insérer en base
         $stmt = $this->conn->prepare(
             "INSERT INTO coffre_fort_fichiers
                 (nom_original, nom_stockage, chemin_relatif, type_mime, taille, categorie,
-                 description, tags, cle_chiffrement, iv, hash_sha256, uploade_par)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+                 description, tags, cle_chiffrement, iv, hash_sha256, uploade_par, proprietaire_id)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
         );
         $stmt->execute([
             $file['name'],
@@ -182,6 +190,7 @@ class CoffreFort
             $crypto['iv'],
             $crypto['hash_sha256'],
             $userId,
+            $proprietaireId,
         ]);
 
         $fichierId = (int) $this->conn->lastInsertId();
@@ -227,6 +236,23 @@ class CoffreFort
 
         $sql .= " ORDER BY f.created_at DESC";
 
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Liste les fichiers d'un proprietaire.
+     */
+    public function listerParProprietaire(int $proprietaireId, string $categorie = ''): array
+    {
+        $sql = "SELECT * FROM coffre_fort_fichiers WHERE supprime = 0 AND proprietaire_id = ?";
+        $params = [$proprietaireId];
+        if ($categorie) {
+            $sql .= " AND categorie = ?";
+            $params[] = $categorie;
+        }
+        $sql .= " ORDER BY created_at DESC";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute($params);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);

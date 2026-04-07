@@ -42,16 +42,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_delete_session']
         echo json_encode(['error' => 'Accès refusé']);
         exit;
     }
-    // Supprimer les fichiers photos et QR codes
+    // Supprimer les fichiers photos et QR codes (avec protection path traversal)
+    $baseDir = realpath(__DIR__ . '/../');
     $stmtFiles = $conn->prepare("SELECT photo_path, qr_code_path FROM inventaire_objets WHERE session_id = ?");
     $stmtFiles->execute([$session_id]);
     $files = $stmtFiles->fetchAll(PDO::FETCH_ASSOC);
     foreach ($files as $f) {
-        if (!empty($f['photo_path']) && file_exists(__DIR__ . '/../' . $f['photo_path'])) {
-            @unlink(__DIR__ . '/../' . $f['photo_path']);
+        if (!empty($f['photo_path'])) {
+            $fp = realpath(__DIR__ . '/../' . $f['photo_path']);
+            if ($fp && strpos($fp, $baseDir . DIRECTORY_SEPARATOR) === 0) @unlink($fp);
         }
-        if (!empty($f['qr_code_path']) && file_exists(__DIR__ . '/' . $f['qr_code_path'])) {
-            @unlink(__DIR__ . '/' . $f['qr_code_path']);
+        if (!empty($f['qr_code_path'])) {
+            $fp = realpath(__DIR__ . '/' . $f['qr_code_path']);
+            if ($fp && strpos($fp, $baseDir . DIRECTORY_SEPARATOR) === 0) @unlink($fp);
         }
     }
     $conn->prepare("DELETE FROM inventaire_objets WHERE session_id = ?")->execute([$session_id]);
@@ -128,8 +131,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
         $stmt = $conn->prepare("SELECT photo_path FROM inventaire_objets WHERE id = ? AND session_id = ?");
         $stmt->execute([$obj_id, $session_id]);
         $obj = $stmt->fetch(PDO::FETCH_ASSOC);
-        if ($obj && $obj['photo_path'] && file_exists('../' . $obj['photo_path'])) {
-            unlink('../' . $obj['photo_path']);
+        if ($obj && $obj['photo_path']) {
+            $baseDir = realpath(__DIR__ . '/../');
+            $fp = realpath(__DIR__ . '/../' . $obj['photo_path']);
+            if ($fp && strpos($fp, $baseDir . DIRECTORY_SEPARATOR) === 0) @unlink($fp);
         }
         $stmt = $conn->prepare("DELETE FROM inventaire_objets WHERE id = ? AND session_id = ?");
         $stmt->execute([$obj_id, $session_id]);

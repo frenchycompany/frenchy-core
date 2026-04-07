@@ -5,30 +5,56 @@
  * Guides dynamiques gérés depuis la BDD (vf_guides + vf_guide_blocks).
  */
 
+// Activer le reporting d'erreurs pour diagnostiquer les pages blanches
+error_reporting(E_ALL);
+ini_set('display_errors', '1');
+
 require_once __DIR__ . '/db/connection.php';
 require_once __DIR__ . '/db/helpers.php';
 require_once __DIR__ . '/admin/auth.php';
 
 $property = vf_load_property();
 
-// ── Auth ──
-$admin_user = getenv('ADMIN_USER') ?: 'admin';
-$admin_pass = getenv('ADMIN_PASS') ?: 'admin2025';
+// ── Auth unifiée via table users ──
 
-// Login
+// Bridge token depuis gestion (lien direct)
+if (isset($_GET['bridge_token']) && empty($_SESSION['vf_admin'])) {
+    $bridge_user = vf_auth_check_bridge_token($conn, $_GET['bridge_token']);
+    if ($bridge_user) {
+        session_regenerate_id(true);
+        $_SESSION['vf_admin'] = true;
+        $_SESSION['vf_admin_user_id'] = $bridge_user['user_id'];
+        $_SESSION['vf_admin_email'] = $bridge_user['email'];
+        $_SESSION['vf_admin_name'] = trim(($bridge_user['prenom'] ?? '') . ' ' . ($bridge_user['nom'] ?? ''));
+        // Rediriger sans le token dans l'URL
+        header('Location: admin.php');
+        exit;
+    }
+}
+
+// Login via formulaire
 if (isset($_POST['login'])) {
     $rate_error = vf_rate_limit_check();
     if ($rate_error) {
         $login_error = $rate_error;
-    } elseif ($_POST['username'] === $admin_user && vf_check_password($_POST['password'], $admin_pass)) {
-        vf_rate_limit_success();
-        session_regenerate_id(true);
-        $_SESSION['vf_admin'] = true;
-        header('Location: admin.php');
-        exit;
     } else {
-        vf_rate_limit_fail();
-        $login_error = 'Identifiants incorrects.';
+        $email = trim($_POST['username'] ?? '');
+        $password = $_POST['password'] ?? '';
+        $auth_user = vf_auth_login($conn, $email, $password);
+
+        if ($auth_user) {
+            vf_rate_limit_success();
+            session_regenerate_id(true);
+            $_SESSION['vf_admin'] = true;
+            $_SESSION['vf_admin_user_id'] = $auth_user['id'];
+            $_SESSION['vf_admin_email'] = $auth_user['email'];
+            $_SESSION['vf_admin_name'] = trim(($auth_user['prenom'] ?? '') . ' ' . ($auth_user['nom'] ?? ''));
+            header('Location: admin.php');
+            exit;
+        } else {
+            vf_rate_limit_fail();
+            $login_error = 'Identifiants incorrects.';
+        }
     }
 }
 
@@ -682,6 +708,10 @@ $site_name = htmlspecialchars($site['name']);
                             <?= $hero_photo ? 'Remplacer l\'image' : 'Choisir une image' ?>
                             <input type="file" name="photo" accept="image/jpeg,image/png,image/webp" hidden>
                         </label>
+                        <button type="button" class="adm-btn adm-btn-outline adm-btn-sm adm-pick-from-gallery" data-group="hero" data-key="hero" data-alt="Image principale" data-target="photos-hero">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="vertical-align:-2px;margin-right:4px"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+                            Choisir depuis la galerie
+                        </button>
                         <button type="submit" class="adm-btn adm-btn-primary" disabled>Envoyer</button>
                     </div>
                     <div class="adm-upload-preview" hidden>
@@ -955,8 +985,8 @@ function show_login($error, $property) {
 
         <form method="post" class="adm-login-form">
             <div class="adm-field">
-                <label for="username">Identifiant</label>
-                <input type="text" id="username" name="username" class="adm-input" required autofocus>
+                <label for="username">Email</label>
+                <input type="email" id="username" name="username" class="adm-input" required autofocus placeholder="votre@email.com">
             </div>
             <div class="adm-field">
                 <label for="password">Mot de passe</label>

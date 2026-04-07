@@ -302,6 +302,17 @@ function sectionActive($key) {
     return $sectionsActives[$key] ?? true;
 }
 
+// Charger la config RGPD personnalisée
+$rgpdConfig = [];
+try {
+    $stmtRgpd = $conn->query("SELECT config_key, config_value FROM FC_rgpd_config");
+    while ($row = $stmtRgpd->fetch(PDO::FETCH_ASSOC)) {
+        $rgpdConfig[$row['config_key']] = $row['config_value'];
+    }
+} catch (PDOException $e) {
+    // Table n'existe pas encore, on utilise les textes par défaut
+}
+
 // Récupération de la config du simulateur
 $simulateurConfig = [
     'tarif_base_couchage' => 15,
@@ -1336,7 +1347,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['contact_submit'])) {
         <div class="container">
             <h2><?= e($settings['site_slogan'] ?? 'Conciergerie Airbnb & Gestion Locative Saisonnière') ?></h2>
             <p><?= e($settings['site_description'] ?? 'Nous gérons votre bien de A à Z pour optimiser vos revenus') ?></p>
-            <a href="#contact" class="btn-primary">Contactez-nous</a>
+            <a href="#contact" class="btn-primary"><?= e($settings['hero_cta'] ?? 'Contactez-nous') ?></a>
         </div>
     </section>
     <?php endif; ?>
@@ -1345,7 +1356,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['contact_submit'])) {
     <!-- Services Section -->
     <section class="services" id="services">
         <div class="container">
-            <h2 class="section-title">Nos Services</h2>
+            <h2 class="section-title"><?= e($settings['titre_services'] ?? 'Nos Services') ?></h2>
 
             <div class="services-grid">
                 <?php foreach ($services as $service): ?>
@@ -1372,7 +1383,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['contact_submit'])) {
 
             <!-- Disclaimer informatif -->
             <div style="margin-top: 2rem; padding: 1rem 1.5rem; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; text-align: center; font-size: 0.9rem; color: #64748B;">
-                Les informations présentées sur ce site sont fournies à titre informatif. Toute prestation fait l'objet d'un échange préalable et, le cas échéant, d'un contrat distinct signé. Aucun engagement n'est pris directement via ce site.
+                <?= e($settings['disclaimer_services'] ?? 'Les informations présentées sur ce site sont fournies à titre informatif. Toute prestation fait l\'objet d\'un échange préalable et, le cas échéant, d\'un contrat distinct signé. Aucun engagement n\'est pris directement via ce site.') ?>
             </div>
         </div>
     </section>
@@ -1382,7 +1393,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['contact_submit'])) {
     <!-- Tarifs Section -->
     <section class="tarifs" id="tarifs">
         <div class="container">
-            <h2 class="section-title">Tarifs Transparents</h2>
+            <h2 class="section-title"><?= e($settings['titre_tarifs'] ?? 'Tarifs Transparents') ?></h2>
 
             <div class="tarif-cards">
                 <?php foreach ($tarifs as $tarif): ?>
@@ -1398,14 +1409,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['contact_submit'])) {
             </div>
 
             <div class="highlight">
-                <h3>Ce qui est inclus :</h3>
+                <h3><?= e($settings['titre_inclus_tarifs'] ?? 'Ce qui est inclus :') ?></h3>
                 <ul>
-                    <li>✓ Gestion complète des réservations</li>
-                    <li>✓ Ménage professionnel entre chaque séjour</li>
-                    <li>✓ Accueil des voyageurs 7j/7</li>
-                    <li>✓ Maintenance et dépannages</li>
-                    <li>✓ Optimisation des revenus</li>
-                    <li>✓ Reporting mensuel détaillé</li>
+                <?php
+                $inclusItems = $settings['inclus_tarifs'] ?? "Gestion complète des réservations\nMénage professionnel entre chaque séjour\nAccueil des voyageurs 7j/7\nMaintenance et dépannages\nOptimisation des revenus\nReporting mensuel détaillé";
+                foreach (array_filter(array_map('trim', explode("\n", $inclusItems))) as $item): ?>
+                    <li>✓ <?= e($item) ?></li>
+                <?php endforeach; ?>
                 </ul>
             </div>
         </div>
@@ -1416,9 +1426,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['contact_submit'])) {
     <!-- Simulateur de Revenus -->
     <section class="services" id="simulateur" style="background: linear-gradient(135deg, var(--bleu-frenchy) 0%, var(--bleu-clair) 100%);">
         <div class="container">
-            <h2 class="section-title" style="color: white;">Estimez vos Revenus Locatifs</h2>
+            <h2 class="section-title" style="color: white;"><?= e($settings['titre_simulateur'] ?? 'Estimez vos Revenus Locatifs') ?></h2>
             <p style="text-align: center; color: rgba(255,255,255,0.9); margin-bottom: 2rem; max-width: 700px; margin-left: auto; margin-right: auto;">
-                Découvrez le potentiel de votre bien en location saisonnière grâce à notre simulateur gratuit.
+                <?= e($settings['sous_titre_simulateur'] ?? 'Découvrez le potentiel de votre bien en location saisonnière grâce à notre simulateur gratuit.') ?>
             </p>
 
             <div style="background: white; border-radius: 15px; padding: 2rem; max-width: 800px; margin: 0 auto; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
@@ -1731,10 +1741,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['contact_submit'])) {
     <!-- Galerie Photos -->
     <section class="services" id="galerie">
         <div class="container">
-            <h2 class="section-title">Nos Logements Gérés</h2>
+            <h2 class="section-title"><?= e($settings['titre_logements'] ?? 'Nos Logements Gérés') ?></h2>
             <p style="text-align: center; max-width: 800px; margin: 0 auto 3rem; font-size: 1.1rem; color: var(--gris-fonce);">
-                Découvrez quelques exemples de biens que nous gérons avec passion dans la région de Compiègne.
-                Chaque logement bénéficie de notre expertise pour offrir une expérience exceptionnelle aux voyageurs.
+                <?= e($settings['sous_titre_logements'] ?? 'Découvrez quelques exemples de biens que nous gérons avec passion dans la région de Compiègne. Chaque logement bénéficie de notre expertise pour offrir une expérience exceptionnelle aux voyageurs.') ?>
             </p>
 
             <div class="gallery-grid">
@@ -1754,10 +1763,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['contact_submit'])) {
             </div>
 
             <div class="highlight" style="margin-top: 3rem;">
-                <p style="text-align: center;"><strong>Vous souhaitez confier votre bien à <?= e($settings['site_nom'] ?? 'Frenchy Conciergerie') ?> ?</strong></p>
-                <p style="text-align: center; margin-top: 1rem;">Notre équipe vous accompagne pour optimiser la rentabilité de votre investissement locatif.</p>
+                <p style="text-align: center;"><strong><?= e($settings['cta_logements_titre'] ?? 'Vous souhaitez confier votre bien à ' . ($settings['site_nom'] ?? 'Frenchy Conciergerie') . ' ?') ?></strong></p>
+                <p style="text-align: center; margin-top: 1rem;"><?= e($settings['cta_logements_texte'] ?? 'Notre équipe vous accompagne pour optimiser la rentabilité de votre investissement locatif.') ?></p>
                 <p style="text-align: center; margin-top: 1.5rem;">
-                    <a href="#contact" class="btn-primary">Contactez-nous pour un devis personnalisé</a>
+                    <a href="#contact" class="btn-primary"><?= e($settings['cta_logements_bouton'] ?? 'Contactez-nous pour un devis personnalisé') ?></a>
                 </p>
             </div>
         </div>
@@ -1768,7 +1777,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['contact_submit'])) {
     <!-- Nos Distinctions -->
     <section class="services" id="distinctions" style="background: white;">
         <div class="container">
-            <h2 class="section-title">Nos Distinctions & Certifications</h2>
+            <h2 class="section-title"><?= e($settings['titre_distinctions'] ?? 'Nos Distinctions & Certifications') ?></h2>
 
             <div style="text-align: center; margin-bottom: 2rem;">
                 <?php
@@ -1797,7 +1806,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['contact_submit'])) {
     <!-- Témoignages -->
     <section class="avis" id="avis">
         <div class="container">
-            <h2 class="section-title">Témoignages de Propriétaires</h2>
+            <h2 class="section-title"><?= e($settings['titre_avis'] ?? 'Témoignages de Propriétaires') ?></h2>
 
             <div class="avis-grid">
                 <?php foreach ($avis as $avi): ?>
@@ -1811,7 +1820,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['contact_submit'])) {
             </div>
 
             <div class="highlight">
-                <p><strong>Information sur les témoignages :</strong> Les témoignages publiés sur notre site proviennent de propriétaires dont nous gérons actuellement les biens. Ces retours authentiques reflètent leur expérience réelle avec nos services de conciergerie et de gestion locative.</p>
+                <p><strong>Information sur les témoignages :</strong> <?= e($settings['disclaimer_avis'] ?? 'Les témoignages publiés sur notre site proviennent de propriétaires dont nous gérons actuellement les biens. Ces retours authentiques reflètent leur expérience réelle avec nos services de conciergerie et de gestion locative.') ?></p>
             </div>
         </div>
     </section>
@@ -1821,9 +1830,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['contact_submit'])) {
     <!-- Blog / Actualités -->
     <section class="services" id="blog" style="background: var(--gris-clair);">
         <div class="container">
-            <h2 class="section-title">Nos Actualités</h2>
+            <h2 class="section-title"><?= e($settings['titre_blog'] ?? 'Nos Actualités') ?></h2>
             <p style="text-align: center; max-width: 700px; margin: 0 auto 2rem; color: #6B7280;">
-                Conseils, astuces et actualités sur la gestion locative et la conciergerie Airbnb.
+                <?= e($settings['sous_titre_blog'] ?? 'Conseils, astuces et actualités sur la gestion locative et la conciergerie Airbnb.') ?>
             </p>
 
             <?php
@@ -1889,6 +1898,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['contact_submit'])) {
         <div class="container">
             <h2 class="section-title">Informations Légales</h2>
 
+            <?php if (!empty($rgpdConfig['mentions_legales'])): ?>
+            <div class="legal-box"><?= $rgpdConfig['mentions_legales'] ?></div>
+            <?php else: ?>
             <div class="legal-box">
                 <h3>Identité de l'Entreprise</h3>
                 <p><strong>Raison sociale :</strong> SAS FRENCHY CONCIERGERIE</p>
@@ -1936,6 +1948,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['contact_submit'])) {
                     </p>
                 </div>
             </div>
+            <?php endif; ?>
         </div>
     </section>
     <?php endif; ?>
@@ -1945,6 +1958,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['contact_submit'])) {
         <div class="container">
             <h2 class="section-title">Politique de Confidentialité</h2>
 
+            <?php if (!empty($rgpdConfig['politique_confidentialite'])): ?>
+            <div class="privacy-content"><?= $rgpdConfig['politique_confidentialite'] ?></div>
+            <?php else: ?>
             <div class="privacy-content">
                 <p><strong>Dernière mise à jour :</strong> <?= date('d/m/Y') ?></p>
 
@@ -2048,6 +2064,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['contact_submit'])) {
                     <p style="margin-top: 0.5rem;"><a href="mailto:<?= e($settings['email_legal'] ?? $settings['email'] ?? '') ?>" class="btn-primary" style="display: inline-block; margin-top: 0.5rem;">📧 <?= e($settings['email_legal'] ?? $settings['email'] ?? '') ?></a></p>
                 </div>
             </div>
+            <?php endif; ?>
         </div>
     </section>
 
@@ -2055,9 +2072,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['contact_submit'])) {
     <!-- Contact Section -->
     <section class="services" id="contact">
         <div class="container">
-            <h2 class="section-title">Contactez-nous</h2>
+            <h2 class="section-title"><?= e($settings['titre_contact'] ?? 'Contactez-nous') ?></h2>
             <div style="text-align: center; max-width: 600px; margin: 0 auto;">
-                <p style="font-size: 1.2rem; margin-bottom: 2rem;">Vous avez un projet de location saisonnière ? Parlons-en !</p>
+                <p style="font-size: 1.2rem; margin-bottom: 2rem;"><?= e($settings['sous_titre_contact'] ?? 'Vous avez un projet de location saisonnière ? Parlons-en !') ?></p>
 
                 <?php if ($contactSuccess): ?>
                 <div class="alert alert-success">
@@ -2124,7 +2141,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['contact_submit'])) {
             <div class="footer-content">
                 <div class="footer-section">
                     <h3><?= e($settings['site_nom'] ?? 'Frenchy Conciergerie') ?></h3>
-                    <p>Votre partenaire de confiance pour la gestion locative premium dans la région de Compiègne.</p>
+                    <p><?= e($settings['footer_description'] ?? 'Votre partenaire de confiance pour la gestion locative premium dans la région de Compiègne.') ?></p>
                     <p style="margin-top: 1rem;"><strong>SIRET :</strong> <?= e($settings['siret'] ?? '') ?></p>
                 </div>
 

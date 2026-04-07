@@ -204,8 +204,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 logementInfoCard.style.display = 'block';
                 const infoItems = [
                     {label: 'Nom', value: data.nom_du_logement},
-                    {label: 'Adresse', value: data.adresse},
-                    {label: 'Ville', value: data.ville},
+                    {label: 'Adresse', value: [data.adresse, data.adresse_ligne2].filter(Boolean).join(', ')},
+                    {label: 'Ville', value: [data.code_postal, data.ville].filter(Boolean).join(' ')},
                     {label: 'Type', value: data.type_logement},
                     {label: 'Capacite', value: data.capacite ? data.capacite + ' pers.' : ''},
                 ];
@@ -215,15 +215,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 logementInfoBody.innerHTML = buildInfoList(infoItems);
 
                 if (contractType === 'location') {
-                    const hasDetails = data.detail_description_logement || data.detail_equipements || data.detail_heure_arrivee;
-                    if (hasDetails) {
+                    // Proprietaire + details pour location
+                    var locationExtra = [];
+                    if (data.proprietaire_nom || data.proprietaire_prenom) {
+                        locationExtra.push({label: 'Proprietaire', value: ((data.proprietaire_prenom || '') + ' ' + (data.proprietaire_nom || '')).trim()});
+                        if (data.proprietaire_societe) locationExtra.push({label: 'Societe', value: data.proprietaire_societe});
+                        if (data.proprietaire_adresse) locationExtra.push({label: 'Adresse proprio', value: [data.proprietaire_adresse, data.proprietaire_adresse_ligne2].filter(Boolean).join(', ')});
+                        if (data.proprietaire_code_postal || data.proprietaire_ville) locationExtra.push({label: 'Ville proprio', value: [data.proprietaire_code_postal, data.proprietaire_ville].filter(Boolean).join(' ')});
+                        if (data.proprietaire_email) locationExtra.push({label: 'Email proprio', value: data.proprietaire_email});
+                        if (data.proprietaire_telephone) locationExtra.push({label: 'Tel proprio', value: data.proprietaire_telephone});
+                        if (data.proprietaire_siret) locationExtra.push({label: 'SIRET', value: data.proprietaire_siret});
+                    }
+                    if (data.detail_heure_arrivee) locationExtra.push({label: 'Arrivee', value: data.detail_heure_arrivee});
+                    if (data.detail_heure_depart) locationExtra.push({label: 'Depart', value: data.detail_heure_depart});
+                    if (data.detail_depot_garantie) locationExtra.push({label: 'Garantie', value: data.detail_depot_garantie + ' EUR'});
+                    if (data.detail_taxe_sejour_par_nuit) locationExtra.push({label: 'Taxe/nuit', value: data.detail_taxe_sejour_par_nuit + ' EUR'});
+
+                    if (locationExtra.length > 0) {
                         extraInfoCard.style.display = 'block';
-                        extraInfoBody.innerHTML = buildInfoList([
-                            {label: 'Arrivee', value: data.detail_heure_arrivee},
-                            {label: 'Depart', value: data.detail_heure_depart},
-                            {label: 'Garantie', value: data.detail_depot_garantie ? data.detail_depot_garantie + ' EUR' : ''},
-                            {label: 'Taxe/nuit', value: data.detail_taxe_sejour_par_nuit ? data.detail_taxe_sejour_par_nuit + ' EUR' : ''},
-                        ]);
+                        extraInfoBody.innerHTML = buildInfoList(locationExtra);
                     } else { extraInfoCard.style.display = 'none'; }
                 } else {
                     if (data.proprietaire_nom || data.proprietaire_prenom) {
@@ -231,6 +241,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         extraInfoBody.innerHTML = buildInfoList([
                             {label: 'Nom', value: (data.proprietaire_prenom || '') + ' ' + (data.proprietaire_nom || '')},
                             {label: 'Societe', value: data.proprietaire_societe},
+                            {label: 'Adresse', value: [data.proprietaire_adresse, data.proprietaire_adresse_ligne2].filter(Boolean).join(', ')},
+                            {label: 'Ville', value: [data.proprietaire_code_postal, data.proprietaire_ville].filter(Boolean).join(' ')},
                             {label: 'Email', value: data.proprietaire_email},
                             {label: 'Tel', value: data.proprietaire_telephone},
                             {label: 'Commission', value: data.proprietaire_commission ? data.proprietaire_commission + '%' : ''},
@@ -245,7 +257,9 @@ document.addEventListener('DOMContentLoaded', function() {
     function applyAutoFill(data) {
         const computed = Object.assign({}, data);
         computed['proprietaire_fullname'] = ((data.proprietaire_prenom || '') + ' ' + (data.proprietaire_nom || '')).trim();
-        computed['description_logement'] = [data.type_logement, data.adresse, data.ville].filter(Boolean).join(', ');
+        computed['adresse_complete'] = [data.adresse, data.adresse_ligne2, data.code_postal, data.ville].filter(Boolean).join(', ');
+        computed['proprietaire_adresse_complete'] = [data.proprietaire_adresse, data.proprietaire_adresse_ligne2, data.proprietaire_code_postal, data.proprietaire_ville].filter(Boolean).join(', ');
+        computed['description_logement'] = [data.type_logement, data.adresse, data.code_postal, data.ville].filter(Boolean).join(', ');
         computed['date_contrat'] = document.getElementById('date_contrat') ? document.getElementById('date_contrat').value : '';
 
         dynamicFields.querySelectorAll('[data-autofill]').forEach(field => {

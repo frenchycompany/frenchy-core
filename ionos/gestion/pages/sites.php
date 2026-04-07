@@ -4,6 +4,46 @@
  * Création automatique : tables BDD + copie moteur + config .env + property.php
  */
 include '../config.php';
+
+// ── Bridge admin : traiter AVANT le menu (qui envoie du HTML) pour permettre le redirect ──
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['bridge_admin'])) {
+    validateCsrfToken();
+
+    $siteId = (int)$_POST['site_id'];
+    $userId = $_SESSION['user_id'] ?? $_SESSION['id_intervenant'] ?? null;
+
+    if ($userId && $conn instanceof PDO) {
+        try {
+            $conn->exec("CREATE TABLE IF NOT EXISTS admin_bridge_tokens (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                token VARCHAR(128) NOT NULL UNIQUE,
+                user_id INT NOT NULL,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                used_at DATETIME DEFAULT NULL,
+                INDEX idx_token (token)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+            $token = bin2hex(random_bytes(32));
+            $stmt = $conn->prepare("INSERT INTO admin_bridge_tokens (token, user_id) VALUES (:token, :user_id)");
+            $stmt->execute([':token' => $token, ':user_id' => $userId]);
+
+            $stmt = $conn->prepare("SELECT site_url FROM frenchysite_instances WHERE id = :id");
+            $stmt->execute([':id' => $siteId]);
+            $siteUrl = $stmt->fetchColumn();
+
+            if ($siteUrl) {
+                // target="_blank" ouvre un nouvel onglet → rediriger directement vers l'admin du site
+                $adminUrl = rtrim($siteUrl, '/') . '/admin.php?bridge_token=' . urlencode($token);
+                header('Location: ' . $adminUrl);
+                exit;
+            }
+        } catch (PDOException $e) {
+            error_log('sites.php bridge_admin: ' . $e->getMessage());
+        }
+    }
+    // Fallback : si le redirect n'a pas marché, continuer vers la page normalement
+}
+
 include '../pages/menu.php';
 
 if (!($conn instanceof PDO)) {
@@ -602,7 +642,7 @@ function deploySite($frenchysiteSource, $deployPath, $dbPrefix, $siteName, $loge
         . "DB_NAME={$dbName}\n"
         . "DB_USER={$dbUser}\n"
         . "DB_PASS={$dbPass}\n\n"
-        . "ADMIN_USER=admin\n"
+        . "ADMIN_USER=admin@frenchy.local\n"
         . "ADMIN_PASS={$adminPass}\n\n"
         . "APP_DEBUG=false\n";
 
@@ -739,7 +779,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_site'])) {
                             ':site_name'      => $siteName,
                             ':site_url'       => $siteUrl,
                             ':deploy_path'    => $deployPath,
-                            ':admin_user'     => 'admin',
+                            ':admin_user'     => 'admin@frenchy.local',
                             ':admin_pass_hash' => $passHash,
                         ]);
 
@@ -754,7 +794,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_site'])) {
                                 Dossier : <code>{$deployPath}</code> " . ($deployOk ? '✅' : '❌ fichiers absents !') . "<br>
                                 Source : <code>{$frenchysiteSource}</code><br>
                                 URL : <a href='{$siteUrl}' target='_blank'>{$siteUrl}</a><br>
-                                Admin : <a href='{$siteUrl}/admin.php' target='_blank'>{$siteUrl}/admin.php</a> (admin / {$admin_pass})
+                                Admin : <a href='{$siteUrl}/admin.php' target='_blank'>{$siteUrl}/admin.php</a> (admin@frenchy.local / {$admin_pass})
                             </small>
                         </div>";
                     } catch (Exception $e) {
@@ -871,6 +911,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_site'])) {
     }
 }
 
+// (Bridge admin handler déplacé avant menu.php — voir début du fichier)
+
 // ── Charger les données ──
 $sites = [];
 try {
@@ -970,7 +1012,7 @@ foreach ($sites as $site) {
                         <input type="text" class="form-control" id="admin_pass" name="admin_pass"
                                value="admin2025" placeholder="Mot de passe admin du site">
                         <div class="form-text">
-                            Identifiants : <code>admin</code> / ce mot de passe
+                            Identifiants : <code>admin@frenchy.local</code> / ce mot de passe
                         </div>
                     </div>
 
@@ -1051,9 +1093,14 @@ foreach ($sites as $site) {
                                                     <i class="fas fa-external-link-alt ms-1"></i>
                                                 </a>
                                                 <br>
-                                                <a href="<?= htmlspecialchars(rtrim($site['site_url'], '/')) ?>/admin.php" target="_blank" class="text-warning" title="Admin">
-                                                    <small><i class="fas fa-cog"></i> admin</small>
-                                                </a>
+                                                <form method="POST" style="display:inline" target="_blank">
+                                                    <?php echoCsrfField(); ?>
+                                                    <input type="hidden" name="bridge_admin" value="1">
+                                                    <input type="hidden" name="site_id" value="<?= $site['id'] ?>">
+                                                    <button type="submit" class="btn btn-link btn-sm text-warning p-0" title="Ouvrir l'admin du site">
+                                                        <small><i class="fas fa-cog"></i> admin</small>
+                                                    </button>
+                                                </form>
                                             <?php else: ?>
                                                 <span class="text-muted"><?= htmlspecialchars($slug ?: '—') ?></span>
                                             <?php endif; ?>

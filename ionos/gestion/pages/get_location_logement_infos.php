@@ -13,8 +13,35 @@ if (!$logement_id) {
 }
 
 try {
-    // Donnees du logement
-    $stmt = $conn->prepare("SELECT * FROM liste_logements WHERE id = ?");
+    // Donnees du logement avec proprietaire
+    $extraCols = '';
+    try {
+        $cols = array_column($conn->query("SHOW COLUMNS FROM FC_proprietaires")->fetchAll(), 'Field');
+        $propFields = [
+            'nom' => 'proprietaire_nom',
+            'prenom' => 'proprietaire_prenom',
+            'email' => 'proprietaire_email',
+            'telephone' => 'proprietaire_telephone',
+            'adresse' => 'proprietaire_adresse',
+            'adresse_ligne2' => 'proprietaire_adresse_ligne2',
+            'code_postal' => 'proprietaire_code_postal',
+            'ville' => 'proprietaire_ville',
+            'societe' => 'proprietaire_societe',
+            'siret' => 'proprietaire_siret',
+        ];
+        foreach ($propFields as $col => $alias) {
+            if (in_array($col, $cols)) {
+                $extraCols .= ", p.{$col} AS {$alias}";
+            }
+        }
+    } catch (PDOException $e2) { }
+
+    $stmt = $conn->prepare("
+        SELECT l.*{$extraCols}
+        FROM liste_logements l
+        LEFT JOIN FC_proprietaires p ON l.proprietaire_id = p.id
+        WHERE l.id = ?
+    ");
     $stmt->execute([$logement_id]);
     $logement = $stmt->fetch(PDO::FETCH_ASSOC);
 

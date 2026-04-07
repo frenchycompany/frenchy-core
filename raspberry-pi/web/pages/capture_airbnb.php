@@ -3,8 +3,6 @@
  * Page de capture des donnees Airbnb
  * Recoit les donnees du bookmarklet et permet de les confirmer/modifier
  */
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
 
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/header_minimal.php';

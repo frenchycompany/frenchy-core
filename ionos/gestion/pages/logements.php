@@ -24,6 +24,16 @@ try {
     if (!in_array('book_bienvenue_url', $cols)) {
         $conn->exec("ALTER TABLE liste_logements ADD COLUMN `book_bienvenue_url` VARCHAR(500) DEFAULT NULL AFTER `airbnb_url`");
     }
+    // Champs adresse structurée
+    if (!in_array('adresse_ligne2', $cols)) {
+        $conn->exec("ALTER TABLE liste_logements ADD COLUMN `adresse_ligne2` VARCHAR(255) DEFAULT NULL AFTER `adresse`");
+    }
+    if (!in_array('code_postal', $cols)) {
+        $conn->exec("ALTER TABLE liste_logements ADD COLUMN `code_postal` VARCHAR(10) DEFAULT NULL AFTER `adresse_ligne2`");
+    }
+    if (!in_array('ville', $cols)) {
+        $conn->exec("ALTER TABLE liste_logements ADD COLUMN `ville` VARCHAR(100) DEFAULT NULL AFTER `code_postal`");
+    }
 } catch (PDOException $e) {
     error_log('Migration logements : ' . $e->getMessage());
 }
@@ -39,6 +49,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['add_logement'])) {
         $nom   = trim($_POST['nom_du_logement'] ?? '');
         $adresse = trim($_POST['adresse'] ?? '');
+        $adresse_ligne2 = trim($_POST['adresse_ligne2'] ?? '');
+        $code_postal = trim($_POST['code_postal'] ?? '');
+        $ville = trim($_POST['ville'] ?? '');
         $description = trim($_POST['description'] ?? '');
         $m2    = (float) ($_POST['m2'] ?? 0);
         $nombre_de_personnes = (int) ($_POST['nombre_de_personnes'] ?? 0);
@@ -59,11 +72,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             try {
                 $stmt = $conn->prepare("
                     INSERT INTO liste_logements
-                    (nom_du_logement, adresse, description, m2, nombre_de_personnes, poid_menage,
+                    (nom_du_logement, adresse, adresse_ligne2, code_postal, ville, description, m2, nombre_de_personnes, poid_menage,
                      prix_vente_menage, valeur_locative, valeur_fonciere, code, ics_url, ics_url_2, airbnb_url, book_bienvenue_url, proprietaire_id, actif)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
                 ");
-                $stmt->execute([$nom, $adresse ?: null, $description ?: null, $m2, $nombre_de_personnes,
+                $stmt->execute([$nom, $adresse ?: null, $adresse_ligne2 ?: null, $code_postal ?: null, $ville ?: null, $description ?: null, $m2, $nombre_de_personnes,
                     $poid_menage, $prix_vente_menage, $valeur_locative, $valeur_fonciere,
                     $code, $ics_url ?: null, $ics_url_2 ?: null, $airbnb_url ?: null, $book_bienvenue_url ?: null, $proprietaire_id]);
                 $feedback = '<div class="alert alert-success">Logement ajouté avec succès.</div>';
@@ -78,6 +91,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $id    = (int) $_POST['logement_id'];
         $nom   = trim($_POST['nom_du_logement'] ?? '');
         $adresse = trim($_POST['adresse'] ?? '');
+        $adresse_ligne2 = trim($_POST['adresse_ligne2'] ?? '');
+        $code_postal = trim($_POST['code_postal'] ?? '');
+        $ville = trim($_POST['ville'] ?? '');
         $description = trim($_POST['description'] ?? '');
         $m2    = (float) ($_POST['m2'] ?? 0);
         $nombre_de_personnes = (int) ($_POST['nombre_de_personnes'] ?? 0);
@@ -98,13 +114,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             try {
                 $stmt = $conn->prepare("
                     UPDATE liste_logements SET
-                        nom_du_logement = ?, adresse = ?, description = ?,
+                        nom_du_logement = ?, adresse = ?, adresse_ligne2 = ?, code_postal = ?, ville = ?, description = ?,
                         m2 = ?, nombre_de_personnes = ?, poid_menage = ?,
                         prix_vente_menage = ?, valeur_locative = ?, valeur_fonciere = ?,
                         code = ?, ics_url = ?, ics_url_2 = ?, airbnb_url = ?, book_bienvenue_url = ?, proprietaire_id = ?
                     WHERE id = ?
                 ");
-                $stmt->execute([$nom, $adresse ?: null, $description ?: null, $m2, $nombre_de_personnes,
+                $stmt->execute([$nom, $adresse ?: null, $adresse_ligne2 ?: null, $code_postal ?: null, $ville ?: null, $description ?: null, $m2, $nombre_de_personnes,
                     $poid_menage, $prix_vente_menage, $valeur_locative, $valeur_fonciere,
                     $code, $ics_url ?: null, $ics_url_2 ?: null, $airbnb_url ?: null, $book_bienvenue_url ?: null, $proprietaire_id, $id]);
                 $feedback = '<div class="alert alert-success">Logement mis à jour.</div>';
@@ -267,7 +283,7 @@ foreach ($proprietaires_list as $pr) {
                                     <br><small class="text-muted"><?= htmlspecialchars(mb_substr($l['description'], 0, 50)) ?><?= mb_strlen($l['description'] ?? '') > 50 ? '...' : '' ?></small>
                                 <?php endif; ?>
                             </td>
-                            <td><small><?= htmlspecialchars(mb_substr($l['adresse'] ?? '', 0, 40)) ?></small></td>
+                            <td><small><?= htmlspecialchars(mb_substr($l['adresse'] ?? '', 0, 40)) ?><?php if (!empty($l['code_postal']) || !empty($l['ville'])): ?><br><?= htmlspecialchars(trim(($l['code_postal'] ?? '') . ' ' . ($l['ville'] ?? ''))) ?><?php endif; ?></small></td>
                             <td><?= $l['m2'] ? $l['m2'] . ' m²' : '-' ?></td>
                             <td><?= $l['nombre_de_personnes'] ?: '-' ?></td>
                             <td><?= $l['poid_menage'] ? number_format($l['poid_menage'], 1) : '-' ?></td>
@@ -375,8 +391,22 @@ foreach ($proprietaires_list as $pr) {
                                 <input type="text" class="form-control" name="nom_du_logement" required>
                             </div>
                             <div class="mb-3">
-                                <label class="form-label">Adresse</label>
-                                <textarea class="form-control" name="adresse" rows="2"></textarea>
+                                <label class="form-label">Adresse ligne 1</label>
+                                <input type="text" class="form-control" name="adresse" placeholder="N° et rue">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Adresse ligne 2</label>
+                                <input type="text" class="form-control" name="adresse_ligne2" placeholder="Bâtiment, résidence, étage...">
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-4">
+                                    <label class="form-label">Code postal</label>
+                                    <input type="text" class="form-control" name="code_postal" placeholder="60000" maxlength="10">
+                                </div>
+                                <div class="col-8">
+                                    <label class="form-label">Ville</label>
+                                    <input type="text" class="form-control" name="ville" placeholder="Compiègne">
+                                </div>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Description</label>
@@ -490,8 +520,22 @@ foreach ($proprietaires_list as $pr) {
                                 <input type="text" class="form-control" name="nom_du_logement" id="edit_nom" required>
                             </div>
                             <div class="mb-3">
-                                <label class="form-label">Adresse</label>
-                                <textarea class="form-control" name="adresse" id="edit_adresse" rows="2"></textarea>
+                                <label class="form-label">Adresse ligne 1</label>
+                                <input type="text" class="form-control" name="adresse" id="edit_adresse" placeholder="N° et rue">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Adresse ligne 2</label>
+                                <input type="text" class="form-control" name="adresse_ligne2" id="edit_adresse_ligne2" placeholder="Bâtiment, résidence, étage...">
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-4">
+                                    <label class="form-label">Code postal</label>
+                                    <input type="text" class="form-control" name="code_postal" id="edit_code_postal" placeholder="60000" maxlength="10">
+                                </div>
+                                <div class="col-8">
+                                    <label class="form-label">Ville</label>
+                                    <input type="text" class="form-control" name="ville" id="edit_ville" placeholder="Compiègne">
+                                </div>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Description</label>
@@ -586,6 +630,9 @@ function editLogement(l) {
     document.getElementById('edit_id').value       = l.id;
     document.getElementById('edit_nom').value       = l.nom_du_logement || '';
     document.getElementById('edit_adresse').value   = l.adresse || '';
+    document.getElementById('edit_adresse_ligne2').value = l.adresse_ligne2 || '';
+    document.getElementById('edit_code_postal').value = l.code_postal || '';
+    document.getElementById('edit_ville').value     = l.ville || '';
     document.getElementById('edit_description').value = l.description || '';
     document.getElementById('edit_m2').value        = l.m2 || 0;
     document.getElementById('edit_pers').value      = l.nombre_de_personnes || 0;

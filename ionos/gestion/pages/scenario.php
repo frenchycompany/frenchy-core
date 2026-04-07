@@ -1,7 +1,5 @@
 <?php
 // Activer l'affichage des erreurs pour le débogage
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
 
 // Inclure la configuration et l'en-tête
 require_once __DIR__ . '/../includes/rpi_db.php';

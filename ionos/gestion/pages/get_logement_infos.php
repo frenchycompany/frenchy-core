@@ -16,6 +16,9 @@ try {
     try {
         $cols = array_column($conn->query("SHOW COLUMNS FROM FC_proprietaires")->fetchAll(), 'Field');
         $optional = [
+            'adresse_ligne2' => 'proprietaire_adresse_ligne2',
+            'code_postal' => 'proprietaire_code_postal',
+            'ville' => 'proprietaire_ville',
             'societe' => 'proprietaire_societe',
             'siret' => 'proprietaire_siret',
             'rib_iban' => 'proprietaire_rib_iban',

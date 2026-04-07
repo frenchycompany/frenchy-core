@@ -2,10 +2,6 @@
 // pages/sync_reservations_by_date.php
 declare(strict_types=1);
 
-// Forcer affichage erreurs AVANT tout include pour diagnostiquer les 500 vides
-ini_set('display_errors', '1');
-error_reporting(E_ALL);
-
 header('Content-Type: application/json; charset=utf-8');
 date_default_timezone_set('Europe/Paris');
 
@@ -26,14 +22,14 @@ if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $target)) {
 register_shutdown_function(function() use ($DEBUG) {
     $e = error_get_last();
     if ($e && in_array($e['type'], [E_ERROR,E_PARSE,E_CORE_ERROR,E_COMPILE_ERROR,E_USER_ERROR])) {
-        if (!headers_sent()) http_response_code(500);
+        http_response_code(500);
         $payload = ['status'=>'error','message'=>'Fatal PHP'];
-        $payload['ex'] = $e['message'].' in '.$e['file'].':'.$e['line'];
+        if ($DEBUG) $payload['ex'] = $e['message'].' in '.$e['file'].':'.$e['line'];
         echo json_encode($payload);
     }
 });
-// En production, remettre display_errors à 0 après le shutdown handler
 ini_set('display_errors', '0');
+error_reporting(E_ALL);
 
 // helpers JSON
 function jerr(int $code, string $msg, array $extra = []) {
@@ -46,19 +42,20 @@ function jok(array $data) {
     exit;
 }
 
-// auth
-if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
+// auth (compatible ancien système $_SESSION['role'] et nouveau $_SESSION['user_role'])
+$sessionRole = $_SESSION['role'] ?? $_SESSION['user_role'] ?? '';
+if ($sessionRole !== 'admin' && $sessionRole !== 'super_admin' && $sessionRole !== 'gestionnaire') {
     jerr(403, 'Accès refusé (admin requis).');
 }
 
-// Connexion REMOTE (Raspberry) — optionnelle : si indisponible, on utilise uniquement la base locale
+// Connexion REMOTE (Raspberry) via helper centralisé
 require_once __DIR__ . '/../includes/rpi_db.php';
-$pdoRemote = null;
+$remoteOk = false;
 try {
     $pdoRemote = getRpiPdo();
     $remoteOk = true;
 } catch (Throwable $e) {
-    // RPi indisponible, on continue avec la base locale uniquement
+    jerr(500, 'Connexion distante impossible.', $DEBUG?['ex'=>$e->getMessage()]:[]);
 }
 
 // introspection (closeCursor obligatoire avec EMULATE_PREPARES=false)
@@ -67,33 +64,73 @@ function table_exists(PDO $c, string $t): bool {
     catch(Throwable $e){ return false; }
 }
 function column_exists(PDO $c, string $t, string $col): bool {
-    try { $s=$c->prepare("SHOW COLUMNS FROM `$t` LIKE ?"); $s->execute([$col]); $r=(bool)$s->fetch(); $s->closeCursor(); return $r; }
-    catch(Throwable $e){ return false; }
+    try {
+        $s = $c->query("SHOW COLUMNS FROM `$t`");
+        $cols = $s->fetchAll(PDO::FETCH_COLUMN);
+        $s->closeCursor();
+        return in_array($col, $cols);
+    } catch(Throwable $e){ return false; }
 }
 
-// vérif REMOTE (si disponible)
-$remoteOk = false;
-if ($pdoRemote && table_exists($pdoRemote, 'reservation')) {
-    $needRemote = [
-      'id'           => column_exists($pdoRemote,'reservation','id'),
-      'logement_id'  => column_exists($pdoRemote,'reservation','logement_id'),
-      'date_arrivee' => column_exists($pdoRemote,'reservation','date_arrivee'),
-      'date_depart'  => column_exists($pdoRemote,'reservation','date_depart'),
-      'statut'       => column_exists($pdoRemote,'reservation','statut'),
-      'nb_adultes'   => column_exists($pdoRemote,'reservation','nb_adultes'),
-      'nb_enfants'   => column_exists($pdoRemote,'reservation','nb_enfants'),
-      'nb_bebes'     => column_exists($pdoRemote,'reservation','nb_bebes'),
-    ];
-    $missing = array_keys(array_filter($needRemote, fn($ok)=>!$ok));
-    $remoteOk = empty($missing);
+// vérif REMOTE
+if (!table_exists($pdoRemote, 'reservation')) jerr(500, "Table 'reservation' introuvable sur la base distante.");
+
+// Vérifier que la table reservation existe
+if (!table_exists($pdoRemote, 'reservation')) jerr(500, "Table 'reservation' introuvable sur la base distante.");
+
+// Introspection des colonnes disponibles
+$hasId         = column_exists($pdoRemote,'reservation','id');
+$hasLogementId = column_exists($pdoRemote,'reservation','logement_id');
+$hasArrivee    = column_exists($pdoRemote,'reservation','date_arrivee');
+$hasDepart     = column_exists($pdoRemote,'reservation','date_depart');
+$hasStatut     = column_exists($pdoRemote,'reservation','statut');
+
+// Si colonnes essentielles manquantes, log et message clair
+$missing = [];
+if (!$hasId) $missing[] = 'id';
+if (!$hasLogementId) $missing[] = 'logement_id';
+if (!$hasArrivee) $missing[] = 'date_arrivee';
+if (!$hasDepart) $missing[] = 'date_depart';
+if (!$hasStatut) $missing[] = 'statut';
+
+// Vérifier les noms alternatifs courants
+if (!$hasArrivee && column_exists($pdoRemote,'reservation','checkin'))  { $hasArrivee = true; $colArrivee = 'checkin'; } else { $colArrivee = 'date_arrivee'; }
+if (!$hasDepart  && column_exists($pdoRemote,'reservation','checkout')) { $hasDepart  = true; $colDepart  = 'checkout'; } else { $colDepart  = 'date_depart'; }
+if (!$hasStatut  && column_exists($pdoRemote,'reservation','status'))  { $hasStatut  = true; $colStatut  = 'status'; } else { $colStatut  = 'statut'; }
+
+// Recalculer les manquantes après fallback
+$missing = [];
+if (!$hasId) $missing[] = 'id';
+if (!$hasLogementId) $missing[] = 'logement_id';
+if (!$hasArrivee) $missing[] = 'date_arrivee/checkin';
+if (!$hasDepart) $missing[] = 'date_depart/checkout';
+if (!$hasStatut) $missing[] = 'statut/status';
+
+if ($missing) {
+    // Lister les colonnes réellement présentes pour debug
+    $allCols = [];
+    try {
+        $colStmt = $pdoRemote->query("SHOW COLUMNS FROM reservation");
+        $allCols = $colStmt->fetchAll(PDO::FETCH_COLUMN);
+        $colStmt->closeCursor();
+    } catch (Throwable $e) {}
+    jerr(500, 'Colonnes manquantes (REMOTE reservation)', ['missing'=>$missing, 'available'=>$allCols]);
 }
+
+// Colonnes optionnelles pour le calcul du nombre de personnes
+$remoteHasNbPersonnes = column_exists($pdoRemote,'reservation','nb_adultes')
+                     && column_exists($pdoRemote,'reservation','nb_enfants')
+                     && column_exists($pdoRemote,'reservation','nb_bebes');
+$remoteNbPersExpr = $remoteHasNbPersonnes
+    ? '(COALESCE(r.nb_adultes,0)+COALESCE(r.nb_enfants,0)+COALESCE(r.nb_bebes,0))'
+    : '0';
 
 // côté LOCAL planning : colonnes optionnelles + tokens
 $pl_has_src_id    = column_exists($conn,'planning','source_reservation_id');
 $pl_has_src_type  = column_exists($conn,'planning','source_type');
 $tokens_table     = table_exists($conn,'intervention_tokens');
 
-// Vérifier si la base locale a une table reservation
+// Vérifier si la base locale a aussi une table reservation (réservations importées via iCal)
 $localHasReservation = table_exists($conn, 'reservation');
 $localNbPersExpr = '0';
 if ($localHasReservation) {
@@ -105,15 +142,10 @@ if ($localHasReservation) {
     }
 }
 
-// Au moins une source de réservations doit être disponible
-if (!$remoteOk && !$localHasReservation) {
-    jerr(500, 'Aucune source de réservations disponible (ni RPi, ni table locale reservation).');
-}
-
-// Charger les noms et capacités des logements
+// Charger logements actifs
 $logements = [];
 try {
-    $stLog = $conn->query("SELECT id, nom_du_logement, nombre_de_personnes FROM liste_logements");
+    $stLog = $conn->query("SELECT id, nom_du_logement, nombre_de_personnes FROM liste_logements WHERE actif = 1");
     $rows = $stLog->fetchAll(PDO::FETCH_ASSOC);
     $stLog->closeCursor();
     foreach ($rows as $lg) {
@@ -122,26 +154,27 @@ try {
             'capacite' => (int)($lg['nombre_de_personnes'] ?? 0),
         ];
     }
-} catch (Throwable $e) { /* ignore */ }
+} catch (Throwable $e) { error_log('sync_reservations_by_date.php: ' . $e->getMessage()); }
 
 $deps = [];
 $arrs = [];
 $sourceLabel = '';
 
-// 1) Lire depuis le REMOTE (RPi) si disponible
+// 1) Lire les DÉPARTS depuis le REMOTE
 if ($remoteOk) {
     try {
         $sqlDeps = "
-            SELECT r.id AS resa_id, r.logement_id, DATE(r.date_arrivee) AS date_arrivee,
-                   DATE(r.date_depart) AS date_depart,
-                   (COALESCE(r.nb_adultes,0)+COALESCE(r.nb_enfants,0)+COALESCE(r.nb_bebes,0)) AS nb_pers,
-                   GREATEST(DATEDIFF(r.date_depart, r.date_arrivee), 0) AS nb_jours
-            FROM reservation r WHERE r.statut = 'confirmée' AND DATE(r.date_depart) = :d
-            ORDER BY r.date_depart ASC
+            SELECT r.id AS resa_id, r.logement_id, DATE(r.{$colArrivee}) AS date_arrivee,
+                   DATE(r.{$colDepart}) AS date_depart,
+                   {$remoteNbPersExpr} AS nb_pers,
+                   GREATEST(DATEDIFF(r.{$colDepart}, r.{$colArrivee}), 0) AS nb_jours
+            FROM reservation r WHERE r.{$colStatut} = 'confirmée' AND DATE(r.{$colDepart}) = :d
+            ORDER BY r.{$colDepart} ASC
         ";
         $stDeps = $pdoRemote->prepare($sqlDeps);
         $stDeps->execute([':d'=>$target]);
         $deps = $stDeps->fetchAll(PDO::FETCH_ASSOC);
+        $stDeps->closeCursor();
         $sourceLabel = 'REMOTE';
     } catch (Throwable $e) {
         if ($DEBUG) error_log('sync_by_date: remote deps error: '.$e->getMessage());
@@ -149,30 +182,37 @@ if ($remoteOk) {
 
     try {
         $sqlArrs = "
-            SELECT r.id AS resa_id, r.logement_id, DATE(r.date_arrivee) AS date_arrivee,
-                   DATE(r.date_depart) AS date_depart,
-                   (COALESCE(r.nb_adultes,0)+COALESCE(r.nb_enfants,0)+COALESCE(r.nb_bebes,0)) AS nb_pers,
-                   GREATEST(DATEDIFF(r.date_depart, r.date_arrivee), 0) AS nb_jours
-            FROM reservation r WHERE r.statut = 'confirmée' AND DATE(r.date_arrivee) = :d
-            ORDER BY r.date_arrivee ASC
+            SELECT r.id AS resa_id, r.logement_id, DATE(r.{$colArrivee}) AS date_arrivee,
+                   DATE(r.{$colDepart}) AS date_depart,
+                   {$remoteNbPersExpr} AS nb_pers,
+                   GREATEST(DATEDIFF(r.{$colDepart}, r.{$colArrivee}), 0) AS nb_jours
+            FROM reservation r WHERE r.{$colStatut} = 'confirmée' AND DATE(r.{$colArrivee}) = :d
+            ORDER BY r.{$colArrivee} ASC
         ";
         $stArrs = $pdoRemote->prepare($sqlArrs);
         $stArrs->execute([':d'=>$target]);
         $arrs = $stArrs->fetchAll(PDO::FETCH_ASSOC);
+        $stArrs->closeCursor();
     } catch (Throwable $e) {
         if ($DEBUG) error_log('sync_by_date: remote arrs error: '.$e->getMessage());
     }
 }
 
-// 2) Lire/fusionner depuis la base LOCALE
+// Fusionner avec les départs de la base LOCALE (réservations importées via iCal)
 if ($localHasReservation) {
     try {
         $sqlLocalDeps = "
-            SELECT r.id AS resa_id, r.logement_id, DATE(r.date_arrivee) AS date_arrivee,
-                   DATE(r.date_depart) AS date_depart, {$localNbPersExpr} AS nb_pers,
-                   GREATEST(DATEDIFF(r.date_depart, r.date_arrivee), 0) AS nb_jours
-            FROM reservation r WHERE r.statut = 'confirmée' AND DATE(r.date_depart) = :d
-            ORDER BY r.date_depart ASC
+            SELECT
+                r.id AS resa_id,
+                r.logement_id AS logement_id,
+                DATE(r.{$colArrivee}) AS date_arrivee,
+                DATE(r.{$colDepart})  AS date_depart,
+                {$localNbPersExpr} AS nb_pers,
+                GREATEST(DATEDIFF(r.{$colDepart}, r.{$colArrivee}), 0) AS nb_jours
+            FROM reservation r
+            WHERE r.{$colStatut} = 'confirmée'
+              AND DATE(r.{$colDepart}) = :d
+            ORDER BY r.{$colDepart} ASC
         ";
         $stLD = $conn->prepare($sqlLocalDeps);
         $stLD->execute([':d' => $target]);
@@ -187,14 +227,46 @@ if ($localHasReservation) {
         }
         $sourceLabel = $sourceLabel ? $sourceLabel.'+LOCAL' : 'LOCAL';
     } catch (Throwable $e) { error_log('sync_reservations_by_date.php: ' . $e->getMessage()); }
+}
 
+// Lire les ARRIVÉES = $target (REMOTE)
+try {
+    $sqlArrs = "
+        SELECT
+            r.id AS resa_id,
+            r.logement_id AS logement_id,
+            DATE(r.{$colArrivee}) AS date_arrivee,
+            DATE(r.{$colDepart})  AS date_depart,
+            {$remoteNbPersExpr} AS nb_pers,
+            GREATEST(DATEDIFF(r.{$colDepart}, r.{$colArrivee}), 0) AS nb_jours
+        FROM reservation r
+        WHERE r.{$colStatut} = 'confirmée'
+          AND DATE(r.{$colArrivee}) = :d
+        ORDER BY r.{$colArrivee} ASC
+    ";
+    $stArrs = $pdoRemote->prepare($sqlArrs);
+    $stArrs->execute([':d'=>$target]);
+    $arrs = $stArrs->fetchAll(PDO::FETCH_ASSOC);
+    $stArrs->closeCursor();
+} catch (Throwable $e) {
+    jerr(500, 'Erreur SQL lecture arrivées (REMOTE)', $DEBUG?['ex'=>$e->getMessage()]:[]);
+}
+
+// Fusionner avec les arrivées de la base LOCALE (réservations importées via iCal)
+if ($localHasReservation) {
     try {
         $sqlLocalArrs = "
-            SELECT r.id AS resa_id, r.logement_id, DATE(r.date_arrivee) AS date_arrivee,
-                   DATE(r.date_depart) AS date_depart, {$localNbPersExpr} AS nb_pers,
-                   GREATEST(DATEDIFF(r.date_depart, r.date_arrivee), 0) AS nb_jours
-            FROM reservation r WHERE r.statut = 'confirmée' AND DATE(r.date_arrivee) = :d
-            ORDER BY r.date_arrivee ASC
+            SELECT
+                r.id AS resa_id,
+                r.logement_id AS logement_id,
+                DATE(r.{$colArrivee}) AS date_arrivee,
+                DATE(r.{$colDepart})  AS date_depart,
+                {$localNbPersExpr} AS nb_pers,
+                GREATEST(DATEDIFF(r.{$colDepart}, r.{$colArrivee}), 0) AS nb_jours
+            FROM reservation r
+            WHERE r.{$colStatut} = 'confirmée'
+              AND DATE(r.{$colArrivee}) = :d
+            ORDER BY r.{$colArrivee} ASC
         ";
         $stLA = $conn->prepare($sqlLocalArrs);
         $stLA->execute([':d' => $target]);
@@ -226,55 +298,49 @@ function ensure_token_if_possible(PDO $c, int $pid, bool $enabled): void {
     } catch (Throwable $e) { error_log('sync_reservations_by_date.php: ' . $e->getMessage()); }
 }
 
-// statements LOCAL (dans try-catch car EMULATE_PREPARES=false peut échouer si curseur ouvert)
-try {
-    $findBySourceCheckout = $pl_has_src_id && $pl_has_src_type
-        ? $conn->prepare("SELECT id, statut FROM planning WHERE source_reservation_id = ? AND source_type = 'AUTO_CHECKOUT' LIMIT 1")
-        : null;
-    $findByHeuristic = $conn->prepare("
-        SELECT id, statut
-        FROM planning
-        WHERE logement_id = ?
-          AND date = ?
-          AND note LIKE ?
-        LIMIT 1
-    ");
+// statements LOCAL
+$findBySourceCheckout = $pl_has_src_id && $pl_has_src_type
+    ? $conn->prepare("SELECT id, statut FROM planning WHERE source_reservation_id = ? AND source_type = 'AUTO_CHECKOUT' LIMIT 1")
+    : null;
+$findBySourceArrival = $pl_has_src_id && $pl_has_src_type
+    ? $conn->prepare("SELECT id, statut FROM planning WHERE source_reservation_id = ? AND source_type = 'AUTO_ARRIVAL' LIMIT 1")
+    : null;
 
-    $findAnyOnDate = $conn->prepare("
-        SELECT id FROM planning WHERE logement_id = ? AND date = ? LIMIT 1
-    ");
+$findByHeuristic = $conn->prepare("
+    SELECT id, statut
+    FROM planning
+    WHERE logement_id = ?
+      AND date = ?
+      AND note LIKE ?
+    LIMIT 1
+");
 
-    // dernière intervention pour un logement (pour calculer le gap)
-    $findLastIntervention = $conn->prepare("
-        SELECT MAX(date) AS last_date FROM planning WHERE logement_id = ? AND date < ?
-    ");
+$findAnyOnDate = $conn->prepare("
+    SELECT id FROM planning WHERE logement_id = ? AND date = ? LIMIT 1
+");
 
-    $insertPlanningCheckout = $conn->prepare("
-        INSERT INTO planning (
-            logement_id, date, nombre_de_personnes, nombre_de_jours_reservation, statut, note
-            ".($pl_has_src_id ? ", source_reservation_id" : "")."
-            ".($pl_has_src_type ? ", source_type" : "")."
-        ) VALUES (
-            :logement_id, :date, :nb_pers, :nb_jours, 'A Faire', :note
-            ".($pl_has_src_id ? ", :resa_id" : "")."
-            ".($pl_has_src_type ? ", 'AUTO_CHECKOUT'" : "")."
-        )
-    ");
-
-    $insertPlanningVerif = $conn->prepare("
-        INSERT INTO planning (
-            logement_id, date, nombre_de_personnes, nombre_de_jours_reservation, statut, note
-            ".($pl_has_src_id ? ", source_reservation_id" : "")."
-            ".($pl_has_src_type ? ", source_type" : "")."
-        ) VALUES (
-            :logement_id, :date, :nb_pers, :nb_jours, 'A Faire', :note
-            ".($pl_has_src_id ? ", :resa_id" : "")."
-            ".($pl_has_src_type ? ", 'AUTO_VERIF'" : "")."
-        )
-    ");
-} catch (Throwable $e) {
-    jerr(500, 'Erreur préparation requêtes SQL.', $DEBUG?['ex'=>$e->getMessage()]:[]);
-}
+$insertPlanningCheckout = $conn->prepare("
+    INSERT INTO planning (
+        logement_id, date, nombre_de_personnes, nombre_de_jours_reservation, statut, note
+        ".($pl_has_src_id ? ", source_reservation_id" : "")."
+        ".($pl_has_src_type ? ", source_type" : "")."
+    ) VALUES (
+        :logement_id, :date, :nb_pers, :nb_jours, 'À Faire', :note
+        ".($pl_has_src_id ? ", :resa_id" : "")."
+        ".($pl_has_src_type ? ", 'AUTO_CHECKOUT'" : "")."
+    )
+");
+$insertPlanningArrival = $conn->prepare("
+    INSERT INTO planning (
+        logement_id, date, nombre_de_personnes, nombre_de_jours_reservation, statut, note
+        ".($pl_has_src_id ? ", source_reservation_id" : "")."
+        ".($pl_has_src_type ? ", source_type" : "")."
+    ) VALUES (
+        :logement_id, :date, :nb_pers, :nb_jours, :statut, :note
+        ".($pl_has_src_id ? ", :resa_id" : "")."
+        ".($pl_has_src_type ? ", 'AUTO_ARRIVAL'" : "")."
+    )
+");
 
 // Dernière intervention sur un logement (pour déterminer si "À Vérifier")
 $findLastIntervention = $conn->prepare("
@@ -291,7 +357,9 @@ foreach ($deps as $d) {
 $taches_par_logement = [];
 try {
     $stmtTaches = $conn->query("SELECT logement_id, description FROM todo_list WHERE statut IN ('en attente', 'en cours') ORDER BY date_limite ASC");
-    foreach ($stmtTaches->fetchAll(PDO::FETCH_ASSOC) as $t) {
+    $rows_t = $stmtTaches->fetchAll(PDO::FETCH_ASSOC);
+    $stmtTaches->closeCursor();
+    foreach ($rows_t as $t) {
         $taches_par_logement[(int)$t['logement_id']][] = $t['description'];
     }
 } catch (PDOException $e) { error_log('sync_reservations_by_date.php: ' . $e->getMessage()); }
@@ -317,12 +385,29 @@ try {
             $nbPers = $logements[$logId]['capacite'];
         }
         $nbJours = max(0, (int)$r['nb_jours']);
-        // Si nb_pers = 0, utiliser la capacité du logement
-        if ($nbPers === 0 && isset($logements[$logId])) {
-            $nbPers = $logements[$logId]['capacite'];
+        $srcLabel = $r['_source'] ?? 'REMOTE';
+        // Note = tâches à faire sur ce logement (si existantes)
+        $note = !empty($taches_par_logement[$logId])
+            ? implode("\n", array_map(fn($t) => "- $t", $taches_par_logement[$logId]))
+            : '';
+
+        // Vérifier s'il existe déjà UNE intervention ce jour pour ce logement
+        $findAnyOnDate->execute([$logId, $depart]);
+        $alreadyAny = $findAnyOnDate->fetch();
+        $findAnyOnDate->closeCursor();
+        if ($alreadyAny) {
+            $skipped++;
+            $report['departures'][] = [
+                'reservation_id'  => $resaId,
+                'logement_id'     => $logId,
+                'date_depart'     => $depart,
+                'reason'          => 'intervention_already_exists_on_date',
+                'had_intervention_before' => true,
+                'created_now'     => false,
+                'intervention_id' => null,
+            ];
+            continue;
         }
-        $logNom = $logements[$logId]['nom'] ?? '';
-        $note   = "Ménage de sortie" . ($logNom ? " — {$logNom}" : '');
 
         $existing = null;
         if ($findBySourceCheckout) {
@@ -331,14 +416,8 @@ try {
             $findBySourceCheckout->closeCursor();
         }
         if (!$existing) {
-            // Chercher par nouveau format
-            $findByHeuristic->execute([$logId, $depart, 'Ménage de sortie%']);
-            $existing = $findByHeuristic->fetch(PDO::FETCH_ASSOC) ?: null;
-            $findByHeuristic->closeCursor();
-        }
-        if (!$existing) {
-            // Rétrocompat ancien format
-            $findByHeuristic->execute([$logId, $depart, "Auto: ménage de sortie (resa #{$resaId})%"]);
+            $like = "Auto: ménage de sortie (resa #{$resaId})%";
+            $findByHeuristic->execute([$logId, $depart, $like]);
             $existing = $findByHeuristic->fetch(PDO::FETCH_ASSOC) ?: null;
             $findByHeuristic->closeCursor();
         }
@@ -377,12 +456,7 @@ try {
         ];
     }
 
-    // 2) ARRIVÉES = $target
-    // Logique : PAS de ménage pour un check-in.
-    // Si le logement a un check-out le même jour, le ménage de sortie suffit.
-    // Si le logement est resté vide 2+ jours sans ménage → "À Vérifier" (vérif poussière).
-    $depLogIds = array_map(fn($d) => (int)$d['logement_id'], $deps);
-
+    // 2) ARRIVÉES = $target (créer si rien n'existe déjà ce jour pour le logement)
     foreach ($arrs as $r) {
         $resaId  = (int)$r['resa_id'];
         $logId   = (int)$r['logement_id'];
@@ -393,22 +467,12 @@ try {
         }
         $nbJours = max(0, (int)$r['nb_jours']);
         $srcLabel = $r['_source'] ?? 'REMOTE';
+        // Note = tâches à faire sur ce logement (si existantes)
+        $note = !empty($taches_par_logement[$logId])
+            ? implode("\n", array_map(fn($t) => "- $t", $taches_par_logement[$logId]))
+            : '';
 
-        // 0) Ce logement a un check-out le même jour → le ménage de sortie couvre, on skip
-        if (in_array($logId, $depLogIds)) {
-            $skipped++;
-            $report['arrivals'][] = [
-                'reservation_id'  => $resaId,
-                'logement_id'     => $logId,
-                'date'            => $target,
-                'reason'          => 'checkout_same_day_covers_it',
-                'created_now'     => false,
-                'intervention_id' => null,
-            ];
-            continue;
-        }
-
-        // 1) Il existe déjà une intervention ce jour pour ce logement → skip
+        // si une intervention existe déjà ce jour → ne rien créer
         $findAnyOnDate->execute([$logId, $target]);
         $alreadyExists = $findAnyOnDate->fetch();
         $findAnyOnDate->closeCursor();
@@ -425,45 +489,18 @@ try {
             continue;
         }
 
-        // 2) Vérifier depuis combien de jours le logement n'a pas eu d'intervention
-        $findLastIntervention->execute([$logId, $target]);
-        $lastRow = $findLastIntervention->fetch(PDO::FETCH_ASSOC);
-        $findLastIntervention->closeCursor();
-        $lastDate = $lastRow['last_date'] ?? null;
-
-        if ($lastDate) {
-            $gapDays = (int)((strtotime($target) - strtotime($lastDate)) / 86400);
-        } else {
-            $gapDays = 999; // jamais eu d'intervention → considéré comme longtemps
-        }
-
-        // Si le logement a été vérifié/nettoyé il y a moins de 2 jours → pas besoin
-        if ($gapDays < 2) {
-            $skipped++;
-            $report['arrivals'][] = [
-                'reservation_id'  => $resaId,
-                'logement_id'     => $logId,
-                'date'            => $target,
-                'reason'          => 'recently_cleaned_' . $gapDays . 'd_ago',
-                'created_now'     => false,
-                'intervention_id' => null,
-            ];
-            continue;
-        }
-
-        // 3) Logement vide 2+ jours → créer "À Vérifier" (vérif poussière, pas ménage complet)
-        // Si nb_pers = 0, utiliser la capacité du logement
-        if ($nbPers === 0 && isset($logements[$logId])) {
-            $nbPers = $logements[$logId]['capacite'];
-        }
-        $logNom = $logements[$logId]['nom'] ?? '';
-        $note = "À vérifier (vide {$gapDays}j)" . ($logNom ? " — {$logNom}" : '');
-
-        // Vérifier si une telle intervention existe déjà
         $existing = null;
-        $findByHeuristic->execute([$logId, $target, 'À vérifier%']);
-        $existing = $findByHeuristic->fetch(PDO::FETCH_ASSOC) ?: null;
-        $findByHeuristic->closeCursor();
+        if ($findBySourceArrival) {
+            $findBySourceArrival->execute([$resaId]);
+            $existing = $findBySourceArrival->fetch(PDO::FETCH_ASSOC) ?: null;
+            $findBySourceArrival->closeCursor();
+        }
+        if (!$existing) {
+            $like = "Auto: ménage avant arrivée (resa #{$resaId})%";
+            $findByHeuristic->execute([$logId, $target, $like]);
+            $existing = $findByHeuristic->fetch(PDO::FETCH_ASSOC) ?: null;
+            $findByHeuristic->closeCursor();
+        }
 
         $hadBefore = (bool)$existing;
         $interventionId = $existing['id'] ?? null;
@@ -507,7 +544,7 @@ try {
                     ':note'=>$note,
                 ];
                 if ($pl_has_src_id) $params[':resa_id'] = $resaId;
-                $insertPlanningVerif->execute($params);
+                $insertPlanningArrival->execute($params);
                 $interventionId = (int)$conn->lastInsertId();
                 ensure_token_if_possible($conn, $interventionId, $tokens_table);
             }
@@ -521,8 +558,6 @@ try {
             'reservation_id'         => $resaId,
             'logement_id'            => $logId,
             'date'                   => $target,
-            'gap_days'               => $gapDays,
-            'type'                   => 'a_verifier',
             'had_intervention_before'=> $hadBefore,
             'created_now'            => $createdNow && !$DRY_RUN,
             'intervention_id'        => $interventionId,
@@ -545,5 +580,5 @@ try {
     ]);
 } catch (Throwable $e) {
     if (!$DRY_RUN && $conn->inTransaction()) $conn->rollBack();
-    jerr(500, 'Erreur serveur pendant la synchro.', ['ex'=>$e->getMessage()]);
+    jerr(500, 'Erreur serveur pendant la synchro.', $DEBUG?['ex'=>$e->getMessage()]:[]);
 }

@@ -1,8 +1,6 @@
 <?php
 // index.php — Accueil FrenchyConciergerie
 
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
 
 require_once __DIR__ . '/includes/env_loader.php';
 require_once __DIR__ . '/db/connection.php';
@@ -161,6 +159,23 @@ try {
     $notifications = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {}
 
+// Onboardings recents (admin) — derniers 7 jours non traites
+$onboardings_recents = [];
+if ($is_admin) {
+    try {
+        $stmt = $conn->prepare("
+            SELECT or2.id, or2.prenom, or2.nom, or2.email, or2.telephone, or2.pack, or2.commission_base,
+                   or2.adresse, or2.ville, or2.completed_at, or2.proprietaire_id
+            FROM onboarding_requests or2
+            WHERE or2.statut = 'termine' AND or2.completed_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+            ORDER BY or2.completed_at DESC
+            LIMIT 5
+        ");
+        $stmt->execute();
+        $onboardings_recents = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) { /* table pas encore creee */ }
+}
+
 // Stats rapides (admin)
 $stats = null;
 if ($is_admin) {
@@ -310,6 +325,36 @@ if ($is_admin) {
             <div class="label"><?= $is_admin ? 'Total' : 'Mes interv.' ?></div>
         </div>
     </div>
+    <?php endif; ?>
+
+    <!-- Onboardings recents (admin) -->
+    <?php if (!empty($onboardings_recents)): ?>
+    <div class="section-title"><i class="fas fa-user-plus" style="color:#28a745;"></i> Nouveaux proprietaires</div>
+    <?php foreach ($onboardings_recents as $onb):
+        $onbNom = htmlspecialchars(trim(($onb['prenom'] ?? '') . ' ' . ($onb['nom'] ?? '')));
+        $onbPack = htmlspecialchars($onb['pack'] ?? 'autonome');
+        $onbComm = (float)($onb['commission_base'] ?? 10);
+        $onbDate = $onb['completed_at'] ? date('d/m H:i', strtotime($onb['completed_at'])) : '';
+        $onbVille = htmlspecialchars($onb['ville'] ?? '');
+    ?>
+    <div style="background:linear-gradient(135deg,#e8f5e9,#f1f8e9);border-radius:12px;padding:16px 18px;margin-bottom:10px;border-left:4px solid #28a745;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+        <div style="flex:1;">
+            <div style="font-weight:700;font-size:1.05em;color:#1b5e20;">
+                <i class="fas fa-user-check"></i> <?= $onbNom ?>
+            </div>
+            <div style="font-size:0.85em;color:#555;margin-top:4px;">
+                <span style="background:#28a745;color:#fff;padding:2px 8px;border-radius:10px;font-size:0.8em;font-weight:600;"><?= $onbPack ?></span>
+                <span style="margin-left:8px;"><?= $onbComm ?>%</span>
+                <?php if ($onbVille): ?><span style="margin-left:8px;"><i class="fas fa-map-marker-alt"></i> <?= $onbVille ?></span><?php endif; ?>
+                <span style="margin-left:8px;color:#999;"><?= $onbDate ?></span>
+            </div>
+        </div>
+        <a href="pages/proprietaire_detail.php?id=<?= (int)$onb['proprietaire_id'] ?>"
+           style="background:#28a745;color:#fff;padding:8px 16px;border-radius:8px;text-decoration:none;font-weight:600;font-size:0.85em;white-space:nowrap;">
+            <i class="fas fa-arrow-right"></i> Voir
+        </a>
+    </div>
+    <?php endforeach; ?>
     <?php endif; ?>
 
     <!-- Interventions du jour -->

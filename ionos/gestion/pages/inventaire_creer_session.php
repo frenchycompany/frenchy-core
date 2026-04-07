@@ -1,7 +1,5 @@
 <?php
 require_once '../db/connection.php';
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
 
 // Auto-migration : ajouter intervenant_id si absent
 try { $conn->exec("ALTER TABLE sessions_inventaire ADD COLUMN intervenant_id INT DEFAULT NULL AFTER logement_id"); } catch (PDOException $e) { error_log('inventaire_creer_session.php: ' . $e->getMessage()); }

@@ -1,22 +1,10 @@
-
 <?php
-error_reporting(E_ALL);
 ini_set('display_errors', 0);
-
 include '../config.php';
-require_once __DIR__ . '/../includes/rpi_bridge.php';
-require_once __DIR__ . '/../includes/rpi_db.php';
-
-// Rediriger $pdo vers le RPi pour toutes les requêtes SMS de cette page
-// ($conn reste disponible pour les tables VPS si besoin)
-$rpi_error = null;
-try {
-    $pdo = getRpiPdo();
-} catch (Exception $e) {
-    error_log('Erreur connexion RPi : ' . $e->getMessage());
-    $rpi_error = 'Une erreur interne est survenue.';
-    $pdo = null;
-}
+// Le backend ne charge plus les données — tout est chargé via l'API AJAX paginée
+$view_mode = $_GET['view'] ?? 'conversations';
+$show_archived = isset($_GET['archived']) && $_GET['archived'] === '1';
+$initial_sender = $_GET['sender'] ?? '';
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -27,272 +15,20 @@ try {
 </head>
 <body>
 <?php include '../pages/menu.php'; ?>
-<?php
-
-// --- Helper Functions ---
-
-function fmt_date($s, $format = 'd/m/Y H:i') {
-    if (empty($s)) return '';
-    try {
-        $dt = new DateTime($s);
-        return $dt->format($format);
-    } catch (Exception $e) {
-        return htmlspecialchars((string)$s);
-    }
-}
-
-function fmt_relative_time($s) {
-    if (empty($s)) return '';
-    try {
-        $dt = new DateTime($s);
-        $now = new DateTime();
-        $diff = $now->diff($dt);
-
-        $localDate = new DateTime($s);
-        $localNow = new DateTime();
-        $isToday = $localDate->format('Y-m-d') === $localNow->format('Y-m-d');
-        $isYesterday = $localDate->format('Y-m-d') === $localNow->modify('-1 day')->format('Y-m-d');
-
-        if ($diff->days == 0 && $isToday) {
-            if ($diff->h == 0) {
-                if ($diff->i == 0) return 'maintenant';
-                return $diff->i . ' min';
-            }
-            return $dt->format('H:i');
-        } elseif ($isYesterday) {
-             return 'Hier ' . $dt->format('H:i');
-        } elseif ($diff->days < 7) {
-             $daysOfWeek = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
-             return $daysOfWeek[$dt->format('w')] . ' ' . $dt->format('H:i');
-        }
-        return fmt_date($s, 'd/m/Y');
-    } catch (Exception $e) {
-        return '';
-    }
-}
-
-function get_reservation_info($phone, $pdo) {
-    global $conn; // VPS DB for liste_logements
-    $phone_e164_clean = preg_replace('/[^0-9+]/', '', $phone);
-    $phone_0_format = preg_replace('/^\+33/', '0', $phone_e164_clean);
-    if (empty($phone_e164_clean)) return null;
-
-    try {
-        // Reservation depuis RPi
-        $stmt = $pdo->prepare("
-            SELECT id, prenom as client_name, date_arrivee as start_date,
-                   date_depart as end_date, statut as status, logement_id
-            FROM reservation
-            WHERE telephone = :phone_e164 OR telephone = :phone_0
-            ORDER BY CASE WHEN date_depart >= CURDATE() THEN 0 ELSE 1 END, date_arrivee DESC
-            LIMIT 1
-        ");
-        $stmt->execute([':phone_e164' => $phone_e164_clean, ':phone_0' => $phone_0_format]);
-        $result = $stmt->fetch(PDO::FETCH_ASSOC);
-        if (!$result) return null;
-
-        // Logement depuis VPS
-        $result['nom_du_logement'] = '';
-        if (!empty($result['logement_id']) && isset($conn)) {
-            try {
-                $stmt_vps = $conn->prepare("SELECT nom_du_logement FROM liste_logements WHERE id = ?");
-                $stmt_vps->execute([$result['logement_id']]);
-                $log = $stmt_vps->fetch(PDO::FETCH_ASSOC);
-                if ($log) {
-                    $result['nom_du_logement'] = $log['nom_du_logement'];
-                }
-            } catch (PDOException $e) {
-                // Continuer sans le nom du logement
-            }
-        }
-
-        return $result;
-    } catch (PDOException $e) {
-        return null;
-    }
-}
-
-// --- Main Logic ---
-
-$view_mode = $_GET['view'] ?? 'conversations';
-$show_archived = isset($_GET['archived']) && $_GET['archived'] === '1';
-$sms_list = [];
-$conversations = [];
-$modems = [];
-$total_incoming_messages = 0;
-$archived_count = 0;
-
-if ($pdo !== null) try {
-    // Vérifier si les colonnes archived/is_read existent
-    $has_archived_column = false;
-    try {
-        $check = $pdo->query("SELECT archived FROM sms_in LIMIT 1");
-        $has_archived_column = ($check !== false);
-    } catch (PDOException $e) {
-        $has_archived_column = false;
-    }
-
-    // Requête pour la VUE LISTE
-    $stmt_list = $pdo->query("SELECT id, sender, message, received_at, modem FROM sms_in ORDER BY received_at DESC");
-    if ($stmt_list) {
-        $sms_list = $stmt_list->fetchAll(PDO::FETCH_ASSOC);
-        $total_incoming_messages = count($sms_list);
-        $modems = array_unique(array_filter(array_column($sms_list, 'modem')));
-    }
-
-    // Compter les conversations archivées (seulement si la colonne existe)
-    if ($has_archived_column) {
-        $stmt_archived = $pdo->query("SELECT COUNT(DISTINCT sender) FROM sms_in WHERE archived = 1");
-        $archived_count = $stmt_archived ? (int)$stmt_archived->fetchColumn() : 0;
-    }
-
-    // Requête pour la VUE CONVERSATION - Combine messages reçus ET envoyés
-    if ($view_mode === 'conversations') {
-        if ($has_archived_column) {
-            $archived_filter = $show_archived ? "= 1" : "= 0 OR archived IS NULL";
-
-            // Requête avec support archived
-            $stmt_conv = $pdo->query("
-                SELECT
-                    phone,
-                    last_message,
-                    last_date,
-                    last_direction,
-                    total_count,
-                    unread_count,
-                    archived
-                FROM (
-                    SELECT
-                        phone,
-                        last_message,
-                        last_date,
-                        last_direction,
-                        total_count,
-                        unread_count,
-                        archived,
-                        ROW_NUMBER() OVER (PARTITION BY phone ORDER BY last_date DESC) as rn
-                    FROM (
-                        SELECT
-                            sender as phone,
-                            message as last_message,
-                            received_at as last_date,
-                            'in' as last_direction,
-                            (SELECT COUNT(*) FROM sms_in WHERE sender = s.sender) as total_count,
-                            (SELECT COUNT(*) FROM sms_in WHERE sender = s.sender AND (is_read IS NULL OR is_read = 0)) as unread_count,
-                            COALESCE(archived, 0) as archived
-                        FROM sms_in s
-                        WHERE sender IS NOT NULL AND sender != ''
-                        AND (archived $archived_filter)
-
-                        UNION ALL
-
-                        SELECT
-                            receiver as phone,
-                            message as last_message,
-                            COALESCE(sent_at, created_at) as last_date,
-                            'out' as last_direction,
-                            (SELECT COUNT(*) FROM sms_outbox WHERE receiver = o.receiver) as total_count,
-                            0 as unread_count,
-                            0 as archived
-                        FROM sms_outbox o
-                        WHERE receiver IS NOT NULL AND receiver != ''
-                    ) as all_messages
-                ) as ranked
-                WHERE rn = 1
-                ORDER BY last_date DESC
-            ");
-        } else {
-            // Requête simplifiée sans archived
-            $stmt_conv = $pdo->query("
-                SELECT
-                    phone,
-                    last_message,
-                    last_date,
-                    last_direction,
-                    total_count,
-                    0 as unread_count,
-                    0 as archived
-                FROM (
-                    SELECT
-                        phone,
-                        last_message,
-                        last_date,
-                        last_direction,
-                        total_count,
-                        ROW_NUMBER() OVER (PARTITION BY phone ORDER BY last_date DESC) as rn
-                    FROM (
-                        SELECT
-                            sender as phone,
-                            message as last_message,
-                            received_at as last_date,
-                            'in' as last_direction,
-                            (SELECT COUNT(*) FROM sms_in WHERE sender = s.sender) as total_count
-                        FROM sms_in s
-                        WHERE sender IS NOT NULL AND sender != ''
-
-                        UNION ALL
-
-                        SELECT
-                            receiver as phone,
-                            message as last_message,
-                            COALESCE(sent_at, created_at) as last_date,
-                            'out' as last_direction,
-                            (SELECT COUNT(*) FROM sms_outbox WHERE receiver = o.receiver) as total_count
-                        FROM sms_outbox o
-                        WHERE receiver IS NOT NULL AND receiver != ''
-                    ) as all_messages
-                ) as ranked
-                WHERE rn = 1
-                ORDER BY last_date DESC
-            ");
-        }
-
-        $raw_conversations = $stmt_conv ? $stmt_conv->fetchAll(PDO::FETCH_ASSOC) : [];
-
-        // Dédupliquer les numéros (formats différents: +33 vs 0)
-        $seen_phones = [];
-        foreach ($raw_conversations as $conv_data) {
-             $phone = $conv_data['phone'];
-             if (empty($phone)) continue;
-
-             // Normaliser le numéro pour éviter les doublons
-             $phone_normalized = preg_replace('/[^0-9+]/', '', $phone);
-             $phone_key = preg_replace('/^\+33/', '0', $phone_normalized);
-
-             if (isset($seen_phones[$phone_key])) continue;
-             $seen_phones[$phone_key] = true;
-
-             $is_outgoing = ($conv_data['last_direction'] ?? '') === 'out';
-
-             $conversations[] = [
-                 'sender' => $phone,
-                 'last_message' => ($is_outgoing ? 'Vous: ' : '') . ($conv_data['last_message'] ?? ''),
-                 'last_date' => $conv_data['last_date'] ?? '',
-                 'unread_count' => (int)($conv_data['unread_count'] ?? 0),
-                 'total_count' => (int)($conv_data['total_count'] ?? 0),
-                 'last_direction' => $conv_data['last_direction'] ?? 'in',
-                 'reservation' => get_reservation_info($phone, $pdo)
-             ];
-        }
-    }
-
-} catch (PDOException $e) {
-    error_log('sms_recus.php: ' . $e->getMessage());
-    echo "<div class='alert alert-danger'>Une erreur interne est survenue.</div>";
-    $sms_list = [];
-    $conversations = [];
-    $modems = [];
-}
-?>
 
 <div class="container-fluid mt-4">
 
-<?php if ($rpi_error): ?>
-<div class="alert alert-danger">
-    <i class="fas fa-exclamation-triangle"></i>
-    Impossible de se connecter à la base SMS du Raspberry Pi : <?= htmlspecialchars($rpi_error) ?>
-</div>
-<?php endif; ?>
+<!-- Config JS pour les paramètres PHP -->
+<script>
+const PAGE_CONFIG = {
+    viewMode: <?= json_encode($view_mode) ?>,
+    showArchived: <?= json_encode($show_archived) ?>,
+    initialSender: <?= json_encode($initial_sender) ?>,
+    apiBase: '../api/sms_conversations_api.php',
+    searchApiBase: '../api/search_api.php',
+    pollInterval: 30000 // 30 secondes
+};
+</script>
 
 <style>
 :root {
@@ -814,14 +550,20 @@ if ($pdo !== null) try {
 <div class="row mb-4">
     <div class="col-md-6">
         <h1 class="display-4">
-            <i class="fas fa-inbox text-primary"></i> SMS <?= $show_archived ? 'Archives' : 'Recus' ?>
+            <i class="fas fa-inbox text-primary"></i> SMS <span id="pageTitle"><?= $show_archived ? 'Archives' : 'Recus' ?></span>
         </h1>
-        <p class="lead text-muted">
+        <p class="lead text-muted" id="pageSubtitle">
             <?= $show_archived ? 'Conversations archivees' : 'Consultez et repondez aux messages' ?>
         </p>
     </div>
     <div class="col-md-6 d-flex align-items-center justify-content-end">
       <div class="d-flex align-items-center gap-3">
+        <!-- Indicateur auto-refresh -->
+        <span id="pollIndicator" class="badge badge-light" style="font-size: 0.75rem; opacity: 0.6;" title="Auto-refresh actif">
+          <i class="fas fa-sync-alt fa-spin" style="display:none;" id="pollSpinner"></i>
+          <span id="pollStatus">Auto-refresh</span>
+        </span>
+
         <div class="view-toggle">
           <a href="?view=conversations<?= $show_archived ? '&archived=1' : '' ?>" class="<?= $view_mode === 'conversations' ? 'active' : '' ?>">
             <i class="fas fa-comments"></i> Conversations
@@ -836,21 +578,15 @@ if ($pdo !== null) try {
           <a href="?view=conversations" class="<?= !$show_archived ? 'active' : '' ?>">
             <i class="fas fa-inbox"></i> Actifs
           </a>
-          <a href="?view=conversations&archived=1" class="<?= $show_archived ? 'active' : '' ?>" title="<?= $archived_count ?> conversations archivees">
+          <a href="?view=conversations&archived=1" class="<?= $show_archived ? 'active' : '' ?>">
             <i class="fas fa-archive"></i> Archives
-            <?php if ($archived_count > 0): ?>
-              <span class="badge badge-secondary ml-1"><?= $archived_count ?></span>
-            <?php endif; ?>
+            <span class="badge badge-secondary ml-1" id="archivedCount" style="display:none;"></span>
           </a>
         </div>
         <?php endif; ?>
 
-        <span class="badge badge-primary" style="font-size: 0.9rem; padding: 0.5rem 1rem;">
-          <?php if($view_mode === 'conversations') {
-              echo '<i class="fas fa-comment-dots"></i> ' . count($conversations) . ' conversations';
-          } else {
-              echo '<i class="fas fa-envelope"></i> ' . $total_incoming_messages . ' messages';
-          } ?>
+        <span id="totalBadge" class="badge badge-primary" style="font-size: 0.9rem; padding: 0.5rem 1rem;">
+          <i class="fas fa-spinner fa-spin"></i> Chargement...
         </span>
       </div>
     </div>
@@ -864,53 +600,15 @@ if ($pdo !== null) try {
             <div class="input-group-prepend">
               <span class="input-group-text"><i class="fas fa-search"></i></span>
             </div>
-            <input id="conversationSearch" type="text" class="form-control" placeholder="Rechercher...">
+            <input id="conversationSearch" type="text" class="form-control" placeholder="Rechercher num, nom, message...">
           </div>
         </div>
-
         <div id="conversationsList">
-          <?php if (empty($conversations)): ?>
-              <p class="text-center text-muted p-3">Aucune conversation trouvée.</p>
-          <?php else: ?>
-              <?php foreach ($conversations as $idx => $conv): ?>
-                <?php
-                   $is_pdu = preg_match('/^(?:,145,|,145,6[48],|,145,4,)|(^[0-9A-F]{10,})/i', $conv['last_message']);
-                   $preview_text = $is_pdu ? "[Message non décodé]" : $conv['last_message'];
-                   $has_unread = ($conv['unread_count'] ?? 0) > 0;
-                   $is_outgoing = ($conv['last_direction'] ?? 'in') === 'out';
-                ?>
-                <div class="conversation-item <?= $has_unread ? 'has-unread' : '' ?>"
-                     data-sender="<?= htmlspecialchars($conv['sender']) ?>"
-                     data-index="<?= $idx ?>">
-                  <div class="conversation-header">
-                    <div class="conversation-sender">
-                      <?php if ($has_unread): ?>
-                        <span class="unread-indicator" title="<?= $conv['unread_count'] ?> message(s) non lu(s)"></span>
-                      <?php endif; ?>
-                      <?php if ($conv['reservation']): ?>
-                        <span class="badge badge-success reservation-badge" title="<?= htmlspecialchars($conv['reservation']['nom_du_logement'] ?? 'Réservation active') ?>">
-                            Rés.
-                        </span>
-                      <?php endif; ?>
-                      <span><?= htmlspecialchars($conv['sender']) ?></span>
-                    </div>
-                    <div>
-                      <?php if ($has_unread): ?>
-                        <span class="unread-badge"><?= $conv['unread_count'] ?></span>
-                      <?php endif; ?>
-                      <span class="conversation-time" title="<?= fmt_date($conv['last_date']) ?>"><?= fmt_relative_time($conv['last_date']) ?></span>
-                    </div>
-                  </div>
-                  <div class="conversation-preview <?= $is_pdu ? 'raw-pdu' : '' ?>"><?= htmlspecialchars($preview_text) ?></div>
-                  <?php if ($conv['reservation']): ?>
-                    <div class="reservation-info-small" title="<?= htmlspecialchars($conv['reservation']['nom_du_logement'] ?? '') ?>">
-                        <?= htmlspecialchars($conv['reservation']['client_name'] ?? 'Client inconnu') ?>
-                        (Rés. #<?= $conv['reservation']['id'] ?>)
-                    </div>
-                  <?php endif; ?>
-                </div>
-              <?php endforeach; ?>
-          <?php endif; ?>
+          <div class="text-center p-3"><i class="fas fa-spinner fa-spin"></i> Chargement...</div>
+        </div>
+        <!-- Pagination conversations -->
+        <div id="convPagination" style="padding: 8px; border-top: 1px solid #e9ecef; display:none;">
+          <nav><ul class="pagination pagination-sm justify-content-center mb-0" id="convPager"></ul></nav>
         </div>
       </div>
 
@@ -928,15 +626,12 @@ if ($pdo !== null) try {
        <div class="form-row align-items-end">
          <div class="form-group col-md-4 mb-md-0">
            <label for="searchInput" class="sr-only">Recherche</label>
-           <input id="searchInput" type="text" class="form-control form-control-sm" placeholder="🔎 Rechercher expéditeur, message...">
+           <input id="searchInput" type="text" class="form-control form-control-sm" placeholder="Rechercher expediteur, message...">
          </div>
          <div class="form-group col-md-2 mb-md-0">
            <label for="modemFilter" class="sr-only">Modem</label>
            <select id="modemFilter" class="form-control form-control-sm">
              <option value="">Tous les modems</option>
-             <?php foreach ($modems as $m): ?>
-               <option value="<?= htmlspecialchars($m) ?>"><?= htmlspecialchars($m) ?></option>
-             <?php endforeach; ?>
            </select>
          </div>
          <div class="form-group col-md-2 mb-md-0">
@@ -966,84 +661,14 @@ if ($pdo !== null) try {
             <th class="nowrap">Actions</th>
           </tr>
         </thead>
-        <tbody>
-          <?php if (empty($sms_list)): ?>
-              <tr><td colspan="7" class="text-center text-muted">Aucun message reçu trouvé.</td></tr>
-          <?php else: ?>
-              <?php foreach ($sms_list as $sms):
-                $reservation = get_reservation_info($sms['sender'], $pdo);
-                $is_pdu = preg_match('/^(?:,145,|,145,6[48],|,145,4,)|(^[0-9A-F]{10,})/i', $sms['message']);
-                $preview_text = $is_pdu ? "[Message non décodé]" : $sms['message'];
-                $full_text = $is_pdu ? "[Message non décodé]\n\nDonnées brutes:\n" . $sms['message'] : $sms['message'];
-              ?>
-                <tr data-sender="<?= htmlspecialchars($sms['sender'] ?? '') ?>"
-                    data-message="<?= htmlspecialchars($sms['message'] ?? '') ?>"
-                    data-date="<?= htmlspecialchars(substr($sms['received_at'] ?? '', 0, 10)) ?>"
-                    data-modem="<?= htmlspecialchars($sms['modem'] ?? '') ?>">
-                  <td class="nowrap"><?= (int)$sms['id'] ?></td>
-                  <td class="nowrap">
-                    <?= htmlspecialchars($sms['sender'] ?? '') ?>
-                    <button class="copy-btn" title="Copier" data-copy="<?= htmlspecialchars($sms['sender'] ?? '') ?>">📋</button>
-                  </td>
-                  <td class="message-cell">
-                    <div class="message-preview <?= $is_pdu ? 'raw-pdu' : '' ?>"><?= nl2br(htmlspecialchars($preview_text ?? '')) ?></div>
-                  </td>
-                  <td class="nowrap" title="<?= htmlspecialchars($sms['received_at'] ?? '') ?>">
-                    <?= fmt_date($sms['received_at'] ?? '') ?>
-                  </td>
-                  <td class="nowrap">
-                    <?php if (!empty($sms['modem'])): ?>
-                       <span class="badge badge-info"><?= htmlspecialchars($sms['modem']) ?></span>
-                    <?php else: ?>
-                        <span class="badge badge-light">-</span>
-                    <?php endif; ?>
-                  </td>
-                  <td class="nowrap">
-                    <?php if ($reservation): ?>
-                      <a href="reservation_details.php?id=<?= $reservation['id'] ?>"
-                         class="badge badge-success"
-                         title="<?= htmlspecialchars($reservation['client_name'] ?? '') ?>">
-                         Rés. #<?= $reservation['id'] ?>
-                      </a>
-                    <?php else: ?>
-                      <span class="badge badge-secondary">-</span>
-                    <?php endif; ?>
-                  </td>
-                  <td class="nowrap">
-                    <div class="action-buttons">
-                      <button class="btn btn-sm btn-outline-primary view-btn"
-                              data-full="<?= htmlspecialchars($full_text ?? '') ?>"
-                              data-title="Message #<?= (int)$sms['id'] ?> — <?= htmlspecialchars($sms['sender'] ?? '') ?>">
-                        👁️
-                      </button>
-                      <button class="btn btn-sm btn-outline-secondary copy-btn"
-                              title="Copier le message"
-                              data-copy="<?= htmlspecialchars($sms['message'] ?? '') ?>">
-                        📋
-                      </button>
-                      <a href="?view=conversations&sender=<?= urlencode($sms['sender'] ?? '') ?>"
-                         class="btn btn-sm btn-outline-info" title="Voir Conversation">
-                         💬
-                      </a>
-                    </div>
-                  </td>
-                </tr>
-              <?php endforeach; ?>
-          <?php endif; ?>
+        <tbody id="smsTableBody">
+          <tr><td colspan="7" class="text-center"><i class="fas fa-spinner fa-spin"></i> Chargement...</td></tr>
         </tbody>
       </table>
     </div>
 
     <nav class="mt-3"><ul id="pager" class="pagination pagination-sm justify-content-center"></ul></nav>
     <?php endif; ?>
-
-<!-- Hidden data holder for JavaScript (safer than inline injection) -->
-<script type="application/json" id="conversations-data-holder">
-<?= json_encode($conversations, JSON_HEX_TAG | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE) ?>
-</script>
-<script type="application/json" id="view-mode-holder">
-<?= json_encode($view_mode) ?>
-</script>
 
 <div class="modal fade" id="msgModal" tabindex="-1" aria-labelledby="msgModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-scrollable modal-lg">
@@ -1066,6 +691,11 @@ if ($pdo !== null) try {
 </div>
 
 <script>
+// ═══════════════════════════════════════════════════════════════════════════════
+// SMS Recus — Client JS avec pagination serveur + auto-refresh
+// Utilise api/sms_conversations_api.php et api/search_api.php
+// ═══════════════════════════════════════════════════════════════════════════════
+
 const $ = (q, ctx = document) => ctx.querySelector(q);
 const $$ = (q, ctx = document) => Array.from(ctx.querySelectorAll(q));
 const debounced = (fn, d = 250) => {
@@ -1234,40 +864,25 @@ function createMessageBubble(message, direction, date, status) {
 
     return bubble;
 }
-// Load conversations data safely from HTML script tag
+// ─────────────────────────────────────────────────────────────────────────────
+// State
+// ─────────────────────────────────────────────────────────────────────────────
 let conversationsData = [];
-let currentViewMode = 'conversations';
-try {
-    const dataHolder = document.getElementById('conversations-data-holder');
-    const viewHolder = document.getElementById('view-mode-holder');
-
-    if (dataHolder) {
-        const t = (dataHolder.textContent || '').trim();
-        if (t) {
-            try { conversationsData = JSON.parse(t); } catch (e) { console.warn('Invalid conversations JSON:', e); }
-        }
-    }
-    if (viewHolder) {
-        const t = (viewHolder.textContent || '').trim();
-        if (t) {
-            try { currentViewMode = JSON.parse(t) || 'conversations'; } catch (e) { console.warn('Invalid view JSON:', e); }
-        }
-    }
-} catch(e) {
-    console.error("Error loading page data:", e);
-}
 let currentReservation = null;
+let currentConvPage = 1;
+let currentListPage = 1;
+let lastPollTime = new Date().toISOString().replace('T', ' ').substring(0, 19);
+let pollTimer = null;
+let currentActiveSender = null;
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Delegation globale pour copy/view buttons
     document.body.addEventListener('click', (e) => {
         const copyBtn = e.target.closest('.copy-btn');
         if (copyBtn && copyBtn.dataset.copy) {
             e.preventDefault();
             copyText(copyBtn.dataset.copy);
         }
-    });
-
-    document.body.addEventListener('click', (e) => {
         const viewBtn = e.target.closest('.view-btn');
         if (viewBtn) {
             e.preventDefault();
@@ -1275,66 +890,335 @@ document.addEventListener('DOMContentLoaded', () => {
             $('#msgFull').textContent = viewBtn.dataset.full || '';
             $('#copyFullBtn').dataset.copy = viewBtn.dataset.full || '';
             const msgModalEl = document.getElementById('msgModal');
-            if (msgModalEl) {
-                bootstrap.Modal.getOrCreateInstance(msgModalEl).show();
-            }
+            if (msgModalEl) bootstrap.Modal.getOrCreateInstance(msgModalEl).show();
         }
     });
 
     const copyFullBtn = $('#copyFullBtn');
-    if(copyFullBtn) {
-        copyFullBtn.addEventListener('click', () => copyText(copyFullBtn.dataset.copy));
+    if (copyFullBtn) copyFullBtn.addEventListener('click', () => copyText(copyFullBtn.dataset.copy));
+
+    if (PAGE_CONFIG.viewMode === 'conversations') {
+        loadConversations(1);
+        initConversationSearch();
+    } else {
+        loadListView(1);
+        initListFilters();
     }
 
-    if (currentViewMode === 'conversations') {
-        initConversationsView();
-    } else if (currentViewMode === 'list') {
-        initListView();
-    }
+    // Démarrer auto-refresh
+    startPolling();
 });
 
-function initConversationsView() {
-    const conversationItems = $$('.conversation-item');
-    const messagesContent = $('#messagesContent');
-    const convSearch = $('#conversationSearch');
+// ─────────────────────────────────────────────────────────────────────────────
+// Auto-refresh (polling)
+// ─────────────────────────────────────────────────────────────────────────────
+function startPolling() {
+    pollTimer = setInterval(async () => {
+        const spinner = $('#pollSpinner');
+        if (spinner) spinner.style.display = 'inline-block';
+        try {
+            const resp = await fetch(PAGE_CONFIG.apiBase + '?action=poll&since=' + encodeURIComponent(lastPollTime));
+            const data = await resp.json();
+            if (data.server_time) lastPollTime = data.server_time;
 
-    if (convSearch) {
-        convSearch.addEventListener('input', debounced(() => {
-            const q = (convSearch.value || '').toLowerCase().trim();
-            conversationItems.forEach(item => {
-                const sender = (item.dataset.sender || '').toLowerCase();
-                const clientName = (item.querySelector('.reservation-info-small')?.textContent || '').toLowerCase();
-                item.style.display = (sender.includes(q) || clientName.includes(q)) ? '' : 'none';
-            });
-        }, 200));
+            if ((data.new_in || 0) + (data.new_out || 0) > 0) {
+                // Refresh la vue active
+                if (PAGE_CONFIG.viewMode === 'conversations') {
+                    loadConversations(currentConvPage, true);
+                    // Si une conversation est ouverte, ajouter les nouveaux messages
+                    if (currentActiveSender && data.messages) {
+                        const normSender = currentActiveSender.replace(/^\+33/, '0').replace(/[^0-9]/g, '');
+                        const newMsgs = data.messages.filter(m => {
+                            const normPhone = (m.phone || '').replace(/^\+33/, '0').replace(/[^0-9]/g, '');
+                            return normPhone === normSender;
+                        });
+                        if (newMsgs.length > 0) appendNewMessages(newMsgs);
+                    }
+                } else {
+                    loadListView(currentListPage, true);
+                }
+
+                // Notification visuelle
+                const pollStatus = $('#pollStatus');
+                if (pollStatus) {
+                    pollStatus.textContent = `+${data.new_in + data.new_out} nouveau(x)`;
+                    setTimeout(() => { pollStatus.textContent = 'Auto-refresh'; }, 3000);
+                }
+            }
+        } catch (e) {
+            console.error('Poll error:', e);
+        } finally {
+            if (spinner) spinner.style.display = 'none';
+        }
+    }, PAGE_CONFIG.pollInterval);
+}
+
+function appendNewMessages(messages) {
+    const body = $('#messagesBody');
+    if (!body) return;
+    messages.forEach(msg => {
+        const direction = msg.direction === 'in' ? 'received' : 'sent';
+        const bubble = createMessageBubble(String(msg.message || ''), direction, msg.date, msg.status || 'pending');
+        body.appendChild(bubble);
+    });
+    body.scrollTop = body.scrollHeight;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Vue CONVERSATIONS (paginée côté serveur)
+// ─────────────────────────────────────────────────────────────────────────────
+async function loadConversations(page = 1, silent = false) {
+    currentConvPage = page;
+    const list = $('#conversationsList');
+    const search = ($('#conversationSearch') || {}).value || '';
+
+    if (!silent) list.innerHTML = '<div class="text-center p-3"><i class="fas fa-spinner fa-spin"></i> Chargement...</div>';
+
+    try {
+        const params = new URLSearchParams({
+            action: 'conversations',
+            page: page,
+            per_page: 30,
+            archived: PAGE_CONFIG.showArchived ? '1' : '0',
+            search: search
+        });
+        const resp = await fetch(PAGE_CONFIG.apiBase + '?' + params);
+        const data = await resp.json();
+
+        conversationsData = data.conversations || [];
+
+        // Update badge
+        const badge = $('#totalBadge');
+        if (badge) badge.innerHTML = '<i class="fas fa-comment-dots"></i> ' + data.total + ' conversations';
+
+        // Update archived count
+        const arcBadge = $('#archivedCount');
+        if (arcBadge && data.archived_count > 0) {
+            arcBadge.textContent = data.archived_count;
+            arcBadge.style.display = '';
+        }
+
+        renderConversationsList(conversationsData);
+        renderPagination($('#convPager'), data.total_pages, page, (p) => loadConversations(p));
+
+        const paginationEl = $('#convPagination');
+        if (paginationEl) paginationEl.style.display = data.total_pages > 1 ? '' : 'none';
+
+        // Rouvrir la conversation active
+        if (PAGE_CONFIG.initialSender && !currentActiveSender) {
+            selectConversation(PAGE_CONFIG.initialSender);
+        } else if (currentActiveSender) {
+            highlightActiveConversation(currentActiveSender);
+        }
+    } catch (e) {
+        list.innerHTML = '<div class="text-center text-danger p-3">Erreur chargement</div>';
+        console.error('loadConversations:', e);
+    }
+}
+
+function renderConversationsList(conversations) {
+    const list = $('#conversationsList');
+    if (!conversations.length) {
+        list.innerHTML = '<p class="text-center text-muted p-3">Aucune conversation trouvee.</p>';
+        return;
     }
 
-    conversationItems.forEach(item => {
-        item.addEventListener('click', (e) => {
-            e.preventDefault();
-            conversationItems.forEach(i => i.classList.remove('active'));
-            item.classList.add('active');
+    list.innerHTML = '';
+    conversations.forEach((conv, idx) => {
+        const is_pdu = /^(?:,145,|,145,6[48],|,145,4,)|(^[0-9A-F]{10,})/i.test(conv.last_message || '');
+        const preview = is_pdu ? '[Message non decode]' : (conv.last_message || '');
 
-            const sender = item.dataset.sender;
-            const index = parseInt(item.dataset.index, 10);
-            currentReservation = (conversationsData && conversationsData[index]) ? conversationsData[index].reservation : null;
+        const item = document.createElement('div');
+        item.className = 'conversation-item';
+        item.dataset.sender = conv.phone;
+        item.dataset.index = idx;
+
+        let senderHtml = escapeHTML(conv.phone);
+        if (conv.reservation) {
+            senderHtml = '<span class="badge badge-success reservation-badge" title="' +
+                escapeAttr(conv.reservation.nom_du_logement || '') + '">Res.</span> ' + senderHtml;
+        }
+
+        let resInfo = '';
+        if (conv.reservation) {
+            resInfo = '<div class="reservation-info-small">' +
+                escapeHTML(conv.reservation.client_name || 'Client inconnu') +
+                ' (Res. #' + conv.reservation.id + ')</div>';
+        }
+
+        item.innerHTML =
+            '<div class="conversation-header">' +
+                '<div class="conversation-sender">' + senderHtml + '</div>' +
+                '<div><span class="conversation-time" title="' + escapeAttr(formatDateJS(conv.last_date)) + '">' +
+                    formatRelativeTimeJS(conv.last_date) + '</span></div>' +
+            '</div>' +
+            '<div class="conversation-preview' + (is_pdu ? ' raw-pdu' : '') + '">' + escapeHTML(preview) + '</div>' +
+            resInfo;
+
+        item.addEventListener('click', () => {
+            $$('#conversationsList .conversation-item').forEach(i => i.classList.remove('active'));
+            item.classList.add('active');
+            currentActiveSender = conv.phone;
+            currentReservation = conv.reservation;
 
             const url = new URL(window.location);
-            url.searchParams.set('sender', sender);
+            url.searchParams.set('sender', conv.phone);
             window.history.pushState({}, '', url);
 
-            loadAndDisplayConversation(sender, currentReservation);
+            loadAndDisplayConversation(conv.phone, conv.reservation);
         });
+
+        list.appendChild(item);
+    });
+}
+
+function highlightActiveConversation(sender) {
+    $$('#conversationsList .conversation-item').forEach(item => {
+        item.classList.toggle('active', item.dataset.sender === sender);
+    });
+}
+
+function selectConversation(sender) {
+    const item = $$('#conversationsList .conversation-item').find(i => i.dataset.sender === sender);
+    if (item) {
+        item.click();
+        item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+}
+
+function initConversationSearch() {
+    const input = $('#conversationSearch');
+    if (!input) return;
+    input.addEventListener('input', debounced(() => {
+        currentConvPage = 1;
+        loadConversations(1);
+    }, 400));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Vue LISTE (paginée côté serveur)
+// ─────────────────────────────────────────────────────────────────────────────
+async function loadListView(page = 1, silent = false) {
+    currentListPage = page;
+    const tbody = $('#smsTableBody');
+    if (!silent && tbody) tbody.innerHTML = '<tr><td colspan="7" class="text-center"><i class="fas fa-spinner fa-spin"></i> Chargement...</td></tr>';
+
+    const params = new URLSearchParams({
+        action: 'list',
+        page: page,
+        per_page: 25,
+        search: ($('#searchInput') || {}).value || '',
+        modem: ($('#modemFilter') || {}).value || '',
+        date_from: ($('#dateFrom') || {}).value || '',
+        date_to: ($('#dateTo') || {}).value || ''
     });
 
-    const initialSender = new URLSearchParams(window.location.search).get('sender');
-    if (initialSender) {
-        const initialItem = $$('#conversationsList .conversation-item').find(item => item.dataset.sender === initialSender);
-        if (initialItem) {
-            initialItem.click();
-            initialItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    try {
+        const resp = await fetch(PAGE_CONFIG.apiBase + '?' + params);
+        const data = await resp.json();
+
+        const badge = $('#totalBadge');
+        if (badge) badge.innerHTML = '<i class="fas fa-envelope"></i> ' + data.total + ' messages';
+
+        // Remplir les modems du filtre
+        const modemSelect = $('#modemFilter');
+        if (modemSelect && modemSelect.options.length <= 1 && data.modems) {
+            data.modems.forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = m;
+                opt.textContent = m;
+                modemSelect.appendChild(opt);
+            });
         }
+
+        renderListTable(data.sms_list || []);
+        renderPagination($('#pager'), data.total_pages, page, (p) => loadListView(p));
+    } catch (e) {
+        if (tbody) tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Erreur chargement</td></tr>';
+        console.error('loadListView:', e);
     }
+}
+
+function renderListTable(smsList) {
+    const tbody = $('#smsTableBody');
+    if (!tbody) return;
+
+    if (!smsList.length) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Aucun message recu trouve.</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = '';
+    smsList.forEach(sms => {
+        const is_pdu = /^(?:,145,|,145,6[48],|,145,4,)|(^[0-9A-F]{10,})/i.test(sms.message || '');
+        const preview = is_pdu ? '[Message non decode]' : (sms.message || '');
+        const fullText = is_pdu ? '[Message non decode]\n\nDonnees brutes:\n' + sms.message : sms.message;
+        const resa = sms.reservation;
+
+        const tr = document.createElement('tr');
+        tr.innerHTML =
+            '<td class="nowrap">' + sms.id + '</td>' +
+            '<td class="nowrap">' + escapeHTML(sms.sender) +
+                ' <button class="copy-btn" title="Copier" data-copy="' + escapeAttr(sms.sender) + '">&#x1F4CB;</button></td>' +
+            '<td class="message-cell"><div class="message-preview' + (is_pdu ? ' raw-pdu' : '') + '">' + escapeHTML(preview) + '</div></td>' +
+            '<td class="nowrap" title="' + escapeAttr(sms.received_at) + '">' + formatDateJS(sms.received_at) + '</td>' +
+            '<td class="nowrap">' + (sms.modem ? '<span class="badge badge-info">' + escapeHTML(sms.modem) + '</span>' : '<span class="badge badge-light">-</span>') + '</td>' +
+            '<td class="nowrap">' + (resa ? '<a href="reservation_details.php?id=' + resa.id + '" class="badge badge-success">Res. #' + resa.id + '</a>' : '<span class="badge badge-secondary">-</span>') + '</td>' +
+            '<td class="nowrap"><div class="action-buttons">' +
+                '<button class="btn btn-sm btn-outline-primary view-btn" data-full="' + escapeAttr(fullText) + '" data-title="Message #' + sms.id + ' - ' + escapeAttr(sms.sender) + '">&#x1F441;</button>' +
+                '<button class="btn btn-sm btn-outline-secondary copy-btn" data-copy="' + escapeAttr(sms.message) + '">&#x1F4CB;</button>' +
+                '<a href="?view=conversations&sender=' + encodeURIComponent(sms.sender) + '" class="btn btn-sm btn-outline-info">&#x1F4AC;</a>' +
+            '</div></td>';
+        tbody.appendChild(tr);
+    });
+}
+
+function initListFilters() {
+    const handler = debounced(() => loadListView(1), 400);
+    ['searchInput', 'modemFilter', 'dateFrom', 'dateTo'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener(el.tagName === 'SELECT' ? 'change' : 'input', handler);
+    });
+    const resetBtn = $('#resetFilters');
+    if (resetBtn) resetBtn.addEventListener('click', () => {
+        ['searchInput', 'dateFrom', 'dateTo'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+        const modem = $('#modemFilter'); if (modem) modem.value = '';
+        loadListView(1);
+    });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Pagination générique
+// ─────────────────────────────────────────────────────────────────────────────
+function renderPagination(container, totalPages, current, onClick) {
+    if (!container) return;
+    container.innerHTML = '';
+    if (totalPages <= 1) return;
+
+    const MAX = 7;
+    let start = Math.max(1, current - Math.floor(MAX / 2));
+    let end = Math.min(totalPages, start + MAX - 1);
+    start = Math.max(1, end - MAX + 1);
+
+    const addLink = (p, text, disabled = false, active = false) => {
+        const li = document.createElement('li');
+        li.className = 'page-item' + (disabled ? ' disabled' : '') + (active ? ' active' : '');
+        const a = document.createElement('a');
+        a.className = 'page-link';
+        a.href = '#';
+        a.textContent = text;
+        if (!disabled) a.addEventListener('click', (e) => { e.preventDefault(); onClick(p); });
+        li.appendChild(a);
+        container.appendChild(li);
+    };
+
+    addLink(current - 1, '\u00AB', current === 1);
+    if (start > 1) addLink(1, '1');
+    if (start > 2) { const li = document.createElement('li'); li.className = 'page-item disabled'; li.innerHTML = '<span class="page-link">...</span>'; container.appendChild(li); }
+    for (let i = start; i <= end; i++) addLink(i, String(i), false, i === current);
+    if (end < totalPages - 1) { const li = document.createElement('li'); li.className = 'page-item disabled'; li.innerHTML = '<span class="page-link">...</span>'; container.appendChild(li); }
+    if (end < totalPages) addLink(totalPages, String(totalPages));
+    addLink(current + 1, '\u00BB', current === totalPages);
 }
 
 async function loadAndDisplayConversation(sender, reservation) {
@@ -1664,129 +1548,7 @@ async function handleReplySubmit(e) {
   }
 }
 
-function initListView() {
-    const searchInput = $('#searchInput');
-    const modemFilter = $('#modemFilter');
-    const dateFrom = $('#dateFrom');
-    const dateTo = $('#dateTo');
-    const resetBtn = $('#resetFilters');
-    const tbody = $('#smsTable tbody');
-    const rows = $$('tr', tbody);
-    const pager = $('#pager');
-
-    const PAGE_SIZE = 25;
-    let currentPage = 1;
-    let filtered = [...rows];
-
-    const applyFilters = () => {
-        const q = (searchInput.value || '').toLowerCase().trim();
-        const m = modemFilter.value || '';
-        const df = dateFrom.value || '';
-        const dtValue = dateTo.value;
-        let dt = '';
-        if (dtValue) {
-            const dateObj = new Date(dtValue);
-            dateObj.setDate(dateObj.getDate() + 1);
-            dt = dateObj.toISOString().split('T')[0];
-        }
-
-        filtered = rows.filter(tr => {
-            const sender = (tr.dataset.sender || '').toLowerCase();
-            const message = (tr.dataset.message || '').toLowerCase();
-            const modem = tr.dataset.modem || '';
-            const d = tr.dataset.date || '';
-
-            if (m && modem !== m) return false;
-            if (df && d < df) return false;
-            if (dt && d >= dt) return false;
-            if (q && !(sender.includes(q) || message.includes(q))) return false;
-            return true;
-        });
-
-        currentPage = 1;
-        renderPage();
-    };
-
-    const renderPage = () => {
-        rows.forEach(r => r.style.display = 'none');
-        const total = filtered.length;
-        const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-        currentPage = Math.max(1, Math.min(currentPage, totalPages));
-
-        const start = (currentPage - 1) * PAGE_SIZE;
-        const end = start + PAGE_SIZE;
-        const slice = filtered.slice(start, end);
-        slice.forEach(r => r.style.display = '');
-
-        renderPager(totalPages);
-    };
-
-    const renderPager = (totalPages) => {
-         pager.innerHTML = '';
-         if (totalPages <= 1) return;
-
-        const MAX_VISIBLE_PAGES = 7;
-        let startPage = Math.max(1, currentPage - Math.floor(MAX_VISIBLE_PAGES / 2));
-        let endPage = Math.min(totalPages, startPage + MAX_VISIBLE_PAGES - 1);
-         startPage = Math.max(1, endPage - MAX_VISIBLE_PAGES + 1);
-
-        const addPageLink = (page, text = page, isDisabled = false, isActive = false) => {
-            const li = document.createElement('li');
-            li.className = `page-item ${isDisabled ? 'disabled' : ''} ${isActive ? 'active' : ''}`;
-            const a = document.createElement('a');
-            a.className = 'page-link';
-            a.href = '#';
-            a.textContent = text;
-            if (!isDisabled) {
-                a.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    currentPage = page;
-                    renderPage();
-                });
-            }
-            li.appendChild(a);
-            pager.appendChild(li);
-        };
-
-        addPageLink(currentPage - 1, '«', currentPage === 1);
-        if (startPage > 1) {
-             addPageLink(1);
-             if (startPage > 2) {
-                  const li = document.createElement('li');
-                  li.className = 'page-item disabled';
-                  li.innerHTML = '<span class="page-link">...</span>';
-                  pager.appendChild(li);
-             }
-         }
-        for (let i = startPage; i <= endPage; i++) {
-            addPageLink(i, i, false, i === currentPage);
-        }
-         if (endPage < totalPages) {
-             if (endPage < totalPages - 1) {
-                  const li = document.createElement('li');
-                  li.className = 'page-item disabled';
-                  li.innerHTML = '<span class="page-link">...</span>';
-                  pager.appendChild(li);
-             }
-              addPageLink(totalPages);
-         }
-        addPageLink(currentPage + 1, '»', currentPage === totalPages);
-    };
-
-    searchInput.addEventListener('input', debounced(applyFilters, 300));
-    modemFilter.addEventListener('change', applyFilters);
-    dateFrom.addEventListener('change', applyFilters);
-    dateTo.addEventListener('change', applyFilters);
-    resetBtn.addEventListener('click', () => {
-        searchInput.value = '';
-        modemFilter.value = '';
-        dateFrom.value = '';
-        dateTo.value = '';
-        applyFilters();
-    });
-
-    renderPage();
-}
+// Old initListView removed — now using loadListView() with server-side pagination
 </script>
 
 <!-- Modal d'envoi SMS -->
