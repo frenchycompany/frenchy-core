@@ -1,0 +1,465 @@
+{
+  "name": "FrenchyConciergerie — Prospection Airbnb",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 6
+            }
+          ]
+        }
+      },
+      "id": "trigger-schedule",
+      "name": "Toutes les 6h",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "url": "https://www.airbnb.fr/s/Montpellier--France/homes",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "id": "scrape-airbnb-search",
+      "name": "1. Scraper recherche Airbnb",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [220, 0],
+      "notes": "ADAPTER L'URL : changer la ville, les filtres, le nombre de guests, etc.\nAlternative : utiliser le node 'HTML Extract' ou Puppeteer community node pour du scraping JS."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extraire les listings Airbnb depuis le HTML\n// NOTE : Airbnb charge les donnees en JSON dans un script tag\n// Ce code est un template — adapter selon la structure actuelle d'Airbnb\n\nconst html = $input.first().json.data || $input.first().json.body || '';\nconst listings = [];\n\n// Methode 1 : Extraire depuis les donnees JSON embarquees\ntry {\n  const jsonMatch = html.match(/\"searchResults\"\\s*:\\s*\\[([\\s\\S]*?)\\]/);\n  if (jsonMatch) {\n    // Parser les resultats\n  }\n} catch(e) {}\n\n// Methode 2 : Regex sur les liens /rooms/ID\nconst roomRegex = /\\/rooms\\/(\\d+)/g;\nlet match;\nconst seenIds = new Set();\nwhile ((match = roomRegex.exec(html)) !== null) {\n  if (!seenIds.has(match[1])) {\n    seenIds.add(match[1]);\n    listings.push({\n      airbnb_id: match[1],\n      url: `https://www.airbnb.fr/rooms/${match[1]}`,\n      ville: 'Montpellier' // ADAPTER\n    });\n  }\n}\n\nreturn listings.map(l => ({ json: l }));"
+      },
+      "id": "extract-listings",
+      "name": "2. Extraire les annonces",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [440, 0]
+    },
+    {
+      "parameters": {
+        "url": "={{ 'https://www.airbnb.fr/rooms/' + $json.airbnb_id }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          },
+          "timeout": 15000
+        }
+      },
+      "id": "fetch-listing-detail",
+      "name": "3. Charger detail annonce",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [660, 0],
+      "notes": "Rate limit : ajouter un node Wait (2-5s) avant ce node pour eviter le blocage"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extraire les details d'une annonce Airbnb\nconst html = $input.first().json.data || '';\nconst inputData = $input.first().json;\n\nconst extract = (regex, fallback = null) => {\n  const m = html.match(regex);\n  return m ? m[1] : fallback;\n};\n\n// Nom de l'annonce\nconst nom = extract(/<title>([^<]+)<\\/title>/) || extract(/\"name\"\\s*:\\s*\"([^\"]+)\"/);\n\n// Host / proprietaire\nconst hostName = extract(/\"host\"\\s*:\\s*\\{[^}]*\"name\"\\s*:\\s*\"([^\"]+)\"/) || extract(/Hote[^:]*:\\s*([^<\"]+)/);\nconst hostProfileId = extract(/\\/users\\/show\\/(\\d+)/);\n\n// Capacite, chambres, note\nconst capacite = extract(/(\\d+)\\s*voyageur/);\nconst chambres = extract(/(\\d+)\\s*chambre/);\nconst note = extract(/\"ratingValue\"\\s*:\\s*(\\d+\\.?\\d*)/);\nconst nbAvis = extract(/\"reviewCount\"\\s*:\\s*(\\d+)/);\nconst superhost = /superhost/i.test(html);\n\n// Prix\nconst prix = extract(/\"priceString\"\\s*:\\s*\"(\\d+)/) || extract(/(\\d+)\\s*€\\s*par nuit/);\n\nreturn [{\n  json: {\n    airbnb_id: inputData.airbnb_id,\n    url: inputData.url || `https://www.airbnb.fr/rooms/${inputData.airbnb_id}`,\n    nom: nom,\n    ville: inputData.ville || 'Montpellier',\n    host_name: hostName,\n    host_profile_id: hostProfileId,\n    capacite: capacite ? parseInt(capacite) : null,\n    chambres: chambres ? parseInt(chambres) : null,\n    note_moyenne: note ? parseFloat(note) : null,\n    nb_avis: nbAvis ? parseInt(nbAvis) : null,\n    superhost: superhost,\n    prix_nuit: prix ? parseInt(prix) : null\n  }\n}];"
+      },
+      "id": "parse-listing-detail",
+      "name": "4. Parser les details",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [880, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.FRENCHY_API_URL }}/api/n8n_competitors.php",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.FRENCHY_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "airbnb_id",
+              "value": "={{ $json.airbnb_id }}"
+            },
+            {
+              "name": "nom",
+              "value": "={{ $json.nom }}"
+            },
+            {
+              "name": "url",
+              "value": "={{ $json.url }}"
+            },
+            {
+              "name": "ville",
+              "value": "={{ $json.ville }}"
+            },
+            {
+              "name": "host_name",
+              "value": "={{ $json.host_name }}"
+            },
+            {
+              "name": "host_profile_id",
+              "value": "={{ $json.host_profile_id }}"
+            },
+            {
+              "name": "capacite",
+              "value": "={{ $json.capacite }}"
+            },
+            {
+              "name": "chambres",
+              "value": "={{ $json.chambres }}"
+            },
+            {
+              "name": "note_moyenne",
+              "value": "={{ $json.note_moyenne }}"
+            },
+            {
+              "name": "nb_avis",
+              "value": "={{ $json.nb_avis }}"
+            },
+            {
+              "name": "superhost",
+              "value": "={{ $json.superhost }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "save-competitor",
+      "name": "5. Sauver concurrent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1100, 0]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.FRENCHY_API_URL }}/api/n8n_competitors.php?action=multi_hosts&min=2",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.FRENCHY_API_KEY }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "get-multi-hosts",
+      "name": "6. Detecter multi-proprietaires",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1320, 0]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "filter-no-lead",
+              "leftValue": "={{ $json.lead_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "null",
+                "operation": "null"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "filter-new-hosts",
+      "name": "7. Filtrer nouveaux hosts",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2,
+      "position": [1540, 0],
+      "notes": "Ne garder que les hosts qui ne sont PAS encore des leads"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.FRENCHY_API_URL }}/api/n8n_competitors.php?action=to_lead",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.FRENCHY_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "host_name",
+              "value": "={{ $json.host_name }}"
+            },
+            {
+              "name": "host_profile_id",
+              "value": "={{ $json.host_profile_id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "create-lead",
+      "name": "8. Creer lead prospection",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1760, 0]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.FRENCHY_API_URL }}/api/n8n_leads.php?action=relances",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.FRENCHY_API_KEY }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "get-relances",
+      "name": "9. Checker relances",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1980, 0]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "filter-hot-leads",
+              "leftValue": "={{ $json.score }}",
+              "rightValue": 50,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "filter-hot-leads",
+      "name": "10. Leads chauds (score >= 50)",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2,
+      "position": [2200, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.FRENCHY_API_URL }}/api/n8n_webhook.php",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "={{ $env.FRENCHY_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"event\": \"sms.send\",\n  \"data\": {\n    \"destinataire\": \"{{ $json.telephone }}\",\n    \"message\": \"Bonjour {{ $json.prenom || $json.nom }}, la conciergerie Frenchy accompagne les proprietaires comme vous dans la gestion locative. Echangeons ? Raphael\"\n  }\n}",
+        "options": {}
+      },
+      "id": "send-sms-relance",
+      "name": "11. Envoyer SMS relance",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2420, 0],
+      "notes": "ATTENTION : ne s'active que si le lead a un telephone.\nAdapter le message selon le contexte."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Resume de l'execution\nconst items = $input.all();\nconst summary = {\n  timestamp: new Date().toISOString(),\n  total_processed: items.length,\n  message: `Pipeline prospection termine. ${items.length} action(s) effectuee(s).`\n};\nreturn [{ json: summary }];"
+      },
+      "id": "summary",
+      "name": "12. Resume",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2640, 0]
+    }
+  ],
+  "connections": {
+    "Toutes les 6h": {
+      "main": [
+        [
+          {
+            "node": "1. Scraper recherche Airbnb",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1. Scraper recherche Airbnb": {
+      "main": [
+        [
+          {
+            "node": "2. Extraire les annonces",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2. Extraire les annonces": {
+      "main": [
+        [
+          {
+            "node": "3. Charger detail annonce",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "3. Charger detail annonce": {
+      "main": [
+        [
+          {
+            "node": "4. Parser les details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "4. Parser les details": {
+      "main": [
+        [
+          {
+            "node": "5. Sauver concurrent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "5. Sauver concurrent": {
+      "main": [
+        [
+          {
+            "node": "6. Detecter multi-proprietaires",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "6. Detecter multi-proprietaires": {
+      "main": [
+        [
+          {
+            "node": "7. Filtrer nouveaux hosts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "7. Filtrer nouveaux hosts": {
+      "main": [
+        [
+          {
+            "node": "8. Creer lead prospection",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "8. Creer lead prospection": {
+      "main": [
+        [
+          {
+            "node": "9. Checker relances",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "9. Checker relances": {
+      "main": [
+        [
+          {
+            "node": "10. Leads chauds (score >= 50)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "10. Leads chauds (score >= 50)": {
+      "main": [
+        [
+          {
+            "node": "11. Envoyer SMS relance",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "11. Envoyer SMS relance": {
+      "main": [
+        [
+          {
+            "node": "12. Resume",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "prospection"
+    },
+    {
+      "name": "airbnb"
+    }
+  ]
+}
