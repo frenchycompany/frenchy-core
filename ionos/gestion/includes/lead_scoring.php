@@ -19,9 +19,12 @@ function calculateLeadScore(array $lead, int $nbInteractions = 0): int
         'rdv_site'           => 60,
         'recommandation'     => 50,
         'simulateur'         => 40,
+        'n8n_airbnb'         => 35, // Proprio scrape depuis Airbnb (multi-annonces)
+        'n8n_enriched'       => 45, // Lead enrichi (email/tel trouves via n8n)
         'formulaire_contact' => 30,
         'landing_page'       => 25,
         'concurrence'        => 20,
+        'n8n_import'         => 15, // Import brut depuis n8n
         'demarchage'         => 10,
         'autre'              => 5,
     ];
@@ -36,6 +39,12 @@ function calculateLeadScore(array $lead, int $nbInteractions = 0): int
     if (($lead['surface'] ?? 0) > 50) $score += 5;
     if (($lead['capacite'] ?? 0) > 4) $score += 3;
     if (($lead['revenu_mensuel_estime'] ?? 0) > 2000) $score += 7;
+
+    // Bonus multi-annonces Airbnb (proprietaire avec plusieurs biens = fort potentiel)
+    $nbAnnonces = (int)($lead['nb_annonces'] ?? 0);
+    if ($nbAnnonces >= 5) $score += 15;
+    elseif ($nbAnnonces >= 3) $score += 10;
+    elseif ($nbAnnonces >= 2) $score += 5;
 
     // --- Score par activite ---
     if ($nbInteractions > 0) $score += min($nbInteractions * 5, 20);
