@@ -5,6 +5,11 @@ require_once __DIR__ . '/../includes/auth.php';
 $error = '';
 $redirect = $_GET['redirect'] ?? '/pages/reservation_list.php';
 
+// Valider que la redirection est un chemin interne (pas d'URL externe)
+if (!preg_match('#^/[a-zA-Z0-9._/-]*$#', $redirect)) {
+    $redirect = '/pages/reservation_list.php';
+}
+
 // Si déjà connecté, rediriger
 if (isLoggedIn()) {
     header('Location: ' . $redirect);

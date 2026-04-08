@@ -93,7 +93,11 @@ if (isset($_POST['ajax'])) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['ajax'])) {
     $_SESSION['newsletter_message'] = $message;
     $_SESSION['newsletter_type'] = $messageType;
-    header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? 'index.php'));
+    $referer = $_SERVER['HTTP_REFERER'] ?? 'index.php';
+    $host = parse_url($referer, PHP_URL_HOST);
+    $serverHost = $_SERVER['HTTP_HOST'] ?? '';
+    $redirect = ($host === null || $host === $serverHost) ? $referer : 'index.php';
+    header('Location: ' . $redirect);
     exit;
 }
 ?>

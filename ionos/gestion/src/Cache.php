@@ -57,7 +57,12 @@ class Cache
             return $default;
         }
 
-        $data = unserialize(file_get_contents($filename));
+        $data = json_decode(file_get_contents($filename), true);
+
+        if ($data === null) {
+            $this->delete($key);
+            return $default;
+        }
 
         // Vérifier l'expiration
         if ($data['expires'] > 0 && time() > $data['expires']) {
@@ -94,7 +99,7 @@ class Cache
 
         $filename = $this->getFilename($key);
 
-        return file_put_contents($filename, serialize($data)) !== false;
+        return file_put_contents($filename, json_encode($data)) !== false;
     }
 
     /**
@@ -116,9 +121,9 @@ class Cache
         }
 
         // Vérifier l'expiration
-        $data = unserialize(file_get_contents($filename));
+        $data = json_decode(file_get_contents($filename), true);
 
-        if ($data['expires'] > 0 && time() > $data['expires']) {
+        if ($data === null || ($data['expires'] > 0 && time() > $data['expires'])) {
             $this->delete($key);
             return false;
         }
@@ -198,9 +203,9 @@ class Cache
                 continue;
             }
 
-            $data = unserialize(file_get_contents($file));
+            $data = json_decode(file_get_contents($file), true);
 
-            if ($data['expires'] > 0 && time() > $data['expires']) {
+            if ($data === null || ($data['expires'] > 0 && time() > $data['expires'])) {
                 unlink($file);
                 $count++;
             }
@@ -232,9 +237,9 @@ class Cache
             $stats['total']++;
             $stats['size'] += filesize($file);
 
-            $data = unserialize(file_get_contents($file));
+            $data = json_decode(file_get_contents($file), true);
 
-            if ($data['expires'] > 0 && time() > $data['expires']) {
+            if ($data === null || ($data['expires'] > 0 && time() > $data['expires'])) {
                 $stats['expired']++;
             } else {
                 $stats['valid']++;

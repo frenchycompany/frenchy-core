@@ -13,7 +13,7 @@
  *   POST /api/?endpoint=planning            → Creer/modifier une intervention
  *   POST /api/?endpoint=reservations        → Creer une reservation
  *
- * Auth : API key via header X-API-Key ou parametre ?api_key=
+ * Auth : API key via header X-API-Key uniquement
  */
 
 header('Content-Type: application/json; charset=utf-8');
@@ -31,7 +31,7 @@ require_once __DIR__ . '/../db/connection.php';
 
 // Authentification API
 function apiAuth(PDO $conn): bool {
-    $apiKey = $_SERVER['HTTP_X_API_KEY'] ?? $_GET['api_key'] ?? '';
+    $apiKey = $_SERVER['HTTP_X_API_KEY'] ?? '';
 
     if (empty($apiKey)) {
         return false;

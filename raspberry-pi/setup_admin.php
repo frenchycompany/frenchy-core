@@ -32,9 +32,9 @@ try {
     ");
     echo "✅ Table users créée ou déjà existante\n\n";
 
-    // 2. Générer le hash du mot de passe
+    // 2. Générer un mot de passe aléatoire sécurisé
     $email = 'admin@sms.local';
-    $password = 'Admin123!';
+    $password = bin2hex(random_bytes(12)); // 24 caractères aléatoires
     $password_hash = password_hash($password, PASSWORD_BCRYPT);
 
     echo "2. Génération du hash du mot de passe...\n";
