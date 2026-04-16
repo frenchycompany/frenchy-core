@@ -69,6 +69,15 @@ if (!isset($menu_categories)) {
                 ['nom' => 'Comparer',           'chemin' => 'pages/inventaire_comparer.php',  'icon' => 'fa-code-compare'],
             ]
         ],
+        'Stock / Consommables' => [
+            'icon' => 'fa-box',
+            'items' => [
+                ['nom' => 'Dashboard stock',  'chemin' => 'pages/stock_dashboard.php',    'icon' => 'fa-tachometer-alt'],
+                ['nom' => 'Produits',         'chemin' => 'pages/stock_produits.php',     'icon' => 'fa-box'],
+                ['nom' => 'Mouvements',       'chemin' => 'pages/stock_mouvements.php',   'icon' => 'fa-exchange-alt'],
+                ['nom' => 'Prix & Fournisseurs','chemin' => 'pages/stock_prix.php',       'icon' => 'fa-tags'],
+            ]
+        ],
         'Finance' => [
             'icon' => 'fa-euro-sign',
             'items' => [
