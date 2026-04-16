@@ -505,17 +505,20 @@ foreach ($avis_existants as $a) {
         }
     }
 
-    foreach ([&$pos_text => &$mots_positifs, &$neg_text => &$mots_negatifs] as &$texte => &$compteur) {
+    foreach (['pos' => $pos_text, 'neg' => $neg_text] as $type => $texte) {
         if (!$texte) continue;
         $texte_clean = preg_replace('/[^\p{L}\s\'-]/u', ' ', $texte);
         $mots = preg_split('/\s+/', $texte_clean, -1, PREG_SPLIT_NO_EMPTY);
         foreach ($mots as $mot) {
             if (mb_strlen($mot) >= 3 && !in_array($mot, $stop_words)) {
-                $compteur[$mot] = ($compteur[$mot] ?? 0) + 1;
+                if ($type === 'pos') {
+                    $mots_positifs[$mot] = ($mots_positifs[$mot] ?? 0) + 1;
+                } else {
+                    $mots_negatifs[$mot] = ($mots_negatifs[$mot] ?? 0) + 1;
+                }
             }
         }
     }
-    unset($compteur, $texte);
 }
 arsort($mots_positifs);
 arsort($mots_negatifs);
