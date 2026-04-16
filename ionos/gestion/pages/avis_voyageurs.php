@@ -572,170 +572,11 @@ try {
     </div>
     <?php endif; ?>
 
-    <!-- Stats -->
-    <?php if ($stats['total'] > 0): ?>
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card text-center">
-                <div class="card-body">
-                    <h3 class="mb-0"><?= $stats['total'] ?></h3>
-                    <small class="text-muted">Avis importés</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card text-center">
-                <div class="card-body">
-                    <h3 class="mb-0"><?= $stats['moyenne'] ?>/10</h3>
-                    <small class="text-muted">Note moyenne</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card text-center">
-                <div class="card-body">
-                    <h3 class="mb-0"><?= $stats['matched'] ?></h3>
-                    <small class="text-muted">Liés à une réservation</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card text-center">
-                <div class="card-body">
-                    <h3 class="mb-0"><?= $stats['total'] - $stats['matched'] ?></h3>
-                    <small class="text-muted">Non matchés</small>
-                    <?php if ($stats['total'] - $stats['matched'] > 0): ?>
-                        <form method="post" class="mt-2">
-                            <input type="hidden" name="action" value="rematch">
-                            <button type="submit" class="btn btn-sm btn-outline-primary">
-                                <i class="fas fa-sync"></i> Re-matcher
-                            </button>
-                        </form>
-                    <?php endif; ?>
-                </div>
-            </div>
-        </div>
-    </div>
-    <?php endif; ?>
-
-    <!-- Tendances des commentaires -->
-    <?php if ($stats['total'] >= 1 && ($tendances_positives || $tendances_negatives)): ?>
-    <div class="card mb-4">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <span><i class="fas fa-chart-bar"></i> Tendances des commentaires</span>
-            <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#tendancesZone">
-                <i class="fas fa-chevron-down"></i>
-            </button>
-        </div>
-        <div class="collapse show" id="tendancesZone">
-            <div class="card-body">
-                <div class="row">
-                    <!-- Thèmes positifs -->
-                    <div class="col-md-6 mb-3">
-                        <h6 class="text-success"><i class="fas fa-thumbs-up"></i> Ce que les voyageurs retiennent en positif</h6>
-                        <?php if ($tendances_positives): ?>
-                        <?php $max_pos = max($tendances_positives); foreach ($tendances_positives as $theme => $count): ?>
-                            <div class="d-flex align-items-center mb-1">
-                                <span class="me-2 text-nowrap" style="min-width:180px;font-size:0.9rem"><?= htmlspecialchars($theme) ?></span>
-                                <div class="flex-grow-1">
-                                    <div class="progress" style="height:20px">
-                                        <div class="progress-bar bg-success" style="width:<?= round($count / $max_pos * 100) ?>%">
-                                            <?= $count ?> avis
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        <?php endforeach; ?>
-                        <?php else: ?>
-                            <p class="text-muted">Pas assez de commentaires positifs à analyser.</p>
-                        <?php endif; ?>
-                    </div>
-
-                    <!-- Thèmes négatifs -->
-                    <div class="col-md-6 mb-3">
-                        <h6 class="text-danger"><i class="fas fa-thumbs-down"></i> Points d'amélioration récurrents</h6>
-                        <?php if ($tendances_negatives): ?>
-                        <?php $max_neg = max($tendances_negatives); foreach ($tendances_negatives as $theme => $count): ?>
-                            <div class="d-flex align-items-center mb-1">
-                                <span class="me-2 text-nowrap" style="min-width:180px;font-size:0.9rem"><?= htmlspecialchars($theme) ?></span>
-                                <div class="flex-grow-1">
-                                    <div class="progress" style="height:20px">
-                                        <div class="progress-bar bg-danger" style="width:<?= round($count / $max_neg * 100) ?>%">
-                                            <?= $count ?> avis
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        <?php endforeach; ?>
-                        <?php else: ?>
-                            <p class="text-muted">Pas de commentaires négatifs récurrents.</p>
-                        <?php endif; ?>
-                    </div>
-                </div>
-
-                <!-- Mots les plus cités -->
-                <hr>
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <h6 class="text-success"><i class="fas fa-comment-dots"></i> Mots les plus cités (positifs)</h6>
-                        <div class="d-flex flex-wrap gap-1">
-                            <?php
-                            $max_mp = $mots_positifs ? max($mots_positifs) : 1;
-                            foreach ($mots_positifs as $mot => $count):
-                                $size = 0.75 + ($count / $max_mp) * 0.75;
-                            ?>
-                                <span class="badge bg-success bg-opacity-<?= $count >= $max_mp * 0.6 ? '100' : ($count >= $max_mp * 0.3 ? '75' : '50') ?>"
-                                      style="font-size:<?= $size ?>rem" title="<?= $count ?> fois">
-                                    <?= htmlspecialchars($mot) ?> <small>(<?= $count ?>)</small>
-                                </span>
-                            <?php endforeach; ?>
-                        </div>
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <h6 class="text-danger"><i class="fas fa-comment-dots"></i> Mots les plus cités (négatifs)</h6>
-                        <div class="d-flex flex-wrap gap-1">
-                            <?php
-                            $max_mn = $mots_negatifs ? max($mots_negatifs) : 1;
-                            foreach ($mots_negatifs as $mot => $count):
-                                $size = 0.75 + ($count / $max_mn) * 0.75;
-                            ?>
-                                <span class="badge bg-danger bg-opacity-<?= $count >= $max_mn * 0.6 ? '100' : ($count >= $max_mn * 0.3 ? '75' : '50') ?>"
-                                      style="font-size:<?= $size ?>rem" title="<?= $count ?> fois">
-                                    <?= htmlspecialchars($mot) ?> <small>(<?= $count ?>)</small>
-                                </span>
-                            <?php endforeach; ?>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <?php endif; ?>
-
     <!-- Résultats re-match -->
     <?php if ($rematch_results !== null): ?>
     <div class="alert <?= $rematch_results['matched'] > 0 ? 'alert-success' : 'alert-warning' ?> alert-dismissible fade show">
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        <strong>Re-matching terminé :</strong>
-        <?= $rematch_results['matched'] ?> avis associé(s) à une réservation,
-        <?= $rematch_results['unmatched'] ?> toujours non matché(s).
-        <?php if ($rematch_results['details']): ?>
-        <ul class="mb-0 mt-2">
-            <?php foreach ($rematch_results['details'] as $d): ?>
-                <li>
-                    <?php if ($d['status'] === 'matched'): ?>
-                        <i class="fas fa-check text-success"></i>
-                    <?php else: ?>
-                        <i class="fas fa-times text-danger"></i>
-                    <?php endif; ?>
-                    <?= htmlspecialchars($d['nom'] ?? 'Anonyme') ?> — Résa #<?= htmlspecialchars($d['num']) ?>
-                    <?php if (!empty($d['method'])): ?>
-                        <span class="badge bg-info"><?= htmlspecialchars($d['method']) ?></span>
-                    <?php endif; ?>
-                </li>
-            <?php endforeach; ?>
-        </ul>
-        <?php endif; ?>
+        <strong>Re-matching :</strong> <?= $rematch_results['matched'] ?> associé(s), <?= $rematch_results['unmatched'] ?> non matché(s).
     </div>
     <?php endif; ?>
 
@@ -743,234 +584,149 @@ try {
     <?php if ($resultats): ?>
     <div class="alert alert-info alert-dismissible fade show">
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        <strong>Résultat de l'import :</strong>
-        <ul class="mb-0 mt-2">
-        <?php foreach ($resultats as $r): ?>
-            <li>
-                <?php if ($r['status'] === 'ok'): ?>
-                    <i class="fas fa-check text-success"></i> <?= htmlspecialchars($r['nom']) ?> (<?= htmlspecialchars($r['num']) ?>)
-                    <?= $r['matched'] ? '<span class="badge bg-success">Réservation trouvée</span>' : '<span class="badge bg-warning">Réservation non trouvée</span>' ?>
-                <?php elseif ($r['status'] === 'doublon'): ?>
-                    <i class="fas fa-copy text-warning"></i> <?= htmlspecialchars($r['nom']) ?> (<?= htmlspecialchars($r['num']) ?>) — <strong>Doublon ignoré</strong>
-                <?php else: ?>
-                    <i class="fas fa-times text-danger"></i> <?= htmlspecialchars($r['nom']) ?> — Erreur
-                <?php endif; ?>
-            </li>
-        <?php endforeach; ?>
-        </ul>
+        <strong>Import :</strong>
+        <?php
+        $nb_ok = count(array_filter($resultats, fn($r) => $r['status'] === 'ok'));
+        $nb_doublons = count(array_filter($resultats, fn($r) => $r['status'] === 'doublon'));
+        $nb_err = count(array_filter($resultats, fn($r) => $r['status'] === 'erreur'));
+        ?>
+        <?= $nb_ok ?> importé(s)<?= $nb_doublons ? ", $nb_doublons doublon(s)" : '' ?><?= $nb_err ? ", $nb_err erreur(s)" : '' ?>
     </div>
     <?php endif; ?>
 
-    <!-- ============================================== -->
-    <!-- RÉSERVATIONS SANS AVIS — RELANCE SMS (30 jours) -->
-    <!-- ============================================== -->
-    <?php if ($resas_sans_avis): ?>
-    <div class="card mb-4 border-primary">
-        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-            <span><i class="fas fa-sms"></i> Relance SMS — Sans avis (30 derniers jours)</span>
-            <span class="badge bg-light text-primary"><?= count($resas_sans_avis) ?> voyageur(s)</span>
+    <!-- Stats compactes -->
+    <?php if ($stats['total'] > 0): ?>
+    <div class="row mb-3 g-2">
+        <div class="col-6 col-md-3">
+            <div class="card text-center py-2">
+                <h4 class="mb-0"><?= $stats['total'] ?></h4>
+                <small class="text-muted">Avis</small>
+            </div>
         </div>
-        <div class="card-body p-0">
-            <form method="post" id="formBulkSms">
-                <input type="hidden" name="action" value="send_bulk_sms">
-                <div class="p-2 bg-light border-bottom d-flex align-items-center gap-3 flex-wrap">
-                    <div class="form-check">
-                        <input type="checkbox" class="form-check-input" id="bulkSelectAll" onchange="toggleBulkAll(this)">
-                        <label class="form-check-label fw-bold" for="bulkSelectAll">Tout sélectionner</label>
-                    </div>
-                    <span class="text-muted" id="bulkCount">0 sélectionné(s)</span>
-                    <select name="bulk_template" class="form-select form-select-sm" style="width:auto">
-                        <?php foreach ($sms_avis_templates as $tpl_key => $tpl): ?>
-                            <option value="<?= $tpl_key ?>" <?= $tpl_key === 'avis_relance' ? 'selected' : '' ?>>
-                                <?= htmlspecialchars($tpl['label']) ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                    <button type="submit" class="btn btn-primary btn-sm" id="btnBulkSend" disabled onclick="return confirm('Envoyer un SMS à tous les voyageurs sélectionnés ?')">
-                        <i class="fas fa-paper-plane"></i> Relancer la sélection
-                    </button>
-                </div>
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th style="width:40px"></th>
-                                <th>Voyageur</th>
-                                <th>Logement</th>
-                                <th>Séjour</th>
-                                <th>Depuis</th>
-                                <th>Téléphone</th>
-                                <th class="text-center">SMS</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        <?php foreach ($resas_sans_avis as $r): ?>
-                            <tr>
-                                <td><input type="checkbox" class="form-check-input bulk-check" name="bulk_resa_ids[]" value="<?= $r['id'] ?>" onchange="updateBulkCount()"></td>
-                                <td>
-                                    <strong><?= htmlspecialchars($r['prenom']) ?></strong> <?= htmlspecialchars($r['nom'] ?? '') ?>
-                                    <?php if ($r['plateforme']): ?><br><small class="text-muted"><?= htmlspecialchars($r['plateforme']) ?></small><?php endif; ?>
-                                </td>
-                                <td><?= htmlspecialchars($r['nom_du_logement'] ?? '—') ?></td>
-                                <td><small><?= date('d/m', strtotime($r['date_arrivee'])) ?> → <?= date('d/m/Y', strtotime($r['date_depart'])) ?></small></td>
-                                <td><span class="badge <?= $r['jours_depuis_depart'] <= 7 ? 'bg-success' : ($r['jours_depuis_depart'] <= 14 ? 'bg-warning' : 'bg-secondary') ?>"><?= $r['jours_depuis_depart'] ?>j</span></td>
-                                <td><small><?= htmlspecialchars($r['telephone']) ?></small></td>
-                                <td class="text-center">
-                                    <div class="btn-group btn-group-sm">
-                                        <?php foreach ($sms_avis_templates as $tpl_key => $tpl): ?>
-                                            <button type="button" class="btn btn-outline-<?= $tpl['color'] ?>" title="<?= htmlspecialchars($tpl['label']) ?>"
-                                                onclick="ouvrirModalSms(<?= htmlspecialchars(json_encode([
-                                                    'reservation_id' => $r['id'],
-                                                    'prenom' => $r['prenom'],
-                                                    'nom' => $r['nom'] ?? '',
-                                                    'telephone' => $r['telephone'],
-                                                    'logement' => $r['nom_du_logement'] ?? '',
-                                                    'date_arrivee' => $r['date_arrivee'] ? date('d/m/Y', strtotime($r['date_arrivee'])) : '',
-                                                    'date_depart' => $r['date_depart'] ? date('d/m/Y', strtotime($r['date_depart'])) : '',
-                                                    'template_key' => $tpl_key,
-                                                ])) ?>)">
-                                                <i class="fas <?= $tpl['icon'] ?>"></i>
-                                            </button>
-                                        <?php endforeach; ?>
-                                    </div>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
-            </form>
+        <div class="col-6 col-md-3">
+            <div class="card text-center py-2">
+                <h4 class="mb-0"><?= $stats['moyenne'] ?>/10</h4>
+                <small class="text-muted">Moyenne</small>
+            </div>
         </div>
-    </div>
-    <?php endif; ?>
-
-    <!-- Zone de collage -->
-    <div class="card mb-4">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <span><i class="fas fa-paste"></i> Importer des avis Booking.com</span>
-            <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#importZone">
-                <i class="fas fa-chevron-down"></i>
-            </button>
+        <div class="col-6 col-md-3">
+            <div class="card text-center py-2">
+                <h4 class="mb-0"><?= $stats['matched'] ?></h4>
+                <small class="text-muted">Liés</small>
+            </div>
         </div>
-        <div class="collapse <?= empty($avis_existants) ? 'show' : '' ?>" id="importZone">
-            <div class="card-body">
-                <p class="text-muted">Copiez-collez le texte brut des avis depuis la page Booking.com. Le système détecte automatiquement chaque avis et ignore les doublons.</p>
-                <textarea id="texteAvis" class="form-control mb-3" rows="8" placeholder="Collez ici le texte copié depuis Booking.com..."></textarea>
-                <button type="button" class="btn btn-primary" id="btnParser" disabled>
-                    <i class="fas fa-magic"></i> Analyser le texte
-                </button>
-
-                <!-- Preview des avis parsés -->
-                <div id="previewAvis" class="mt-3" style="display:none;">
-                    <h5>Avis détectés : <span id="nbAvis" class="badge bg-primary">0</span></h5>
-                    <div id="listePreview"></div>
-                    <form method="post" id="formImport">
-                        <input type="hidden" name="avis_json" id="avisJson">
-                        <button type="submit" class="btn btn-success mt-3">
-                            <i class="fas fa-save"></i> Enregistrer les avis
-                        </button>
+        <div class="col-6 col-md-3">
+            <div class="card text-center py-2">
+                <h4 class="mb-0"><?= $stats['total'] - $stats['matched'] ?></h4>
+                <small class="text-muted">Non matchés</small>
+                <?php if ($stats['total'] - $stats['matched'] > 0): ?>
+                    <form method="post" class="mt-1">
+                        <input type="hidden" name="action" value="rematch">
+                        <button type="submit" class="btn btn-sm btn-outline-primary py-0"><i class="fas fa-sync"></i></button>
                     </form>
-                </div>
+                <?php endif; ?>
             </div>
         </div>
     </div>
+    <?php endif; ?>
 
-    <!-- Filtre logement -->
-    <div class="row mb-3">
-        <div class="col-md-4">
-            <select class="form-select" onchange="window.location='?logement='+this.value">
-                <option value="">Tous les logements</option>
-                <?php foreach ($logements as $l): ?>
-                    <option value="<?= $l['id'] ?>" <?= $filtre_logement == $l['id'] ? 'selected' : '' ?>>
-                        <?= htmlspecialchars($l['nom_du_logement']) ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
+    <!-- ===== ONGLETS ===== -->
+    <ul class="nav nav-tabs mb-3" role="tablist">
+        <li class="nav-item">
+            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-avis" type="button">
+                <i class="fas fa-star"></i> Avis <span class="badge bg-secondary"><?= $stats['total'] ?></span>
+            </button>
+        </li>
+        <?php if ($tendances_positives || $tendances_negatives): ?>
+        <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-tendances" type="button">
+                <i class="fas fa-chart-bar"></i> Tendances
+            </button>
+        </li>
+        <?php endif; ?>
+        <?php if ($resas_sans_avis): ?>
+        <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-relance" type="button">
+                <i class="fas fa-sms"></i> Relance SMS <span class="badge bg-primary"><?= count($resas_sans_avis) ?></span>
+            </button>
+        </li>
+        <?php endif; ?>
+        <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-import" type="button">
+                <i class="fas fa-paste"></i> Import
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content">
+
+    <!-- ===== TAB AVIS ===== -->
+    <div class="tab-pane fade show active" id="tab-avis">
+        <!-- Filtre logement -->
+        <div class="row mb-3">
+            <div class="col-md-4">
+                <select class="form-select form-select-sm" onchange="window.location='?logement='+this.value">
+                    <option value="">Tous les logements</option>
+                    <?php foreach ($logements as $l): ?>
+                        <option value="<?= $l['id'] ?>" <?= $filtre_logement == $l['id'] ? 'selected' : '' ?>>
+                            <?= htmlspecialchars($l['nom_du_logement']) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
         </div>
-    </div>
 
-    <!-- Liste des avis existants -->
-    <?php if ($avis_existants): ?>
-    <div class="row">
-    <?php foreach ($avis_existants as $a): ?>
-        <div class="col-md-6 col-lg-4 mb-3">
-            <div class="card h-100">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <div>
-                        <strong><?= htmlspecialchars($a['nom_voyageur'] ?? 'Anonyme') ?></strong>
-                        <?php if ($a['pays_voyageur']): ?>
-                            <small class="text-muted">(<?= htmlspecialchars($a['pays_voyageur']) ?>)</small>
+        <?php if ($avis_existants): ?>
+        <div class="row">
+        <?php foreach ($avis_existants as $a): ?>
+            <div class="col-md-6 col-lg-4 mb-3">
+                <div class="card h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center py-2">
+                        <div>
+                            <strong><?= htmlspecialchars($a['nom_voyageur'] ?? 'Anonyme') ?></strong>
+                            <?php if ($a['pays_voyageur']): ?>
+                                <small class="text-muted">(<?= htmlspecialchars($a['pays_voyageur']) ?>)</small>
+                            <?php endif; ?>
+                        </div>
+                        <span class="badge <?= $a['note_globale'] >= 8 ? 'bg-success' : ($a['note_globale'] >= 6 ? 'bg-warning' : 'bg-danger') ?> fs-6">
+                            <?= number_format($a['note_globale'], 1, ',', '') ?>/10
+                        </span>
+                    </div>
+                    <div class="card-body py-2">
+                        <?php if ($a['nom_du_logement']): ?>
+                            <p class="mb-1 small"><i class="fas fa-home text-muted"></i> <?= htmlspecialchars($a['nom_du_logement']) ?></p>
+                        <?php endif; ?>
+                        <?php if ($a['reservation_id']): ?>
+                            <p class="mb-1 small">
+                                <i class="fas fa-link text-success"></i>
+                                <a href="reservation_details.php?id=<?= $a['reservation_id'] ?>">Résa #<?= htmlspecialchars($a['numero_reservation']) ?></a>
+                                <?php if ($a['date_arrivee']): ?>
+                                    <small class="text-muted">(<?= date('d/m', strtotime($a['date_arrivee'])) ?> → <?= date('d/m', strtotime($a['date_depart'])) ?>)</small>
+                                <?php endif; ?>
+                            </p>
+                        <?php else: ?>
+                            <p class="mb-1 small"><i class="fas fa-unlink text-warning"></i> #<?= htmlspecialchars($a['numero_reservation']) ?> <small class="text-muted">(non matchée)</small></p>
+                        <?php endif; ?>
+
+                        <!-- Commentaires -->
+                        <?php if ($a['commentaire_positif']): ?>
+                            <p class="mb-1 small text-success"><i class="fas fa-thumbs-up"></i> <?= nl2br(htmlspecialchars(mb_strimwidth($a['commentaire_positif'], 0, 200, '...'))) ?></p>
+                        <?php endif; ?>
+                        <?php if ($a['commentaire_negatif']): ?>
+                            <p class="mb-1 small text-danger"><i class="fas fa-thumbs-down"></i> <?= nl2br(htmlspecialchars(mb_strimwidth($a['commentaire_negatif'], 0, 200, '...'))) ?></p>
+                        <?php endif; ?>
+                        <?php if ($a['commentaire_general'] && !$a['commentaire_positif'] && !$a['commentaire_negatif']): ?>
+                            <p class="mb-1 small"><?= nl2br(htmlspecialchars(mb_strimwidth($a['commentaire_general'], 0, 200, '...'))) ?></p>
                         <?php endif; ?>
                     </div>
-                    <span class="badge <?= $a['note_globale'] >= 8 ? 'bg-success' : ($a['note_globale'] >= 6 ? 'bg-warning' : 'bg-danger') ?> fs-6">
-                        <?= number_format($a['note_globale'], 1, ',', '') ?>/10
-                    </span>
-                </div>
-                <div class="card-body">
-                    <!-- Logement + réservation -->
-                    <?php if ($a['nom_du_logement']): ?>
-                        <p class="mb-1"><i class="fas fa-home text-muted"></i> <?= htmlspecialchars($a['nom_du_logement']) ?></p>
-                    <?php endif; ?>
-                    <?php if ($a['reservation_id']): ?>
-                        <p class="mb-1">
-                            <i class="fas fa-link text-success"></i>
-                            <a href="reservation_details.php?id=<?= $a['reservation_id'] ?>">
-                                Résa #<?= htmlspecialchars($a['numero_reservation']) ?>
-                            </a>
-                            <?php if ($a['date_arrivee']): ?>
-                                <small class="text-muted">(<?= date('d/m/Y', strtotime($a['date_arrivee'])) ?> → <?= date('d/m/Y', strtotime($a['date_depart'])) ?>)</small>
-                            <?php endif; ?>
-                        </p>
-                    <?php else: ?>
-                        <p class="mb-1"><i class="fas fa-unlink text-warning"></i> Résa #<?= htmlspecialchars($a['numero_reservation']) ?> <small class="text-muted">(non matchée)</small></p>
-                    <?php endif; ?>
-
-                    <!-- Notes détaillées -->
-                    <div class="row mt-2 small">
-                        <?php
-                        $categories = [
-                            'Personnel' => $a['note_personnel'],
-                            'Propreté' => $a['note_proprete'],
-                            'Situation' => $a['note_situation'],
-                            'Équipements' => $a['note_equipements'],
-                            'Confort' => $a['note_confort'],
-                            'Qualité/Prix' => $a['note_rapport_qualite_prix'],
-                        ];
-                        if ($a['note_lit']) $categories['Lit'] = $a['note_lit'];
-                        foreach ($categories as $cat => $note):
-                            if ($note === null) continue;
-                        ?>
-                            <div class="col-6 mb-1">
-                                <span class="text-muted"><?= $cat ?></span>
-                                <span class="float-end fw-bold <?= $note >= 8 ? 'text-success' : ($note >= 6 ? 'text-warning' : 'text-danger') ?>">
-                                    <?= number_format($note, 1, ',', '') ?>
-                                </span>
-                            </div>
-                        <?php endforeach; ?>
-                    </div>
-
-                    <!-- Commentaires -->
-                    <?php if ($a['commentaire_general']): ?>
-                        <p class="mt-2 mb-1"><?= nl2br(htmlspecialchars($a['commentaire_general'])) ?></p>
-                    <?php endif; ?>
-                    <?php if ($a['commentaire_positif']): ?>
-                        <p class="mt-2 mb-1 text-success"><i class="fas fa-thumbs-up"></i> <?= nl2br(htmlspecialchars($a['commentaire_positif'])) ?></p>
-                    <?php endif; ?>
-                    <?php if ($a['commentaire_negatif']): ?>
-                        <p class="mb-1 text-danger"><i class="fas fa-thumbs-down"></i> <?= nl2br(htmlspecialchars($a['commentaire_negatif'])) ?></p>
-                    <?php endif; ?>
-                </div>
-                <div class="card-footer small">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <span class="text-muted">
-                            <?php if ($a['date_avis']): ?>
-                                <i class="fas fa-calendar"></i> <?= date('d/m/Y', strtotime($a['date_avis'])) ?>
-                            <?php endif; ?>
-                        </span>
-                        <div class="btn-group btn-group-sm">
-                            <?php if (!empty($a['resa_telephone']) && $a['reservation_id']): ?>
-                                <?php foreach ($sms_avis_templates as $tpl_key => $tpl): ?>
-                                    <button type="button" class="btn btn-outline-<?= $tpl['color'] ?> btn-sm py-0" title="<?= htmlspecialchars($tpl['label']) ?>"
+                    <div class="card-footer py-1 small">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-muted">
+                                <?= $a['date_avis'] ? date('d/m/Y', strtotime($a['date_avis'])) : '' ?>
+                            </span>
+                            <div class="d-flex gap-1">
+                                <?php if (!empty($a['resa_telephone']) && $a['reservation_id']): ?>
+                                    <button type="button" class="btn btn-outline-success btn-sm py-0" title="SMS"
                                         onclick="ouvrirModalSms(<?= htmlspecialchars(json_encode([
                                             'reservation_id' => $a['reservation_id'],
                                             'prenom' => $a['resa_prenom'] ?? $a['nom_voyageur'] ?? '',
@@ -979,53 +735,179 @@ try {
                                             'logement' => $a['nom_du_logement'] ?? '',
                                             'date_arrivee' => $a['date_arrivee'] ? date('d/m/Y', strtotime($a['date_arrivee'])) : '',
                                             'date_depart' => $a['date_depart'] ? date('d/m/Y', strtotime($a['date_depart'])) : '',
-                                            'template_key' => $tpl_key,
+                                            'template_key' => 'avis_remerciement',
                                         ])) ?>)">
-                                        <i class="fas <?= $tpl['icon'] ?>"></i>
+                                        <i class="fas fa-sms"></i>
                                     </button>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
+                                <?php endif; ?>
+                                <?php if (!$a['reservation_id']): ?>
+                                <button type="button" class="btn btn-outline-primary btn-sm py-0" title="Lier réservation"
+                                    onclick="ouvrirModalLinkResa(<?= $a['id'] ?>, <?= htmlspecialchars(json_encode($a['nom_voyageur'] ?? '')) ?>)">
+                                    <i class="fas fa-link"></i>
+                                </button>
+                                <?php endif; ?>
+                                <button type="button" class="btn btn-outline-info btn-sm py-0" title="Créer client"
+                                    onclick="ouvrirModalClient(<?= htmlspecialchars(json_encode([
+                                        'avis_id' => $a['id'],
+                                        'prenom' => $a['resa_prenom'] ?? $a['nom_voyageur'] ?? '',
+                                        'nom' => $a['resa_nom'] ?? '',
+                                        'telephone' => $a['resa_telephone'] ?? '',
+                                        'email' => '',
+                                    ])) ?>)">
+                                    <i class="fas fa-user-plus"></i>
+                                </button>
+                                <form method="post" class="d-inline" onsubmit="return confirm('Supprimer ?')">
+                                    <input type="hidden" name="action" value="delete_avis">
+                                    <input type="hidden" name="avis_id" value="<?= $a['id'] ?>">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm py-0"><i class="fas fa-trash"></i></button>
+                                </form>
+                            </div>
                         </div>
-                    </div>
-                    <div class="d-flex gap-1">
-                        <!-- Attribuer réservation -->
-                        <?php if (!$a['reservation_id']): ?>
-                        <button type="button" class="btn btn-outline-primary btn-sm py-0" title="Attribuer une réservation"
-                            onclick="ouvrirModalLinkResa(<?= $a['id'] ?>, <?= htmlspecialchars(json_encode($a['nom_voyageur'] ?? '')) ?>)">
-                            <i class="fas fa-link"></i> Résa
-                        </button>
-                        <?php endif; ?>
-                        <!-- Créer fiche client -->
-                        <button type="button" class="btn btn-outline-info btn-sm py-0" title="Créer fiche client"
-                            onclick="ouvrirModalClient(<?= htmlspecialchars(json_encode([
-                                'avis_id' => $a['id'],
-                                'prenom' => $a['resa_prenom'] ?? $a['nom_voyageur'] ?? '',
-                                'nom' => $a['resa_nom'] ?? '',
-                                'telephone' => $a['resa_telephone'] ?? '',
-                                'email' => '',
-                            ])) ?>)">
-                            <i class="fas fa-user-plus"></i>
-                        </button>
-                        <!-- Supprimer -->
-                        <form method="post" class="d-inline" onsubmit="return confirm('Supprimer cet avis ?')">
-                            <input type="hidden" name="action" value="delete_avis">
-                            <input type="hidden" name="avis_id" value="<?= $a['id'] ?>">
-                            <button type="submit" class="btn btn-outline-danger btn-sm py-0" title="Supprimer">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </form>
                     </div>
                 </div>
             </div>
+        <?php endforeach; ?>
         </div>
-    <?php endforeach; ?>
+        <?php elseif (empty($resultats)): ?>
+        <div class="text-center text-muted py-5">
+            <i class="fas fa-star fa-3x mb-3"></i>
+            <p>Aucun avis importé.</p>
+        </div>
+        <?php endif; ?>
     </div>
-    <?php elseif (empty($resultats)): ?>
-    <div class="text-center text-muted py-5">
-        <i class="fas fa-star fa-3x mb-3"></i>
-        <p>Aucun avis importé. Collez le texte des avis Booking.com ci-dessus pour commencer.</p>
+
+    <!-- ===== TAB TENDANCES ===== -->
+    <?php if ($tendances_positives || $tendances_negatives): ?>
+    <div class="tab-pane fade" id="tab-tendances">
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <h6 class="text-success"><i class="fas fa-thumbs-up"></i> Retours positifs</h6>
+                <?php if ($tendances_positives): $max_pos = max($tendances_positives); foreach ($tendances_positives as $theme => $count): ?>
+                    <div class="d-flex align-items-center mb-1">
+                        <span class="me-2 text-nowrap" style="min-width:170px;font-size:0.85rem"><?= htmlspecialchars($theme) ?></span>
+                        <div class="flex-grow-1">
+                            <div class="progress" style="height:18px">
+                                <div class="progress-bar bg-success" style="width:<?= round($count / $max_pos * 100) ?>%"><?= $count ?></div>
+                            </div>
+                        </div>
+                    </div>
+                <?php endforeach; endif; ?>
+            </div>
+            <div class="col-md-6 mb-3">
+                <h6 class="text-danger"><i class="fas fa-thumbs-down"></i> Points d'amélioration</h6>
+                <?php if ($tendances_negatives): $max_neg = max($tendances_negatives); foreach ($tendances_negatives as $theme => $count): ?>
+                    <div class="d-flex align-items-center mb-1">
+                        <span class="me-2 text-nowrap" style="min-width:170px;font-size:0.85rem"><?= htmlspecialchars($theme) ?></span>
+                        <div class="flex-grow-1">
+                            <div class="progress" style="height:18px">
+                                <div class="progress-bar bg-danger" style="width:<?= round($count / $max_neg * 100) ?>%"><?= $count ?></div>
+                            </div>
+                        </div>
+                    </div>
+                <?php endforeach; endif; ?>
+            </div>
+        </div>
+        <hr>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <h6 class="text-success"><i class="fas fa-comment-dots"></i> Mots-clés positifs</h6>
+                <div class="d-flex flex-wrap gap-1">
+                    <?php $max_mp = $mots_positifs ? max($mots_positifs) : 1; foreach ($mots_positifs as $mot => $count): $size = 0.75 + ($count / $max_mp) * 0.6; ?>
+                        <span class="badge bg-success bg-opacity-<?= $count >= $max_mp * 0.6 ? '100' : ($count >= $max_mp * 0.3 ? '75' : '50') ?>" style="font-size:<?= $size ?>rem" title="<?= $count ?>x"><?= htmlspecialchars($mot) ?></span>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+            <div class="col-md-6 mb-3">
+                <h6 class="text-danger"><i class="fas fa-comment-dots"></i> Mots-clés négatifs</h6>
+                <div class="d-flex flex-wrap gap-1">
+                    <?php $max_mn = $mots_negatifs ? max($mots_negatifs) : 1; foreach ($mots_negatifs as $mot => $count): $size = 0.75 + ($count / $max_mn) * 0.6; ?>
+                        <span class="badge bg-danger bg-opacity-<?= $count >= $max_mn * 0.6 ? '100' : ($count >= $max_mn * 0.3 ? '75' : '50') ?>" style="font-size:<?= $size ?>rem" title="<?= $count ?>x"><?= htmlspecialchars($mot) ?></span>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+        </div>
     </div>
     <?php endif; ?>
+
+    <!-- ===== TAB RELANCE SMS ===== -->
+    <?php if ($resas_sans_avis): ?>
+    <div class="tab-pane fade" id="tab-relance">
+        <form method="post" id="formBulkSms">
+            <input type="hidden" name="action" value="send_bulk_sms">
+            <div class="p-2 bg-light border rounded mb-2 d-flex align-items-center gap-3 flex-wrap">
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input" id="bulkSelectAll" onchange="toggleBulkAll(this)">
+                    <label class="form-check-label fw-bold" for="bulkSelectAll">Tout</label>
+                </div>
+                <span class="text-muted" id="bulkCount">0 sél.</span>
+                <select name="bulk_template" class="form-select form-select-sm" style="width:auto">
+                    <?php foreach ($sms_avis_templates as $tpl_key => $tpl): ?>
+                        <option value="<?= $tpl_key ?>" <?= $tpl_key === 'avis_relance' ? 'selected' : '' ?>><?= htmlspecialchars($tpl['label']) ?></option>
+                    <?php endforeach; ?>
+                </select>
+                <button type="submit" class="btn btn-primary btn-sm" id="btnBulkSend" disabled onclick="return confirm('Envoyer les SMS ?')">
+                    <i class="fas fa-paper-plane"></i> Relancer
+                </button>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr><th style="width:35px"></th><th>Voyageur</th><th>Logement</th><th>Séjour</th><th>Depuis</th><th>Tél</th><th class="text-center">SMS</th></tr>
+                    </thead>
+                    <tbody>
+                    <?php foreach ($resas_sans_avis as $r): ?>
+                        <tr>
+                            <td><input type="checkbox" class="form-check-input bulk-check" name="bulk_resa_ids[]" value="<?= $r['id'] ?>" onchange="updateBulkCount()"></td>
+                            <td><strong><?= htmlspecialchars($r['prenom']) ?></strong> <?= htmlspecialchars($r['nom'] ?? '') ?></td>
+                            <td><small><?= htmlspecialchars($r['nom_du_logement'] ?? '—') ?></small></td>
+                            <td><small><?= date('d/m', strtotime($r['date_arrivee'])) ?> → <?= date('d/m', strtotime($r['date_depart'])) ?></small></td>
+                            <td><span class="badge <?= $r['jours_depuis_depart'] <= 7 ? 'bg-success' : ($r['jours_depuis_depart'] <= 14 ? 'bg-warning' : 'bg-secondary') ?>"><?= $r['jours_depuis_depart'] ?>j</span></td>
+                            <td><small><?= htmlspecialchars($r['telephone']) ?></small></td>
+                            <td class="text-center">
+                                <button type="button" class="btn btn-outline-warning btn-sm py-0" title="SMS relance"
+                                    onclick="ouvrirModalSms(<?= htmlspecialchars(json_encode([
+                                        'reservation_id' => $r['id'],
+                                        'prenom' => $r['prenom'],
+                                        'nom' => $r['nom'] ?? '',
+                                        'telephone' => $r['telephone'],
+                                        'logement' => $r['nom_du_logement'] ?? '',
+                                        'date_arrivee' => $r['date_arrivee'] ? date('d/m/Y', strtotime($r['date_arrivee'])) : '',
+                                        'date_depart' => $r['date_depart'] ? date('d/m/Y', strtotime($r['date_depart'])) : '',
+                                        'template_key' => 'avis_relance',
+                                    ])) ?>)">
+                                    <i class="fas fa-sms"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </form>
+    </div>
+    <?php endif; ?>
+
+    <!-- ===== TAB IMPORT ===== -->
+    <div class="tab-pane fade" id="tab-import">
+        <p class="text-muted">Copiez-collez le texte brut des avis depuis Booking.com. Les doublons sont ignorés automatiquement.</p>
+        <textarea id="texteAvis" class="form-control mb-3" rows="8" placeholder="Collez ici le texte copié depuis Booking.com..."></textarea>
+        <button type="button" class="btn btn-primary" id="btnParser" disabled>
+            <i class="fas fa-magic"></i> Analyser
+        </button>
+
+        <div id="previewAvis" class="mt-3" style="display:none;">
+            <h5>Avis détectés : <span id="nbAvis" class="badge bg-primary">0</span></h5>
+            <div id="listePreview"></div>
+            <form method="post" id="formImport">
+                <input type="hidden" name="avis_json" id="avisJson">
+                <button type="submit" class="btn btn-success mt-3">
+                    <i class="fas fa-save"></i> Enregistrer
+                </button>
+            </form>
+        </div>
+    </div>
+
+    </div><!-- fin tab-content -->
 </div>
 
 <!-- Modal attribution réservation -->
