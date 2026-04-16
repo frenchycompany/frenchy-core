@@ -1,9 +1,10 @@
 -- ============================================
--- Contrat de location saisonnière — Template Vertefeuille / B2B
--- Ajout des champs locataire société + insertion du template
+-- Template Loc Saisonnière VERTEFEUILLE
+-- Bailleur META UX + Château de Vertefeuille en dur
+-- Placeholders uniquement pour le locataire, dates et montants
 -- ============================================
 
--- 1. Nouveaux champs pour contrats B2B (locataire = société)
+-- 1. Nouveaux champs locataire société (si pas encore créés)
 INSERT IGNORE INTO location_contract_fields (field_name, description, input_type, field_group, sort_order) VALUES
 ('locataire_societe', 'Nom de la société locataire', 'text', 'voyageur', 52),
 ('locataire_forme_juridique', 'Forme juridique (SAS, SARL, etc.)', 'text', 'voyageur', 53),
@@ -11,36 +12,33 @@ INSERT IGNORE INTO location_contract_fields (field_name, description, input_type
 ('locataire_siret', 'SIRET du locataire', 'text', 'voyageur', 55),
 ('locataire_rcs_ville', 'Ville RCS du locataire', 'text', 'voyageur', 56),
 ('locataire_representant', 'Représentant légal du locataire', 'text', 'voyageur', 57),
-('proprietaire_representant', 'Représentant légal du propriétaire', 'text', 'proprietaire', 585),
-('proprietaire_forme_juridique', 'Forme juridique (SAS, SARL, etc.)', 'text', 'proprietaire', 582),
-('proprietaire_rcs_ville', 'Ville RCS du propriétaire', 'text', 'proprietaire', 592),
 ('duree_location', 'Durée de la location (jours)', 'number', 'reservation', 125),
 ('prix_total_lettres', 'Prix total en lettres', 'text', 'reservation', 155),
 ('prix_total_ht', 'Prix total HT (EUR)', 'number', 'reservation', 152),
-('modalite_paiement', 'Modalités de paiement', 'textarea', 'reservation', 185),
-('date_limite_paiement', 'Date limite de paiement', 'date', 'reservation', 186);
+('modalite_paiement', 'Modalités de paiement', 'textarea', 'reservation', 185);
 
--- 2. Template du contrat de location saisonnière
+-- 2. Template avec bailleur + logement pré-remplis
 INSERT INTO location_contract_templates (title, content, placeholders) VALUES (
-'Contrat location saisonnière — B2B (société)',
-'<div style=\"font-family: Georgia, serif; max-width: 800px; margin: 0 auto; padding: 40px; line-height: 1.7; color: #222;\">
+'Temp Loc Saisonnière VERTEFEUILLE',
+'<div style="font-family: Georgia, serif; max-width: 800px; margin: 0 auto; padding: 40px; line-height: 1.7; color: #222;">
 
-<h1 style=\"text-align: center; font-size: 22px; text-transform: uppercase; letter-spacing: 2px; border-bottom: 2px solid #333; padding-bottom: 15px;\">Contrat de Location Saisonnière</h1>
+<h1 style="text-align: center; font-size: 22px; text-transform: uppercase; letter-spacing: 2px; border-bottom: 2px solid #333; padding-bottom: 15px;">Contrat de Location Saisonnière</h1>
+
 
 <!-- ===== ARTICLE 1 ===== -->
-<h2 style=\"margin-top: 30px; font-size: 16px;\">ARTICLE 1 – DÉSIGNATION DES PARTIES</h2>
+<h2 style="margin-top: 30px; font-size: 16px;">ARTICLE 1 – DÉSIGNATION DES PARTIES</h2>
 <p>Le présent contrat est conclu entre les soussignés :</p>
 
-<h3 style=\"font-size: 14px; margin-top: 20px;\">BAILLEUR(S) :</h3>
-<p>La Société \"{{proprietaire_societe}}\" {{proprietaire_forme_juridique}} dont le siège social est situé {{proprietaire_adresse_complete}}, immatriculée au registre du commerce et des sociétés de {{proprietaire_rcs_ville}} sous le numéro SIRET {{proprietaire_siret}}<br>
-Représentée par {{proprietaire_representant}}</p>
+<h3 style="font-size: 14px; margin-top: 20px;">BAILLEUR(S) :</h3>
+<p>La Société "META UX" Société à responsabilité limitée (SARL) dont le siège social est situé 85 RUE D''AMSTERDAM, 75008 PARIS, immatriculée au registre du commerce et des sociétés de Paris sous le numéro SIRET 913 949 715 00027<br>
+Représentée par Mr Rémi LE DRUILLENEC Gérant</p>
 
 <p>Ce dernier a donné procuration à la SAS Frenchy Conciergerie dont le siège social est 718 rue de la Louvière 60126 Longueil-Sainte-Marie immatriculée au registre du commerce et des sociétés de COMPIÈGNE sous le numéro SIRET 94499252800017<br>
 Représentée par Raphaël Jacquet agissant en qualité de Directeur Général</p>
 
 <p>D''une part, ci-après dénommé « LE(S) BAILLEUR(S) »</p>
 
-<h3 style=\"font-size: 14px; margin-top: 20px;\">LOCATAIRE(S) :</h3>
+<h3 style="font-size: 14px; margin-top: 20px;">LOCATAIRE(S) :</h3>
 <p>La Société {{locataire_societe}} {{locataire_forme_juridique}} dont le siège social est situé {{locataire_siege}}, immatriculée au registre du commerce et des sociétés de {{locataire_rcs_ville}} sous le numéro SIRET {{locataire_siret}}<br>
 Représentée par {{locataire_representant}}</p>
 
@@ -48,27 +46,31 @@ Représentée par {{locataire_representant}}</p>
 
 
 <!-- ===== ARTICLE 2 ===== -->
-<h2 style=\"margin-top: 30px; font-size: 16px;\">ARTICLE 2 – OBJET DU CONTRAT DE LOCATION</h2>
+<h2 style="margin-top: 30px; font-size: 16px;">ARTICLE 2 – OBJET DU CONTRAT DE LOCATION</h2>
 <p>Le présent contrat a pour objet la location d''un logement ainsi déterminé :</p>
 
-<h3 style=\"font-size: 14px;\">Article 2.1 – Désignation du bien</h3>
+<h3 style="font-size: 14px;">Article 2.1 – Désignation du bien</h3>
 <p>Le bailleur donne en location, au profit du locataire, aux clauses et conditions ci-dessous énoncées, les locaux ci-après désignés :</p>
-<ul style=\"list-style: none; padding-left: 0;\">
-    <li>- <strong>Adresse du logement :</strong> {{adresse_logement}}</li>
-    <li>- <strong>Type d''habitat :</strong> {{type_logement}}</li>
-    <li>- <strong>Surface habitable :</strong> {{surface_m2}} m²</li>
-    <li>- <strong>Désignation :</strong> {{description_logement}}</li>
+<ul style="list-style: none; padding-left: 0;">
+    <li>- <strong>Adresse du logement :</strong> rue Sœur Aurélie, 60350 Pierrefonds</li>
+    <li>- <strong>Type d''habitat :</strong> immeuble individuel</li>
+    <li>- <strong>Régime juridique de l''immeuble :</strong> monopropriété</li>
+    <li>- <strong>Période de construction :</strong> avant 1949</li>
+    <li>- <strong>Surface habitable :</strong> surface totale 500 m²</li>
+    <li>- <strong>Désignation :</strong> D''une superficie d''environ 500 m², le Château de Vertefeuille offre de vastes espaces de vie : une salle à manger de 65 m², une grande cuisine attenante entièrement équipée, un salon raffiné avec sa bibliothèque, ainsi qu''une salle de cinéma privée.<br><br>
+    Le château dispose également d''un véritable espace bien-être, comprenant une piscine intérieure, un sauna et une salle de sport, ainsi qu''une salle de jeux, idéale pour petits et grands.<br><br>
+    La partie nuit se compose de 5 chambres confortables, chacune accompagnée de sa salle de bain ou salle de douche, garantissant intimité et bien-être à chaque occupant.</li>
 </ul>
-<p>- <strong>Locaux, parties, équipements et accessoires :</strong> {{equipements}}</p>
+<p>- <strong>Locaux, parties, équipements et accessoires de l''immeuble :</strong> espaces verts, aires de stationnement dans la cour</p>
 <p>Du tout tel que ledit bien se poursuit et se comporte, avec toutes ses aisances, dépendances et immeubles par destination, servitudes et mitoyennetés, sans exception ni réserve.</p>
 
-<h3 style=\"font-size: 14px;\">Article 2.2 – Destination des lieux</h3>
+<h3 style="font-size: 14px;">Article 2.2 – Destination des lieux</h3>
 <p>Les locaux objets de la location sont loués exclusivement à usage de LOCATION SAISONNIÈRE et n''ont pas pour objet la location d''un logement à usage de résidence principale ou à usage mixte résidentiel et professionnel pour le locataire.</p>
 <p>Le présent contrat est donc hors champ d''application de la loi 89-462 du 06 juillet 1989.</p>
 
 
 <!-- ===== ARTICLE 3 ===== -->
-<h2 style=\"margin-top: 30px; font-size: 16px;\">ARTICLE 3 – DURÉE ET PRISE D''EFFET DE LA LOCATION</h2>
+<h2 style="margin-top: 30px; font-size: 16px;">ARTICLE 3 – DURÉE ET PRISE D''EFFET DE LA LOCATION</h2>
 <p>La présente location est consentie pour une durée de <strong>{{duree_location}} jours</strong> à compter du <strong>{{date_arrivee}} à {{heure_arrivee}}</strong> pour se terminer le <strong>{{date_depart}} à {{heure_depart}}</strong>.</p>
 <p>Ce contrat de location n''est pas renouvelable.</p>
 <p>Le présent bail cesse de plein droit à l''expiration du délai précédemment indiqué sans qu''il soit nécessaire pour le bailleur de notifier un congé ou tout autre formalité. La durée du bail ne pourra être prorogée sans l''accord préalable du bailleur.</p>
@@ -76,24 +78,24 @@ Représentée par {{locataire_representant}}</p>
 
 
 <!-- ===== ARTICLE 4 ===== -->
-<h2 style=\"margin-top: 30px; font-size: 16px;\">ARTICLE 4 – CONDITIONS FINANCIÈRES DE LA LOCATION</h2>
+<h2 style="margin-top: 30px; font-size: 16px;">ARTICLE 4 – CONDITIONS FINANCIÈRES DE LA LOCATION</h2>
 
-<h3 style=\"font-size: 14px;\">Article 4.1 – Loyer et charges</h3>
+<h3 style="font-size: 14px;">Article 4.1 – Loyer et charges</h3>
 <p>Le montant du loyer, pour l''intégralité de la durée de location, est fixé à la somme de <strong>{{prix_total_lettres}} euros {{prix_total_ht}} € HT</strong> charges comprises.</p>
 <p>Le loyer ci-dessus comprend, pour toute la durée de la location, le paiement des charges locatives (chauffage, eau, électricité, taxe d''ordures ménagères, frais de ménage et conciergerie, etc.). Il comprend également le paiement des fournitures suivantes : internet, Netflix, etc.</p>
 <p>Le locataire est redevable de la taxe de séjour pour la période de location prévue, qui s''élève à la somme de <strong>{{prix_taxe_sejour}} €</strong>.</p>
 
-<h3 style=\"font-size: 14px;\">Article 4.2 – Réservation &amp; Modalités de paiement</h3>
+<h3 style="font-size: 14px;">Article 4.2 – Réservation &amp; Modalités de paiement</h3>
 <p>Le locataire s''engage à verser le montant de la location, soit la somme de {{prix_total_ht}} € HT, dans les conditions suivantes :</p>
 <p>{{modalite_paiement}}</p>
 
-<h3 style=\"font-size: 14px;\">Article 4.3 – Dépôt de garantie</h3>
+<h3 style="font-size: 14px;">Article 4.3 – Dépôt de garantie</h3>
 <p>À titre de garantie le locataire versera, au plus tard le jour de l''entrée dans les lieux, la somme de <strong>{{depot_garantie}} €</strong>.</p>
 <p>Le dépôt de garantie sera restitué au locataire dans un délai maximum de 10 jours après son départ et la remise des clés, déduction faite le cas échéant des sommes nécessaires pour couvrir les dégradations locatives ou tous dommages causés par le locataire.</p>
 
 
 <!-- ===== ARTICLE 5 ===== -->
-<h2 style=\"margin-top: 30px; font-size: 16px;\">ARTICLE 5 – CONDITIONS DE LA LOCATION</h2>
+<h2 style="margin-top: 30px; font-size: 16px;">ARTICLE 5 – CONDITIONS DE LA LOCATION</h2>
 <p>La présente location est faite aux charges et conditions suivantes que le locataire s''oblige à exécuter et accomplir, à savoir :</p>
 <ol>
     <li>Toute activité commerciale ou professionnelle est strictement interdite ;</li>
@@ -111,14 +113,14 @@ Représentée par {{locataire_representant}}</p>
 
 
 <!-- ===== ARTICLE 6 ===== -->
-<h2 style=\"margin-top: 30px; font-size: 16px;\">ARTICLE 6 – ÉTAT DES LIEUX ET INVENTAIRE</h2>
+<h2 style="margin-top: 30px; font-size: 16px;">ARTICLE 6 – ÉTAT DES LIEUX ET INVENTAIRE</h2>
 <p>Un état des lieux et un inventaire du mobilier seront établis entre le bailleur et le locataire au début et à la fin de la location en deux exemplaires pour chacune des parties.</p>
 <p>En l''absence d''état des lieux de sortie et faute de contestation par le bailleur dans le délai de 48 heures suivant la fin de la location et la remise des clés, le logement sera présumé avoir été restitué en bon état de réparation locative.</p>
 <p>Si la différence entre l''état des lieux d''entrée et l''état des lieux de sortie laisse apparaître des réparations ou dégradations à la charge du locataire, ces dernières seront retenues sur le dépôt de garantie. Si le dépôt de garantie ne suffit pas à couvrir les dépenses nécessaires, le bailleur sera en droit d''effectuer toute poursuite à l''encontre du locataire pour en obtenir le paiement ainsi que des dommages et intérêts.</p>
 
 
 <!-- ===== ARTICLE 7 ===== -->
-<h2 style=\"margin-top: 30px; font-size: 16px;\">ARTICLE 7 – ANNULATION</h2>
+<h2 style="margin-top: 30px; font-size: 16px;">ARTICLE 7 – ANNULATION</h2>
 <p>Il est convenu entre les parties des conditions d''annulation suivantes :</p>
 <ul>
     <li>En cas d''annulation du séjour par le locataire <strong>plus de deux mois</strong> avant la date prévue d''entrée dans les lieux, l''acompte versé sera remboursé.</li>
@@ -130,12 +132,12 @@ Représentée par {{locataire_representant}}</p>
 
 
 <!-- ===== ARTICLE 8 ===== -->
-<h2 style=\"margin-top: 30px; font-size: 16px;\">ARTICLE 8 – CLAUSE DE SOLIDARITÉ</h2>
+<h2 style="margin-top: 30px; font-size: 16px;">ARTICLE 8 – CLAUSE DE SOLIDARITÉ</h2>
 <p>En cas de pluralité de locataires, ces derniers reconnaissent être solidaires et indivis pour l''exécution de leurs obligations et notamment, sans que cette liste soit exhaustive, concernant le paiement du loyer, des charges et réparations locatives, d''éventuelles indemnités d''occupation ou de travaux de remise en état une fois le bail résilié.</p>
 
 
 <!-- ===== ARTICLE 9 ===== -->
-<h2 style=\"margin-top: 30px; font-size: 16px;\">ARTICLE 9 – CLAUSE RÉSOLUTOIRE &amp; CLAUSE PÉNALE</h2>
+<h2 style="margin-top: 30px; font-size: 16px;">ARTICLE 9 – CLAUSE RÉSOLUTOIRE &amp; CLAUSE PÉNALE</h2>
 <p>Le présent contrat de location sera résilié immédiatement de plein droit, 48 heures après une simple notification par lettre recommandée avec accusé de réception ou lettre remise en main propre, dans les cas suivants :</p>
 <ul>
     <li>À défaut de paiement aux termes de tout ou partie du loyer et des charges ;</li>
@@ -147,24 +149,24 @@ Représentée par {{locataire_representant}}</p>
 
 
 <!-- ===== SIGNATURES ===== -->
-<div style=\"margin-top: 50px; border-top: 1px solid #ccc; padding-top: 20px;\">
+<div style="margin-top: 50px; border-top: 1px solid #ccc; padding-top: 20px;">
 <p>Fait en autant d''exemplaires originaux que de parties, dont l''un a été remis aux locataires qui le reconnaissent, l''autre conservé par le bailleur.</p>
 
 <p>Fait à {{lieu_signature}}<br>
 Le {{date_contrat}}</p>
 
-<div style=\"display: flex; justify-content: space-between; margin-top: 40px;\">
-    <div style=\"width: 45%; text-align: center;\">
+<div style="display: flex; justify-content: space-between; margin-top: 40px;">
+    <div style="width: 45%; text-align: center;">
         <p><strong>Signature du locataire</strong></p>
-        <div style=\"height: 80px; border-bottom: 1px dotted #999;\"></div>
+        <div style="height: 80px; border-bottom: 1px dotted #999;"></div>
     </div>
-    <div style=\"width: 45%; text-align: center;\">
+    <div style="width: 45%; text-align: center;">
         <p><strong>Signature du bailleur</strong></p>
-        <div style=\"height: 80px; border-bottom: 1px dotted #999;\"></div>
+        <div style="height: 80px; border-bottom: 1px dotted #999;"></div>
     </div>
 </div>
 </div>
 
 </div>',
-'proprietaire_societe,proprietaire_forme_juridique,proprietaire_adresse_complete,proprietaire_rcs_ville,proprietaire_siret,proprietaire_representant,locataire_societe,locataire_forme_juridique,locataire_siege,locataire_rcs_ville,locataire_siret,locataire_representant,adresse_logement,type_logement,surface_m2,description_logement,equipements,duree_location,date_arrivee,heure_arrivee,date_depart,heure_depart,prix_total_lettres,prix_total_ht,prix_taxe_sejour,modalite_paiement,depot_garantie,lieu_signature,date_contrat'
+'locataire_societe,locataire_forme_juridique,locataire_siege,locataire_rcs_ville,locataire_siret,locataire_representant,duree_location,date_arrivee,heure_arrivee,date_depart,heure_depart,prix_total_lettres,prix_total_ht,prix_taxe_sejour,modalite_paiement,depot_garantie,lieu_signature,date_contrat'
 );
