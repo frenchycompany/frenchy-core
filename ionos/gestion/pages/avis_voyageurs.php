@@ -422,6 +422,77 @@ if ($avis_existants) {
     $stats['matched'] = count(array_filter(array_column($avis_existants, 'reservation_id')));
 }
 
+// --- Analyse des tendances dans les commentaires ---
+$tendances_positives = [];
+$tendances_negatives = [];
+$themes = [
+    'Propreté' => ['propre', 'propreté', 'proprete', 'nettoyage', 'ménage', 'menage', 'impeccable', 'nickel', 'sale', 'poussière', 'poussiere'],
+    'Équipements cuisine' => ['cuisine', 'équipée', 'equipee', 'ustensiles', 'vaisselle', 'casserole', 'poêle', 'four', 'micro-ondes', 'cafetière', 'cafetiere', 'bouilloire', 'grille-pain'],
+    'Petit-déjeuner / provisions' => ['céréales', 'cereales', 'café', 'cafe', 'thé', 'the', 'petit-déjeuner', 'petit déjeuner', 'petit dejeuner', 'provisions', 'huile', 'sel', 'sucre', 'biscuits', 'confiture', 'lait'],
+    'Literie / Confort' => ['lit', 'matelas', 'oreiller', 'couette', 'draps', 'confortable', 'confort', 'dormir', 'sommeil', 'couchage'],
+    'Localisation' => ['emplacement', 'situation', 'centre', 'centre-ville', 'proche', 'quartier', 'transport', 'bus', 'tram', 'tramway', 'parking', 'gare', 'plage', 'mer', 'commerces', 'restaurant', 'idéalement situé'],
+    'Accueil / Communication' => ['accueil', 'accueillant', 'hôte', 'hote', 'communication', 'réactif', 'reactif', 'disponible', 'sympathique', 'gentil', 'aimable', 'chaleureux', 'adorable', 'attentionné', 'attentionne'],
+    'Espace / Surface' => ['spacieux', 'espace', 'surface', 'grand', 'petit', 'étroit', 'exigu', 'place', 'rangement', 'placard'],
+    'Décoration' => ['déco', 'deco', 'décoration', 'decoration', 'design', 'moderne', 'charmant', 'joli', 'beau', 'agréable', 'agreable', 'lumineux', 'goût', 'gout', 'meublé', 'meuble', 'aménagé'],
+    'Bruit / Calme' => ['calme', 'silence', 'silencieux', 'bruit', 'bruyant', 'insonorisation', 'rue', 'voisin', 'tranquille'],
+    'Salle de bain' => ['salle de bain', 'douche', 'baignoire', 'serviette', 'savon', 'shampoing', 'gel douche', 'toilette', 'wc'],
+    'Climatisation / Chauffage' => ['climatisation', 'clim', 'chauffage', 'chaud', 'froid', 'température', 'temperature', 'ventilateur', 'radiateur'],
+    'Wi-Fi / Tech' => ['wifi', 'wi-fi', 'internet', 'connexion', 'télévision', 'television', 'tv', 'netflix', 'écran', 'ecran'],
+    'Extérieur' => ['terrasse', 'balcon', 'jardin', 'vue', 'piscine', 'cour', 'extérieur', 'exterieur', 'barbecue'],
+    'Arrivée / Départ' => ['check-in', 'checkin', 'arrivée', 'arrivee', 'départ', 'depart', 'clé', 'cle', 'clef', 'boîte à clé', 'autonome', 'flexible', 'horaire', 'tardif'],
+    'Rapport qualité/prix' => ['prix', 'tarif', 'cher', 'qualité/prix', 'qualite/prix', 'rapport', 'valeur', 'abordable', 'raisonnable'],
+    'Machine à laver' => ['lave-linge', 'machine à laver', 'machine a laver', 'lessive', 'sèche-linge', 'seche-linge', 'étendoir'],
+];
+
+if ($avis_existants) {
+    foreach ($avis_existants as $a) {
+        $pos = mb_strtolower($a['commentaire_positif'] ?? '');
+        $neg = mb_strtolower($a['commentaire_negatif'] ?? '');
+
+        foreach ($themes as $theme => $keywords) {
+            foreach ($keywords as $kw) {
+                if ($pos && mb_strpos($pos, $kw) !== false) {
+                    $tendances_positives[$theme] = ($tendances_positives[$theme] ?? 0) + 1;
+                    break; // compter 1 seule fois par thème par avis
+                }
+            }
+            foreach ($keywords as $kw) {
+                if ($neg && mb_strpos($neg, $kw) !== false) {
+                    $tendances_negatives[$theme] = ($tendances_negatives[$theme] ?? 0) + 1;
+                    break;
+                }
+            }
+        }
+    }
+    arsort($tendances_positives);
+    arsort($tendances_negatives);
+}
+
+// Extraire les mots/expressions les plus cités (hors stop words) pour nuage de mots
+$stop_words = ['le','la','les','de','du','des','un','une','en','et','est','a','au','aux','ce','se','sa','son','ses','que','qui','dans','pour','par','sur','avec','nous','vous','ils','très','bien','tout','mais','pas','été','plus','aussi','peu','comme','cette','ces','ont','sont','nos','notre','leurs','leur','chez','fait','avoir','être','même','beaucoup','trop','assez','entre','peut','rien','sans','après','avant','encore','elle','elles','bon','bonne','juste','été','quand','aucun','autre'];
+$mots_positifs = [];
+$mots_negatifs = [];
+
+foreach ($avis_existants as $a) {
+    foreach (['commentaire_positif' => &$mots_positifs, 'commentaire_negatif' => &$mots_negatifs] as $col => &$compteur) {
+        $texte = mb_strtolower($a[$col] ?? '');
+        if (!$texte) continue;
+        // Nettoyer et extraire les mots de 3+ lettres
+        $texte = preg_replace('/[^\p{L}\s\'-]/u', ' ', $texte);
+        $mots = preg_split('/\s+/', $texte, -1, PREG_SPLIT_NO_EMPTY);
+        foreach ($mots as $mot) {
+            if (mb_strlen($mot) >= 3 && !in_array($mot, $stop_words)) {
+                $compteur[$mot] = ($compteur[$mot] ?? 0) + 1;
+            }
+        }
+    }
+    unset($compteur);
+}
+arsort($mots_positifs);
+arsort($mots_negatifs);
+$mots_positifs = array_slice($mots_positifs, 0, 25, true);
+$mots_negatifs = array_slice($mots_negatifs, 0, 25, true);
+
 // Logements pour filtre
 $logements = $pdo->query("SELECT id, nom_du_logement FROM liste_logements WHERE actif = 1 ORDER BY nom_du_logement")->fetchAll();
 
@@ -509,6 +580,100 @@ try {
                             </button>
                         </form>
                     <?php endif; ?>
+                </div>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
+
+    <!-- Tendances des commentaires -->
+    <?php if ($stats['total'] >= 3 && ($tendances_positives || $tendances_negatives)): ?>
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span><i class="fas fa-chart-bar"></i> Tendances des commentaires</span>
+            <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#tendancesZone">
+                <i class="fas fa-chevron-down"></i>
+            </button>
+        </div>
+        <div class="collapse show" id="tendancesZone">
+            <div class="card-body">
+                <div class="row">
+                    <!-- Thèmes positifs -->
+                    <div class="col-md-6 mb-3">
+                        <h6 class="text-success"><i class="fas fa-thumbs-up"></i> Ce que les voyageurs retiennent en positif</h6>
+                        <?php if ($tendances_positives): ?>
+                        <?php $max_pos = max($tendances_positives); foreach ($tendances_positives as $theme => $count): ?>
+                            <div class="d-flex align-items-center mb-1">
+                                <span class="me-2 text-nowrap" style="min-width:180px;font-size:0.9rem"><?= htmlspecialchars($theme) ?></span>
+                                <div class="flex-grow-1">
+                                    <div class="progress" style="height:20px">
+                                        <div class="progress-bar bg-success" style="width:<?= round($count / $max_pos * 100) ?>%">
+                                            <?= $count ?> avis
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                        <?php else: ?>
+                            <p class="text-muted">Pas assez de commentaires positifs à analyser.</p>
+                        <?php endif; ?>
+                    </div>
+
+                    <!-- Thèmes négatifs -->
+                    <div class="col-md-6 mb-3">
+                        <h6 class="text-danger"><i class="fas fa-thumbs-down"></i> Points d'amélioration récurrents</h6>
+                        <?php if ($tendances_negatives): ?>
+                        <?php $max_neg = max($tendances_negatives); foreach ($tendances_negatives as $theme => $count): ?>
+                            <div class="d-flex align-items-center mb-1">
+                                <span class="me-2 text-nowrap" style="min-width:180px;font-size:0.9rem"><?= htmlspecialchars($theme) ?></span>
+                                <div class="flex-grow-1">
+                                    <div class="progress" style="height:20px">
+                                        <div class="progress-bar bg-danger" style="width:<?= round($count / $max_neg * 100) ?>%">
+                                            <?= $count ?> avis
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                        <?php else: ?>
+                            <p class="text-muted">Pas de commentaires négatifs récurrents.</p>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <!-- Mots les plus cités -->
+                <hr>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <h6 class="text-success"><i class="fas fa-comment-dots"></i> Mots les plus cités (positifs)</h6>
+                        <div class="d-flex flex-wrap gap-1">
+                            <?php
+                            $max_mp = $mots_positifs ? max($mots_positifs) : 1;
+                            foreach ($mots_positifs as $mot => $count):
+                                $size = 0.75 + ($count / $max_mp) * 0.75;
+                            ?>
+                                <span class="badge bg-success bg-opacity-<?= $count >= $max_mp * 0.6 ? '100' : ($count >= $max_mp * 0.3 ? '75' : '50') ?>"
+                                      style="font-size:<?= $size ?>rem" title="<?= $count ?> fois">
+                                    <?= htmlspecialchars($mot) ?> <small>(<?= $count ?>)</small>
+                                </span>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <h6 class="text-danger"><i class="fas fa-comment-dots"></i> Mots les plus cités (négatifs)</h6>
+                        <div class="d-flex flex-wrap gap-1">
+                            <?php
+                            $max_mn = $mots_negatifs ? max($mots_negatifs) : 1;
+                            foreach ($mots_negatifs as $mot => $count):
+                                $size = 0.75 + ($count / $max_mn) * 0.75;
+                            ?>
+                                <span class="badge bg-danger bg-opacity-<?= $count >= $max_mn * 0.6 ? '100' : ($count >= $max_mn * 0.3 ? '75' : '50') ?>"
+                                      style="font-size:<?= $size ?>rem" title="<?= $count ?> fois">
+                                    <?= htmlspecialchars($mot) ?> <small>(<?= $count ?>)</small>
+                                </span>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
