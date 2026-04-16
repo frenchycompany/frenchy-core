@@ -889,8 +889,18 @@ try {
 
     <!-- ===== TAB IMPORT ===== -->
     <div class="tab-pane fade" id="tab-import">
-        <p class="text-muted">Copiez-collez le texte brut des avis depuis Booking.com. Les doublons sont ignorés automatiquement.</p>
-        <textarea id="texteAvis" class="form-control mb-3" rows="8" placeholder="Collez ici le texte copié depuis Booking.com..."></textarea>
+        <div class="d-flex gap-2 mb-3">
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="importSource" id="srcBooking" value="booking" checked>
+                <label class="form-check-label" for="srcBooking"><i class="fas fa-hotel text-primary"></i> Booking.com</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="importSource" id="srcAirbnb" value="airbnb">
+                <label class="form-check-label" for="srcAirbnb"><i class="fab fa-airbnb text-danger"></i> Airbnb</label>
+            </div>
+        </div>
+        <p class="text-muted" id="importHelp">Copiez-collez le texte brut des avis. Les doublons sont ignorés automatiquement.</p>
+        <textarea id="texteAvis" class="form-control mb-3" rows="8" placeholder="Collez ici le texte copié..."></textarea>
         <button type="button" class="btn btn-primary" id="btnParser" disabled>
             <i class="fas fa-magic"></i> Analyser
         </button>
@@ -1037,9 +1047,10 @@ btnParser.addEventListener('click', () => {
     const texte = textarea.value.trim();
     if (!texte) return;
 
-    const avis = parserAvisBooking(texte);
+    const source = document.querySelector('input[name="importSource"]:checked').value;
+    const avis = source === 'airbnb' ? parserAvisAirbnb(texte) : parserAvisBooking(texte);
     if (avis.length === 0) {
-        alert('Aucun avis détecté dans le texte collé. Vérifiez le format.');
+        alert('Aucun avis détecté. Vérifiez le format (' + (source === 'airbnb' ? 'Airbnb' : 'Booking') + ').');
         return;
     }
 
@@ -1280,6 +1291,127 @@ function parserAvisBooking(texte) {
             note_rapport_qualite_prix: notes.note_rapport_qualite_prix || '',
             note_lit: notes.note_lit || '',
             commentaire_general: commentaires.join('\n').trim(),
+            commentaire_positif: '',
+            commentaire_negatif: '',
+        });
+    }
+
+    return avis;
+}
+
+function parserAvisAirbnb(texte) {
+    const lignes = texte.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+    const avis = [];
+    let i = 0;
+
+    // Mois pour parser les dates Airbnb
+    const moisFr = {
+        'janv': '01', 'févr': '02', 'mars': '03', 'avr': '04',
+        'mai': '05', 'juin': '06', 'juil': '07', 'août': '08',
+        'sept': '09', 'oct': '10', 'nov': '11', 'déc': '12',
+        'jan': '01', 'feb': '02', 'mar': '03', 'apr': '04',
+        'may': '05', 'jun': '06', 'jul': '07', 'aug': '08',
+        'sep': '09', 'oct': '10', 'nov': '11', 'dec': '12'
+    };
+
+    function parseDateAirbnb(str) {
+        // Format: "3–6 avr. 2026" ou "29 mars – 1 avr. 2026"
+        // On prend la dernière date (fin de séjour) comme date de l'avis
+        const m = str.match(/(\d{1,2})\s+(\w+)\.?\s+(\d{4})\s*$/);
+        if (m) {
+            const jour = m[1].padStart(2, '0');
+            const moisKey = m[2].replace('.', '').toLowerCase();
+            const annee = m[3];
+            for (const [k, v] of Object.entries(moisFr)) {
+                if (moisKey.startsWith(k)) return `${annee}-${v}-${jour}`;
+            }
+        }
+        return '';
+    }
+
+    while (i < lignes.length) {
+        const ligne = lignes[i];
+
+        // Chercher un nom (ligne doublée = "Peter\nPeter" ou nom simple suivi d'une date)
+        // Pattern: nom, puis éventuellement le même nom, puis une ligne de date "3–6 avr. 2026 • Logement"
+        let nom = '';
+        let dateLigne = '';
+        let logementNom = '';
+
+        // Vérifier si la ligne suivante est la même (nom doublé Airbnb)
+        if (i + 1 < lignes.length && lignes[i] === lignes[i + 1]) {
+            nom = lignes[i];
+            i += 2;
+        }
+        // Ou si la ligne suivante contient une date avec •
+        else if (i + 1 < lignes.length && lignes[i + 1].match(/\d{1,2}[\s–-]+\d{0,2}\s*\w+\.?\s+\d{4}\s*•/)) {
+            nom = lignes[i];
+            i++;
+        } else {
+            i++;
+            continue;
+        }
+
+        if (i >= lignes.length) break;
+
+        // Ligne de date + logement : "3–6 avr. 2026 • Château à 1h de Paris..."
+        const dateLogMatch = lignes[i].match(/^(.+\d{4})\s*•\s*(.+)$/);
+        if (!dateLogMatch) { continue; }
+
+        dateLigne = dateLogMatch[1].trim();
+        logementNom = dateLogMatch[2].trim();
+        i++;
+
+        // Chercher la note : "Qualité globale" puis "Évaluation de X sur 5" puis "X"
+        let noteAirbnb = '';
+        while (i < lignes.length && i < lignes.length) {
+            if (lignes[i].match(/^Qualité globale$/i)) { i++; continue; }
+            if (lignes[i].match(/^Évaluation de \d+ sur 5$/i)) { i++; continue; }
+            const noteMatch = lignes[i].match(/^([1-5])$/);
+            if (noteMatch) {
+                noteAirbnb = noteMatch[1];
+                i++;
+                break;
+            }
+            // Si on tombe sur autre chose, on a raté
+            if (!lignes[i].match(/^(Qualité|Évaluation)/i)) break;
+            i++;
+        }
+
+        if (!noteAirbnb) continue;
+
+        // Commentaire : tout jusqu'à "Afficher les détails" ou prochain avis
+        let commentaire = [];
+        while (i < lignes.length) {
+            if (lignes[i].match(/^Afficher les détails$/i)) { i++; break; }
+            // Prochain avis ? (nom doublé ou nom + date)
+            if (i + 1 < lignes.length && lignes[i] === lignes[i + 1]) break;
+            if (i + 1 < lignes.length && lignes[i + 1].match(/\d{1,2}[\s–-]+\d{0,2}\s*\w+\.?\s+\d{4}\s*•/)) break;
+            commentaire.push(lignes[i]);
+            i++;
+        }
+
+        // Convertir note /5 → /10
+        const note10 = (parseFloat(noteAirbnb) * 2).toString();
+        const dateAvis = parseDateAirbnb(dateLigne);
+
+        // Générer un numéro unique (pas de numéro de résa sur Airbnb)
+        const numResa = 'ABB-' + nom.replace(/[^a-zA-Z]/g, '').substring(0, 10).toUpperCase() + '-' + dateLigne.replace(/[^0-9]/g, '').substring(0, 8);
+
+        avis.push({
+            note_globale: note10,
+            nom_voyageur: nom,
+            pays_voyageur: '',
+            numero_reservation: numResa,
+            date_avis: dateAvis,
+            note_personnel: '',
+            note_proprete: '',
+            note_situation: '',
+            note_equipements: '',
+            note_confort: '',
+            note_rapport_qualite_prix: '',
+            note_lit: '',
+            commentaire_general: commentaire.join('\n').trim(),
             commentaire_positif: '',
             commentaire_negatif: '',
         });
