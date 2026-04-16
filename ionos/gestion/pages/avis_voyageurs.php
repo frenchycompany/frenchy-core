@@ -448,6 +448,24 @@ if ($avis_existants) {
     foreach ($avis_existants as $a) {
         $pos = mb_strtolower($a['commentaire_positif'] ?? '');
         $neg = mb_strtolower($a['commentaire_negatif'] ?? '');
+        $gen = mb_strtolower($a['commentaire_general'] ?? '');
+
+        // Si commentaire_general rempli mais positif/négatif vides, classer selon la note
+        if ($gen && !$pos && !$neg) {
+            if (($a['note_globale'] ?? 0) >= 7) {
+                $pos = $gen;
+            } else {
+                $neg = $gen;
+            }
+        }
+        // Si commentaire_general ET positif/négatif existent, ajouter le général au positif si bonne note
+        if ($gen && ($pos || $neg)) {
+            if (($a['note_globale'] ?? 0) >= 7) {
+                $pos .= ' ' . $gen;
+            } else {
+                $neg .= ' ' . $gen;
+            }
+        }
 
         foreach ($themes as $theme => $keywords) {
             foreach ($keywords as $kw) {
@@ -474,19 +492,30 @@ $mots_positifs = [];
 $mots_negatifs = [];
 
 foreach ($avis_existants as $a) {
-    foreach (['commentaire_positif' => &$mots_positifs, 'commentaire_negatif' => &$mots_negatifs] as $col => &$compteur) {
-        $texte = mb_strtolower($a[$col] ?? '');
+    $pos_text = mb_strtolower($a['commentaire_positif'] ?? '');
+    $neg_text = mb_strtolower($a['commentaire_negatif'] ?? '');
+    $gen_text = mb_strtolower($a['commentaire_general'] ?? '');
+
+    // Classer commentaire_general selon la note
+    if ($gen_text) {
+        if (($a['note_globale'] ?? 0) >= 7) {
+            $pos_text .= ' ' . $gen_text;
+        } else {
+            $neg_text .= ' ' . $gen_text;
+        }
+    }
+
+    foreach ([&$pos_text => &$mots_positifs, &$neg_text => &$mots_negatifs] as &$texte => &$compteur) {
         if (!$texte) continue;
-        // Nettoyer et extraire les mots de 3+ lettres
-        $texte = preg_replace('/[^\p{L}\s\'-]/u', ' ', $texte);
-        $mots = preg_split('/\s+/', $texte, -1, PREG_SPLIT_NO_EMPTY);
+        $texte_clean = preg_replace('/[^\p{L}\s\'-]/u', ' ', $texte);
+        $mots = preg_split('/\s+/', $texte_clean, -1, PREG_SPLIT_NO_EMPTY);
         foreach ($mots as $mot) {
             if (mb_strlen($mot) >= 3 && !in_array($mot, $stop_words)) {
                 $compteur[$mot] = ($compteur[$mot] ?? 0) + 1;
             }
         }
     }
-    unset($compteur);
+    unset($compteur, $texte);
 }
 arsort($mots_positifs);
 arsort($mots_negatifs);
@@ -587,7 +616,7 @@ try {
     <?php endif; ?>
 
     <!-- Tendances des commentaires -->
-    <?php if ($stats['total'] >= 3 && ($tendances_positives || $tendances_negatives)): ?>
+    <?php if ($stats['total'] >= 1 && ($tendances_positives || $tendances_negatives)): ?>
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
             <span><i class="fas fa-chart-bar"></i> Tendances des commentaires</span>
