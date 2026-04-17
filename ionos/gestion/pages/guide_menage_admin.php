@@ -1,6 +1,5 @@
 <?php
-require_once __DIR__ . '/../db/connection.php';
-require_once __DIR__ . '/../includes/auth.php';
+include '../config.php';
 
 $upload_dir = __DIR__ . '/../uploads/guide_menage/';
 if (!is_dir($upload_dir)) mkdir($upload_dir, 0755, true);
