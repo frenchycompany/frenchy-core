@@ -138,6 +138,7 @@ if (!isset($menu_categories)) {
                 ['nom' => 'Todo',             'chemin' => 'pages/todo.php',                        'icon' => 'fa-tasks'],
                 ['nom' => 'Rental United',    'chemin' => 'pages/rental_united.php',               'icon' => 'fa-plug'],
                 ['nom' => 'Coffre-fort',      'chemin' => 'pages/coffre_fort.php',                 'icon' => 'fa-vault'],
+                ['nom' => 'Guides ménage',   'chemin' => 'pages/guide_menage_admin.php',          'icon' => 'fa-broom'],
             ]
         ],
     ];
