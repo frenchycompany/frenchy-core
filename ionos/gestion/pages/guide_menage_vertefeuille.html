@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guide Ménage – Château de Vertefeuille</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#f5f5f0;color:#222;line-height:1.5}
+.header{background:linear-gradient(135deg,#1a1a1a 0%,#2d2d2d 100%);color:#fff;padding:2rem 1rem;text-align:center;position:relative}
+.header h1{font-size:1.6rem;font-weight:300;letter-spacing:3px;text-transform:uppercase}
+.header .gold{color:#c9a84c;font-weight:600}
+.header .subtitle{font-size:.85rem;color:#999;margin-top:.5rem;letter-spacing:1px}
+.nav-zones{background:#fff;border-bottom:1px solid #e0e0e0;padding:.5rem;display:flex;flex-wrap:wrap;gap:.4rem;justify-content:center;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.nav-zones a{font-size:.7rem;padding:.3rem .6rem;border-radius:20px;background:#f0f0f0;color:#333;text-decoration:none;white-space:nowrap;transition:all .2s}
+.nav-zones a:hover,.nav-zones a.active{background:#1a1a1a;color:#c9a84c}
+.rules{background:#fff;margin:1rem;padding:1.5rem;border-radius:12px;border-left:4px solid #c9a84c;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+.rules h2{font-size:1rem;color:#1a1a1a;margin-bottom:.8rem;display:flex;align-items:center;gap:.5rem}
+.rules ul{list-style:none;padding:0}
+.rules li{padding:.4rem 0;padding-left:1.5rem;position:relative;font-size:.9rem}
+.rules li::before{content:'✦';position:absolute;left:0;color:#c9a84c}
+.zone{background:#fff;margin:1rem;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+.zone-header{display:flex;align-items:center;padding:1rem 1.2rem;cursor:pointer;background:linear-gradient(135deg,#1a1a1a,#2d2d2d);color:#fff;gap:.8rem;user-select:none}
+.zone-header i{color:#c9a84c;font-size:1.2rem;width:30px;text-align:center}
+.zone-header h3{flex:1;font-size:1rem;font-weight:400;letter-spacing:1px}
+.zone-header .chevron{transition:transform .3s;color:#c9a84c}
+.zone-header.open .chevron{transform:rotate(180deg)}
+.zone-body{display:none;padding:1rem 1.2rem}
+.zone-header.open+.zone-body{display:block}
+.sub-section{margin-bottom:1.2rem}
+.sub-section h4{font-size:.85rem;text-transform:uppercase;letter-spacing:1px;color:#c9a84c;border-bottom:1px solid #eee;padding-bottom:.4rem;margin-bottom:.6rem;display:flex;align-items:center;gap:.5rem}
+.task{display:flex;align-items:flex-start;gap:.6rem;padding:.5rem 0;border-bottom:1px solid #f5f5f5}
+.task:last-child{border-bottom:none}
+.task input[type=checkbox]{width:20px;height:20px;accent-color:#c9a84c;flex-shrink:0;margin-top:2px;cursor:pointer}
+.task label{font-size:.9rem;cursor:pointer;flex:1}
+.task .note{font-size:.75rem;color:#888;font-style:italic;display:block;margin-top:2px}
+.img-placeholder{background:#f0efe8;border:2px dashed #ccc;border-radius:8px;height:120px;display:flex;align-items:center;justify-content:center;color:#aaa;font-size:.8rem;margin:.6rem 0}
+.progress-bar{background:#eee;height:6px;border-radius:3px;margin:.5rem 0;overflow:hidden}
+.progress-bar .fill{background:linear-gradient(90deg,#c9a84c,#e0c068);height:100%;width:0%;transition:width .3s;border-radius:3px}
+.zone-progress{font-size:.75rem;color:#999;text-align:right}
+.footer{text-align:center;padding:2rem 1rem;color:#999;font-size:.75rem}
+.btn-top{position:fixed;bottom:20px;right:20px;background:#1a1a1a;color:#c9a84c;border:none;width:44px;height:44px;border-radius:50%;font-size:1.2rem;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.2);display:none;z-index:200}
+.btn-print{position:fixed;bottom:20px;left:20px;background:#c9a84c;color:#1a1a1a;border:none;width:44px;height:44px;border-radius:50%;font-size:1.2rem;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.2);z-index:200}
+@media print{.nav-zones,.btn-top,.btn-print{display:none!important}.zone-body{display:block!important}.zone{break-inside:avoid;margin:.5rem 0}}
+@media(min-width:768px){.header h1{font-size:2rem}body{max-width:900px;margin:0 auto}}
+</style>
+</head>
+<body>
+<div class="header">
+<h1>Guide Ménage</h1>
+<div class="gold" style="font-size:1.3rem;letter-spacing:4px;margin:.5rem 0">CHÂTEAU DE VERTEFEUILLE</div>
+<div class="subtitle">Protocole de nettoyage & mise en place</div>
+</div>
+
+<nav class="nav-zones" id="nav">
+<a href="#regles">Règles</a>
+<a href="#entree">Entrée</a>
+<a href="#escalier">Escalier</a>
+<a href="#salon">Salon</a>
+<a href="#billard">Billard</a>
+<a href="#couloir-sam">Couloir SAM</a>
+<a href="#sam">SAM</a>
+<a href="#cuisine">Cuisine</a>
+<a href="#sous-sol">Sous-sol</a>
+<a href="#karaoke">Karaoké</a>
+<a href="#sauna">Sauna</a>
+<a href="#sport">Sport</a>
+<a href="#piscine">Piscine</a>
+<a href="#terrasse">Terrasse</a>
+<a href="#etage1-communs">É1 Communs</a>
+<a href="#cinema">Cinéma</a>
+<a href="#ch1">Ch.1</a>
+<a href="#ch2">Ch.2</a>
+<a href="#ch3">Ch.3</a>
+<a href="#etage2">É2 Privé</a>
+<a href="#etage3">Étage 3</a>
+<a href="#exterieur">Extérieur</a>
+</nav>
+
+<section class="rules" id="regles">
+<h2><i class="fas fa-scroll" style="color:#c9a84c"></i> Règles Générales</h2>
+<ul>
+<li>Toujours commencer par les étages supérieurs, finir par le RDC</li>
+<li>Aérer chaque pièce dès l'ouverture</li>
+<li>Vérifier chaque ampoule et signaler immédiatement si HS</li>
+<li>Lits : draps tendus sans pli, couette symétrique, oreillers gonflés</li>
+<li>Salle de bain : pliage serviettes hôtelier, produits alignés</li>
+<li>Aucune trace de doigt sur vitres, miroirs et surfaces brillantes</li>
+<li>Poubelles vidées, sacs neufs installés</li>
+<li>Température : vérifier thermostat selon saison</li>
+<li>Prendre photo de chaque pièce une fois terminée</li>
+</ul>
+</section>
+
+<!-- ENTRÉE -->
+<div class="zone" id="entree">
+<div class="zone-header" onclick="toggle(this)">
+<i class="fas fa-door-open"></i><h3>Entrée</h3>
+<div class="zone-progress"><span class="cnt">0/0</span></div>
+<i class="fas fa-chevron-down chevron"></i>
+</div>
+<div class="zone-body">
+<div class="progress-bar"><div class="fill"></div></div>
+<div class="sub-section"><h4><i class="fas fa-eye"></i> État général</h4>
+<div class="task"><input type="checkbox" id="e1"><label for="e1">Vérifier éclairage entrée et appliques murales</label></div>
+<div class="task"><input type="checkbox" id="e2"><label for="e2">Aérer / vérifier odeur agréable</label></div>
+<div class="task"><input type="checkbox" id="e3"><label for="e3">Vérifier état murs, plinthes, interrupteurs</label></div>
+</div>
+<div class="sub-section"><h4><i class="fas fa-spray-can-sparkles"></i> Nettoyage détaillé</h4>
+<div class="task"><input type="checkbox" id="e4"><label for="e4">Aspirer / laver le sol</label></div>
+<div class="task"><input type="checkbox" id="e5"><label for="e5">Dépoussiérer meubles, cadres, décorations</label></div>
+<div class="task"><input type="checkbox" id="e6"><label for="e6">Nettoyer miroir / vitres porte entrée</label></div>
+<div class="task"><input type="checkbox" id="e7"><label for="e7">Nettoyer poignées de porte</label></div>
+</div>
+<div class="sub-section"><h4><i class="fas fa-hand-sparkles"></i> Mise en place</h4>
+<div class="task"><input type="checkbox" id="e8"><label for="e8">Paillasson propre et droit</label></div>
+<div class="task"><input type="checkbox" id="e9"><label for="e9">Mot de bienvenue + livret d'accueil posé</label></div>
+</div>
+<div class="sub-section"><h4><i class="fas fa-camera"></i> Références visuelles</h4>
+<div class="img-placeholder"><i class="fas fa-image"></i>&nbsp; Photo entrée – mise en place type</div>
+</div>
+</div></div>
+
+<!-- CAGE D'ESCALIER -->
+<div class="zone" id="escalier">
+<div class="zone-header" onclick="toggle(this)">
+<i class="fas fa-stairs"></i><h3>Cage d'escalier</h3>
+<div class="zone-progress"><span class="cnt">0/0</span></div>
+<i class="fas fa-chevron-down chevron"></i>
+</div>
+<div class="zone-body">
+<div class="progress-bar"><div class="fill"></div></div>
+<div class="sub-section"><h4><i class="fas fa-spray-can-sparkles"></i> Nettoyage détaillé</h4>
+<div class="task"><input type="checkbox" id="es1"><label for="es1">Aspirer chaque marche + contremarche</label></div>
+<div class="task"><input type="checkbox" id="es2"><label for="es2">Nettoyer la rampe / main courante</label></div>
+<div class="task"><input type="checkbox" id="es3"><label for="es3">Dépoussiérer les appliques et décorations murales</label></div>
+<div class="task"><input type="checkbox" id="es4"><label for="es4">Nettoyer les vitres si présentes</label></div>
+<div class="task"><input type="checkbox" id="es5"><label for="es5">Vérifier éclairage à chaque palier</label></div>
+</div>
+<div class="sub-section"><h4><i class="fas fa-camera"></i> Références visuelles</h4>
+<div class="img-placeholder"><i class="fas fa-image"></i>&nbsp; Photo escalier propre</div>
+</div>
+</div></div>
+
+<!-- SALON -->
+<div class="zone" id="salon">
+<div class="zone-header" onclick="toggle(this)">
+<i class="fas fa-couch"></i><h3>Salon</h3>
+<div class="zone-progress"><span class="cnt">0/0</span></div>
+<i class="fas fa-chevron-down chevron"></i>
+</div>
+<div class="zone-body">
+<div class="progress-bar"><div class="fill"></div></div>
+<div class="sub-section"><h4><i class="fas fa-eye"></i> État général</h4>
+<div class="task"><input type="checkbox" id="s1"><label for="s1">Aérer la pièce</label></div>
+<div class="task"><input type="checkbox" id="s2"><label for="s2">Vérifier éclairage (lustres, lampes d'appoint)</label></div>
+</div>
+<div class="sub-section"><h4><i class="fas fa-spray-can-sparkles"></i> Nettoyage détaillé</h4>
+<div class="task"><input type="checkbox" id="s3"><label for="s3">Aspirer tapis et moquette</label></div>
+<div class="task"><input type="checkbox" id="s4"><label for="s4">Laver le sol</label></div>
+<div class="task"><input type="checkbox" id="s5"><label for="s5">Dépoussiérer tous les meubles, étagères, bibelots</label></div>
+<div class="task"><input type="checkbox" id="s6"><label for="s6">Nettoyer la table basse (sans traces)</label></div>
+<div class="task"><input type="checkbox" id="s7"><label for="s7">Nettoyer vitres et miroirs</label></div>
+<div class="task"><input type="checkbox" id="s8"><label for="s8">Aspirer canapés, retaper les coussins</label></div>
+</div>
+<div class="sub-section"><h4><i class="fas fa-hand-sparkles"></i> Mise en place</h4>
+<div class="task"><input type="checkbox" id="s9"><label for="s9">Coussins bien placés et gonflés</label></div>
+<div class="task"><input type="checkbox" id="s10"><label for="s10">Télécommandes rangées et fonctionnelles</label></div>
+<div class="task"><input type="checkbox" id="s11"><label for="s11">Plaids pliés sur accoudoirs</label></div>
+</div>
+<div class="sub-section"><h4><i class="fas fa-plug"></i> Contrôle équipements</h4>
+<div class="task"><input type="checkbox" id="s12"><label for="s12">TV fonctionnelle + télécommande</label></div>
+<div class="task"><input type="checkbox" id="s13"><label for="s13">Cheminée / poêle : propre, bois préparé si saison</label></div>
+</div>
+<div class="sub-section"><h4><i class="fas fa-camera"></i> Références visuelles</h4>
+<div class="img-placeholder"><i class="fas fa-image"></i>&nbsp; Photo salon – mise en place type</div>
+</div>
+</div></div>
+
+<!-- SALLE BILLARD -->
+<div class="zone" id="billard">
+<div class="zone-header" onclick="toggle(this)">
+<i class="fas fa-8-ball"></i><h3>Salle Billard</h3>
+<div class="zone-progress"><span class="cnt">0/0</span></div>
+<i class="fas fa-chevron-down chevron"></i>
+</div>
+<div class="zone-body">
+<div class="progress-bar"><div class="fill"></div></div>
+<div class="sub-section"><h4><i class="fas fa-spray-can-sparkles"></i> Nettoyage détaillé</h4>
+<div class="task"><input type="checkbox" id="b1"><label for="b1">Aspirer / laver le sol</label></div>
+<div class="task"><input type="checkbox" id="b2"><label for="b2">Dépoussiérer le billard (tapis + bandes)</label></div>
+<div class="task"><input type="checkbox" id="b3"><label for="b3">Nettoyer les meubles et étagères</label></div>
+</div>
+<div class="sub-section"><h4><i class="fas fa-hand-sparkles"></i> Mise en place</h4>
+<div class="task"><input type="checkbox" id="b4"><label for="b4">Boules rangées dans le triangle</label></div>
+<div class="task"><input type="checkbox" id="b5"><label for="b5">Queues rangées sur le support</label></div>
+<div class="task"><input type="checkbox" id="b6"><label for="b6">Craies en place</label></div>
+</div>
+<div class="sub-section"><h4><i class="fas fa-camera"></i> Références visuelles</h4>
+<div class="img-placeholder"><i class="fas fa-image"></i>&nbsp; Photo billard – mise en place</div>
+</div>
+</div></div>
+
+<!-- COULOIR SAM -->
+<div class="zone" id="couloir-sam">
+<div class="zone-header" onclick="toggle(this)">
+<i class="fas fa-arrows-alt-h"></i><h3>Couloir vers Salle à Manger</h3>
+<div class="zone-progress"><span class="cnt">0/0</span></div>
+<i class="fas fa-chevron-down chevron"></i>
+</div>
+<div class="zone-body">
+<div class="progress-bar"><div class="fill"></div></div>
+<div class="sub-section"><h4><i class="fas fa-spray-can-sparkles"></i> Nettoyage détaillé</h4>
+<div class="task"><input type="checkbox" id="cs1"><label for="cs1">Aspirer / laver le sol</label></div>
+<div class="task"><input type="checkbox" id="cs2"><label for="cs2">Dépoussiérer cadres et décorations</label></div>
+<div class="task"><input type="checkbox" id="cs3"><label for="cs3">Nettoyer interrupteurs et poignées</label></div>
+<div class="task"><input type="checkbox" id="cs4"><label for="cs4">Vérifier éclairage</label></div>
+</div>
+</div></div>
+
+<!-- SALLE À MANGER -->
+<div class="zone" id="sam">
+<div class="zone-header" onclick="toggle(this)">
+<i class="fas fa-utensils"></i><h3>Salle à Manger</h3>
+<div class="zone-progress"><span class="cnt">0/0</span></div>
+<i class="fas fa-chevron-down chevron"></i>
+</div>
+<div class="zone-body">
+<div class="progress-bar"><div class="fill"></div></div>
+<div class="sub-section"><h4><i class="fas fa-spray-can-sparkles"></i> Nettoyage détaillé</h4>
+<div class="task"><input type="checkbox" id="sam1"><label for="sam1">Aspirer / laver le sol</label></div>
+<div class="task"><input type="checkbox" id="sam2"><label for="sam2">Nettoyer la grande table (sans traces)</label></div>
+<div class="task"><input type="checkbox" id="sam3"><label for="sam3">Nettoyer chaque chaise (assise + dossier)</label></div>
+<div class="task"><input type="checkbox" id="sam4"><label for="sam4">Dépoussiérer buffet, vaisselier, luminaires</label></div>
+<div class="task"><input type="checkbox" id="sam5"><label for="sam5">Nettoyer vitres et miroirs</label></div>
+</div>
+<div class="sub-section"><h4><i class="fas fa-hand-sparkles"></i> Mise en place</h4>
+<div class="task"><input type="checkbox" id="sam6"><label for="sam6">Chaises alignées symétriquement</label></div>
+<div class="task"><input type="checkbox" id="sam7"><label for="sam7">Décoration de table centrée</label></div>
+</div>
+<div class="sub-section"><h4><i class="fas fa-camera"></i> Références visuelles</h4>
+<div class="img-placeholder"><i class="fas fa-image"></i>&nbsp; Photo salle à manger – dressage type</div>
+</div>
+</div></div>
+
+<!-- CUISINE -->
+<div class="zone" id="cuisine">
+<div class="zone-header" onclick="toggle(this)">
+<i class="fas fa-kitchen-set"></i><h3>Cuisine</h3>
+<div class="zone-progress"><span class="cnt">0/0</span></div>
+<i class="fas fa-chevron-down chevron"></i>
+</div>
+<div class="zone-body">
+<div class="progress-bar"><div class="fill"></div></div>
+<div class="sub-section"><h4><i class="fas fa-eye"></i> État général</h4>
+<div class="task"><input type="checkbox" id="k1"><label for="k1">Aérer la cuisine</label></div>
+<div class="task"><input type="checkbox" id="k2"><label for="k2">Vérifier éclairage (plafonnier + spots plan de travail)</label></div>
+<div class="task"><input type="checkbox" id="k3"><label for="k3">Vider toutes les poubelles, nouveaux sacs</label></div>
+</div>
+<div class="sub-section"><h4><i class="fas fa-spray-can-sparkles"></i> Nettoyage détaillé</h4>
+<div class="task"><input type="checkbox" id="k4"><label for="k4">Laver le sol</label></div>
+<div class="task"><input type="checkbox" id="k5"><label for="k5">Nettoyer plans de travail</label></div>
+<div class="task"><input type="checkbox" id="k6"><label for="k6">Nettoyer l'évier + robinetterie (brillant)</label></div>
+<div class="task"><input type="checkbox" id="k7"><label for="k7">Nettoyer les 2 fours (intérieur + extérieur + vitres)</label></div>
+<div class="task"><input type="checkbox" id="k8"><label for="k8">Nettoyer le micro-ondes (intérieur + plateau)</label></div>
+<div class="task"><input type="checkbox" id="k9"><label for="k9">Nettoyer les 2 lave-vaisselle (filtre + joints + lancer cycle vide si besoin)</label></div>
+<div class="task"><input type="checkbox" id="k10"><label for="k10">Nettoyer le réfrigérateur (intérieur + extérieur)</label></div>
+<div class="task"><input type="checkbox" id="k11"><label for="k11">Nettoyer les plaques de cuisson</label></div>
+<div class="task"><input type="checkbox" id="k12"><label for="k12">Nettoyer hotte aspirante (filtre + extérieur)</label></div>
+<div class="task"><input type="checkbox" id="k13"><label for="k13">Nettoyer toutes les façades des placards</label></div>
+</div>
+<div class="sub-section"><h4><i class="fas fa-hand-sparkles"></i> Mise en place</h4>
+<div class="task"><input type="checkbox" id="k14"><label for="k14">Machine à café prête + capsules/dosettes fournies</label></div>
+<div class="task"><input type="checkbox" id="k15"><label for="k15">Toaster propre et en place</label></div>
+<div class="task"><input type="checkbox" id="k16"><label for="k16">Bouilloire propre (détartrée) et en place</label></div>
+<div class="task"><input type="checkbox" id="k17"><label for="k17">Torchons neufs / propres (x2 minimum)</label></div>
+<div class="task"><input type="checkbox" id="k18"><label for="k18">Éponge neuve + liquide vaisselle</label></div>
+<div class="task"><input type="checkbox" id="k19"><label for="k19">Sacs poubelle de rechange visibles</label></div>
+<div class="task"><input type="checkbox" id="k20"><label for="k20">Sel, poivre, huile, vinaigre en place</label></div>
+<div class="task"><input type="checkbox" id="k21"><label for="k21">Pastilles lave-vaisselle disponibles</label></div>
+</div>
+<div class="sub-section"><h4><i class="fas fa-plug"></i> Contrôle équipements</h4>
+<div class="task"><input type="checkbox" id="k22"><label for="k22">2 fours : test fonctionnement</label></div>
+<div class="task"><input type="checkbox" id="k23"><label for="k23">Micro-ondes : test fonctionnement</label></div>
+<div class="task"><input type="checkbox" id="k24"><label for="k24">2 lave-vaisselle : test démarrage</label></div>
+<div class="task"><input type="checkbox" id="k25"><label for="k25">Machine à café : test + nettoyage bac</label></div>
+<div class="task"><input type="checkbox" id="k26"><label for="k26">Toaster fonctionnel</label></div>
+<div class="task"><input type="checkbox" id="k27"><label for="k27">Bouilloire fonctionnelle</label></div>
+</div>
+<div class="sub-section"><h4><i class="fas fa-camera"></i> Références visuelles</h4>
+<div class="img-placeholder"><i class="fas fa-image"></i>&nbsp; Photo cuisine – plan de travail type</div>
+<div class="img-placeholder"><i class="fas fa-image"></i>&nbsp; Photo disposition café / toaster / bouilloire</div>
+</div>
+</div></div>
+
+<!-- COULOIR SOUS-SOL -->
+<div class="zone" id="sous-sol">
+<div class="zone-header" onclick="toggle(this)">
+<i class="fas fa-arrow-down"></i><h3>Couloir Sous-sol</h3>
+<div class="zone-progress"><span class="cnt">0/0</span></div>
+<i class="fas fa-chevron-down chevron"></i>
+</div>
+<div class="zone-body">
+<div class="progress-bar"><div class="fill"></div></div>
+<div class="sub-section"><h4><i class="fas fa-spray-can-sparkles"></i> Nettoyage détaillé</h4>
+<div class="task"><input type="checkbox" id="ss1"><label for="ss1">Aspirer / laver le sol</label></div>
+<div class="task"><input type="checkbox" id="ss2"><label for="ss2">Dépoussiérer décorations et luminaires</label></div>
+<div class="task"><input type="checkbox" id="ss3"><label for="ss3">Nettoyer interrupteurs et poignées</label></div>
+<div class="task"><input type="checkbox" id="ss4"><label for="ss4">Vérifier éclairage complet</label></div>
+</div>
+</div></div>
+
+<!-- KARAOKÉ -->
+<div class="zone" id="karaoke">
+<div class="zone-header" onclick="toggle(this)">
+<i class="fas fa-microphone"></i><h3>Salle Karaoké</h3>
+<div class="zone-progress"><span class="cnt">0/0</span></div>
+<i class="fas fa-chevron-down chevron"></i>
+</div>
+<div class="zone-body">
+<div class="progress-bar"><div class="fill"></div></div>
+<div class="sub-section"><h4><i class="fas fa-spray-can-sparkles"></i> Nettoyage détaillé</h4>
+<div class="task"><input type="checkbox" id="ka1"><label for="ka1">Aspirer / laver le sol</label></div>
+<div class="task"><input type="checkbox" id="ka2"><label for="ka2">Nettoyer le bar / comptoir</label></div>
+<div class="task"><input type="checkbox" id="ka3"><label for="ka3">Nettoyer les assises (canapés, tabourets)</label></div>
+<div class="task"><input type="checkbox" id="ka4"><label for="ka4">Dépoussiérer enceintes et matériel</label></div>
+</div>
+<div class="sub-section"><h4><i class="fas fa-hand-sparkles"></i> Mise en place</h4>
+<div class="task"><input type="checkbox" id="ka5"><label for="ka5">Micros rangés et propres</label></div>
+<div class="task"><input type="checkbox" id="ka6"><label for="ka6">Coussins en place</label></div>
+</div>
+<div class="sub-section"><h4><i class="fas fa-plug"></i> Contrôle équipements</h4>
+<div class="task"><input type="checkbox" id="ka7"><label for="ka7">Test système karaoké (son + écran)</label></div>
+<div class="task"><input type="checkbox" id="ka8"><label for="ka8">Éclairage d'ambiance fonctionnel</label></div>
+</div>
+</div></div>
+
+<!-- SAUNA -->
+<div class="zone" id="sauna">
+<div class="zone-header" onclick="toggle(this)">
+<i class="fas fa-hot-tub-person"></i><h3>Sauna</h3>
+<div class="zone-progress"><span class="cnt">0/0</span></div>
+<i class="fas fa-chevron-down chevron"></i>
+</div>
+<div class="zone-body">
+<div class="progress-bar"><div class="fill"></div></div>
+<div class="sub-section"><h4><i class="fas fa-spray-can-sparkles"></i> Nettoyage détaillé</h4>
+<div class="task"><input type="checkbox" id="sa1"><label for="sa1">Nettoyer les banquettes en bois (produit adapté)</label></div>
+<div class="task"><input type="checkbox" id="sa2"><label for="sa2">Laver le sol</label></div>
+<div class="task"><input type="checkbox" id="sa3"><label for="sa3">Nettoyer la vitre / porte</label></div>
+<div class="task"><input type="checkbox" id="sa4"><label for="sa4">Nettoyer le seau et la louche</label></div>
+</div>
+<div class="sub-section"><h4><i class="fas fa-hand-sparkles"></i> Mise en place</h4>
+<div class="task"><input type="checkbox" id="sa5"><label for="sa5">2 serviettes propres pliées sur banquette</label></div>
+<div class="task"><input type="checkbox" id="sa6"><label for="sa6">Seau rempli d'eau propre</label></div>
+<div class="task"><input type="checkbox" id="sa7"><label for="sa7">QR code instructions visible et propre</label></div>
+</div>
+<div class="sub-section"><h4><i class="fas fa-plug"></i> Contrôle équipements</h4>
+<div class="task"><input type="checkbox" id="sa8"><label for="sa8">Test démarrage sauna</label></div>
+<div class="task"><input type="checkbox" id="sa9"><label for="sa9">Thermomètre / hygromètre fonctionnel</label></div>
+</div>
+<div class="sub-section"><h4><i class="fas fa-camera"></i> Références visuelles</h4>
+<div class="img-placeholder"><i class="fas fa-image"></i>&nbsp; Photo sauna – serviettes + seau en place</div>
+</div>
+</div></div>
+
+<!-- SALLE SPORT -->
+<div class="zone" id="sport">
+<div class="zone-header" onclick="toggle(this)">
+<i class="fas fa-dumbbell"></i><h3>Salle de Sport</h3>
+<div class="zone-progress"><span class="cnt">0/0</span></div>
+<i class="fas fa-chevron-down chevron"></i>
+</div>
+<div class="zone-body">
+<div class="progress-bar"><div class="fill"></div></div>
+<div class="sub-section"><h4><i class="fas fa-spray-can-sparkles"></i> Nettoyage détaillé</h4>
+<div class="task"><input type="checkbox" id="sp1"><label for="sp1">Laver le sol (anti-dérapant)</label></div>
+<div class="task"><input type="checkbox" id="sp2"><label for="sp2">Nettoyer le rameur (assise, rail, poignée)</label></div>
+<div class="task"><input type="checkbox" id="sp3"><label for="sp3">Nettoyer le tapis de course (bande + tableau de bord)</label></div>
+<div class="task"><input type="checkbox" id="sp4"><label for="sp4">Nettoyer les autres équipements</label></div>
+<div class="task"><input type="checkbox" id="sp5"><label for="sp5">Nettoyer miroirs</label></div>
+</div>
+<div class="sub-section"><h4><i class="fas fa-hand-sparkles"></i> Mise en place</h4>
+<div class="task"><input type="checkbox" id="sp6"><label for="sp6">2 serviettes propres pliées</label></div>
+<div class="task"><input type="checkbox" id="sp7"><label for="sp7">Bouteille d'eau mise à disposition</label></div>
+<div class="task"><input type="checkbox" id="sp8"><label for="sp8">QR code instructions visible et propre</label></div>
+</div>
+<div class="sub-section"><h4><i class="fas fa-plug"></i> Contrôle équipements</h4>
+<div class="task"><input type="checkbox" id="sp9"><label for="sp9">Rameur : test fonctionnement</label></div>
+<div class="task"><input type="checkbox" id="sp10"><label for="sp10">Tapis de course : test démarrage</label></div>
+</div>
+<div class="sub-section"><h4><i class="fas fa-camera"></i> Références visuelles</h4>
+<div class="img-placeholder"><i class="fas fa-image"></i>&nbsp; Photo salle sport – disposition type</div>
+</div>
+</div></div>
+
+<!-- PISCINE -->
+<div class="zone" id="piscine">
+<div class="zone-header" onclick="toggle(this)">
+<i class="fas fa-water-ladder"></i><h3>Piscine intérieure</h3>
+<div class="zone-progress"><span class="cnt">0/0</span></div>
+<i class="fas fa-chevron-down chevron"></i>
+</div>
+<div class="zone-body">
+<div class="progress-bar"><div class="fill"></div></div>
+<div class="sub-section"><h4><i class="fas fa-spray-can-sparkles"></i> Nettoyage détaillé</h4>
+<div class="task"><input type="checkbox" id="p1"><label for="p1">Nettoyer l'escalier d'accès (anti-glisse)</label></div>
+<div class="task"><input type="checkbox" id="p2"><label for="p2">Nettoyer le garde-corps / barrières</label></div>
+<div class="task"><input type="checkbox" id="p3"><label for="p3">Laver le sol périphérique (sans traces d'eau)</label></div>
+<div class="task"><input type="checkbox" id="p4"><label for="p4">Vérifier propreté de l'eau (pas de débris)</label></div>
+</div>
+<div class="sub-section"><h4><i class="fas fa-hand-sparkles"></i> Mise en place</h4>
+<div class="task"><input type="checkbox" id="p5"><label for="p5">2 serviettes propres pliées au bord</label></div>
+<div class="task"><input type="checkbox" id="p6"><label for="p6">Bouteille d'eau mise à disposition</label></div>
+</div>
+<div class="sub-section"><h4><i class="fas fa-plug"></i> Contrôle équipements</h4>
+<div class="task"><input type="checkbox" id="p7"><label for="p7">Éclairage piscine fonctionnel</label></div>
+<div class="task"><input type="checkbox" id="p8"><label for="p8">Système de filtration en marche</label></div>
+</div>
+<div class="sub-section"><h4><i class="fas fa-camera"></i> Références visuelles</h4>
+<div class="img-placeholder"><i class="fas fa-image"></i>&nbsp; Photo piscine – mise en place type</div>
+</div>
+</div></div>
+
+<!-- TERRASSE PISCINE -->
+<div class="zone" id="terrasse">
+<div class="zone-header" onclick="toggle(this)">
+<i class="fas fa-umbrella-beach"></i><h3>Terrasse Piscine</h3>
+<div class="zone-progress"><span class="cnt">0/0</span></div>
+<i class="fas fa-chevron-down chevron"></i>
+</div>
+<div class="zone-body">
+<div class="progress-bar"><div class="fill"></div></div>
+<div class="sub-section"><h4><i class="fas fa-spray-can-sparkles"></i> Nettoyage détaillé</h4>
+<div class="task"><input type="checkbox" id="t1"><label for="t1">Balayer / nettoyer le sol de la terrasse</label></div>
+<div class="task"><input type="checkbox" id="t2"><label for="t2">Nettoyer les 6 bains de soleil</label></div>
+<div class="task"><input type="checkbox" id="t3"><label for="t3">Nettoyer la table extérieure si présente</label></div>
+</div>
+<div class="sub-section"><h4><i class="fas fa-hand-sparkles"></i> Mise en place</h4>
+<div class="task"><input type="checkbox" id="t4"><label for="t4">6 bains de soleil alignés et propres</label></div>
+<div class="task"><input type="checkbox" id="t5"><label for="t5">Coussins en place (si disponibles)</label></div>
+</div>
+<div class="sub-section"><h4><i class="fas fa-camera"></i> Références visuelles</h4>
+<div class="img-placeholder"><i class="fas fa-image"></i>&nbsp; Photo terrasse – disposition bains de soleil</div>
+</div>
+</div></div>
+
+<!-- ÉTAGE 1 COMMUNS -->
+<div class="zone" id="etage1-communs">
+<div class="zone-header" onclick="toggle(this)">
+<i class="fas fa-bath"></i><h3>Étage 1 – Parties communes (WC, SDB, Douche)</h3>
+<div class="zone-progress"><span class="cnt">0/0</span></div>
+<i class="fas fa-chevron-down chevron"></i>
+</div>
+<div class="zone-body">
+<div class="progress-bar"><div class="fill"></div></div>
+<div class="sub-section"><h4><i class="fas fa-toilet"></i> WC séparé</h4>
+<div class="task"><input type="checkbox" id="wc1"><label for="wc1">Nettoyer cuvette (intérieur + extérieur + abattant)</label></div>
+<div class="task"><input type="checkbox" id="wc2"><label for="wc2">Nettoyer le sol</label></div>
+<div class="task"><input type="checkbox" id="wc3"><label for="wc3">Papier toilette plein + rouleau de rechange</label></div>
+<div class="task"><input type="checkbox" id="wc4"><label for="wc4">Nettoyer lavabo + miroir</label></div>
+<div class="task"><input type="checkbox" id="wc5"><label for="wc5">Savon / gel disponible</label></div>
+</div>
+<div class="sub-section"><h4><i class="fas fa-bath"></i> SDB + WC</h4>
+<div class="task"><input type="checkbox" id="sdb1"><label for="sdb1">Nettoyer baignoire / douche (parois + joints)</label></div>
+<div class="task"><input type="checkbox" id="sdb2"><label for="sdb2">Nettoyer WC (cuvette + sol autour)</label></div>
+<div class="task"><input type="checkbox" id="sdb3"><label for="sdb3">Nettoyer lavabo + robinetterie (brillant)</label></div>
+<div class="task"><input type="checkbox" id="sdb4"><label for="sdb4">Nettoyer miroir (sans traces)</label></div>
+<div class="task"><input type="checkbox" id="sdb5"><label for="sdb5">Laver le sol</label></div>
+<div class="task"><input type="checkbox" id="sdb6"><label for="sdb6">Serviettes pliées façon hôtel</label></div>
+<div class="task"><input type="checkbox" id="sdb7"><label for="sdb7">Tapis de bain propre</label></div>
+<div class="task"><input type="checkbox" id="sdb8"><label for="sdb8">Produits d'accueil (shampoing, gel douche, savon)</label></div>
+<div class="task"><input type="checkbox" id="sdb9"><label for="sdb9">Papier toilette + rechange</label></div>
+</div>
+<div class="sub-section"><h4><i class="fas fa-shower"></i> Salle de douche</h4>
+<div class="task"><input type="checkbox" id="sd1"><label for="sd1">Nettoyer paroi de douche + bac</label></div>
+<div class="task"><input type="checkbox" id="sd2"><label for="sd2">Nettoyer lavabo + miroir</label></div>
+<div class="task"><input type="checkbox" id="sd3"><label for="sd3">Laver le sol</label></div>
+<div class="task"><input type="checkbox" id="sd4"><label for="sd4">Serviettes pliées</label></div>
+<div class="task"><input type="checkbox" id="sd5"><label for="sd5">Sèche-cheveux en place et fonctionnel</label></div>
+</div>
+<div class="sub-section"><h4><i class="fas fa-camera"></i> Références visuelles</h4>
+<div class="img-placeholder"><i class="fas fa-image"></i>&nbsp; Photo SDB – pliage serviettes + disposition produits</div>
+</div>
+</div></div>
+
+<!-- SALLE CINÉMA -->
+<div class="zone" id="cinema">
+<div class="zone-header" onclick="toggle(this)">
+<i class="fas fa-film"></i><h3>Salle Cinéma</h3>
+<div class="zone-progress"><span class="cnt">0/0</span></div>
+<i class="fas fa-chevron-down chevron"></i>
+</div>
+<div class="zone-body">
+<div class="progress-bar"><div class="fill"></div></div>
+<div class="sub-section"><h4><i class="fas fa-spray-can-sparkles"></i> Nettoyage détaillé</h4>
+<div class="task"><input type="checkbox" id="ci1"><label for="ci1">Aspirer le sol + entre les sièges</label></div>
+<div class="task"><input type="checkbox" id="ci2"><label for="ci2">Nettoyer chaque siège (assise + accoudoirs)</label></div>
+<div class="task"><input type="checkbox" id="ci3"><label for="ci3">Dépoussiérer l'écran (attention : produit adapté)</label></div>
+<div class="task"><input type="checkbox" id="ci4"><label for="ci4">Dépoussiérer le vidéoprojecteur</label></div>
+</div>
+<div class="sub-section"><h4><i class="fas fa-hand-sparkles"></i> Mise en place</h4>
+<div class="task"><input type="checkbox" id="ci5"><label for="ci5">Plaid plié sur chaque siège</label></div>
+<div class="task"><input type="checkbox" id="ci6"><label for="ci6">QR code instructions visible et propre</label></div>
+</div>
+<div class="sub-section"><h4><i class="fas fa-plug"></i> Contrôle équipements</h4>
+<div class="task"><input type="checkbox" id="ci7"><label for="ci7">Test vidéoprojecteur (allumage + image)</label></div>
+<div class="task"><input type="checkbox" id="ci8"><label for="ci8">Test écran (descente / montée si motorisé)</label></div>
+<div class="task"><input type="checkbox" id="ci9"><label for="ci9">Test son (enceintes)</label></div>
+<div class="task"><input type="checkbox" id="ci10"><label for="ci10">Télécommandes fonctionnelles (piles)</label></div>
+</div>
+<div class="sub-section"><h4><i class="fas fa-camera"></i> Références visuelles</h4>
+<div class="img-placeholder"><i class="fas fa-image"></i>&nbsp; Photo cinéma – plaids sur sièges</div>
+</div>
+</div></div>
+
+<!-- CHAMBRE 1 -->
+<div class="zone" id="ch1">
+<div class="zone-header" onclick="toggle(this)">
+<i class="fas fa-bed"></i><h3>Chambre 1 – Étage 1</h3>
+<div class="zone-progress"><span class="cnt">0/0</span></div>
+<i class="fas fa-chevron-down chevron"></i>
+</div>
+<div class="zone-body">
+<div class="progress-bar"><div class="fill"></div></div>
+<div class="sub-section"><h4><i class="fas fa-eye"></i> État général</h4>
+<div class="task"><input type="checkbox" id="c1a"><label for="c1a">Aérer la chambre</label></div>
+<div class="task"><input type="checkbox" id="c1b"><label for="c1b">Vérifier éclairage (plafonnier + chevets)</label></div>
+</div>
+<div class="sub-section"><h4><i class="fas fa-spray-can-sparkles"></i> Nettoyage détaillé</h4>
+<div class="task"><input type="checkbox" id="c1c"><label for="c1c">Aspirer / laver le sol</label></div>
+<div class="task"><input type="checkbox" id="c1d"><label for="c1d">Dépoussiérer meubles, tables de chevet, lampes</label></div>
+<div class="task"><input type="checkbox" id="c1e"><label for="c1e">Nettoyer miroir / vitres</label></div>
+<div class="task"><input type="checkbox" id="c1f"><label for="c1f">Nettoyer poignées, interrupteurs</label></div>
+</div>
+<div class="sub-section"><h4><i class="fas fa-hand-sparkles"></i> Mise en place</h4>
+<div class="task"><input type="checkbox" id="c1g"><label for="c1g">Lit fait : draps tendus, couette symétrique, oreillers gonflés</label></div>
+<div class="task"><input type="checkbox" id="c1h"><label for="c1h">Serviettes pliées sur le lit</label></div>
+<div class="task"><input type="checkbox" id="c1i"><label for="c1i">Cintres dans la penderie</label></div>
+</div>
+<div class="sub-section"><h4><i class="fas fa-camera"></i> Références visuelles</h4>
+<div class="img-placeholder"><i class="fas fa-image"></i>&nbsp; Photo chambre 1 – lit fait type</div>
+</div>
+</div></div>
+
+<!-- CHAMBRE 2 -->
+<div class="zone" id="ch2">
+<div class="zone-header" onclick="toggle(this)">
+<i class="fas fa-bed"></i><h3>Chambre 2 – Étage 1</h3>
+<div class="zone-progress"><span class="cnt">0/0</span></div>
+<i class="fas fa-chevron-down chevron"></i>
+</div>
+<div class="zone-body">
+<div class="progress-bar"><div class="fill"></div></div>
+<div class="sub-section"><h4><i class="fas fa-eye"></i> État général</h4>
+<div class="task"><input type="checkbox" id="c2a"><label for="c2a">Aérer la chambre</label></div>
+<div class="task"><input type="checkbox" id="c2b"><label for="c2b">Vérifier éclairage</label></div>
+</div>
+<div class="sub-section"><h4><i class="fas fa-spray-can-sparkles"></i> Nettoyage détaillé</h4>
+<div class="task"><input type="checkbox" id="c2c"><label for="c2c">Aspirer / laver le sol</label></div>
+<div class="task"><input type="checkbox" id="c2d"><label for="c2d">Dépoussiérer meubles, tables de chevet, lampes</label></div>
+<div class="task"><input type="checkbox" id="c2e"><label for="c2e">Nettoyer miroir / vitres</label></div>
+</div>
+<div class="sub-section"><h4><i class="fas fa-hand-sparkles"></i> Mise en place</h4>
+<div class="task"><input type="checkbox" id="c2f"><label for="c2f">Lit fait : draps tendus, couette symétrique, oreillers gonflés</label></div>
+<div class="task"><input type="checkbox" id="c2g"><label for="c2g">Serviettes pliées sur le lit</label></div>
+<div class="task"><input type="checkbox" id="c2h"><label for="c2h">Cintres dans la penderie</label></div>
+</div>
+<div class="sub-section"><h4><i class="fas fa-camera"></i> Références visuelles</h4>
+<div class="img-placeholder"><i class="fas fa-image"></i>&nbsp; Photo chambre 2 – lit fait type</div>
+</div>
+</div></div>
+
+<!-- CHAMBRE 3 -->
+<div class="zone" id="ch3">
+<div class="zone-header" onclick="toggle(this)">
+<i class="fas fa-bed"></i><h3>Chambre 3 – Étage 1</h3>
+<div class="zone-progress"><span class="cnt">0/0</span></div>
+<i class="fas fa-chevron-down chevron"></i>
+</div>
+<div class="zone-body">
+<div class="progress-bar"><div class="fill"></div></div>
+<div class="sub-section"><h4><i class="fas fa-eye"></i> État général</h4>
+<div class="task"><input type="checkbox" id="c3a"><label for="c3a">Aérer la chambre</label></div>
+<div class="task"><input type="checkbox" id="c3b"><label for="c3b">Vérifier éclairage</label></div>
+</div>
+<div class="sub-section"><h4><i class="fas fa-spray-can-sparkles"></i> Nettoyage détaillé</h4>
+<div class="task"><input type="checkbox" id="c3c"><label for="c3c">Aspirer / laver le sol</label></div>
+<div class="task"><input type="checkbox" id="c3d"><label for="c3d">Dépoussiérer meubles, tables de chevet, lampes</label></div>
+<div class="task"><input type="checkbox" id="c3e"><label for="c3e">Nettoyer miroir / vitres</label></div>
+</div>
+<div class="sub-section"><h4><i class="fas fa-hand-sparkles"></i> Mise en place</h4>
+<div class="task"><input type="checkbox" id="c3f"><label for="c3f">Lit fait : draps tendus, couette symétrique, oreillers gonflés</label></div>
+<div class="task"><input type="checkbox" id="c3g"><label for="c3g">Serviettes pliées sur le lit</label></div>
+<div class="task"><input type="checkbox" id="c3h"><label for="c3h">Cintres dans la penderie</label></div>
+</div>
+<div class="sub-section"><h4><i class="fas fa-camera"></i> Références visuelles</h4>
+<div class="img-placeholder"><i class="fas fa-image"></i>&nbsp; Photo chambre 3 – lit fait type</div>
+</div>
+</div></div>
+
+<!-- ÉTAGE 2 PRIVÉ -->
+<div class="zone" id="etage2">
+<div class="zone-header" onclick="toggle(this)">
+<i class="fas fa-lock"></i><h3>Étage 2 – PRIVÉ (ne pas entrer)</h3>
+<div class="zone-progress"><span class="cnt">0/0</span></div>
+<i class="fas fa-chevron-down chevron"></i>
+</div>
+<div class="zone-body">
+<div class="progress-bar"><div class="fill"></div></div>
+<div class="sub-section"><h4><i class="fas fa-exclamation-triangle"></i> Consigne</h4>
+<div class="task"><input type="checkbox" id="pr1"><label for="pr1">Vérifier que la porte est fermée à clé<span class="note">Étage privé du propriétaire – accès interdit aux voyageurs et au ménage sauf instruction contraire</span></label></div>
+</div>
+</div></div>
+
+<!-- ÉTAGE 3 -->
+<div class="zone" id="etage3">
+<div class="zone-header" onclick="toggle(this)">
+<i class="fas fa-layer-group"></i><h3>Étage 3</h3>
+<div class="zone-progress"><span class="cnt">0/0</span></div>
+<i class="fas fa-chevron-down chevron"></i>
+</div>
+<div class="zone-body">
+<div class="progress-bar"><div class="fill"></div></div>
+
+<div class="sub-section"><h4><i class="fas fa-lock"></i> Chambre fermée</h4>
+<div class="task"><input type="checkbox" id="e3a"><label for="e3a">Vérifier que la porte est fermée à clé<span class="note">Chambre non accessible aux voyageurs</span></label></div>
+</div>
+
+<div class="sub-section"><h4><i class="fas fa-bed"></i> Chambre double + simple</h4>
+<div class="task"><input type="checkbox" id="e3b"><label for="e3b">Aérer la chambre</label></div>
+<div class="task"><input type="checkbox" id="e3c"><label for="e3c">Aspirer / laver le sol</label></div>
+<div class="task"><input type="checkbox" id="e3d"><label for="e3d">Dépoussiérer meubles et lampes</label></div>
+<div class="task"><input type="checkbox" id="e3e"><label for="e3e">Lit double fait : draps, couette, oreillers</label></div>
+<div class="task"><input type="checkbox" id="e3f"><label for="e3f">Lit simple fait : draps, couette, oreiller</label></div>
+<div class="task"><input type="checkbox" id="e3g"><label for="e3g">Serviettes pliées sur chaque lit</label></div>
+<div class="task"><input type="checkbox" id="e3h"><label for="e3h">Cintres dans la penderie</label></div>
+<div class="task"><input type="checkbox" id="e3i"><label for="e3i">Nettoyer miroir / vitres</label></div>
+</div>
+
+<div class="sub-section"><h4><i class="fas fa-gamepad"></i> Salle de jeu</h4>
+<div class="task"><input type="checkbox" id="e3j"><label for="e3j">Aspirer / laver le sol</label></div>
+<div class="task"><input type="checkbox" id="e3k"><label for="e3k">Ranger jeux et jouets</label></div>
+<div class="task"><input type="checkbox" id="e3l"><label for="e3l">Dépoussiérer meubles et étagères</label></div>
+<div class="task"><input type="checkbox" id="e3m"><label for="e3m">Vérifier éclairage</label></div>
+</div>
+
+<div class="sub-section"><h4><i class="fas fa-shower"></i> Salle d'eau + WC</h4>
+<div class="task"><input type="checkbox" id="e3n"><label for="e3n">Nettoyer douche (parois + bac + joints)</label></div>
+<div class="task"><input type="checkbox" id="e3o"><label for="e3o">Nettoyer WC (cuvette + sol)</label></div>
+<div class="task"><input type="checkbox" id="e3p"><label for="e3p">Nettoyer lavabo + robinetterie</label></div>
+<div class="task"><input type="checkbox" id="e3q"><label for="e3q">Nettoyer miroir</label></div>
+<div class="task"><input type="checkbox" id="e3r"><label for="e3r">Laver le sol</label></div>
+<div class="task"><input type="checkbox" id="e3s"><label for="e3s">Serviettes pliées façon hôtel</label></div>
+<div class="task"><input type="checkbox" id="e3t"><label for="e3t">Produits d'accueil en place</label></div>
+<div class="task"><input type="checkbox" id="e3u"><label for="e3u">Papier toilette + rechange</label></div>
+</div>
+<div class="sub-section"><h4><i class="fas fa-camera"></i> Références visuelles</h4>
+<div class="img-placeholder"><i class="fas fa-image"></i>&nbsp; Photo étage 3 – chambre + salle de jeu</div>
+</div>
+</div></div>
+
+<!-- EXTÉRIEUR -->
+<div class="zone" id="exterieur">
+<div class="zone-header" onclick="toggle(this)">
+<i class="fas fa-tree"></i><h3>Extérieur</h3>
+<div class="zone-progress"><span class="cnt">0/0</span></div>
+<i class="fas fa-chevron-down chevron"></i>
+</div>
+<div class="zone-body">
+<div class="progress-bar"><div class="fill"></div></div>
+<div class="sub-section"><h4><i class="fas fa-spray-can-sparkles"></i> Nettoyage détaillé</h4>
+<div class="task"><input type="checkbox" id="ex1"><label for="ex1">Nettoyer la table extérieure + chaises</label></div>
+<div class="task"><input type="checkbox" id="ex2"><label for="ex2">Balayer l'escalier extérieur (sans feuilles)</label></div>
+<div class="task"><input type="checkbox" id="ex3"><label for="ex3">Nettoyer les bains de soleil extérieurs</label></div>
+<div class="task"><input type="checkbox" id="ex4"><label for="ex4">Vider les poubelles extérieures</label></div>
+<div class="task"><input type="checkbox" id="ex5"><label for="ex5">Vérifier éclairage extérieur</label></div>
+</div>
+<div class="sub-section"><h4><i class="fas fa-hand-sparkles"></i> Mise en place</h4>
+<div class="task"><input type="checkbox" id="ex6"><label for="ex6">Bains de soleil alignés</label></div>
+<div class="task"><input type="checkbox" id="ex7"><label for="ex7">Coussins extérieurs en place (si saison)</label></div>
+<div class="task"><input type="checkbox" id="ex8"><label for="ex8">Barbecue propre (grille + bac) si applicable</label></div>
+</div>
+<div class="sub-section"><h4><i class="fas fa-camera"></i> Références visuelles</h4>
+<div class="img-placeholder"><i class="fas fa-image"></i>&nbsp; Photo extérieur – terrasse + escalier</div>
+</div>
+</div></div>
+
+<!-- FOOTER + JS -->
+<div class="footer">
+<p>Château de Vertefeuille – Guide ménage v1.0</p>
+<p>FrenchyConciergerie &copy; 2026</p>
+</div>
+
+<button class="btn-top" id="btnTop" onclick="window.scrollTo({top:0,behavior:'smooth'})"><i class="fas fa-arrow-up"></i></button>
+<button class="btn-print" onclick="window.print()"><i class="fas fa-print"></i></button>
+
+<script>
+function toggle(el){el.classList.toggle('open');updateProgress(el.closest('.zone'))}
+function updateProgress(zone){
+  if(!zone)return;
+  const boxes=zone.querySelectorAll('input[type=checkbox]');
+  const checked=zone.querySelectorAll('input[type=checkbox]:checked');
+  const cnt=zone.querySelector('.cnt');
+  const fill=zone.querySelector('.fill');
+  if(cnt)cnt.textContent=checked.length+'/'+boxes.length;
+  if(fill)fill.style.width=boxes.length?(checked.length/boxes.length*100)+'%':'0%';
+}
+document.querySelectorAll('input[type=checkbox]').forEach(cb=>{
+  cb.addEventListener('change',function(){updateProgress(this.closest('.zone'))});
+});
+document.querySelectorAll('.zone').forEach(z=>updateProgress(z));
+
+// Scroll to top button
+window.addEventListener('scroll',()=>{
+  document.getElementById('btnTop').style.display=window.scrollY>300?'block':'none';
+});
+
+// Nav active state
+document.querySelectorAll('.nav-zones a').forEach(a=>{
+  a.addEventListener('click',function(e){
+    document.querySelectorAll('.nav-zones a').forEach(x=>x.classList.remove('active'));
+    this.classList.add('active');
+    const target=document.querySelector(this.getAttribute('href'));
+    if(target){
+      const header=target.querySelector('.zone-header');
+      if(header&&!header.classList.contains('open'))header.classList.add('open');
+      const body=target.querySelector('.zone-body');
+      if(body)body.style.display='block';
+      updateProgress(target);
+    }
+  });
+});
+
+// Save state to localStorage
+function saveState(){
+  const state={};
+  document.querySelectorAll('input[type=checkbox]').forEach(cb=>{state[cb.id]=cb.checked});
+  localStorage.setItem('vertefeuille_guide',JSON.stringify(state));
+}
+function loadState(){
+  try{
+    const state=JSON.parse(localStorage.getItem('vertefeuille_guide'));
+    if(state){Object.keys(state).forEach(id=>{const cb=document.getElementById(id);if(cb)cb.checked=state[id]});}
+    document.querySelectorAll('.zone').forEach(z=>updateProgress(z));
+  }catch(e){}
+}
+document.querySelectorAll('input[type=checkbox]').forEach(cb=>cb.addEventListener('change',saveState));
+loadState();
+
+// Reset button
+document.querySelector('.footer').insertAdjacentHTML('beforebegin',
+  '<div style="text-align:center;margin:2rem 1rem"><button onclick="if(confirm(\'Réinitialiser toutes les cases ?\')){localStorage.removeItem(\'vertefeuille_guide\');location.reload()}" style="background:#1a1a1a;color:#c9a84c;border:none;padding:.8rem 2rem;border-radius:8px;font-size:.9rem;cursor:pointer;letter-spacing:1px"><i class="fas fa-rotate-left"></i> Réinitialiser le guide</button></div>'
+);
+</script>
+</body>
+</html>
