@@ -69,7 +69,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#f5f5f0;color:#222;l
 
 <nav class="nav-z">
 <?php if ($regles): ?><a href="#regles">Règles</a><?php endif; ?>
-<?php foreach ($zones as $i=>$z): ?>
+<?php foreach ($zones as $i=>$z): $zt = $taches[$z['id']] ?? []; if (empty($zt) && !$z['photo_reference']) continue; ?>
 <a href="#zone_<?= $z['id'] ?>"><?= htmlspecialchars($z['nom']) ?></a>
 <?php endforeach; ?>
 </nav>
@@ -81,7 +81,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#f5f5f0;color:#222;l
 </section>
 <?php endif; ?>
 
-<?php foreach ($zones as $z): $zt = $taches[$z['id']] ?? []; ?>
+<?php foreach ($zones as $z): $zt = $taches[$z['id']] ?? []; if (empty($zt) && !$z['photo_reference']) continue; ?>
 <div class="zone" id="zone_<?= $z['id'] ?>">
 <div class="zh" onclick="this.classList.toggle('open')">
 <i class="fas <?= htmlspecialchars($z['icon']) ?> ic"></i>
