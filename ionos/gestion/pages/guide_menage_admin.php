@@ -84,12 +84,38 @@ if (isset($_POST['ajax_action'])) {
             if ($old && file_exists(__DIR__.'/../'.$old)) @unlink(__DIR__.'/../'.$old);
             echo json_encode(['ok'=>true]);
         }
+        elseif ($action === 'duplicate_guide') {
+            $src = $conn->prepare("SELECT * FROM guide_menage_guides WHERE id=?");
+            $src->execute([$_POST['id']]); $src = $src->fetch(PDO::FETCH_ASSOC);
+            $conn->prepare("INSERT INTO guide_menage_guides (nom, sous_titre, regles_generales, id_logement) VALUES (?,?,?,?)")
+                ->execute([$src['nom'].' (copie)', $src['sous_titre'], $src['regles_generales'], $src['id_logement']]);
+            $newId = $conn->lastInsertId();
+            $zs = $conn->prepare("SELECT * FROM guide_menage_zones WHERE id_guide=? ORDER BY ordre");
+            $zs->execute([$_POST['id']]);
+            foreach ($zs->fetchAll(PDO::FETCH_ASSOC) as $oz) {
+                $conn->prepare("INSERT INTO guide_menage_zones (id_guide, nom, icon, ordre, photo_reference) VALUES (?,?,?,?,?)")
+                    ->execute([$newId, $oz['nom'], $oz['icon'], $oz['ordre'], $oz['photo_reference']]);
+                $nzId = $conn->lastInsertId();
+                $ts = $conn->prepare("SELECT * FROM guide_menage_taches WHERE id_zone=? ORDER BY ordre");
+                $ts->execute([$oz['id']]);
+                foreach ($ts->fetchAll(PDO::FETCH_ASSOC) as $ot) {
+                    $conn->prepare("INSERT INTO guide_menage_taches (id_zone, section, texte, note, photo, ordre) VALUES (?,?,?,?,?,?)")
+                        ->execute([$nzId, $ot['section'], $ot['texte'], $ot['note'], $ot['photo'], $ot['ordre']]);
+                }
+            }
+            echo json_encode(['ok'=>true, 'id'=>$newId]);
+        }
+        elseif ($action === 'save_logement') {
+            $conn->prepare("UPDATE guide_menage_guides SET id_logement=? WHERE id=?")->execute([$_POST['id_logement'] ?: null, $_POST['id']]);
+            echo json_encode(['ok'=>true]);
+        }
     } catch (Exception $e) { echo json_encode(['ok'=>false, 'error'=>$e->getMessage()]); }
     exit;
 }
 
 // --- Page data ---
-$guides = $conn->query("SELECT * FROM guide_menage_guides ORDER BY nom")->fetchAll(PDO::FETCH_ASSOC);
+$logements = $conn->query("SELECT id, nom FROM liste_logements ORDER BY nom")->fetchAll(PDO::FETCH_ASSOC);
+$guides = $conn->query("SELECT g.*, l.nom as logement_nom FROM guide_menage_guides g LEFT JOIN liste_logements l ON g.id_logement=l.id ORDER BY g.nom")->fetchAll(PDO::FETCH_ASSOC);
 $edit_id = isset($_GET['id']) ? (int)$_GET['id'] : null;
 $guide = null; $zones = []; $taches = [];
 if ($edit_id) {
@@ -146,16 +172,33 @@ $section_icons = ['etat'=>'fa-eye','nettoyage'=>'fa-spray-can-sparkles','mise_en
             <p class="text-muted small"><?= htmlspecialchars($g['sous_titre']) ?></p>
             <?php $zc = $conn->query("SELECT COUNT(*) FROM guide_menage_zones WHERE id_guide=".$g['id'])->fetchColumn(); ?>
             <span class="badge bg-secondary"><?= $zc ?> zones</span>
+            <?php if ($g['logement_nom']): ?><span class="badge bg-info"><i class="fas fa-home"></i> <?= htmlspecialchars($g['logement_nom']) ?></span><?php endif; ?>
         </div>
         <div class="card-footer d-flex gap-2">
             <a href="?id=<?= $g['id'] ?>" class="btn btn-sm btn-outline-primary flex-fill"><i class="fas fa-edit"></i> Éditer</a>
             <a href="guide_menage_view.php?id=<?= $g['id'] ?>" target="_blank" class="btn btn-sm btn-outline-success flex-fill"><i class="fas fa-eye"></i> Voir</a>
+            <button class="btn btn-sm btn-outline-warning" onclick="duplicateGuide(<?= $g['id'] ?>)" title="Dupliquer"><i class="fas fa-copy"></i></button>
+            <button class="btn btn-sm btn-outline-info" onclick="showShareLink(<?= $g['id'] ?>,'<?= htmlspecialchars($g['nom'], ENT_QUOTES) ?>')" title="Partager"><i class="fas fa-share-alt"></i></button>
             <button class="btn btn-sm btn-outline-danger" onclick="deleteGuide(<?= $g['id'] ?>)"><i class="fas fa-trash"></i></button>
         </div>
     </div>
 </div>
 <?php endforeach; ?>
 </div>
+
+<!-- Modal partage (liste) -->
+<div class="modal fade" id="modalShare"><div class="modal-dialog"><div class="modal-content">
+<div class="modal-header"><h5><i class="fas fa-share-alt"></i> Partager le guide</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+<div class="modal-body text-center">
+    <p class="text-muted small">Lien direct pour les intervenants (sans login) :</p>
+    <div class="input-group mb-3">
+        <input type="text" class="form-control" id="shareLink" readonly>
+        <button class="btn btn-outline-secondary" onclick="navigator.clipboard.writeText(document.getElementById('shareLink').value);this.innerHTML='<i class=\'fas fa-check\'></i>'"><i class="fas fa-copy"></i></button>
+    </div>
+    <div id="qrcode" class="d-flex justify-content-center mb-2"></div>
+    <p class="text-muted small">Scannez le QR code ou envoyez le lien par SMS</p>
+</div>
+</div></div></div>
 
 <!-- Modal nouveau guide -->
 <div class="modal fade" id="modalNewGuide"><div class="modal-dialog"><div class="modal-content">
@@ -173,6 +216,7 @@ $section_icons = ['etat'=>'fa-eye','nettoyage'=>'fa-spray-can-sparkles','mise_en
     </div>
     <div class="d-flex gap-2">
         <a href="guide_menage_view.php?id=<?= $edit_id ?>" target="_blank" class="btn btn-sm btn-outline-success"><i class="fas fa-eye"></i> Aperçu</a>
+        <button class="btn btn-sm btn-outline-info" onclick="showShareLink(<?= $edit_id ?>,'<?= htmlspecialchars($guide['nom'], ENT_QUOTES) ?>')"><i class="fas fa-share-alt"></i> Partager</button>
         <button class="btn btn-sm btn-gold" data-bs-toggle="modal" data-bs-target="#modalGuideSettings"><i class="fas fa-cog"></i> Paramètres</button>
     </div>
 </div>
@@ -183,6 +227,14 @@ $section_icons = ['etat'=>'fa-eye','nettoyage'=>'fa-spray-can-sparkles','mise_en
 <div class="modal-body">
     <div class="mb-3"><label class="form-label">Nom</label><input type="text" class="form-control" id="guideNom" value="<?= htmlspecialchars($guide['nom']) ?>"></div>
     <div class="mb-3"><label class="form-label">Sous-titre</label><input type="text" class="form-control" id="guideSousTitre" value="<?= htmlspecialchars($guide['sous_titre']) ?>"></div>
+    <div class="mb-3"><label class="form-label">Logement associé</label>
+        <select class="form-select" id="guideLogement">
+            <option value="">— Aucun —</option>
+            <?php foreach ($logements as $lo): ?>
+            <option value="<?= $lo['id'] ?>" <?= ($guide['id_logement'] == $lo['id']) ? 'selected' : '' ?>><?= htmlspecialchars($lo['nom']) ?></option>
+            <?php endforeach; ?>
+        </select>
+    </div>
     <div class="mb-3"><label class="form-label">Règles générales (1 par ligne)</label><textarea class="form-control" rows="6" id="guideRegles"><?= htmlspecialchars($guide['regles_generales']) ?></textarea></div>
 </div>
 <div class="modal-footer"><button class="btn btn-gold" onclick="saveGuide()">Enregistrer</button></div>
@@ -194,9 +246,11 @@ $section_icons = ['etat'=>'fa-eye','nettoyage'=>'fa-spray-can-sparkles','mise_en
     <button class="btn btn-sm btn-gold" data-bs-toggle="modal" data-bs-target="#modalNewZone"><i class="fas fa-plus"></i> Zone</button>
 </div>
 
+<div id="zones-container">
 <?php foreach ($zones as $z): ?>
 <div class="zone-card" data-zone-id="<?= $z['id'] ?>">
     <div class="zone-card-header" onclick="this.classList.toggle('open')">
+        <i class="fas fa-grip-vertical drag-handle" style="cursor:grab;color:#666;font-size:.9rem" onclick="event.stopPropagation()"></i>
         <i class="fas <?= htmlspecialchars($z['icon']) ?> gold"></i>
         <span class="flex-grow-1"><?= htmlspecialchars($z['nom']) ?></span>
         <span class="badge bg-secondary"><?= count($taches[$z['id']] ?? []) ?></span>
@@ -250,6 +304,21 @@ $section_icons = ['etat'=>'fa-eye','nettoyage'=>'fa-spray-can-sparkles','mise_en
     </div>
 </div>
 <?php endforeach; ?>
+</div>
+
+<!-- Modal partage -->
+<div class="modal fade" id="modalShare"><div class="modal-dialog"><div class="modal-content">
+<div class="modal-header"><h5><i class="fas fa-share-alt"></i> Partager le guide</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+<div class="modal-body text-center">
+    <p class="text-muted small">Lien direct pour les intervenants (sans login) :</p>
+    <div class="input-group mb-3">
+        <input type="text" class="form-control" id="shareLink" readonly>
+        <button class="btn btn-outline-secondary" onclick="navigator.clipboard.writeText(document.getElementById('shareLink').value);this.innerHTML='<i class=\'fas fa-check\'></i>'"><i class="fas fa-copy"></i></button>
+    </div>
+    <div id="qrcode" class="d-flex justify-content-center mb-2"></div>
+    <p class="text-muted small">Scannez le QR code ou envoyez le lien par SMS</p>
+</div>
+</div></div></div>
 
 <!-- Modal nouvelle zone -->
 <div class="modal fade" id="modalNewZone"><div class="modal-dialog"><div class="modal-content">
@@ -263,22 +332,58 @@ $section_icons = ['etat'=>'fa-eye','nettoyage'=>'fa-spray-can-sparkles','mise_en
 <?php endif; ?>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 <script>
 const guideId = <?= $edit_id ?: 'null' ?>;
 function ajax(data, cb) {
     const fd = data instanceof FormData ? data : (() => { const f = new FormData(); Object.keys(data).forEach(k => f.append(k, data[k])); return f; })();
     fetch('guide_menage_admin.php', {method:'POST', body:fd}).then(r=>r.json()).then(cb).catch(e=>alert(e));
 }
+function flash(el,color){el.style.background=color;setTimeout(()=>el.style.background='',800)}
 function createGuide(){ajax({ajax_action:'create_guide',nom:document.getElementById('newGuideName').value},r=>{if(r.ok)location.href='?id='+r.id})}
 function deleteGuide(id){if(confirm('Supprimer ce guide ?'))ajax({ajax_action:'delete_guide',id},()=>location.reload())}
-function saveGuide(){ajax({ajax_action:'save_guide',id:guideId,nom:document.getElementById('guideNom').value,sous_titre:document.getElementById('guideSousTitre').value,regles:document.getElementById('guideRegles').value},()=>{bootstrap.Modal.getInstance(document.getElementById('modalGuideSettings')).hide();location.reload()})}
+function duplicateGuide(id){ajax({ajax_action:'duplicate_guide',id},r=>{if(r.ok)location.href='?id='+r.id})}
+function saveGuide(){
+    ajax({ajax_action:'save_guide',id:guideId,nom:document.getElementById('guideNom').value,sous_titre:document.getElementById('guideSousTitre').value,regles:document.getElementById('guideRegles').value},()=>{
+        const lid=document.getElementById('guideLogement');
+        if(lid)ajax({ajax_action:'save_logement',id:guideId,id_logement:lid.value},()=>{bootstrap.Modal.getInstance(document.getElementById('modalGuideSettings')).hide()});
+        else bootstrap.Modal.getInstance(document.getElementById('modalGuideSettings')).hide();
+    });
+}
 function addZone(){ajax({ajax_action:'add_zone',id_guide:guideId,nom:document.getElementById('newZoneName').value,icon:document.getElementById('newZoneIcon').value},()=>location.reload())}
-function saveZone(id){ajax({ajax_action:'save_zone',id,nom:document.getElementById('znom_'+id).value,icon:document.getElementById('zicon_'+id).value},()=>{location.reload()})}
-function deleteZone(id){if(confirm('Supprimer cette zone et ses tâches ?'))ajax({ajax_action:'delete_zone',id},()=>location.reload())}
-function addTache(zid,sec){const inp=document.getElementById('newtask_'+zid+'_'+sec);if(!inp.value)return;ajax({ajax_action:'add_tache',id_zone:zid,section:sec,texte:inp.value},()=>location.reload())}
-function saveTache(id,sec){ajax({ajax_action:'save_tache',id,texte:document.getElementById('tt_'+id).value,note:document.getElementById('tn_'+id).value,section:sec},()=>{document.getElementById('tache_'+id).style.background='#e8f5e9';setTimeout(()=>document.getElementById('tache_'+id).style.background='',500)})}
+function saveZone(id){ajax({ajax_action:'save_zone',id,nom:document.getElementById('znom_'+id).value,icon:document.getElementById('zicon_'+id).value},r=>{if(r.ok)flash(document.querySelector('[data-zone-id="'+id+'"] .zone-card-header'),'#2e7d32')})}
+function deleteZone(id){if(confirm('Supprimer cette zone et ses tâches ?'))ajax({ajax_action:'delete_zone',id},()=>document.querySelector('[data-zone-id="'+id+'"]').remove())}
+function addTache(zid,sec){
+    const inp=document.getElementById('newtask_'+zid+'_'+sec);if(!inp.value)return;
+    ajax({ajax_action:'add_tache',id_zone:zid,section:sec,texte:inp.value},r=>{
+        if(!r.ok)return;
+        const container=document.getElementById('tasks_'+zid+'_'+sec);
+        const div=document.createElement('div');div.className='tache-row';div.id='tache_'+r.id;
+        div.innerHTML='<input type="text" class="form-control form-control-sm texte" value="'+inp.value.replace(/"/g,'&quot;')+'" id="tt_'+r.id+'">'
+            +'<input type="text" class="form-control form-control-sm" style="width:150px" placeholder="Note" id="tn_'+r.id+'">'
+            +'<input type="file" class="form-control form-control-sm" style="width:140px" accept="image/*" onchange="uploadPhoto(this,\'tache\','+r.id+')">'
+            +'<button class="btn btn-sm btn-outline-primary" onclick="saveTache('+r.id+',\''+sec+'\')"><i class="fas fa-save"></i></button>'
+            +'<button class="btn btn-sm btn-outline-danger" onclick="deleteTache('+r.id+')"><i class="fas fa-trash"></i></button>';
+        container.appendChild(div);flash(div,'#e8f5e9');inp.value='';
+    });
+}
+function saveTache(id,sec){ajax({ajax_action:'save_tache',id,texte:document.getElementById('tt_'+id).value,note:document.getElementById('tn_'+id).value,section:sec},()=>flash(document.getElementById('tache_'+id),'#e8f5e9'))}
 function deleteTache(id){if(confirm('Supprimer ?'))ajax({ajax_action:'delete_tache',id},()=>document.getElementById('tache_'+id).remove())}
 function uploadPhoto(input,type,id){const fd=new FormData();fd.append('ajax_action','upload_photo');fd.append('photo',input.files[0]);fd.append('type',type);fd.append('id',id);ajax(fd,()=>location.reload())}
 function deletePhoto(type,id){ajax({ajax_action:'delete_photo',type,id},()=>location.reload())}
+function showShareLink(id,nom){
+    const base=location.origin+'/pages/guide_menage_view.php?id='+id;
+    document.getElementById('shareLink').value=base;
+    const qr=document.getElementById('qrcode');qr.innerHTML='';
+    new QRCode(qr,{text:base,width:200,height:200,colorDark:'#1a1a1a',colorLight:'#ffffff'});
+    new bootstrap.Modal(document.getElementById('modalShare')).show();
+}
+// Drag & drop zones
+const zc=document.getElementById('zones-container');
+if(zc)new Sortable(zc,{handle:'.drag-handle',animation:200,onEnd:function(){
+    const ids=[...zc.querySelectorAll('.zone-card')].map(c=>c.dataset.zoneId);
+    ajax({ajax_action:'reorder_zones',order:JSON.stringify(ids)},()=>{});
+}});
 </script>
 </body></html>
