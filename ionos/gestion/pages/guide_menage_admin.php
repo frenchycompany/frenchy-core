@@ -114,8 +114,8 @@ if (isset($_POST['ajax_action'])) {
 }
 
 // --- Page data ---
-$logements = $conn->query("SELECT id, nom FROM liste_logements ORDER BY nom")->fetchAll(PDO::FETCH_ASSOC);
-$guides = $conn->query("SELECT g.*, l.nom as logement_nom FROM guide_menage_guides g LEFT JOIN liste_logements l ON g.id_logement=l.id ORDER BY g.nom")->fetchAll(PDO::FETCH_ASSOC);
+$logements = $conn->query("SELECT id, nom_du_logement FROM liste_logements ORDER BY nom_du_logement")->fetchAll(PDO::FETCH_ASSOC);
+$guides = $conn->query("SELECT g.*, l.nom_du_logement as logement_nom FROM guide_menage_guides g LEFT JOIN liste_logements l ON g.id_logement=l.id ORDER BY g.nom")->fetchAll(PDO::FETCH_ASSOC);
 $edit_id = isset($_GET['id']) ? (int)$_GET['id'] : null;
 $guide = null; $zones = []; $taches = [];
 if ($edit_id) {
@@ -231,7 +231,7 @@ $section_icons = ['etat'=>'fa-eye','nettoyage'=>'fa-spray-can-sparkles','mise_en
         <select class="form-select" id="guideLogement">
             <option value="">— Aucun —</option>
             <?php foreach ($logements as $lo): ?>
-            <option value="<?= $lo['id'] ?>" <?= ($guide['id_logement'] == $lo['id']) ? 'selected' : '' ?>><?= htmlspecialchars($lo['nom']) ?></option>
+            <option value="<?= $lo['id'] ?>" <?= ($guide['id_logement'] == $lo['id']) ? 'selected' : '' ?>><?= htmlspecialchars($lo['nom_du_logement']) ?></option>
             <?php endforeach; ?>
         </select>
     </div>
