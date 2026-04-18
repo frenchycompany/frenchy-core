@@ -13,6 +13,10 @@ $t->execute([$id]);
 foreach ($t->fetchAll(PDO::FETCH_ASSOC) as $row) $taches[$row['id_zone']][$row['section']][] = $row;
 $sections = ['etat'=>['État général','fa-eye'],'nettoyage'=>['Nettoyage détaillé','fa-spray-can-sparkles'],'mise_en_place'=>['Mise en place','fa-hand-sparkles'],'equipements'=>['Contrôle équipements','fa-plug']];
 $regles = array_filter(explode("\n", $guide['regles_generales'] ?? ''));
+$ph = $conn->prepare("SELECT p.* FROM guide_menage_photos p JOIN guide_menage_zones z ON p.id_zone=z.id WHERE z.id_guide=? ORDER BY p.ordre");
+$ph->execute([$id]);
+$zone_photos = [];
+foreach ($ph->fetchAll(PDO::FETCH_ASSOC) as $row) $zone_photos[$row['id_zone']][] = $row;
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -49,7 +53,10 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#f5f5f0;color:#222;l
 .task label{font-size:.9rem;cursor:pointer;flex:1}
 .task .note{font-size:.75rem;color:#888;font-style:italic;display:block;margin-top:2px}
 .task-photo{max-width:100%;border-radius:8px;margin-top:.5rem}
-.ref-photo{max-width:100%;border-radius:8px;margin:.8rem 0}
+.ref-photo{max-width:100%;border-radius:8px;margin:.3rem 0}
+.photos-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:.8rem;margin:.5rem 0}
+.photo-ref{text-align:center}
+.photo-leg{font-size:.75rem;color:#888;font-style:italic;margin-top:.2rem}
 .pbar{background:#eee;height:6px;border-radius:3px;margin:.5rem 0;overflow:hidden}
 .pbar .fill{background:linear-gradient(90deg,#c9a84c,#e0c068);height:100%;width:0%;transition:width .3s;border-radius:3px}
 .zprog{font-size:.75rem;color:#999}
@@ -69,7 +76,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#f5f5f0;color:#222;l
 
 <nav class="nav-z">
 <?php if ($regles): ?><a href="#regles">Règles</a><?php endif; ?>
-<?php foreach ($zones as $i=>$z): $zt = $taches[$z['id']] ?? []; if (empty($zt) && !$z['photo_reference']) continue; ?>
+<?php foreach ($zones as $i=>$z): $zt = $taches[$z['id']] ?? []; $zp = $zone_photos[$z['id']] ?? []; if (empty($zt) && empty($zp)) continue; ?>
 <a href="#zone_<?= $z['id'] ?>"><?= htmlspecialchars($z['nom']) ?></a>
 <?php endforeach; ?>
 </nav>
@@ -81,7 +88,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#f5f5f0;color:#222;l
 </section>
 <?php endif; ?>
 
-<?php foreach ($zones as $z): $zt = $taches[$z['id']] ?? []; if (empty($zt) && !$z['photo_reference']) continue; ?>
+<?php foreach ($zones as $z): $zt = $taches[$z['id']] ?? []; $zp = $zone_photos[$z['id']] ?? []; if (empty($zt) && empty($zp)) continue; ?>
 <div class="zone" id="zone_<?= $z['id'] ?>">
 <div class="zh" onclick="this.classList.toggle('open')">
 <i class="fas <?= htmlspecialchars($z['icon']) ?> ic"></i>
@@ -102,9 +109,16 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#f5f5f0;color:#222;l
 </label>
 </div>
 <?php endforeach; endforeach; ?>
-<?php if ($z['photo_reference']): ?>
+<?php if (!empty($zone_photos[$z['id']])): ?>
 <div class="stit"><i class="fas fa-camera"></i> Références visuelles</div>
-<img src="../<?= htmlspecialchars($z['photo_reference']) ?>" class="ref-photo">
+<div class="photos-grid">
+<?php foreach ($zone_photos[$z['id']] as $zph): ?>
+<div class="photo-ref">
+<img src="../<?= htmlspecialchars($zph['chemin']) ?>" class="ref-photo">
+<?php if ($zph['legende']): ?><div class="photo-leg"><?= htmlspecialchars($zph['legende']) ?></div><?php endif; ?>
+</div>
+<?php endforeach; ?>
+</div>
 <?php endif; ?>
 </div>
 </div>
@@ -113,7 +127,9 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#f5f5f0;color:#222;l
 <div style="text-align:center;margin:2rem 1rem"><button onclick="if(confirm('Réinitialiser ?')){localStorage.removeItem('gm_<?= $id ?>');location.reload()}" style="background:#1a1a1a;color:#c9a84c;border:none;padding:.8rem 2rem;border-radius:8px;cursor:pointer"><i class="fas fa-rotate-left"></i> Réinitialiser</button></div>
 <div class="footer"><?= htmlspecialchars($guide['nom']) ?> – Guide ménage<br>FrenchyConciergerie © 2026</div>
 <button class="btn-top" id="btnTop" onclick="window.scrollTo({top:0,behavior:'smooth'})"><i class="fas fa-arrow-up"></i></button>
-<button class="btn-print" onclick="window.print()"><i class="fas fa-print"></i></button>
+<button class="btn-print" onclick="window.print()" title="Imprimer"><i class="fas fa-print"></i></button>
+<button style="position:fixed;bottom:20px;left:70px;background:#1a1a1a;color:#c9a84c;border:none;width:44px;height:44px;border-radius:50%;font-size:1.2rem;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.2);z-index:200" onclick="exportPDF()" title="PDF"><i class="fas fa-file-pdf"></i></button>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script>
 function up(z){const b=z.querySelectorAll('input[type=checkbox]'),c=z.querySelectorAll('input[type=checkbox]:checked'),n=z.querySelector('.cnt'),f=z.querySelector('.fill');if(n)n.textContent=c.length+'/'+b.length;if(f)f.style.width=b.length?(c.length/b.length*100)+'%':'0%'}
 document.querySelectorAll('input[type=checkbox]').forEach(cb=>cb.addEventListener('change',function(){up(this.closest('.zone'));save()}));
@@ -122,6 +138,14 @@ window.addEventListener('scroll',()=>document.getElementById('btnTop').style.dis
 document.querySelectorAll('.nav-z a').forEach(a=>a.addEventListener('click',function(){const t=document.querySelector(this.getAttribute('href'));if(t){const h=t.querySelector('.zh');if(h&&!h.classList.contains('open'))h.classList.add('open');const b=t.querySelector('.zb');if(b)b.style.display='block';up(t)}}));
 const SK='gm_<?= $id ?>';
 function save(){const s={};document.querySelectorAll('input[type=checkbox]').forEach(c=>s[c.id]=c.checked);localStorage.setItem(SK,JSON.stringify(s))}
+function exportPDF(){
+  document.querySelectorAll('.zh').forEach(h=>{if(!h.classList.contains('open'))h.classList.add('open')});
+  document.querySelectorAll('.zb').forEach(b=>b.style.display='block');
+  document.querySelectorAll('.zone').forEach(z=>up(z));
+  const el=document.body;
+  const opt={margin:.5,filename:'guide_menage_<?= preg_replace('/[^a-zA-Z0-9]/', '_', $guide['nom']) ?>.pdf',image:{type:'jpeg',quality:.92},html2canvas:{scale:2,useCORS:true},jsPDF:{unit:'cm',format:'a4',orientation:'portrait'},pagebreak:{mode:['avoid-all','css','legacy']}};
+  html2pdf().set(opt).from(el).save();
+}
 try{const s=JSON.parse(localStorage.getItem(SK));if(s)Object.keys(s).forEach(id=>{const c=document.getElementById(id);if(c)c.checked=s[id]});document.querySelectorAll('.zone').forEach(z=>up(z))}catch(e){}
 </script>
 </body></html>

@@ -66,22 +66,29 @@ if (isset($_POST['ajax_action'])) {
                 move_uploaded_file($_FILES['photo']['tmp_name'], $upload_dir.$fname);
                 $path = 'uploads/guide_menage/'.$fname;
                 if ($_POST['type'] === 'zone') {
-                    $conn->prepare("UPDATE guide_menage_zones SET photo_reference=? WHERE id=?")->execute([$path, $_POST['id']]);
+                    $max = $conn->query("SELECT COALESCE(MAX(ordre),0)+1 FROM guide_menage_photos WHERE id_zone=".(int)$_POST['id'])->fetchColumn();
+                    $conn->prepare("INSERT INTO guide_menage_photos (id_zone, chemin, legende, ordre) VALUES (?,?,?,?)")
+                        ->execute([$_POST['id'], $path, $_POST['legende'] ?? '', $max]);
+                    echo json_encode(['ok'=>true, 'path'=>$path, 'photo_id'=>$conn->lastInsertId()]);
                 } else {
                     $conn->prepare("UPDATE guide_menage_taches SET photo=? WHERE id=?")->execute([$path, $_POST['id']]);
+                    echo json_encode(['ok'=>true, 'path'=>$path]);
                 }
-                echo json_encode(['ok'=>true, 'path'=>$path]);
             } else { echo json_encode(['ok'=>false]); }
         }
         elseif ($action === 'delete_photo') {
-            if ($_POST['type'] === 'zone') {
-                $old = $conn->query("SELECT photo_reference FROM guide_menage_zones WHERE id=".(int)$_POST['id'])->fetchColumn();
-                $conn->prepare("UPDATE guide_menage_zones SET photo_reference=NULL WHERE id=?")->execute([$_POST['id']]);
+            if ($_POST['type'] === 'zone_photo') {
+                $old = $conn->query("SELECT chemin FROM guide_menage_photos WHERE id=".(int)$_POST['id'])->fetchColumn();
+                $conn->prepare("DELETE FROM guide_menage_photos WHERE id=?")->execute([$_POST['id']]);
             } else {
                 $old = $conn->query("SELECT photo FROM guide_menage_taches WHERE id=".(int)$_POST['id'])->fetchColumn();
                 $conn->prepare("UPDATE guide_menage_taches SET photo=NULL WHERE id=?")->execute([$_POST['id']]);
             }
             if ($old && file_exists(__DIR__.'/../'.$old)) @unlink(__DIR__.'/../'.$old);
+            echo json_encode(['ok'=>true]);
+        }
+        elseif ($action === 'save_photo_legende') {
+            $conn->prepare("UPDATE guide_menage_photos SET legende=? WHERE id=?")->execute([$_POST['legende'], $_POST['id']]);
             echo json_encode(['ok'=>true]);
         }
         elseif ($action === 'duplicate_guide') {
@@ -101,6 +108,12 @@ if (isset($_POST['ajax_action'])) {
                 foreach ($ts->fetchAll(PDO::FETCH_ASSOC) as $ot) {
                     $conn->prepare("INSERT INTO guide_menage_taches (id_zone, section, texte, note, photo, ordre) VALUES (?,?,?,?,?,?)")
                         ->execute([$nzId, $ot['section'], $ot['texte'], $ot['note'], $ot['photo'], $ot['ordre']]);
+                }
+                $ps = $conn->prepare("SELECT * FROM guide_menage_photos WHERE id_zone=? ORDER BY ordre");
+                $ps->execute([$oz['id']]);
+                foreach ($ps->fetchAll(PDO::FETCH_ASSOC) as $op) {
+                    $conn->prepare("INSERT INTO guide_menage_photos (id_zone, chemin, legende, ordre) VALUES (?,?,?,?)")
+                        ->execute([$nzId, $op['chemin'], $op['legende'], $op['ordre']]);
                 }
             }
             echo json_encode(['ok'=>true, 'id'=>$newId]);
@@ -127,6 +140,10 @@ if ($edit_id) {
         $t = $conn->prepare("SELECT t.* FROM guide_menage_taches t JOIN guide_menage_zones z ON t.id_zone=z.id WHERE z.id_guide=? ORDER BY t.ordre");
         $t->execute([$edit_id]); 
         foreach ($t->fetchAll(PDO::FETCH_ASSOC) as $row) $taches[$row['id_zone']][] = $row;
+        $ph = $conn->prepare("SELECT p.* FROM guide_menage_photos p JOIN guide_menage_zones z ON p.id_zone=z.id WHERE z.id_guide=? ORDER BY p.ordre");
+        $ph->execute([$edit_id]);
+        $zone_photos = [];
+        foreach ($ph->fetchAll(PDO::FETCH_ASSOC) as $row) $zone_photos[$row['id_zone']][] = $row;
     }
 }
 $section_labels = ['etat'=>'État général','nettoyage'=>'Nettoyage détaillé','mise_en_place'=>'Mise en place','equipements'=>'Contrôle équipements'];
@@ -265,15 +282,18 @@ $section_icons = ['etat'=>'fa-eye','nettoyage'=>'fa-spray-can-sparkles','mise_en
             <button class="btn btn-sm btn-outline-danger" onclick="deleteZone(<?= $z['id'] ?>)"><i class="fas fa-trash"></i></button>
         </div>
 
-        <!-- Photo zone -->
+        <!-- Photos zone -->
         <div class="mb-3">
-            <label class="form-label small fw-bold"><i class="fas fa-camera text-warning"></i> Photo de référence</label>
-            <?php if ($z['photo_reference']): ?>
-                <div class="d-flex align-items-center gap-2 mb-2">
-                    <img src="../<?= htmlspecialchars($z['photo_reference']) ?>" class="photo-thumb">
-                    <button class="btn btn-sm btn-outline-danger" onclick="deletePhoto('zone',<?= $z['id'] ?>)"><i class="fas fa-trash"></i></button>
+            <label class="form-label small fw-bold"><i class="fas fa-camera text-warning"></i> Photos de référence</label>
+            <div class="d-flex flex-wrap gap-2 mb-2" id="photos_zone_<?= $z['id'] ?>">
+            <?php foreach (($zone_photos[$z['id']] ?? []) as $zp): ?>
+                <div class="text-center" id="zphoto_<?= $zp['id'] ?>">
+                    <img src="../<?= htmlspecialchars($zp['chemin']) ?>" class="photo-thumb d-block mb-1">
+                    <input type="text" class="form-control form-control-sm mb-1" style="width:100px;font-size:.7rem" value="<?= htmlspecialchars($zp['legende']) ?>" placeholder="Légende" onchange="ajax({ajax_action:'save_photo_legende',id:<?= $zp['id'] ?>,legende:this.value},()=>{})">
+                    <button class="btn btn-outline-danger" style="font-size:.6rem;padding:1px 4px" onclick="ajax({ajax_action:'delete_photo',type:'zone_photo',id:<?= $zp['id'] ?>},()=>document.getElementById('zphoto_<?= $zp['id'] ?>').remove())"><i class="fas fa-trash"></i></button>
                 </div>
-            <?php endif; ?>
+            <?php endforeach; ?>
+            </div>
             <input type="file" class="form-control form-control-sm" accept="image/*" onchange="uploadPhoto(this,'zone',<?= $z['id'] ?>)">
         </div>
 
