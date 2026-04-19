@@ -8,7 +8,10 @@ pymysql>=1.0.0
 pyserial>=3.5
 
 # SMS via Gammu
-python-gammu>=3.2
+# IMPORTANT: version pinnee a 3.2.4. Les versions 3.2.5+ ont un bug:
+# "module 'gammu' has no attribute 'GammuException'" lorsque l'extension
+# native essaie de lever une exception. Ne pas upgrader sans tests.
+python-gammu==3.2.4
 
 # OpenAI API (optional, for AI responses)
 openai>=1.0.0
