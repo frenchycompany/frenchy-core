@@ -8,10 +8,13 @@ pymysql>=1.0.0
 pyserial>=3.5
 
 # SMS via Gammu
-# IMPORTANT: version pinnee a 3.2.4. Les versions 3.2.5+ ont un bug:
-# "module 'gammu' has no attribute 'GammuException'" lorsque l'extension
-# native essaie de lever une exception. Ne pas upgrader sans tests.
-python-gammu==3.2.4
+# IMPORTANT: version pinnee a 2.12 pour correspondre a libgammu 1.41.0
+# (version systeme sur le Raspberry Pi). Installer avec recompilation:
+#   sudo apt install libgammu-dev python3-dev build-essential
+#   pip3 install --force-reinstall --no-binary :all: python-gammu==2.12
+# Ne PAS installer de wheel pre-compile : il sera lie a une libgammu plus
+# recente et levera "module 'gammu' has no attribute 'GammuException'".
+python-gammu==2.12
 
 # OpenAI API (optional, for AI responses)
 openai>=1.0.0
