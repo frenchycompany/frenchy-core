@@ -257,6 +257,7 @@ def generate_ai_reply(db, sender):
 # --- 3) Envoi SMS via python-gammu ---
 def send_sms_via_gammu(to, text, creator="Bot"):
     logging.info(f"Envoi SMS à {to} via {creator}")
+    sm = None
     try:
         info = {
             "Class":   -1,
@@ -264,7 +265,7 @@ def send_sms_via_gammu(to, text, creator="Bot"):
             "Entries": [{"ID": "ConcatenatedTextLong", "Buffer": text}]
         }
         parts = gammu.EncodeSMS(info)
-        
+
         sm = gammu.StateMachine()
         sm.SetConfig(0, {"Device": DEVICE_PORT, "Connection": "at115200"})
         sm.Init()
@@ -279,14 +280,20 @@ def send_sms_via_gammu(to, text, creator="Bot"):
             sm.SendSMS(p)
             time.sleep(1)
             logging.info(f"Fragment {idx}/{len(parts)} envoyé à {to}")
-            
-        sm.Terminate()
+
         logging.info(f"✅ SMS complet envoyé à {to}")
         return True
     except Exception as e:
-        # python-gammu <0.41 : gammu.GammuException ; >=0.41 : gammu.GSMError
         logging.error(f"❌ Erreur Gammu lors de l'envoi à {to}: {e}")
         return False
+    finally:
+        # Libere toujours le port, meme en cas d'echec, sinon le cycle
+        # suivant echouera avec 'peripherique occupe'.
+        if sm is not None:
+            try:
+                sm.Terminate()
+            except Exception:
+                pass
 
 # --- 4) Traitement des conversations (MODIFIÉ POUR FALLBACK UNIQUEMENT) ---
 def process_conversations():
