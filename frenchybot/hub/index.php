@@ -514,6 +514,33 @@ $heureDepart = $hub['heure_depart'] ?: ($equip['heure_checkout'] ?? '10:00');
     </div>
     <?php endif; ?>
 
+    <!-- Facture (reservations directes) -->
+    <?php
+    $directBooking = null;
+    try {
+        $stmtInv = $pdo->prepare("SELECT db.* FROM direct_bookings db WHERE db.guest_email = ? AND db.logement_id = ? AND db.status IN ('paid','pending') AND JSON_CONTAINS(db.reservation_ids, CAST(? AS JSON)) LIMIT 1");
+        $stmtInv->execute([$hub['email'], $hub['logement_id'], $hub['reservation_id']]);
+        $directBooking = $stmtInv->fetch();
+    } catch (Exception $e) {}
+    if ($directBooking && $directBooking['invoice_number']): ?>
+    <div class="hub-card">
+        <div class="hub-card-header">
+            <i class="fas fa-file-invoice" style="color:var(--fc-primary)"></i> Votre facture
+        </div>
+        <div class="hub-card-body" style="text-align:center;">
+            <p style="font-size:0.88rem;color:var(--fc-text-muted);margin-bottom:12px">
+                Facture <?= htmlspecialchars($directBooking['invoice_number']) ?>
+                <?= $directBooking['status'] === 'paid' ? '' : '(proforma)' ?>
+            </p>
+            <a href="/frenchysite/booking/api/invoice.php?ref=<?= urlencode($directBooking['booking_ref']) ?>&email=<?= urlencode($directBooking['guest_email']) ?>"
+               target="_blank"
+               style="display:inline-block;background:var(--fc-primary);color:white;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600;font-size:0.9rem">
+                <i class="fas fa-download"></i> Telecharger la facture
+            </a>
+        </div>
+    </div>
+    <?php endif; ?>
+
     <!-- Reglement / infos quartier -->
     <?php if (!empty($equip['numeros_urgence']) || !empty($equip['infos_quartier'])): ?>
     <div class="hub-card">

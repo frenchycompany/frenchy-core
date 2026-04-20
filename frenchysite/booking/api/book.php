@@ -4,6 +4,8 @@ header('Access-Control-Allow-Origin: *');
 
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/pricing_engine.php';
+require_once __DIR__ . '/../includes/invoice_generator.php';
+require_once __DIR__ . '/../includes/email.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -115,10 +117,19 @@ try {
         'nb_periods' => count($periods),
     ];
 
+    $stmt = $pdo->prepare("SELECT * FROM direct_bookings WHERE id = ?");
+    $stmt->execute([$directBookingId]);
+    $fullBooking = $stmt->fetch();
+
     if ($paymentMethod === 'stripe') {
         $response['payment_url'] = createStripeSession($pdo, $bookingRef, $pricing, $guest, $logementId);
     } elseif ($paymentMethod === 'virement') {
         $response['virement_info'] = getVirementInfo($pdo, $bookingRef, $pricing['total']);
+        $generator = new InvoiceGenerator($pdo);
+        $invoicePath = $generator->generate($fullBooking);
+        $mailer = new BookingMailer($pdo);
+        $mailer->sendConfirmation($fullBooking, $invoicePath);
+        $mailer->notifyAdmin($fullBooking);
     }
 
     echo json_encode($response);
@@ -177,8 +188,8 @@ function createStripeSession(PDO $pdo, string $ref, array $pricing, array $guest
         CURLOPT_USERPWD => $stripeKey . ':',
         CURLOPT_POSTFIELDS => http_build_query([
             'mode' => 'payment',
-            'success_url' => (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/frenchysite/booking/?success=1&ref=' . $ref,
-            'cancel_url' => (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/frenchysite/booking/?cancelled=1&ref=' . $ref,
+            'success_url' => (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/frenchysite/booking/confirmation.php?success=1&ref=' . $ref,
+            'cancel_url' => (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/frenchysite/booking/confirmation.php?cancelled=1&ref=' . $ref,
             'customer_email' => $guest['email'],
             'line_items' => $lineItems,
             'metadata' => ['booking_ref' => $ref],
