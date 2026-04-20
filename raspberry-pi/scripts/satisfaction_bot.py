@@ -53,6 +53,9 @@ FALLBACK_KEYWORDS = [k.strip().lower() for k in cfg["FALLBACK"]["mots_declencheu
 DEVICE_PORT = cfg["MODEM"]["port"]
 BAUDRATE = int(cfg["MODEM"].get("baudrate", "115200"))
 PIN_CODE = cfg["MODEM"].get("pin", None)
+# SMSC explicite : requis sur SIM800C (le slot 1 de la SIM est souvent vide).
+# Si absent, fallback sur Location 1 (comportement historique).
+SMSC_NUMBER = cfg["MODEM"].get("smsc", "").strip() or None
 
 # -----------------------------------------------------------------------------
 # UTILS : normalisation / validation des numéros mobiles FR (06/07)
@@ -275,7 +278,10 @@ def send_sms_via_gammu(to, text, creator="Bot"):
                 sm.EnterSecurityCode("PIN", PIN_CODE)
 
         for idx, p in enumerate(parts, 1):
-            p["SMSC"] = {"Location": 1}
+            if SMSC_NUMBER:
+                p["SMSC"] = {"Number": SMSC_NUMBER, "Name": ""}
+            else:
+                p["SMSC"] = {"Location": 1}
             p["Number"] = to
             sm.SendSMS(p)
             time.sleep(1)
