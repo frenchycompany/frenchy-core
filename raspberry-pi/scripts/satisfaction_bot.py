@@ -6,18 +6,11 @@ import time
 import logging
 import configparser
 import pymysql
-import gammu
 import binascii
 import re
 from typing import Optional
 from openai import OpenAI
 from collections import defaultdict
-# (optionnel) Masquer un warning de python-gammu :
-# import warnings
-# warnings.filterwarnings("ignore",
-#                         message=r".*PY_SSIZE_T_CLEAN will be required for '#' formats.*",
-#                         category=DeprecationWarning)
-
 # Répertoire de base du projet (résolu dynamiquement)
 import os
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -257,55 +250,153 @@ def generate_ai_reply(db, sender):
         logging.error(f"❌ OpenAI error: {e}")
         return "Merci de votre message. Nous revenons vers vous rapidement."
 
-# --- 3) Envoi SMS via python-gammu ---
-def send_sms_via_gammu(to, text, creator="Bot"):
-    logging.info(f"Envoi SMS à {to} via {creator}")
-    sm = None
+# --- 3) Envoi SMS via AT commands (SIM800C) ---
+
+def _at_cmd(ser, cmd, timeout=5, expect=b"OK"):
+    """Send an AT command and return the full response. Raises on ERROR."""
+    ser.reset_input_buffer()
+    ser.write((cmd + "\r").encode())
+    deadline = time.time() + timeout
+    buf = b""
+    while time.time() < deadline:
+        chunk = ser.read(ser.in_waiting or 1)
+        if chunk:
+            buf += chunk
+            if expect and expect in buf:
+                return buf.decode("utf-8", errors="ignore")
+            if b"ERROR" in buf:
+                resp = buf.decode("utf-8", errors="ignore")
+                raise RuntimeError(f"AT error for '{cmd}': {resp.strip()}")
+        else:
+            time.sleep(0.1)
+    resp = buf.decode("utf-8", errors="ignore")
+    if expect is None:
+        return resp
+    raise TimeoutError(f"Timeout for '{cmd}': {resp.strip()}")
+
+
+def _wait_for_sms_ready(ser, timeout=20):
+    """Wait for 'SMS Ready' URC or timeout. Returns True if seen."""
+    deadline = time.time() + timeout
+    buf = b""
+    while time.time() < deadline:
+        chunk = ser.read(ser.in_waiting or 1)
+        if chunk:
+            buf += chunk
+            if b"SMS Ready" in buf:
+                logging.info("SIM800C: SMS Ready received")
+                return True
+        else:
+            time.sleep(0.2)
+    logging.warning(f"SIM800C: SMS Ready not seen within {timeout}s")
+    return False
+
+
+def send_sms_at(to, text, creator="Bot"):
+    """Send SMS using raw AT commands matching the working minicom sequence."""
+    logging.info(f"Envoi SMS a {to} via AT ({creator})")
+    ser = None
     try:
-        # Auto-detect encoding : GSM 7-bit si ASCII pur, UCS-2 sinon.
-        # Le SIM800C refuse souvent UCS-2 (Code 27), donc on evite
-        # Unicode quand ce n'est pas necessaire.
-        try:
-            text.encode('ascii')
-            use_unicode = False
-        except UnicodeEncodeError:
-            use_unicode = True
-        info = {
-            "Class":   -1,
-            "Unicode": use_unicode,
-            "Entries": [{"ID": "ConcatenatedTextLong", "Buffer": text}]
-        }
-        parts = gammu.EncodeSMS(info)
+        ser = serial.Serial(DEVICE_PORT, BAUDRATE, timeout=3)
+        time.sleep(1)
+        ser.reset_input_buffer()
 
-        sm = gammu.StateMachine()
-        sm.SetConfig(0, {"Device": DEVICE_PORT, "Connection": "at115200"})
-        sm.Init()
+        # ATZ reset
+        _at_cmd(ser, "ATZ", timeout=3)
+        time.sleep(1)
 
-        if PIN_CODE:
-            if sm.GetSecurityStatus() == "PIN":
-                sm.EnterSecurityCode("PIN", PIN_CODE)
+        # Check PIN status
+        resp = _at_cmd(ser, 'AT+CPIN?', timeout=5)
 
-        for idx, p in enumerate(parts, 1):
-            if SMSC_NUMBER:
-                p["SMSC"] = {"Number": SMSC_NUMBER, "Name": ""}
+        if "SIM PIN" in resp and PIN_CODE:
+            # SIM locked — enter PIN, then wait for "SMS Ready"
+            _at_cmd(ser, f'AT+CPIN="{PIN_CODE}"', timeout=10)
+            _wait_for_sms_ready(ser, timeout=20)
+        elif "READY" in resp:
+            # SIM already unlocked — soft-reset modem to trigger full init
+            logging.info("SIM already unlocked, issuing AT+CFUN=1,1 for full re-init")
+            try:
+                ser.write(b"AT+CFUN=1,1\r")
+                time.sleep(8)
+                ser.close()
+                time.sleep(3)
+                ser = serial.Serial(DEVICE_PORT, BAUDRATE, timeout=3)
+                time.sleep(1)
+                ser.reset_input_buffer()
+                _wait_for_sms_ready(ser, timeout=25)
+                # Re-enter PIN after reset if needed
+                resp2 = _at_cmd(ser, 'AT+CPIN?', timeout=5)
+                if "SIM PIN" in resp2 and PIN_CODE:
+                    _at_cmd(ser, f'AT+CPIN="{PIN_CODE}"', timeout=10)
+                    _wait_for_sms_ready(ser, timeout=20)
+            except Exception as e:
+                logging.warning(f"CFUN reset failed, continuing anyway: {e}")
+                time.sleep(5)
+
+        # Full init sequence (matches minicom)
+        _at_cmd(ser, "AT+CMEE=2", timeout=3)
+        _at_cmd(ser, 'AT+CSCS="GSM"', timeout=3)
+        _at_cmd(ser, "AT+CMGF=1", timeout=3)
+
+        if SMSC_NUMBER:
+            _at_cmd(ser, f'AT+CSCA="{SMSC_NUMBER}"', timeout=3)
+
+        # Check network registration
+        resp = _at_cmd(ser, "AT+CREG?", timeout=5)
+        logging.info(f"Network registration: {resp.strip()}")
+
+        # Send SMS — use + format (e.g. +33647554678)
+        ser.reset_input_buffer()
+        ser.write(f'AT+CMGS="{to}"\r'.encode())
+
+        # Wait for ">" prompt
+        deadline = time.time() + 10
+        buf = b""
+        got_prompt = False
+        while time.time() < deadline:
+            chunk = ser.read(ser.in_waiting or 1)
+            if chunk:
+                buf += chunk
+                if b">" in buf:
+                    got_prompt = True
+                    break
+                if b"ERROR" in buf:
+                    raise RuntimeError(f"CMGS prompt error: {buf.decode('utf-8', errors='ignore')}")
             else:
-                p["SMSC"] = {"Location": 1}
-            p["Number"] = to
-            sm.SendSMS(p)
-            time.sleep(1)
-            logging.info(f"Fragment {idx}/{len(parts)} envoyé à {to}")
+                time.sleep(0.1)
 
-        logging.info(f"✅ SMS complet envoyé à {to}")
-        return True
+        if not got_prompt:
+            raise TimeoutError(f"No '>' prompt received: {buf.decode('utf-8', errors='ignore')}")
+
+        # Send message body + Ctrl+Z
+        ser.write(text.encode("ascii", errors="replace"))
+        ser.write(bytes([26]))  # Ctrl+Z
+
+        # Wait for +CMGS: (success) or ERROR
+        deadline = time.time() + 30
+        buf = b""
+        while time.time() < deadline:
+            chunk = ser.read(ser.in_waiting or 1)
+            if chunk:
+                buf += chunk
+                resp_str = buf.decode("utf-8", errors="ignore")
+                if "+CMGS:" in resp_str:
+                    logging.info(f"SMS sent to {to}: {resp_str.strip()}")
+                    return True
+                if "ERROR" in resp_str:
+                    raise RuntimeError(f"SMS send error: {resp_str.strip()}")
+            else:
+                time.sleep(0.2)
+
+        raise TimeoutError(f"No +CMGS confirmation: {buf.decode('utf-8', errors='ignore')}")
+
     except Exception as e:
-        logging.error(f"❌ Erreur Gammu lors de l'envoi à {to}: {e}")
+        logging.error(f"Erreur envoi AT a {to}: {e}")
         return False
     finally:
-        # Libere toujours le port, meme en cas d'echec, sinon le cycle
-        # suivant echouera avec 'peripherique occupe'.
-        if sm is not None:
+        if ser and ser.is_open:
             try:
-                sm.Terminate()
+                ser.close()
             except Exception:
                 pass
 
@@ -340,7 +431,7 @@ def process_conversations():
                 fallback_text = f"{sender} : {message}"
 
                 # Envoi du message formaté au numéro de l'admin
-                send_sms_via_gammu(FALLBACK_NUMBER, fallback_text, "Fallback")
+                send_sms_at(FALLBACK_NUMBER, fallback_text, "Fallback")
                 
                 # On marque le message comme traité pour ne pas le reprendre en boucle
                 cur.execute("UPDATE sms_in SET fallback = 1 WHERE id = %s", (sms_id,))
@@ -383,7 +474,7 @@ def process_outbox():
                     db.commit()
                     continue
 
-                if send_sms_via_gammu(to_norm, msg, "Outbox"):
+                if send_sms_at(to_norm, msg, "Outbox"):
                     cur.execute("UPDATE sms_outbox SET status='sent', sent_at=NOW() WHERE id = %s", (sms_id,))
                     db.commit()
     except Exception as e:
