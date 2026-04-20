@@ -262,9 +262,17 @@ def send_sms_via_gammu(to, text, creator="Bot"):
     logging.info(f"Envoi SMS à {to} via {creator}")
     sm = None
     try:
+        # Auto-detect encoding : GSM 7-bit si ASCII pur, UCS-2 sinon.
+        # Le SIM800C refuse souvent UCS-2 (Code 27), donc on evite
+        # Unicode quand ce n'est pas necessaire.
+        try:
+            text.encode('ascii')
+            use_unicode = False
+        except UnicodeEncodeError:
+            use_unicode = True
         info = {
             "Class":   -1,
-            "Unicode": True,
+            "Unicode": use_unicode,
             "Entries": [{"ID": "ConcatenatedTextLong", "Buffer": text}]
         }
         parts = gammu.EncodeSMS(info)
